@@ -5,12 +5,12 @@
 - Proyecto: El Atlas de los Nuevos Dioses
 - Repositorio: `EduYube/castigo-divino-map`
 - Versión objetivo: Beta 0.1
-- Estado general: Inicialización
+- Estado general: Inicialización lista para revisión
 - Última actualización: 2026-08-03
 
 ## Objetivo actual
 
-Preparar la arquitectura, planificación y base técnica de la primera beta.
+Fusionar la fundación del proyecto y comenzar la validación del mapa base.
 
 ## Alcance de la Beta 0.1
 
@@ -48,14 +48,26 @@ Preparar la arquitectura, planificación y base técnica de la primera beta.
 
 ## Fase actual
 
-Fundación del repositorio y preparación del backlog.
+Fundación del repositorio completada en una rama de trabajo y pendiente de integración.
 
 ## Trabajo en curso
 
 - MAP-001 — Inicializar la estructura y gobernanza del proyecto.
-- Crear documentación base y plantillas.
-- Crear backlog inicial.
-- Preparar configuración manual del GitHub Project.
+- Revisión e integración de la pull request fundacional.
+- Configuración manual de campos y vistas del GitHub Project.
+
+## Backlog inicial
+
+- MAP-002 — Validar y preparar el mapa base oficial.
+- MAP-003 — Inicializar la aplicación web y calidad automática.
+- MAP-004 — Integrar el mapa navegable de Faerûn.
+- MAP-005 — Definir el modelo de datos de campaña.
+- MAP-006 — Mostrar marcadores y fichas de información.
+- MAP-007 — Implementar búsqueda por nombre y alias.
+- MAP-008 — Implementar categorías y filtrado por etiquetas.
+- MAP-009 — Implementar enlaces directos y restauración de estado.
+- MAP-010 — Consolidar diseño responsive y accesibilidad.
+- MAP-011 — Publicar y validar la Beta 0.1.
 
 ## Bloqueos
 
@@ -84,13 +96,14 @@ Fundación del repositorio y preparación del backlog.
 
 ## Próximos pasos
 
-1. Finalizar y fusionar MAP-001.
-2. Configurar manualmente las vistas y campos del GitHub Project.
-3. Ejecutar MAP-002: investigar y validar el mapa base.
-4. Ejecutar MAP-003: inicializar la aplicación web.
+1. Revisar y fusionar la pull request de MAP-001.
+2. Configurar manualmente las vistas y campos del GitHub Project siguiendo `docs/github-project-setup.md`.
+3. Abrir un chat nuevo para MAP-002.
+4. Investigar y validar el mapa base oficial.
 
 ## Últimos cambios
 
 | Fecha | Cambio |
 |---|---|
 | 2026-08-03 | Creación inicial del estado del proyecto |
+| 2026-08-03 | Backlog Beta 0.1 creado y fundación lista para revisión |
