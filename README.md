@@ -1,12 +1,12 @@
 # El Atlas de los Nuevos Dioses
 
-Aplicación web para explorar un mapa interactivo de Faerûn y consultar información pública de la campaña **Castigo Divino** mediante búsqueda, marcadores, categorías, etiquetas y notas.
+Aplicación web para explorar un mapa interactivo de Faerûn y consultar información pública de la campaña **Castigo Divino** mediante búsqueda, marcadores, categorías, etiquetas, notas y enlaces directos reproducibles.
 
 ## Estado
 
-La Beta 0.1 dispone de una aplicación Vite + TypeScript con Leaflet, navegación responsive sobre el mapa oficial remoto de baja resolución, un catálogo público validado, marcadores accesibles, fichas de información, búsqueda por nombre principal, alias público y título de nota pública, y filtros combinables por categorías y etiquetas.
+La Beta 0.1 dispone de una aplicación Vite + TypeScript con Leaflet, navegación responsive sobre el mapa oficial remoto de baja resolución, un catálogo público validado, marcadores accesibles, fichas de información, búsqueda por nombre principal, alias público y título de nota pública, filtros combinables por categorías y etiquetas, y restauración completa del estado desde la URL.
 
-Consulta [`docs/project-status.md`](docs/project-status.md) para conocer el estado actual, [`docs/data-model.md`](docs/data-model.md) para revisar el contrato de datos y [`docs/architecture.md`](docs/architecture.md) para revisar la separación entre datos, búsqueda, filtros, selección, mapa y presentación.
+Consulta [`docs/project-status.md`](docs/project-status.md) para conocer el estado actual, [`docs/data-model.md`](docs/data-model.md) para revisar el contrato de datos y [`docs/architecture.md`](docs/architecture.md) para revisar la separación entre datos, búsqueda, filtros, selección, URL, mapa y presentación.
 
 ## Requisitos
 
@@ -41,7 +41,7 @@ npm run build
 npm run preview
 ```
 
-La aplicación solicita el mapa directamente a la URL oficial de Wizards. Es necesaria conexión de red para visualizar la cartografía; si el recurso falla, la interfaz muestra un estado de error accesible y una superficie neutra. La búsqueda, los filtros, los marcadores y sus fichas continúan disponibles sin descargar una copia alternativa.
+La aplicación solicita el mapa directamente a la URL oficial de Wizards. Es necesaria conexión de red para visualizar la cartografía; si el recurso falla, la interfaz muestra un estado de error accesible y una superficie neutra. La búsqueda, los filtros, los enlaces directos, los marcadores y sus fichas continúan disponibles sin descargar una copia alternativa.
 
 ## Búsqueda
 
@@ -57,7 +57,7 @@ La aplicación solicita el mapa directamente a la URL oficial de Wizards. Es nec
 - Enter o la barra espaciadora activan el botón enfocado.
 - Seleccionar un resultado centra el mapa, activa el marcador existente y abre la misma ficha pública que los marcadores, aunque ese lugar no coincida con los filtros activos.
 
-La lista de resultados continúa explicando únicamente las coincidencias de la consulta. El estado visual del mapa se deriva por separado de la intersección entre esa consulta y los filtros activos, sin duplicar el algoritmo de búsqueda.
+La lista de resultados explica únicamente las coincidencias de la consulta. El estado visual del mapa se deriva por separado de la intersección entre esa consulta y los filtros activos, sin duplicar el algoritmo de búsqueda.
 
 ## Filtros por categorías y etiquetas
 
@@ -75,17 +75,80 @@ Una etiqueta coincide cuando está asociada directamente al lugar o a cualquiera
 
 La interfaz usa fieldsets y checkboxes HTML nativos con nombres accesibles. Tab recorre los filtros y la barra espaciadora cambia el checkbox enfocado. El botón **Limpiar filtros** desmarca categorías y etiquetas, recalcula las coincidencias y conserva el foco en el propio botón. Las categorías o etiquetas sin lugares asociados se muestran deshabilitadas y explican su estado.
 
-El estado informa cuántos lugares satisfacen todas las dimensiones activas y anuncia de forma comprensible cuando no existe ninguna coincidencia. Cambiar filtros no mueve el foco al mapa ni cierra una ficha abierta.
+Todos los marcadores permanecen visibles y operables. Los coincidentes se resaltan; los no coincidentes se atenúan mediante varias propiedades visuales; el lugar activo conserva la máxima prioridad aunque no coincida; y el estado accesible informa del recuento o de una combinación sin resultados.
 
-Todos los marcadores permanecen visibles y operables:
+## Enlaces directos y restauración de estado
 
-- los coincidentes se resaltan mediante contorno, clase y prioridad visual;
-- los no coincidentes se atenúan mediante opacidad, escala, contraste y borde discontinuo, no solo color;
-- un marcador atenuado sigue admitiendo ratón, táctil, Enter y barra espaciadora;
-- el lugar activo conserva la máxima prioridad visual;
-- si el lugar activo deja de coincidir, el estado accesible lo comunica sin crear otra selección ni cerrar su ficha.
+La URL comparte estas cuatro dimensiones públicas:
 
-La consulta, los filtros y la selección no se guardan ni modifican la URL. La persistencia y los enlaces directos pertenecen a MAP-009.
+- el lugar activo y su ficha;
+- la consulta de búsqueda;
+- las categorías seleccionadas;
+- las etiquetas seleccionadas.
+
+La aplicación usa parámetros de consulta para ser compatible con GitHub Pages y otros despliegues estáticos. No requiere rutas internas ni reescrituras del servidor.
+
+### Formato
+
+| Parámetro | Valor estable | Ejemplo |
+|---|---|---|
+| `place` | slug del lugar | `place=puerto-de-demostracion` |
+| `q` | consulta codificada | `q=puerto+costero` |
+| `category` | slug de categoría, repetible | `category=asentamientos` |
+| `tag` | ID de etiqueta, repetible | `tag=coastal` |
+
+Ejemplos relativos:
+
+```text
+?place=puerto-de-demostracion
+?q=paso
+?category=asentamientos&tag=coastal
+?place=paso-de-demostracion&q=paso&category=lugares-destacados&tag=mountain-pass
+```
+
+Los nombres visibles no actúan como identificadores. Los lugares y categorías usan sus slugs estables; las etiquetas usan sus IDs estables definidos por el contrato de datos.
+
+### Representación canónica
+
+Para un mismo estado existe una única representación:
+
+1. `place`;
+2. `q`;
+3. categorías en el orden de `campaignCatalog.categories`;
+4. etiquetas en el orden de `campaignCatalog.tags`.
+
+Los valores vacíos se omiten, los repetidos se deduplican y espacios, acentos y signos se codifican mediante `URLSearchParams`. Una URL válida pero desordenada se reemplaza por su forma canónica sin añadir una entrada de historial.
+
+Los parámetros desconocidos, categorías o etiquetas inexistentes, lugares inválidos, valores vacíos y fragmentos se eliminan durante la canonicalización. Cada dimensión se procesa de forma independiente: un valor inválido no impide restaurar los demás valores válidos. Una combinación válida sin coincidencias se conserva y muestra el estado accesible normal.
+
+### Recargar, compartir y abrir
+
+Después de seleccionar un marcador, escribir una consulta o activar filtros, copia la URL de la barra de direcciones. Abrirla en otra pestaña, otro navegador compatible o después de recargar restaura el mismo estado público.
+
+No se añade una dependencia del Web Share API ni una API externa. La URL canónica de la página es el mecanismo universal de copia y compartición.
+
+### Atrás y adelante
+
+La política de historial distingue acciones continuas y discretas:
+
+- escribir o limpiar la consulta usa `replaceState`, de modo que una pulsación no crea una entrada nueva;
+- seleccionar o cerrar un lugar, cambiar filtros o limpiar filtros usa `pushState`;
+- atrás y adelante restauran consulta, checkboxes, coincidencias, marcador activo y ficha sin recargar la página;
+- `popstate` no escribe una entrada nueva ni provoca un bucle de restauración.
+
+La carga inicial y la navegación de historial no mueven el foco de forma inesperada. Abrir una ficha mediante una interacción directa sigue enfocando su título; cerrarla mediante el botón sigue devolviendo el foco al marcador.
+
+### Fuentes únicas
+
+La URL no es un cuarto almacén mutable:
+
+- `src/app/placeSearch.ts` conserva la consulta;
+- `src/app/placeFilters.ts` conserva categorías y etiquetas seleccionadas;
+- `src/app/placeSelection.ts` conserva el único lugar activo;
+- `src/app/urlState.ts` solo normaliza, serializa, parsea y compara representaciones;
+- `src/main.ts` restaura los controladores existentes y vuelve a derivar resultados mediante la lógica ya establecida.
+
+No se usa `localStorage`, `sessionStorage`, IndexedDB, cookies ni un router completo.
 
 ## Navegación, marcadores y fichas
 
@@ -95,7 +158,7 @@ La consulta, los filtros y la selección no se guardan ni modifican la URL. La p
 - Activa el marcador enfocado con Enter o la barra espaciadora.
 - Cada marcador anuncia el nombre del lugar, su categoría y si coincide con la búsqueda y los filtros actuales.
 - La categoría se diferencia mediante símbolo, forma, clase visual y texto accesible, no solo mediante color.
-- Al seleccionar un lugar, el foco pasa al título de su ficha.
+- Al seleccionar un lugar directamente, el foco pasa al título de su ficha.
 - La ficha muestra nombre, alias públicos, categoría, etiquetas y todas las notas públicas asociadas.
 - El botón de cierre devuelve el foco al marcador activo.
 - En escritorio la ficha se muestra lateralmente; en pantallas estrechas pasa debajo del mapa.
@@ -142,9 +205,9 @@ No añadas notas privadas, spoilers, datos del director de juego ni campos ocult
 
 ## Pruebas y recurso externo
 
-Las pruebas unitarias verifican dimensiones, límites, cálculos cartográficos, validación del catálogo, conversión de coordenadas, modelos de ficha, selección, búsqueda y filtrado. La lógica de filtros cubre dimensiones vacías, una o varias categorías, una o varias etiquetas, combinación AND con búsqueda, etiquetas de notas públicas, estado sin coincidencias, orden estable, asociación de `placeId`, ausencia de duplicados e inmutabilidad.
+Las pruebas unitarias verifican dimensiones, límites, cálculos cartográficos, validación del catálogo, conversión de coordenadas, modelos de ficha, selección, búsqueda, filtrado y contrato de URL. La suite de URL cubre estado vacío, cada dimensión aislada, estado completo, codificación, varias categorías y etiquetas, orden de catálogo, deduplicación, valores inválidos, mezcla válida e inválida, parámetros vacíos y desconocidos, canonicalización, ida y vuelta e inmutabilidad.
 
-Las pruebas e2e interceptan exclusivamente la URL oficial y responden con un SVG neutro generado en memoria. Cubren marcadores, fichas, búsqueda, filtros generados desde el catálogo, resultados vacíos, combinación de dimensiones, resaltado y atenuación, selección de marcadores atenuados, teclado, foco, responsive, navegación y error del recurso remoto.
+Las pruebas e2e interceptan exclusivamente la URL oficial y responden con un SVG neutro generado en memoria. Cubren marcadores, fichas, búsqueda, filtros, URLs estables, restauración, recarga, nueva página, historial, inválidos, teclado, foco, responsive, combinación sin coincidencias y error del recurso remoto.
 
 La CI no descarga, almacena, archiva ni publica el mapa oficial. Tampoco genera recortes, recompressiones, conversiones, mosaicos o derivados.
 
@@ -157,11 +220,12 @@ El workflow `.github/workflows/ci.yml` se ejecuta en pull requests dirigidas a `
 ```text
 src/
 ├── app/
-│   ├── placeDetails.ts       # Vista DOM accesible de la ficha
+│   ├── placeDetails.ts       # Vista DOM accesible de la ficha y política de foco
 │   ├── placeFilters.ts       # Fuente única y presentación accesible de filtros
-│   ├── placeSearch.ts        # Estado y presentación accesible de búsqueda
+│   ├── placeSearch.ts        # Fuente única y presentación accesible de búsqueda
 │   ├── placeSelection.ts     # Fuente única de selección
-│   └── renderApp.ts          # Estructura semántica
+│   ├── renderApp.ts          # Estructura semántica
+│   └── urlState.ts           # Contrato puro de URL y canonicalización
 ├── data/
 │   ├── catalog.ts            # Catálogo público y ejemplos neutros
 │   ├── coordinates.ts        # Conversión de x/y al orden de Leaflet
@@ -177,11 +241,12 @@ src/
 │   ├── filters.css           # Filtros responsive y estados de coincidencia
 │   ├── main.css              # Diseño general, marcadores y ficha
 │   └── search.css            # Búsqueda responsive y resultados acotados
-└── main.ts                   # Orquestación de consulta, filtros, selección y vistas
+└── main.ts                   # Orquestación, restauración e historial
 tests/
 └── e2e/
     ├── app.spec.ts           # Flujos base de mapa, búsqueda, marcadores y ficha
-    └── filters.spec.ts       # Filtros, combinación, accesibilidad y responsive
+    ├── filters.spec.ts       # Filtros, combinación, accesibilidad y responsive
+    └── url-state.spec.ts     # Enlaces directos, historial, inválidos y error remoto
 ```
 
 ## Privacidad y licencias
