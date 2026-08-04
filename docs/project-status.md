@@ -4,9 +4,10 @@
 
 - Proyecto: El Atlas de los Nuevos Dioses.
 - Repositorio: `EduYube/castigo-divino-map`.
-- Versión: Beta 0.1.
-- Estado: implementación de publicación preparada en MAP-011; pendiente de integrar PR #28 y validar la URL pública.
+- Versión objetivo: Beta 0.1.
+- Estado: implementación de publicación integrada; activación pública bloqueada por la configuración inicial de GitHub Pages.
 - URL objetivo: `https://eduyube.github.io/castigo-divino-map/`.
+- URL pública activa: no, a 2026-08-04.
 - Última actualización: 2026-08-04.
 
 ## Alcance completado
@@ -27,28 +28,48 @@ MAP-001 a MAP-010 están cerradas. La aplicación dispone de:
 
 ## MAP-011
 
-Rama: `agent/map-011-publish-beta`.  
-Pull request: #28.  
+Estado de la Issue: abierta hasta validar la URL pública.  
+PR de implementación: #28, fusionada en `ebbd363e9da4f9e4476ba86895de7ed87130cada`.  
+PR de observabilidad: #29, fusionada en `9b7f4d2e29e7933c6665b4685b62adffa5ef656c`.  
 Workflow de calidad: `.github/workflows/ci.yml` / **CI**.  
 Workflow de publicación: `.github/workflows/pages.yml` / **Deploy Beta 0.1 to GitHub Pages**.
 
-La arquitectura elegida mantiene CI y Pages separados. CI valida pull requests y commits integrados. Pages se activa únicamente tras una conclusión satisfactoria de CI sobre `master`; la ejecución manual se limita a `master` y repite toda la validación.
+La arquitectura mantiene CI y Pages separados. CI valida pull requests y commits integrados. Pages solo se activa tras una conclusión satisfactoria de CI sobre `master`; la ejecución manual se limita a `master` y repite toda la validación.
 
 El build de Pages deriva `/castigo-divino-map/` desde el entorno. Solo `dist` se sube al artefacto. La auditoría rechaza imágenes raster, archivos compatibles con mapas o mosaicos y patrones conocidos de credenciales. El JPEG oficial no se almacena ni transforma.
 
-## Calidad esperada antes del cierre
+## Resultados verificados
 
-- formato y lint;
-- pruebas unitarias existentes más contratos de Vite/workflows;
-- build bajo el subdirectorio de Pages;
-- auditoría de `dist`;
-- matriz e2e existente;
-- smoke local con el mismo pathname;
-- CI del merge en verde;
-- despliegue de Pages en verde;
-- smoke posterior sobre la URL emitida por `deploy-pages`.
+La CI de las ramas de implementación y observabilidad terminó en verde. La última CI de pull request consultable fue el run `30940496160`:
 
-Los resultados exactos, el SHA desplegado y el estado final se incorporarán después de validar la publicación.
+- instalación reproducible con `npm ci`;
+- formato y lint correctos;
+- 73 pruebas unitarias en 9 archivos;
+- build de Vite bajo `/castigo-divino-map/`;
+- auditoría de 3 archivos de producción;
+- 45 pruebas e2e;
+- 2 smoke tests del preview de Pages.
+
+El run de Pages `30940902156`, activado por una CI satisfactoria sobre `master`, confirmó:
+
+- checkout del SHA validado;
+- instalación reproducible;
+- build de Pages correcto;
+- auditoría de `dist` correcta;
+- smoke local correcto;
+- subida exclusiva de `dist` correcta.
+
+El job de despliegue falló en `actions/configure-pages@v6` con `Get Pages site failed` porque el repositorio aún no tiene Pages habilitado con origen **GitHub Actions**. `actions/deploy-pages` y el smoke de la URL pública no llegaron a ejecutarse. El estado `github-pages/deployment` quedó en fallo y enlaza al run exacto.
+
+## Acción pendiente para publicar
+
+Una persona con permisos administrativos debe abrir:
+
+**Settings → Pages → Build and deployment → Source → GitHub Actions**
+
+Después debe reejecutar **Deploy Beta 0.1 to GitHub Pages** sobre `master`. MAP-011 podrá cerrarse cuando los jobs `build`, `deploy`, `smoke` y `report` estén en verde y la URL completa se haya validado.
+
+El conector disponible no expone la configuración de Pages. El `GITHUB_TOKEN` del workflow tampoco puede realizar la activación inicial, porque esa operación exige permisos administrativos adicionales.
 
 ## Fuentes únicas y contratos cerrados
 
@@ -65,6 +86,7 @@ Leaflet no conserva búsqueda, filtros, selección o URL. La publicación no int
 
 ## Riesgos y limitaciones
 
+- GitHub Pages requiere una activación administrativa inicial fuera del alcance del conector disponible.
 - La URL cartográfica oficial es histórica y no ofrece SLA.
 - GitHub Pages y Actions son dependencias externas.
 - La imagen LowRes consume aproximadamente 32 MiB decodificada.
@@ -80,7 +102,7 @@ El procedimiento completo vive en `docs/deployment-and-rollback.md`.
 
 ## Siguiente fase propuesta
 
-Tras publicar y cerrar MAP-011, la siguiente Issue propuesta es MAP-012 — Incorporar el primer lote de contenido público real.
+MAP-012 — Incorporar el primer lote de contenido público real debe comenzar después de habilitar Pages, completar el smoke público y cerrar MAP-011.
 
 ## Últimos cambios
 
@@ -90,4 +112,5 @@ Tras publicar y cerrar MAP-011, la siguiente Issue propuesta es MAP-012 — Inco
 | 2026-08-04 | MAP-002: fuente y estrategia legal del mapa |
 | 2026-08-04 | MAP-003 a MAP-009: aplicación, datos, búsqueda, filtros y URL |
 | 2026-08-04 | MAP-010: responsive y accesibilidad transversal |
-| 2026-08-04 | MAP-011: implementación de Pages, auditoría, smoke tests, rollback y checklist preparada en PR #28 |
+| 2026-08-04 | MAP-011: PR #28 integra Pages, auditoría, smoke tests, rollback y checklist |
+| 2026-08-04 | MAP-011: PR #29 añade estado verificable del despliegue; run `30940902156` detecta que Pages no está habilitado |

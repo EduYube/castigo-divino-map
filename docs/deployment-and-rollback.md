@@ -1,10 +1,16 @@
 # Despliegue y recuperación de la Beta 0.1
 
-## URL pública
+## URL objetivo y estado actual
 
-La Beta 0.1 se publica en:
+La Beta 0.1 se publicará en:
 
 `https://eduyube.github.io/castigo-divino-map/`
+
+A 2026-08-04 la URL todavía no está activa. La implementación está integrada, pero el repositorio necesita una activación administrativa inicial:
+
+**Settings → Pages → Build and deployment → Source → GitHub Actions**
+
+Después debe reejecutarse **Deploy Beta 0.1 to GitHub Pages** sobre `master`.
 
 La URL usa el subdirectorio estable del repositorio. Los estados compartidos se añaden mediante `place`, `q`, `category` y `tag`, por ejemplo:
 
@@ -20,8 +26,38 @@ La publicación separa la puerta de calidad del despliegue:
 4. El job `build` solo continúa si la conclusión es `success`. Reconstruye el commit validado, vuelve a auditar `dist`, ejecuta el smoke local y sube exclusivamente `dist` mediante `actions/upload-pages-artifact`.
 5. El job `deploy` usa el entorno `github-pages`, `actions/configure-pages` y `actions/deploy-pages`.
 6. El job `smoke` prueba la URL devuelta por el despliegue y registra la URL validada en el resumen del workflow.
+7. El job `report` publica sobre el SHA el estado `github-pages/deployment`, con enlace al run exacto y éxito solo cuando `build`, `deploy` y `smoke` terminan correctamente.
 
 La ejecución manual está permitida únicamente desde `master`. Como no existe un `workflow_run` previo que pueda reutilizarse, la ruta manual repite formato, lint, Vitest y la matriz e2e antes de desplegar.
+
+## Activación inicial de GitHub Pages
+
+La activación del sitio se realiza una sola vez por una persona con permisos administrativos:
+
+1. Abrir **Settings** del repositorio.
+2. Seleccionar **Pages**.
+3. En **Build and deployment**, elegir **Source: GitHub Actions**.
+4. Guardar la configuración cuando GitHub lo solicite.
+5. Ejecutar manualmente el workflow de Pages sobre `master`.
+
+El conector utilizado para MAP-011 no expone la configuración de Pages. El `GITHUB_TOKEN` de Actions tampoco puede crear o habilitar el sitio porque esa operación exige permisos administrativos adicionales. El workflow mantiene `actions/configure-pages` con la activación implícita deshabilitada y falla de forma explícita cuando el sitio no existe.
+
+## Evidencia del primer intento
+
+El run `30940902156`, activado automáticamente después de una CI satisfactoria sobre `master`, obtuvo estos resultados:
+
+- `Build and upload production artifact`: correcto;
+- instalación reproducible: correcta;
+- build de Pages: correcto;
+- auditoría de `dist`: correcta;
+- smoke local: correcto;
+- subida exclusiva de `dist`: correcta;
+- `Deploy GitHub Pages`: falló en `actions/configure-pages@v6`;
+- `actions/deploy-pages`: no ejecutado;
+- smoke de la URL pública: no ejecutado;
+- estado `github-pages/deployment`: fallo, enlazado al run.
+
+El mensaje de GitHub fue `Get Pages site failed`, indicando que el repositorio no tenía Pages habilitado y configurado para construir mediante GitHub Actions.
 
 ## Ruta base de Vite
 
@@ -50,9 +86,13 @@ El workflow de Pages sube exclusivamente `dist`, con retención mínima del arte
 
 ## Permisos y concurrencia
 
-Los permisos predeterminados son `contents: read`. Solo el job `deploy` recibe `pages: write` e `id-token: write`. El entorno `github-pages` expone la URL del paso de despliegue.
+Los permisos predeterminados son `contents: read`.
 
-El grupo de concurrencia es `pages` con `cancel-in-progress: false`. Una ejecución posterior espera en lugar de cancelar un despliegue que ya haya comenzado.
+- El job `deploy` recibe `pages: write` e `id-token: write`.
+- El job `report` recibe `statuses: write`.
+- Ningún otro job recibe permisos de escritura.
+
+El entorno `github-pages` expone la URL del paso de despliegue. El grupo de concurrencia es `pages` con `cancel-in-progress: false`: una ejecución posterior espera en lugar de cancelar un despliegue que ya haya comenzado.
 
 ## Smoke tests
 
@@ -70,12 +110,16 @@ El smoke de preview y el posterior al despliegue comprueban:
 
 El mapa se intercepta con un SVG neutro generado en memoria para las pruebas controladas. El smoke no descarga ni almacena el JPEG oficial.
 
+El preview ha superado los dos escenarios. La misma suite queda pendiente de ejecutar contra `PAGES_URL` cuando el sitio esté habilitado.
+
 ## Despliegue manual
 
-1. Abrir **Actions** → **Deploy Beta 0.1 to GitHub Pages**.
-2. Seleccionar **Run workflow** sobre `master`.
-3. Confirmar que `Build and upload production artifact`, `Deploy GitHub Pages` y `Validate published Beta 0.1` terminan en verde.
-4. Abrir la URL registrada en el entorno `github-pages` o en el resumen del workflow.
+1. Confirmar que **Settings → Pages → Source** está configurado como **GitHub Actions**.
+2. Abrir **Actions → Deploy Beta 0.1 to GitHub Pages**.
+3. Seleccionar **Run workflow** sobre `master`.
+4. Confirmar que `Build and upload production artifact`, `Deploy GitHub Pages`, `Validate published Beta 0.1` y `Record deployment status` terminan en verde.
+5. Abrir la URL registrada en el entorno `github-pages` o en el resumen del workflow.
+6. Confirmar que el commit muestra `github-pages/deployment` en estado correcto.
 
 La ejecución manual no permite desplegar una rama de trabajo y no omite la calidad completa.
 
@@ -86,6 +130,7 @@ La ejecución manual no permite desplegar una rama de trabajo y no omite la cali
 1. Abrir el historial del entorno `github-pages` o el workflow de Pages.
 2. Localizar la última ejecución verde y anotar el SHA validado por el job `build`.
 3. Confirmar que su job `smoke` terminó correctamente.
+4. Confirmar el estado `github-pages/deployment` sobre ese SHA.
 
 ### Revertir una regresión
 
@@ -104,8 +149,10 @@ Cuando el código correcto ya está en `master` y el fallo fue transitorio, reej
 - **Build:** revisar TypeScript, Vite y la base calculada. Reproducir con `npm ci && npm run build:pages`.
 - **Auditoría:** ejecutar `npm run verify:build` y corregir la ruta, el contenido o la posible credencial indicada.
 - **Upload:** confirmar que existe `dist` y que `actions/upload-pages-artifact` recibe solo ese directorio.
-- **Deploy:** revisar permisos `pages: write`, `id-token: write`, entorno `github-pages` y configuración de Pages con origen GitHub Actions.
+- **Configure Pages / 404 de la API:** habilitar **Source: GitHub Actions** desde Settings con permisos administrativos.
+- **Deploy:** revisar permisos `pages: write`, `id-token: write`, entorno `github-pages` y configuración de Pages.
 - **Smoke:** usar la URL exacta emitida por `deploy-pages`; revisar 404 de assets, pathname y consola del navegador.
+- **Status:** consultar `github-pages/deployment` sobre el SHA y seguir su enlace al run exacto.
 - **Pages no disponible:** conservar CI verde, no publicar en un host alternativo no aprobado y reejecutar cuando el servicio se recupere.
 - **Mapa oficial no disponible:** mantener la publicación y la superficie neutra; no crear una copia local. Revisar la fuente y la licencia antes de cualquier sustitución.
 
