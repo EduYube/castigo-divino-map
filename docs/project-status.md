@@ -5,12 +5,12 @@
 - Proyecto: El Atlas de los Nuevos Dioses
 - Repositorio: `EduYube/castigo-divino-map`
 - Versión objetivo: Beta 0.1
-- Estado general: Fundación completada; MAP-002 lista para comenzar
+- Estado general: Fuente y estrategia del mapa base validadas; MAP-003 lista para comenzar
 - Última actualización: 2026-08-04
 
 ## Objetivo actual
 
-Validar la fuente oficial del mapa de Faerûn, sus condiciones de uso y la estrategia técnica para integrarlo en la Beta 0.1.
+Inicializar la aplicación web, las herramientas de calidad y la integración continua sin incorporar todavía el mapa navegable.
 
 ## Alcance de la Beta 0.1
 
@@ -48,15 +48,15 @@ Validar la fuente oficial del mapa de Faerûn, sus condiciones de uso y la estra
 
 ## Fase actual
 
-Fundación completada. El repositorio, la documentación, las plantillas, el backlog y el GitHub Project están configurados. MAP-001 está cerrada y MAP-002 es la siguiente Issue activa.
+La fundación y la investigación del mapa base están completadas. MAP-002 ha validado una fuente oficial de Wizards, sus restricciones y una estrategia compatible con móvil para la Beta 0.1.
 
 ## Trabajo en curso
 
-- MAP-002 — Validar y preparar el mapa base oficial.
+- Ninguno tras el cierre de MAP-002.
+- Siguiente Issue: MAP-003 — Inicializar la aplicación web y calidad automática.
 
 ## Backlog inicial
 
-- MAP-002 — Validar y preparar el mapa base oficial.
 - MAP-003 — Inicializar la aplicación web y calidad automática.
 - MAP-004 — Integrar el mapa navegable de Faerûn.
 - MAP-005 — Definir el modelo de datos de campaña.
@@ -69,7 +69,8 @@ Fundación completada. El repositorio, la documentación, las plantillas, el bac
 
 ## Bloqueos
 
-- Validar la fuente, licencia y condiciones de redistribución del mapa oficial.
+- Ningún bloqueo para comenzar MAP-003.
+- La redistribución o transformación del mapa oficial sigue requiriendo autorización escrita; no bloquea la estrategia remota de Beta 0.1.
 
 ## Decisiones cerradas
 
@@ -84,21 +85,26 @@ Fundación completada. El repositorio, la documentación, las plantillas, el bac
 - La capa de nombres castellanos no es requisito imprescindible de la beta.
 - Los colores de los campos del Project son libres y sus descripciones son opcionales.
 - Las vistas Beta 0.1 y Trabajo actual pueden coincidir durante la fase inicial.
+- La Beta 0.1 usará `Sword-Coast-Map_LowRes.jpg` como imagen única remota desde `media.wizards.com`.
+- El mapa oficial no se almacenará en el repositorio, despliegue, CDN propio, releases ni artefactos de CI.
+- No se crearán mosaicos ni otros derivados sin autorización escrita.
+- La integración futura usará Leaflet con `CRS.Simple` e `L.imageOverlay`.
+- La decisión técnica y legal está registrada en `docs/map-source-and-licensing.md` y ADR 0001.
 
 ## Riesgos
 
-- Licencia y redistribución del mapa base.
-- Peso y resolución de recursos cartográficos.
+- La URL oficial remota no ofrece garantía de permanencia o disponibilidad.
+- Wizards puede cambiar su política o solicitar la retirada del contenido.
+- El uso de una imagen única consume aproximadamente 32 MiB una vez decodificada.
 - Exposición accidental de notas privadas.
 - Crecimiento del catálogo de lugares y etiquetas.
-- Rendimiento móvil con mapas de gran resolución.
 
 ## Próximos pasos
 
-1. Abrir un chat nuevo para MAP-002.
-2. Investigar y validar el mapa base oficial.
-3. Documentar la fuente, licencia, resolución, peso y estrategia de integración.
-4. Actualizar el estado del proyecto al cerrar MAP-002.
+1. Abrir un chat nuevo para MAP-003.
+2. Inicializar Vite y TypeScript conforme al acuerdo de trabajo.
+3. Configurar lint, formato, pruebas y CI.
+4. Mantener fuera de alcance la integración de Leaflet hasta MAP-004.
 
 ## Últimos cambios
 
@@ -108,3 +114,4 @@ Fundación completada. El repositorio, la documentación, las plantillas, el bac
 | 2026-08-03 | Backlog Beta 0.1 creado y fundación integrada |
 | 2026-08-04 | Campos y vistas del Project confirmados; automatización de clasificación añadida |
 | 2026-08-04 | GitHub Project clasificado y fundación cerrada; MAP-002 preparada |
+| 2026-08-04 | Fuente oficial, restricciones y estrategia del mapa base documentadas; ADR 0001 aceptado |
