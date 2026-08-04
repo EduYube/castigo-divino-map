@@ -4,17 +4,11 @@ Aplicación web para explorar un mapa interactivo de Faerûn y consultar informa
 
 ## Beta 0.1
 
-URL objetivo:
+URL pública:
 
 `https://eduyube.github.io/castigo-divino-map/`
 
-La aplicación, el build y el workflow de despliegue están integrados. La URL todavía no está activa porque GitHub Pages requiere una activación administrativa inicial con origen **GitHub Actions**.
-
-Acción pendiente:
-
-**Settings → Pages → Build and deployment → Source → GitHub Actions**
-
-Después se debe reejecutar **Deploy Beta 0.1 to GitHub Pages** sobre `master`. MAP-011 permanece abierta hasta que el despliegue y el smoke público terminen en verde.
+La Beta 0.1 está publicada mediante GitHub Pages y validada por el workflow **Deploy Beta 0.1 to GitHub Pages**. El run `30945777039` desplegó el commit `d697ed81f27c2626afaa5d25f59205127c37da89` y completó correctamente el smoke contra la URL pública.
 
 Documentación principal:
 
@@ -76,11 +70,11 @@ La aplicación usa query string y no necesita router ni reescrituras:
 | `category` | `category=lugares-destacados` | categoría repetible |
 | `tag` | `tag=mountain-pass` | etiqueta repetible |
 
-Ejemplo previsto bajo GitHub Pages:
+Ejemplo público completo:
 
 `https://eduyube.github.io/castigo-divino-map/?place=paso-de-demostracion&q=paso&category=lugares-destacados&tag=mountain-pass`
 
-El preview automatizado confirma que abrir o recargar esa forma de URL conserva el pathname `/castigo-divino-map/`, restaura búsqueda, filtros, marcador y ficha, y canonicaliza únicamente la query. Escribir usa `replaceState`; selección, cierre y filtros usan `pushState`; atrás y adelante restauran sin recargar ni robar el foco. La misma comprobación se ejecutará sobre la URL pública cuando Pages esté habilitado.
+Abrir o recargar esa URL conserva el pathname `/castigo-divino-map/`, restaura búsqueda, filtros, marcador y ficha, y canonicaliza únicamente la query. Escribir usa `replaceState`; selección, cierre y filtros usan `pushState`; atrás y adelante restauran sin recargar ni robar el foco. El smoke del run `30945777039` confirmó este contrato sobre la URL pública.
 
 ## Búsqueda y filtros
 
@@ -118,7 +112,7 @@ npm run test:e2e
 npm run test:e2e:pages
 ```
 
-La validación integrada ha superado 73 pruebas unitarias, 45 pruebas e2e y 2 smoke tests de Pages local. `verify-production-build.mjs` comprueba el contenido mínimo, la base de recursos, la ausencia de imágenes raster o archivos con nombres compatibles con mapas y mosaicos, la presencia de la URL oficial remota y patrones conocidos de credenciales.
+La validación de la Beta 0.1 ha superado 73 pruebas unitarias, 45 pruebas e2e, 2 smoke tests del preview y 2 smoke tests contra GitHub Pages. `verify-production-build.mjs` comprueba el contenido mínimo, la base de recursos, la ausencia de imágenes raster o archivos con nombres compatibles con mapas y mosaicos, la presencia de la URL oficial remota y patrones conocidos de credenciales.
 
 ## CI y despliegue
 
@@ -128,19 +122,17 @@ La validación integrada ha superado 73 pruebas unitarias, 45 pruebas e2e y 2 sm
 
 El job de despliegue es el único con `pages: write` e `id-token: write`. El job de reporte es el único con `statuses: write`. La concurrencia no cancela un despliegue ya iniciado.
 
-El run `30940902156` confirmó correctamente build, auditoría, smoke local y subida de `dist`, pero falló en `actions/configure-pages@v6` porque Pages no estaba habilitado. `actions/deploy-pages` y el smoke público quedaron pendientes.
+El run `30945777039` completó en verde `Build and upload production artifact`, `Deploy GitHub Pages`, `Validate published Beta 0.1` y `Record deployment status`.
 
-## Activación y despliegue manual
+## Despliegue manual
 
-Primera activación:
+Para recuperar un fallo transitorio o volver a desplegar el estado actual de `master`:
 
-1. Abrir **Settings → Pages**.
-2. En **Build and deployment**, seleccionar **Source: GitHub Actions**.
-3. Abrir **Actions → Deploy Beta 0.1 to GitHub Pages**.
-4. Seleccionar **Run workflow** sobre `master`.
-5. Confirmar que `Build and upload production artifact`, `Deploy GitHub Pages`, `Validate published Beta 0.1` y `Record deployment status` terminan en verde.
+1. Abrir **Actions → Deploy Beta 0.1 to GitHub Pages**.
+2. Seleccionar **Run workflow** sobre `master`.
+3. Confirmar que `Build and upload production artifact`, `Deploy GitHub Pages`, `Validate published Beta 0.1` y `Record deployment status` terminan en verde.
 
-La ejecución manual repite toda la calidad antes de publicar; una rama de trabajo no puede desplegarse. El conector disponible no expone la activación administrativa de Pages y el `GITHUB_TOKEN` del workflow tampoco puede realizarla.
+La ejecución manual repite toda la calidad antes de publicar; una rama de trabajo no puede desplegarse.
 
 ## Rollback resumido
 
@@ -156,6 +148,8 @@ Para un fallo transitorio de Pages, reejecutar manualmente el workflow sobre `ma
 ## Datos públicos
 
 El catálogo vive en `src/data/`. Todo dato incluido llega al bundle público. No se permiten notas privadas, spoilers, credenciales, información personal ni campos ocultos. `docs/data-model.md` define IDs, slugs, relaciones, coordenadas y validación.
+
+El repositorio también es público. Todo archivo, commit, issue, pull request o comentario incorporado debe tratarse como contenido público y potencialmente permanente.
 
 ## Comandos
 
