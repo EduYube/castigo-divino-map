@@ -137,10 +137,7 @@ export function mountPlaceSearch(
 
   const publishQueryChange = (): void => options.onQueryChange?.(query);
 
-  const setQuery = (
-    nextQuery: string,
-    stateOptions: PlaceSearchStateUpdateOptions = {},
-  ): void => {
+  const setQuery = (nextQuery: string, stateOptions: PlaceSearchStateUpdateOptions = {}): void => {
     query = nextQuery;
     elements.input.value = nextQuery;
     render();
