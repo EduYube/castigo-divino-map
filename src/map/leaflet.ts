@@ -125,9 +125,11 @@ function decorateMarkerElement(
     return;
   }
 
+  element.tabIndex = 0;
   element.setAttribute('role', 'button');
   element.setAttribute('aria-label', `${marker.name}. Categoría: ${marker.categoryName}.`);
   element.setAttribute('aria-pressed', 'false');
+  element.setAttribute('aria-keyshortcuts', 'Enter Space');
   element.setAttribute('data-testid', 'place-marker');
   element.dataset.placeId = marker.id;
   element.dataset.categoryId = marker.categoryId;
@@ -147,6 +149,18 @@ function decorateMarkerElement(
 
   element.addEventListener('keydown', handleKeyDown);
   domListeners.push({ element, handler: handleKeyDown });
+}
+
+function nameZoomControls(control: L.Control.Zoom): void {
+  const container = control.getContainer();
+
+  container?.querySelectorAll<HTMLAnchorElement>('a[title]').forEach((anchor) => {
+    const title = anchor.title;
+
+    if (title) {
+      anchor.setAttribute('aria-label', title);
+    }
+  });
 }
 
 export function mountFaerunMap(
@@ -179,7 +193,7 @@ export function mountFaerunMap(
     wheelPxPerZoomLevel: 80,
   });
 
-  L.control
+  const zoomControl = L.control
     .zoom({
       position: 'topright',
       zoomInTitle: 'Acercar',
@@ -187,6 +201,7 @@ export function mountFaerunMap(
     })
     .addTo(map);
 
+  nameZoomControls(zoomControl);
   map.fitBounds(bounds, { animate: false });
   constrainViewport(map, bounds, true);
 
@@ -208,21 +223,20 @@ export function mountFaerunMap(
 
     const isActive = placeId === activePlaceId;
     const isMatching = matchingPlaceIds.has(placeId);
+    const accessibleState = isMatching
+      ? isActive
+        ? 'Lugar activo. Coincide con la búsqueda y los filtros actuales.'
+        : 'Coincide con la búsqueda y los filtros actuales.'
+      : isActive
+        ? 'Lugar activo. No coincide con la búsqueda y los filtros actuales, pero sigue disponible.'
+        : 'No coincide con la búsqueda y los filtros actuales, pero sigue disponible.';
 
     element.classList.toggle('campaign-marker-icon--active', isActive);
     element.classList.toggle('campaign-marker-icon--matching', isMatching);
     element.classList.toggle('campaign-marker-icon--dimmed', !isMatching);
     element.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    element.setAttribute(
-      'aria-description',
-      isMatching
-        ? isActive
-          ? 'Lugar activo. Coincide con la búsqueda y los filtros actuales.'
-          : 'Coincide con la búsqueda y los filtros actuales.'
-        : isActive
-          ? 'Lugar activo. No coincide con la búsqueda y los filtros actuales, pero sigue disponible.'
-          : 'No coincide con la búsqueda y los filtros actuales, pero sigue disponible.',
-    );
+    element.setAttribute('aria-description', accessibleState);
+    element.dataset.accessibleState = accessibleState;
     element.dataset.filterMatch = isMatching ? 'true' : 'false';
     marker.setZIndexOffset(isActive ? 1000 : isMatching ? 200 : 0);
   };
