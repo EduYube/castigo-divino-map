@@ -1,9 +1,13 @@
 import type { PlaceDetailModel, PublicNoteDetailModel } from '../data/placeDetails';
 
 export interface PlaceDetailsController {
-  show(details: PlaceDetailModel): void;
+  show(details: PlaceDetailModel, options?: PlaceDetailsShowOptions): void;
   hide(): void;
   destroy(): void;
+}
+
+export interface PlaceDetailsShowOptions {
+  readonly focus?: boolean;
 }
 
 export interface PlaceDetailsOptions {
@@ -162,13 +166,21 @@ export function mountPlaceDetails(
   elements.closeButton.addEventListener('click', handleClose);
 
   return {
-    show(details: PlaceDetailModel): void {
-      const title = renderDetails(elements.content, details);
+    show(details: PlaceDetailModel, showOptions: PlaceDetailsShowOptions = {}): void {
+      const existingTitle = elements.content.querySelector<HTMLElement>('#place-details-title');
+      const canReuseContent =
+        !elements.panel.hidden &&
+        elements.panel.dataset.activePlaceId === details.id &&
+        existingTitle !== null;
+      const title = canReuseContent ? existingTitle : renderDetails(elements.content, details);
 
       elements.panel.hidden = false;
       elements.panel.dataset.activePlaceId = details.id;
       elements.workspace.dataset.detailsOpen = 'true';
-      title.focus({ preventScroll: false });
+
+      if (showOptions.focus !== false) {
+        title.focus({ preventScroll: false });
+      }
     },
     hide(): void {
       elements.panel.hidden = true;
