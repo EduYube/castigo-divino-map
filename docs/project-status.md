@@ -5,7 +5,7 @@
 - Proyecto: El Atlas de los Nuevos Dioses
 - Repositorio: `EduYube/castigo-divino-map`
 - Versión objetivo: Beta 0.1
-- Estado general: Marcadores públicos y fichas accesibles implementados; MAP-007 es la siguiente Issue
+- Estado general: Marcadores públicos y fichas accesibles completados; MAP-007 es la siguiente Issue
 - Última actualización: 2026-08-04
 
 ## Objetivo actual
@@ -50,11 +50,12 @@ Preparar MAP-007 para buscar lugares por nombre principal y alias públicos sobr
 
 La fundación, la investigación del mapa base, el esqueleto ejecutable, la navegación cartográfica, el contrato público de datos y la presentación de marcadores y fichas están completados.
 
-La aplicación consume directamente `campaignCatalog`, convierte las coordenadas mediante `toLeafletSimpleCoordinate`, crea un marcador accesible por lugar y muestra una ficha responsive con nombre, alias, categoría, etiquetas y todas las notas públicas asociadas.
+MAP-006 se ha integrado mediante la PR #23 con la cadena completa de CI en verde. La aplicación consume directamente `campaignCatalog`, convierte las coordenadas mediante `toLeafletSimpleCoordinate`, crea un marcador accesible por lugar y muestra una ficha responsive con nombre, alias, categoría, etiquetas y todas las notas públicas asociadas.
 
 ## Trabajo en curso
 
-- MAP-006 — implementación completada en `agent/map-006-markers-and-place-details`, pendiente únicamente del cierre operativo de PR, CI e Issue mientras se actualiza este documento.
+- Ninguno tras el cierre de MAP-006.
+- Siguiente Issue: MAP-007 — Implementar búsqueda por nombre y alias.
 
 ## Backlog inicial
 
@@ -66,7 +67,7 @@ La aplicación consume directamente `campaignCatalog`, convierte las coordenadas
 
 ## Bloqueos
 
-- Ningún bloqueo técnico para comenzar MAP-007 después de integrar MAP-006.
+- Ningún bloqueo técnico para comenzar MAP-007.
 - La redistribución o transformación del mapa oficial sigue requiriendo autorización escrita; la estrategia remota de Beta 0.1 evita esas operaciones.
 - El catálogo actual contiene datos ficticios de demostración; los datos reales deberán confirmarse como públicos antes de sustituirlos o ampliarlos.
 
@@ -108,11 +109,10 @@ La aplicación consume directamente `campaignCatalog`, convierte las coordenadas
 
 ## Próximos pasos
 
-1. Integrar y cerrar MAP-006 con CI en verde.
-2. Abrir un chat nuevo para MAP-007.
-3. Implementar búsqueda por nombre principal y alias sin modificar el contrato de datos.
-4. Definir estados accesibles para resultados vacíos y coincidencias.
-5. Mantener filtros, atenuación y enlaces directos fuera de MAP-007.
+1. Abrir un chat nuevo para MAP-007.
+2. Implementar búsqueda por nombre principal y alias sin modificar el contrato de datos.
+3. Definir estados accesibles para resultados vacíos y coincidencias.
+4. Mantener filtros, atenuación y enlaces directos fuera de MAP-007.
 
 ## Últimos cambios
 
@@ -124,4 +124,4 @@ La aplicación consume directamente `campaignCatalog`, convierte las coordenadas
 | 2026-08-04 | Aplicación Vite + TypeScript, calidad automática, pruebas y CI completadas en MAP-003 |
 | 2026-08-04 | Mapa Leaflet navegable, responsive, acotado y con estados accesibles completado en MAP-004 |
 | 2026-08-04 | Modelo público normalizado, coordenadas estables, validación runtime, ejemplos y documentación completados en MAP-005 |
-| 2026-08-04 | Marcadores accesibles, selección única, fichas públicas responsive, foco y pruebas completados en MAP-006 |
+| 2026-08-04 | Marcadores accesibles, selección única, fichas públicas responsive, foco y pruebas completados e integrados mediante PR #23 en MAP-006 |
