@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -40,6 +40,32 @@ jobs:
           name: generated-package-lock
           path: package-lock.json
           retention-days: 1
+
+      - name: Commit generated lockfile to the pull request branch
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          if git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
+            echo "package-lock.json is already tracked"
+            exit 0
+          fi
+
+          base64 -w0 package-lock.json > /tmp/package-lock.base64
+          jq -n \
+            --arg message "MAP-011: añadir lockfile reproducible" \
+            --arg content "$(cat /tmp/package-lock.base64)" \
+            --arg branch "${HEAD_BRANCH}" \
+            '{message: $message, content: $content, branch: $branch}' > /tmp/package-lock-payload.json
+
+          curl --fail-with-body --silent --show-error \
+            --request PUT \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/package-lock.json" \
+            --data-binary @/tmp/package-lock-payload.json
 
       - name: Check formatting
         run: npm run format:check
