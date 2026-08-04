@@ -14,7 +14,7 @@ export function renderApp(): string {
     <main id="main-content" class="atlas-main">
       <section class="map-introduction" aria-labelledby="atlas-title">
         <div>
-          <p class="eyebrow">Cartografía interactiva · MAP-008</p>
+          <p class="eyebrow">Cartografía interactiva · MAP-010</p>
           <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
           <p class="map-introduction__lead">
             Explora lugares públicos de la campaña sobre la Costa de la Espada, búscalos por su
@@ -80,7 +80,6 @@ export function renderApp(): string {
             class="place-search__status"
             data-place-search-status
             role="status"
-            aria-live="polite"
             aria-atomic="true"
           >
             Escribe un nombre, alias o título de nota pública.
@@ -90,6 +89,7 @@ export function renderApp(): string {
             class="place-search__results"
             data-place-search-results
             aria-label="Resultados de búsqueda de lugares"
+            aria-describedby="place-search-status"
             hidden
           ></ul>
         </section>
@@ -99,6 +99,7 @@ export function renderApp(): string {
           data-place-filters
           data-has-matches="true"
           aria-labelledby="place-filters-title"
+          aria-describedby="place-filters-hint place-filters-status"
         >
           <div class="place-filters__header">
             <div>
@@ -112,7 +113,7 @@ export function renderApp(): string {
               class="place-filters__clear"
               data-place-filters-clear
               type="button"
-              aria-describedby="place-filters-hint place-filters-status"
+              aria-controls="place-filter-categories place-filter-tags"
             >
               Limpiar filtros
             </button>
@@ -121,6 +122,7 @@ export function renderApp(): string {
             <fieldset class="place-filters__group">
               <legend>Categorías</legend>
               <div
+                id="place-filter-categories"
                 class="place-filters__options"
                 data-place-filter-categories
                 aria-describedby="place-filters-hint"
@@ -129,6 +131,7 @@ export function renderApp(): string {
             <fieldset class="place-filters__group">
               <legend>Etiquetas</legend>
               <div
+                id="place-filter-tags"
                 class="place-filters__options"
                 data-place-filter-tags
                 aria-describedby="place-filters-hint"
@@ -140,7 +143,6 @@ export function renderApp(): string {
             class="place-filters__status"
             data-place-filters-status
             role="status"
-            aria-live="polite"
             aria-atomic="true"
           >
             Todos los lugares coinciden.
@@ -158,10 +160,11 @@ export function renderApp(): string {
             <div
               class="map-canvas"
               data-map-canvas
+              role="region"
               aria-label="Mapa navegable de la Costa de la Espada y el noroeste de Faerûn"
               aria-describedby="map-instructions place-filters-status"
             ></div>
-            <p class="map-status" data-map-status role="status" aria-live="polite">
+            <p class="map-status" data-map-status role="status" aria-atomic="true">
               Cargando la cartografía oficial de Faerûn…
             </p>
           </div>
@@ -172,7 +175,6 @@ export function renderApp(): string {
             data-testid="place-details"
             role="region"
             aria-labelledby="place-details-title"
-            aria-live="polite"
             hidden
           >
             <div class="place-details__toolbar">
