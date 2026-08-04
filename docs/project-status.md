@@ -5,12 +5,12 @@
 - Proyecto: El Atlas de los Nuevos Dioses
 - Repositorio: `EduYube/castigo-divino-map`
 - Versión objetivo: Beta 0.1
-- Estado general: Búsqueda pública por nombre, alias y título de nota completada; MAP-008 es la siguiente Issue
+- Estado general: Búsqueda y filtrado público por categorías y etiquetas completados; MAP-009 es la siguiente Issue
 - Última actualización: 2026-08-04
 
 ## Objetivo actual
 
-Preparar MAP-008 para implementar categorías y filtrado por etiquetas sin mezclar sus responsabilidades con la búsqueda completada en MAP-007.
+Preparar MAP-009 para implementar enlaces directos y restauración de estado sin alterar las fuentes únicas de consulta, filtros y selección consolidadas hasta MAP-008.
 
 ## Alcance de la Beta 0.1
 
@@ -48,27 +48,32 @@ Preparar MAP-008 para implementar categorías y filtrado por etiquetas sin mezcl
 
 ## Fase actual
 
-La fundación, la investigación del mapa base, el esqueleto ejecutable, la navegación cartográfica, el contrato público de datos, la presentación de marcadores y fichas y la búsqueda pública están completados.
+La fundación, la investigación del mapa base, el esqueleto ejecutable, la navegación cartográfica, el contrato público de datos, la presentación de marcadores y fichas, la búsqueda pública y los filtros por categorías y etiquetas están completados.
 
-MAP-007 incorpora una función pura que consume directamente `campaignCatalog`, normaliza consultas con el mismo contrato del validador y encuentra lugares por nombre principal, alias y título de nota pública. Los cuerpos de las notas no se indexan. Cada lugar genera como máximo un resultado representativo, ordenado por coincidencia exacta, prefijo, parcial y orden estable del catálogo.
+MAP-007 incorporó búsqueda pura sobre `campaignCatalog` por nombre principal, alias y título de nota pública, sin indexar cuerpos y con un resultado representativo por lugar en orden estable.
 
-La interfaz de búsqueda utiliza un campo etiquetado, un botón de limpieza, una lista de botones y estados vivos. La consulta es su única fuente de verdad y los resultados se derivan en cada cambio. Seleccionar un resultado utiliza el controlador de selección existente, activa el mismo marcador, centra Leaflet mediante una operación mínima y abre la misma ficha pública.
+MAP-008 incorpora lógica pura de filtros sobre el mismo contrato. Varias categorías se combinan con OR, varias etiquetas con OR y las dimensiones categoría, etiquetas y búsqueda con AND. Una dimensión inactiva no restringe resultados. Las etiquetas asociadas a un lugar incluyen las etiquetas directas y las etiquetas de sus notas públicas, derivadas y deduplicadas en memoria.
+
+`src/app/placeFilters.ts` mantiene la única fuente editable de categorías y etiquetas seleccionadas. `src/app/placeSearch.ts` conserva la consulta y `src/app/placeSelection.ts` conserva el único lugar activo. `main.ts` deriva en cada cambio el conjunto final de `placeId` desde catálogo, consulta y filtros.
+
+Todos los marcadores permanecen visibles y operables. Leaflet recibe únicamente el conjunto final mediante `setMatchingPlaces`, resalta coincidencias, atenúa el resto y conserva la prioridad del marcador activo. Si el lugar activo deja de coincidir, su ficha permanece abierta y el estado accesible lo comunica.
+
+La interfaz usa fieldsets, legends y checkboxes nativos generados desde el catálogo. Incluye recuento accesible, estado sin coincidencias, limpieza con foco predecible, objetivos táctiles suficientes, grupos con scroll acotado y diseño responsive. La búsqueda, los filtros, los marcadores y las fichas continúan disponibles cuando falla la imagen remota.
 
 ## Trabajo en curso
 
-- Ninguno tras el cierre de MAP-007.
-- Siguiente Issue: MAP-008 — Implementar categorías y filtrado por etiquetas.
+- Ninguno tras la integración de MAP-008.
+- Siguiente Issue: MAP-009 — Implementar enlaces directos y restauración de estado.
 
 ## Backlog inicial
 
-- MAP-008 — Implementar categorías y filtrado por etiquetas.
 - MAP-009 — Implementar enlaces directos y restauración de estado.
 - MAP-010 — Consolidar diseño responsive y accesibilidad.
 - MAP-011 — Publicar y validar la Beta 0.1.
 
 ## Bloqueos
 
-- Ningún bloqueo técnico para comenzar MAP-008.
+- Ningún bloqueo técnico para comenzar MAP-009.
 - La redistribución o transformación del mapa oficial sigue requiriendo autorización escrita; la estrategia remota de Beta 0.1 evita esas operaciones.
 - El catálogo actual contiene datos ficticios de demostración; los datos reales deberán confirmarse como públicos antes de sustituirlos o ampliarlos.
 
@@ -94,20 +99,26 @@ La interfaz de búsqueda utiliza un campo etiquetado, un botón de limpieza, una
 - Leaflet emite activaciones y refleja `aria-pressed`, pero no conserva una selección independiente.
 - La ficha se construye con APIs DOM y `textContent`; los cuerpos de notas no se interpretan como HTML.
 - Al abrir se enfoca el título de la ficha; al cerrar se devuelve el foco al marcador sin trampa de foco.
-- En escritorio la ficha ocupa una columna lateral acotada; en pantallas estrechas pasa debajo del mapa.
 - Los marcadores y las fichas permanecen disponibles cuando falla el overlay remoto.
 - `src/data/search.ts` contiene la lógica pura de búsqueda pública y consume el contrato existente sin ampliarlo.
-- La normalización de búsqueda reutiliza NFKD, eliminación de diacríticos, minúsculas y espacios consistentes de `normalizeSearchTerm`.
 - La búsqueda indexa nombre principal, alias y títulos de notas; nunca el cuerpo de las notas.
 - Los resultados se ordenan por coincidencia exacta, prefijo, parcial y orden estable del catálogo.
-- Cada lugar aparece como máximo una vez y conserva `placeId`, nombre principal y procedencia representativa de la coincidencia.
-- `src/app/placeSearch.ts` conserva únicamente la consulta; los resultados se derivan y no se persisten en DOM, Leaflet ni catálogo.
-- La lista de resultados usa botones HTML reales, no un combobox ARIA incompleto.
-- Flechas, Inicio, Fin y Escape complementan el orden de tabulación sin crear una trampa de foco.
-- Limpiar devuelve el foco al campo; seleccionar mueve el foco al título de la ficha; cerrar devuelve el foco al marcador.
-- `FaerunMapController.locatePlace` es la ampliación mínima de Leaflet para centrar un marcador respetando límites y zoom.
-- La búsqueda no oculta, filtra ni atenúa marcadores; esas responsabilidades quedan reservadas para MAP-008.
-- La consulta y la selección no se persisten ni modifican la URL en MAP-007.
+- Cada lugar aparece como máximo una vez y conserva su `placeId`.
+- `src/app/placeSearch.ts` conserva únicamente la consulta y notifica cambios sin almacenar filtros ni coincidencias finales.
+- `src/data/filters.ts` contiene la lógica pura de filtrado y combinación con búsqueda.
+- Las categorías seleccionadas se combinan con OR y las etiquetas seleccionadas con OR.
+- Categoría, etiquetas y búsqueda se combinan con AND; una dimensión inactiva no restringe.
+- Las etiquetas de filtro de un lugar incluyen sus etiquetas directas y las etiquetas de sus notas públicas.
+- `src/app/placeFilters.ts` conserva la única fuente editable de categorías y etiquetas seleccionadas.
+- Categorías y etiquetas se generan desde `campaignCatalog` en orden estable; las opciones sin lugares se muestran deshabilitadas.
+- `deriveMatchingPublicPlaceIds` conserva orden de catálogo, identidad, deduplicación e inmutabilidad.
+- `FaerunMapController.setMatchingPlaces` es la única ampliación de Leaflet para reflejar coincidencias.
+- Leaflet no conoce la consulta ni los filtros; solo recibe un conjunto derivado de `placeId`.
+- Los marcadores no coincidentes permanecen visibles, atenuados y operables.
+- El estado visual combina opacidad, escala, contraste, borde, contorno y descripción accesible, no solo color.
+- El marcador activo conserva prioridad aunque no coincida; su ficha no se cierra al cambiar filtros.
+- Cambiar filtros conserva el foco; limpiar filtros enfoca el botón; no se introduce una trampa de foco.
+- La consulta, los filtros y la selección no se persisten ni modifican la URL en MAP-008.
 
 ## Riesgos
 
@@ -119,16 +130,16 @@ La interfaz de búsqueda utiliza un campo etiquetado, un botón de limpieza, una
 - Colisiones futuras de alias o slugs al ampliar el contenido.
 - Una sustitución de la imagen base requeriría migrar coordenadas explícitamente.
 - Las dependencias frontend deberán mantenerse actualizadas durante la beta.
-- Un catálogo mucho mayor podría justificar un índice derivado en memoria, pero no debe persistirse ni duplicar el contrato público sin una necesidad medida.
-- MAP-008 deberá coordinar búsqueda y filtros sin introducir estados paralelos ni cambiar la semántica de los resultados actuales.
+- Un catálogo mucho mayor podría justificar índices derivados en memoria, pero no deben persistirse ni duplicar el contrato sin una necesidad medida.
+- MAP-009 deberá serializar y restaurar consulta, filtros y selección sin crear una segunda fuente de verdad ni bucles de actualización.
 
 ## Próximos pasos
 
-1. Abrir un chat nuevo para MAP-008.
-2. Implementar filtros por categorías y etiquetas sobre `campaignCatalog`.
-3. Definir una fuente única de estado de filtros y resultados derivados.
-4. Resaltar coincidencias y atenuar el resto sin ocultar marcadores salvo decisión explícita.
-5. Mantener enlaces directos y persistencia fuera de MAP-008.
+1. Abrir un chat nuevo para MAP-009.
+2. Definir un formato de URL estable para lugar, consulta, categorías y etiquetas.
+3. Parsear y validar el estado externo contra `campaignCatalog`.
+4. Restaurar los controladores existentes sin duplicar sus estados.
+5. Sincronizar historial, navegación atrás/adelante, foco y estados inválidos mediante pruebas unitarias y e2e.
 
 ## Últimos cambios
 
@@ -142,3 +153,4 @@ La interfaz de búsqueda utiliza un campo etiquetado, un botón de limpieza, una
 | 2026-08-04 | Modelo público normalizado, coordenadas estables, validación runtime, ejemplos y documentación completados en MAP-005 |
 | 2026-08-04 | Marcadores accesibles, selección única, fichas públicas responsive, foco y pruebas completados e integrados mediante PR #23 en MAP-006 |
 | 2026-08-04 | Búsqueda pública por nombre, alias y título de nota, orden estable, centrado, accesibilidad y pruebas completados en MAP-007 |
+| 2026-08-04 | Filtros por categorías y etiquetas, combinación con búsqueda, estados de marcadores, accesibilidad, responsive y pruebas completados en MAP-008 mediante PR #25 |
