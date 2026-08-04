@@ -31,11 +31,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Show required formatting
-        run: |
-          npm run format
-          git diff -- src/app/placeSearch.ts src/app/urlState.test.ts src/app/urlState.ts src/main.ts tests/e2e/url-state.spec.ts
-          exit 1
+      - name: Check formatting
+        run: npm run format:check
 
       - name: Lint
         run: npm run lint
