@@ -5,12 +5,12 @@
 - Proyecto: El Atlas de los Nuevos Dioses
 - Repositorio: `EduYube/castigo-divino-map`
 - Versión objetivo: Beta 0.1
-- Estado general: Mapa navegable de Faerûn integrado; MAP-005 lista para comenzar
+- Estado general: Modelo público de datos y validación completados; MAP-006 lista para comenzar
 - Última actualización: 2026-08-04
 
 ## Objetivo actual
 
-Definir el modelo de datos público de campaña que alimentará marcadores, fichas, categorías y etiquetas sin incorporar secretos al artefacto publicado.
+Mostrar los lugares del catálogo como marcadores y presentar sus fichas públicas utilizando el contrato estable definido en MAP-005.
 
 ## Alcance de la Beta 0.1
 
@@ -48,16 +48,15 @@ Definir el modelo de datos público de campaña que alimentará marcadores, fich
 
 ## Fase actual
 
-La fundación, la investigación del mapa base, el esqueleto ejecutable y la navegación cartográfica están completados. La aplicación carga exclusivamente la imagen oficial LowRes desde Wizards mediante Leaflet, funciona de forma responsive y dispone de estados accesibles de carga y error.
+La fundación, la investigación del mapa base, el esqueleto ejecutable, la navegación cartográfica y el contrato de datos públicos están completados. La aplicación dispone de un catálogo TypeScript normalizado, coordenadas estables sobre la imagen y validación automática sin dependencias nuevas.
 
 ## Trabajo en curso
 
-- Ninguno tras el cierre de MAP-004.
-- Siguiente Issue: MAP-005 — Definir el modelo de datos de campaña.
+- Ninguno tras el cierre de MAP-005.
+- Siguiente Issue: MAP-006 — Mostrar marcadores y fichas de información.
 
 ## Backlog inicial
 
-- MAP-005 — Definir el modelo de datos de campaña.
 - MAP-006 — Mostrar marcadores y fichas de información.
 - MAP-007 — Implementar búsqueda por nombre y alias.
 - MAP-008 — Implementar categorías y filtrado por etiquetas.
@@ -67,8 +66,9 @@ La fundación, la investigación del mapa base, el esqueleto ejecutable y la nav
 
 ## Bloqueos
 
-- Ningún bloqueo para comenzar MAP-005.
+- Ningún bloqueo para comenzar MAP-006.
 - La redistribución o transformación del mapa oficial sigue requiriendo autorización escrita; la estrategia remota de Beta 0.1 evita esas operaciones.
+- El catálogo actual contiene datos ficticios de demostración; los datos reales deberán confirmarse como públicos antes de sustituirlos o ampliarlos.
 
 ## Decisiones cerradas
 
@@ -95,24 +95,38 @@ La fundación, la investigación del mapa base, el esqueleto ejecutable y la nav
 - `ResizeObserver` e `invalidateSize` mantienen el comportamiento responsive.
 - Los fallos del recurso muestran un aviso accesible y una superficie CSS neutra, sin copias alternativas.
 - Las pruebas e2e interceptan la URL oficial y usan un SVG neutro generado en memoria.
-- La decisión técnica y legal está registrada en `docs/map-source-and-licensing.md` y ADR 0001.
+- El catálogo público se define en módulos TypeScript bajo `src/data/`.
+- Categorías, etiquetas, lugares y notas son colecciones normalizadas con referencias unidireccionales.
+- Los IDs internos y slugs son estables; los nombres visibles pueden evolucionar sin romper referencias.
+- Las etiquetas usan IDs estables en kebab-case.
+- Las coordenadas se guardan como `{ x, y }` en píxeles desde la esquina superior izquierda de la imagen LowRes.
+- La conversión a Leaflet se centraliza como `[y, x]`.
+- Los valores de coordenadas pueden ser enteros o decimales finitos dentro de `0..3600` y `0..2329`.
+- El validador propio comprueba estructura, formatos, duplicados, referencias, coordenadas, alias y propiedades no admitidas.
+- `npm run validate:data`, Vitest y CI bloquean catálogos inválidos sin añadir dependencias.
+- Todo dato incluido en el catálogo es público por definición; no existen flags de ocultación para secretos.
+- La decisión técnica y legal del mapa está registrada en `docs/map-source-and-licensing.md` y ADR 0001.
+- El contrato de datos y la política pública están registrados en `docs/data-model.md`.
 
 ## Riesgos
 
 - La URL oficial remota no ofrece garantía de permanencia o disponibilidad.
 - Wizards puede cambiar su política o solicitar la retirada del contenido.
 - El uso de una imagen única consume aproximadamente 32 MiB una vez decodificada.
-- Exposición accidental de notas privadas.
+- Exposición accidental de notas privadas mediante errores editoriales que no puedan detectarse semánticamente.
 - Crecimiento del catálogo de lugares y etiquetas.
+- Colisiones futuras de alias o slugs al ampliar el contenido.
+- Una sustitución de la imagen base requeriría migrar coordenadas explícitamente.
 - Las dependencias frontend deberán mantenerse actualizadas durante la beta.
 
 ## Próximos pasos
 
-1. Abrir un chat nuevo para MAP-005.
-2. Definir esquemas TypeScript para lugares, categorías, etiquetas y contenido público.
-3. Establecer identificadores estables, alias, coordenadas y reglas de validación.
-4. Añadir un conjunto mínimo de datos de ejemplo sin secretos de campaña.
-5. Preparar el contrato que utilizará MAP-006 para marcadores y fichas.
+1. Abrir un chat nuevo para MAP-006.
+2. Consumir `campaignCatalog` sin modificar su contrato.
+3. Convertir coordenadas mediante `toLeafletSimpleCoordinate`.
+4. Renderizar marcadores accesibles por cada lugar.
+5. Mostrar fichas con categoría, etiquetas y notas públicas asociadas.
+6. Mantener búsqueda, filtros y enlaces directos fuera de MAP-006 salvo contratos mínimos necesarios.
 
 ## Últimos cambios
 
@@ -125,3 +139,4 @@ La fundación, la investigación del mapa base, el esqueleto ejecutable y la nav
 | 2026-08-04 | Fuente oficial, restricciones y estrategia del mapa base documentadas; ADR 0001 aceptado |
 | 2026-08-04 | Aplicación Vite + TypeScript, calidad automática, pruebas y CI completadas en MAP-003 |
 | 2026-08-04 | Mapa Leaflet navegable, responsive, acotado y con estados accesibles completado en MAP-004 |
+| 2026-08-04 | Modelo público normalizado, coordenadas estables, validación runtime, ejemplos y documentación completados en MAP-005 |
