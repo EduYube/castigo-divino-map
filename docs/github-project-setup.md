@@ -4,69 +4,78 @@ Proyecto: `El Atlas de los Nuevos Dioses`
 
 ## Estado de configuración
 
-Los campos personalizados y las vistas principales ya han sido creados manualmente en GitHub Projects.
+Los campos personalizados y las vistas principales fueron creados manualmente. La conexión de ChatGPT administra repositorio, Issues, ramas y pull requests, pero no edita directamente campos personalizados o vistas de GitHub Projects.
 
-La conexión de ChatGPT puede administrar el repositorio, las Issues, las ramas y las pull requests, pero actualmente no puede editar directamente los valores de los campos personalizados del Project. Para mantener una configuración reproducible se incluye el script:
+La configuración reproducible vive en:
 
 ```text
 scripts/configure-github-project.sh
+scripts/configure-beta-0.2-project.sh
 ```
 
-El script añade las Issues MAP-001 a MAP-011 al Project si todavía no están presentes y asigna todos sus campos de selección única.
+El primer script conserva la clasificación histórica de Beta 0.1. El segundo añade y clasifica MAP-013 a MAP-030.
 
 ## Campos
 
 - Status: Backlog, Ready, In progress, In review, Blocked, Done
 - Priority: P0, P1, P2, P3
 - Type: Research, Feature, Content, Chore, Bug, Documentation
-- Area: Map, Data, Search, UI, Quality, Delivery, Governance
+- Area: Map, Data, Search, UI, Quality, Delivery, Governance, Backend, Auth, Admin
 - Estimate: 1, 2, 3, 5, 8
-- Target: Foundation, Beta 0.1, Post-beta
+- Target: Foundation, Beta 0.1, Beta 0.2, Post-beta
 
-Los colores de las opciones son una ayuda visual y no afectan a la automatización. Las descripciones son opcionales y no son necesarias para ejecutar el proyecto.
+Los colores son libres y las descripciones opcionales. Los nombres de campos y opciones sí deben coincidir exactamente con los scripts.
 
 ## Vistas
 
-1. **Backlog** — tabla, agrupada por Status, ordenada por Priority.
-2. **Beta 0.1** — tablero, filtro `Target: Beta 0.1`.
-3. **Roadmap** — roadmap agrupado por Area.
-4. **Bloqueos** — tabla, filtro `Status: Blocked`.
-5. **Trabajo actual** — tablero, filtro de estados Ready a In review.
+1. **Backlog** — tabla agrupada por Status y ordenada por Priority.
+2. **Beta 0.1** — tablero con filtro `Target: Beta 0.1`.
+3. **Beta 0.2** — tablero con filtro `Target: Beta 0.2`.
+4. **Roadmap** — roadmap agrupado por Area.
+5. **Bloqueos** — tabla con filtro `Status: Blocked`.
+6. **Trabajo actual** — tablero con estados Ready, In progress e In review.
 
-Durante la fase inicial, **Beta 0.1** y **Trabajo actual** pueden compartir contenido. La diferencia será útil cuando existan tareas de fases posteriores o un backlog mayor.
+## Clasificación de Beta 0.2
 
-## Clasificación inicial
-
-| Issue | Status | Priority | Type | Area | Estimate | Target |
-|---|---|---|---|---|---:|---|
-| MAP-001 | Done | P0 | Documentation | Governance | 3 | Foundation |
-| MAP-002 | Ready | P0 | Research | Map | 3 | Beta 0.1 |
-| MAP-003 | Ready | P0 | Chore | Quality | 5 | Beta 0.1 |
-| MAP-004 | Backlog | P0 | Feature | Map | 8 | Beta 0.1 |
-| MAP-005 | Backlog | P0 | Feature | Data | 5 | Beta 0.1 |
-| MAP-006 | Backlog | P0 | Feature | UI | 8 | Beta 0.1 |
-| MAP-007 | Backlog | P1 | Feature | Search | 5 | Beta 0.1 |
-| MAP-008 | Backlog | P0 | Feature | Search | 5 | Beta 0.1 |
-| MAP-009 | Backlog | P1 | Feature | UI | 3 | Beta 0.1 |
-| MAP-010 | Backlog | P1 | Chore | Quality | 5 | Beta 0.1 |
-| MAP-011 | Backlog | P0 | Chore | Delivery | 5 | Beta 0.1 |
+| MAP | Issue | Status | Priority | Type | Area | Estimate | Target |
+|---|---:|---|---|---|---|---:|---|
+| MAP-013 | #32 | Ready | P0 | Research | Governance | 5 | Beta 0.2 |
+| MAP-014 | #33 | Backlog | P0 | Feature | Backend | 8 | Beta 0.2 |
+| MAP-015 | #34 | Backlog | P0 | Feature | Data | 8 | Beta 0.2 |
+| MAP-016 | #35 | Backlog | P0 | Feature | Backend | 8 | Beta 0.2 |
+| MAP-017 | #36 | Backlog | P0 | Feature | Auth | 5 | Beta 0.2 |
+| MAP-018 | #37 | Backlog | P0 | Feature | Admin | 8 | Beta 0.2 |
+| MAP-019 | #38 | Backlog | P0 | Feature | Admin | 8 | Beta 0.2 |
+| MAP-020 | #39 | Backlog | P0 | Feature | Data | 5 | Beta 0.2 |
+| MAP-021 | #40 | Backlog | P0 | Feature | Search | 5 | Beta 0.2 |
+| MAP-022 | #41 | Backlog | P1 | Feature | Map | 5 | Beta 0.2 |
+| MAP-023 | #42 | Backlog | P1 | Feature | UI | 3 | Beta 0.2 |
+| MAP-024 | #43 | Backlog | P0 | Feature | UI | 5 | Beta 0.2 |
+| MAP-025 | #44 | Backlog | P1 | Feature | UI | 3 | Beta 0.2 |
+| MAP-026 | #45 | Backlog | P1 | Feature | UI | 5 | Beta 0.2 |
+| MAP-027 | #46 | Backlog | P1 | Feature | Admin | 5 | Beta 0.2 |
+| MAP-028 | #47 | Backlog | P0 | Chore | Data | 5 | Beta 0.2 |
+| MAP-029 | #48 | Backlog | P0 | Chore | Quality | 8 | Beta 0.2 |
+| MAP-030 | #49 | Backlog | P0 | Chore | Delivery | 5 | Beta 0.2 |
 
 ## Aplicar la clasificación
 
 Requisitos locales:
 
 - GitHub CLI (`gh`).
-- `jq`.
-- Autenticación de GitHub CLI con acceso al repositorio y al Project.
+- Git Bash en Windows.
+- Autenticación de GitHub CLI con scope `project`.
 
-Desde la raíz del repositorio:
+Desde la raíz del repositorio y dentro de Git Bash:
 
 ```bash
 gh auth refresh -s project
-bash scripts/configure-github-project.sh
+git switch master
+git pull origin master
+./scripts/configure-beta-0.2-project.sh
 ```
 
-El script valida los nombres de todos los campos y opciones antes de modificar elementos. Puede volver a ejecutarse de forma segura para restaurar la clasificación acordada.
+El script valida campos y opciones antes de modificar el Project, añade las Issues si faltan y puede ejecutarse repetidamente.
 
 ## Automatizaciones recomendadas
 
@@ -79,4 +88,4 @@ El script valida los nombres de todos los campos y opciones antes de modificar e
 
 `MAP-XXX — Verbo y resultado`
 
-Los números visibles de Issue de GitHub no sustituyen al identificador MAP incluido en el título.
+El número visible de Issue de GitHub no sustituye al identificador MAP del título.
