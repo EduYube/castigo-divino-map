@@ -110,44 +110,45 @@ test('provides a visibly labelled search that ignores accents and case', async (
   ).toBeVisible();
 });
 
-test('selects an alias result, locates the map and opens the existing active place details', async ({
-  page,
-}) => {
-  await openReadyMap(page);
+test(
+  'selects an alias result, locates the map and opens the existing active place details',
+  async ({ page }) => {
+    await openReadyMap(page);
 
-  const shell = page.getByTestId('map-shell');
-  const initialCenter = await shell.getAttribute('data-map-center');
-  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+    const shell = page.getByTestId('map-shell');
+    const initialCenter = await shell.getAttribute('data-map-center');
+    const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
 
-  await searchbox.fill('PUERTO DE EJEMPLO');
+    await searchbox.fill('PUERTO DE EJEMPLO');
 
-  const result = page
-    .getByRole('list', { name: 'Resultados de búsqueda de lugares' })
-    .getByRole('button', {
-      name: /Puerto de demostración.*Coincidencia por alias: Puerto de ejemplo/i,
+    const result = page
+      .getByRole('list', { name: 'Resultados de búsqueda de lugares' })
+      .getByRole('button', {
+        name: /Puerto de demostración.*Coincidencia por alias: Puerto de ejemplo/i,
+      });
+
+    await result.click();
+
+    const panel = page.getByTestId('place-details');
+    const marker = page.getByRole('button', {
+      name: 'Puerto de demostración. Categoría: Asentamiento.',
     });
 
-  await result.click();
+    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
+    await expect(
+      panel.getByRole('heading', { level: 3, name: 'Puerto de demostración' }),
+    ).toBeFocused();
+    await expect(marker).toHaveAttribute('aria-pressed', 'true');
+    await expect(marker).toHaveClass(/campaign-marker-icon--active/);
+    await expect.poll(async () => shell.getAttribute('data-map-center')).not.toBe(initialCenter);
 
-  const panel = page.getByTestId('place-details');
-  const marker = page.getByRole('button', {
-    name: 'Puerto de demostración. Categoría: Asentamiento.',
-  });
+    await panel.getByRole('button', { name: 'Cerrar la ficha del lugar' }).click();
 
-  await expect(panel).toBeVisible();
-  await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
-  await expect(
-    panel.getByRole('heading', { level: 3, name: 'Puerto de demostración' }),
-  ).toBeFocused();
-  await expect(marker).toHaveAttribute('aria-pressed', 'true');
-  await expect(marker).toHaveClass(/campaign-marker-icon--active/);
-  await expect.poll(async () => shell.getAttribute('data-map-center')).not.toBe(initialCenter);
-
-  await panel.getByRole('button', { name: 'Cerrar la ficha del lugar' }).click();
-
-  await expect(panel).toBeHidden();
-  await expect(marker).toBeFocused();
-});
+    await expect(panel).toBeHidden();
+    await expect(marker).toBeFocused();
+  },
+);
 
 test('selects a note title result and opens the associated place', async ({ page }) => {
   await openReadyMap(page);
@@ -361,7 +362,9 @@ test('keeps search, map and details useful in a mobile viewport', async ({ page 
   await expect(panel).toContainText('Información pública de demostración');
 });
 
-test('keeps search, markers and details available when the remote image fails', async ({ page }) => {
+test('keeps search, markers and details available when the remote image fails', async ({
+  page,
+}) => {
   await page.route(OFFICIAL_MAP_URL, async (route) => {
     await route.fulfill({ status: 503, contentType: 'text/plain', body: 'Unavailable' });
   });
