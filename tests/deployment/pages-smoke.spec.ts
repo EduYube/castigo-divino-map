@@ -50,7 +50,7 @@ test('loads a complete shared URL from the repository subdirectory', async ({ pa
     'data-active-place-id',
     'place-demo-pass',
   );
-  await expect(page.getByText('Contenido de fans no oficial')).toBeVisible();
+  await expect(page.getByText('Contenido de fans no oficial', { exact: true })).toBeVisible();
   await expect(page.getByRole('contentinfo')).toContainText('Cartografía: Mike Schley');
 
   const expectedPathname = new URL(baseURL ?? page.url()).pathname;
@@ -121,5 +121,7 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
     .getByRole('button', { name: 'Cerrar la ficha del lugar' })
     .click();
   await expect(page.getByTestId('place-details')).toBeHidden();
-  await expect(page.locator('[data-place-id="place-demo-pass"]')).toBeFocused();
+  await expect(
+    page.getByTestId('place-marker').filter({ has: page.locator('[data-place-id="place-demo-pass"]') }),
+  ).toBeFocused();
 });
