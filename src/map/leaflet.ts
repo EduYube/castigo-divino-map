@@ -1,10 +1,6 @@
 import L, { type LatLngBounds, type Map as LeafletMap } from 'leaflet';
 
-import {
-  FAERUN_MAP_CONFIG,
-  OFFICIAL_MAP_URL,
-  createSimpleImageBounds,
-} from './config';
+import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './config';
 
 export type MapLoadState = 'loading' | 'ready' | 'error';
 
