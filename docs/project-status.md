@@ -94,9 +94,10 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- Cerrar MAP-013 mediante pull request e Issue.
+- MAP-014 — Preparar Supabase, migraciones y políticas RLS.
 - Abrir un chat independiente para MAP-014.
-- Preparar en MAP-014 la estructura `supabase/`, migraciones, semillas y pruebas locales de RLS sin implementar todavía login ni CRUD.
+- Crear en MAP-014 la estructura `supabase/`, migraciones, semillas y pruebas locales de RLS sin implementar todavía login ni CRUD.
+- Completar las acciones manuales de Supabase únicamente cuando MAP-014 las necesite.
 
 ## Acciones manuales para MAP-014
 
@@ -149,3 +150,4 @@ Comenzar MAP-014 — Preparar Supabase, migraciones y políticas RLS — desde u
 | 2026-08-04 | Traducciones y notas privadas registradas como mejoras futuras |
 | 2026-08-04 | Backlog de Beta 0.2 añadido y clasificado en GitHub Projects |
 | 2026-08-04 | MAP-013 cerró arquitectura, seguridad, entornos, publicación, degradación, migraciones y rollback de Beta 0.2 |
+| 2026-08-04 | PR #52 fusionada, Issue #32 cerrada y MAP-014 establecida como trabajo actual |
