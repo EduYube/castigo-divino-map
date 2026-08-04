@@ -1,18 +1,12 @@
 import 'leaflet/dist/leaflet.css';
 
 import { mountPlaceDetails } from './app/placeDetails';
-import {
-  mountPlaceFilters,
-  type PlaceFiltersController,
-} from './app/placeFilters';
-import { mountPlaceSearch, type PlaceSearchController } from './app/placeSearch';
+import { mountPlaceFilters } from './app/placeFilters';
+import { mountPlaceSearch } from './app/placeSearch';
 import { createPlaceSelectionController } from './app/placeSelection';
 import { renderApp } from './app/renderApp';
 import { campaignCatalog } from './data/catalog';
-import {
-  deriveMatchingPublicPlaceIds,
-  EMPTY_PUBLIC_PLACE_FILTER_STATE,
-} from './data/filters';
+import { deriveMatchingPublicPlaceIds } from './data/filters';
 import type { PlaceId } from './data/model';
 import { buildPlaceDetailModel, createPlaceMarkerModels } from './data/placeDetails';
 import { mountFaerunMap } from './map/leaflet';
@@ -59,31 +53,12 @@ const showPlaceDetails = (placeId: PlaceId): boolean => {
   return true;
 };
 
-let placeFiltersController: PlaceFiltersController | undefined;
-let placeSearchController: PlaceSearchController | undefined;
-
-const updateMatchingPlaces = (): void => {
-  const matchingPlaceIds = deriveMatchingPublicPlaceIds(
-    campaignCatalog,
-    placeSearchController?.getQuery() ?? '',
-    placeFiltersController?.getState() ?? EMPTY_PUBLIC_PLACE_FILTER_STATE,
-  );
-  const matchingPlaceIdSet = new Set(matchingPlaceIds);
-  const activePlaceId = selection.getActivePlaceId();
-
-  mapController.setMatchingPlaces(matchingPlaceIdSet);
-  placeFiltersController?.setMatchSummary(
-    matchingPlaceIds.length,
-    activePlaceId ? matchingPlaceIdSet.has(activePlaceId) : null,
-  );
-};
-
-placeFiltersController = mountPlaceFilters(app, {
+const placeFiltersController = mountPlaceFilters(app, {
   catalog: campaignCatalog,
   onChange: updateMatchingPlaces,
 });
 
-placeSearchController = mountPlaceSearch(app, {
+const placeSearchController = mountPlaceSearch(app, {
   catalog: campaignCatalog,
   onQueryChange: updateMatchingPlaces,
   onSelect(placeId): void {
@@ -97,6 +72,22 @@ placeSearchController = mountPlaceSearch(app, {
     }
   },
 });
+
+function updateMatchingPlaces(): void {
+  const matchingPlaceIds = deriveMatchingPublicPlaceIds(
+    campaignCatalog,
+    placeSearchController.getQuery(),
+    placeFiltersController.getState(),
+  );
+  const matchingPlaceIdSet = new Set(matchingPlaceIds);
+  const activePlaceId = selection.getActivePlaceId();
+
+  mapController.setMatchingPlaces(matchingPlaceIdSet);
+  placeFiltersController.setMatchSummary(
+    matchingPlaceIds.length,
+    activePlaceId ? matchingPlaceIdSet.has(activePlaceId) : null,
+  );
+}
 
 selection.subscribe((activePlaceId) => {
   mapController.setActivePlace(activePlaceId);
