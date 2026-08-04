@@ -56,9 +56,9 @@ test('supports bounded zoom and drag navigation', async ({ page }) => {
   const initialZoom = Number(await shell.getAttribute('data-map-zoom'));
 
   await page.getByTitle('Acercar').click();
-  await expect.poll(async () => Number(await shell.getAttribute('data-map-zoom'))).toBeGreaterThan(
-    initialZoom,
-  );
+  await expect
+    .poll(async () => Number(await shell.getAttribute('data-map-zoom')))
+    .toBeGreaterThan(initialZoom);
 
   const initialCenter = await shell.getAttribute('data-map-center');
   const mapBox = await page.locator('[data-map-canvas]').boundingBox();
