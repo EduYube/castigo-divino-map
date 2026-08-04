@@ -5,12 +5,12 @@
 - Proyecto: El Atlas de los Nuevos Dioses
 - Repositorio: `EduYube/castigo-divino-map`
 - Versión objetivo: Beta 0.1
-- Estado general: Fundación completada; Project preparado para clasificación automática
+- Estado general: Fundación completada; MAP-002 lista para comenzar
 - Última actualización: 2026-08-04
 
 ## Objetivo actual
 
-Completar la clasificación inicial de las Issues en GitHub Projects y comenzar la validación del mapa base.
+Validar la fuente oficial del mapa de Faerûn, sus condiciones de uso y la estrategia técnica para integrarlo en la Beta 0.1.
 
 ## Alcance de la Beta 0.1
 
@@ -48,13 +48,11 @@ Completar la clasificación inicial de las Issues en GitHub Projects y comenzar 
 
 ## Fase actual
 
-Fundación del repositorio completada. Los campos y vistas del GitHub Project han sido creados y existe una automatización reproducible para completar los valores de MAP-001 a MAP-011.
+Fundación completada. El repositorio, la documentación, las plantillas, el backlog y el GitHub Project están configurados. MAP-001 está cerrada y MAP-002 es la siguiente Issue activa.
 
 ## Trabajo en curso
 
-- MAP-001 — Completar la clasificación de las Issues en GitHub Projects.
-- Ejecutar `scripts/configure-github-project.sh` con GitHub CLI autorizado para Projects.
-- Preparar el inicio de MAP-002.
+- MAP-002 — Validar y preparar el mapa base oficial.
 
 ## Backlog inicial
 
@@ -72,7 +70,6 @@ Fundación del repositorio completada. Los campos y vistas del GitHub Project ha
 ## Bloqueos
 
 - Validar la fuente, licencia y condiciones de redistribución del mapa oficial.
-- La conexión de ChatGPT no expone operaciones de GitHub Projects; la clasificación inicial requiere ejecutar una vez el script local con GitHub CLI.
 
 ## Decisiones cerradas
 
@@ -98,11 +95,10 @@ Fundación del repositorio completada. Los campos y vistas del GitHub Project ha
 
 ## Próximos pasos
 
-1. Ejecutar la automatización de clasificación del GitHub Project.
-2. Verificar que MAP-001 aparece como Done y MAP-002/MAP-003 como Ready.
-3. Cerrar definitivamente MAP-001.
-4. Abrir un chat nuevo para MAP-002.
-5. Investigar y validar el mapa base oficial.
+1. Abrir un chat nuevo para MAP-002.
+2. Investigar y validar el mapa base oficial.
+3. Documentar la fuente, licencia, resolución, peso y estrategia de integración.
+4. Actualizar el estado del proyecto al cerrar MAP-002.
 
 ## Últimos cambios
 
@@ -111,3 +107,4 @@ Fundación del repositorio completada. Los campos y vistas del GitHub Project ha
 | 2026-08-03 | Creación inicial del estado del proyecto |
 | 2026-08-03 | Backlog Beta 0.1 creado y fundación integrada |
 | 2026-08-04 | Campos y vistas del Project confirmados; automatización de clasificación añadida |
+| 2026-08-04 | GitHub Project clasificado y fundación cerrada; MAP-002 preparada |
