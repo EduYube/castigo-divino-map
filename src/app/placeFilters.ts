@@ -3,9 +3,14 @@ import type { CampaignCatalog, CampaignCategory, TagId } from '../data/model';
 
 export interface PlaceFiltersController {
   getState(): PublicPlaceFilterState;
+  setState(state: PublicPlaceFilterState, options?: PlaceFiltersStateUpdateOptions): void;
   clear(): void;
   setMatchSummary(matchCount: number, activePlaceMatches: boolean | null): void;
   destroy(): void;
+}
+
+export interface PlaceFiltersStateUpdateOptions {
+  readonly notify?: boolean;
 }
 
 export interface PlaceFiltersOptions {
@@ -129,6 +134,47 @@ export function mountPlaceFilters(
       .map(({ id }) => id),
   });
 
+  const synchronizeControls = (): void => {
+    elements.root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((input) => {
+      const kind = input.dataset.placeFilterKind;
+      const id = input.dataset.placeFilterId;
+
+      input.checked =
+        Boolean(id) &&
+        (kind === 'category'
+          ? selectedCategoryIds.has(id as CampaignCategory['id'])
+          : kind === 'tag'
+            ? selectedTagIds.has(id as TagId)
+            : false);
+    });
+  };
+
+  const setState = (
+    state: PublicPlaceFilterState,
+    stateOptions: PlaceFiltersStateUpdateOptions = {},
+  ): void => {
+    const nextCategoryIds = new Set(state.selectedCategoryIds);
+    const nextTagIds = new Set(state.selectedTagIds);
+
+    selectedCategoryIds.clear();
+    selectedTagIds.clear();
+    options.catalog.categories.forEach(({ id }) => {
+      if (nextCategoryIds.has(id)) {
+        selectedCategoryIds.add(id);
+      }
+    });
+    options.catalog.tags.forEach(({ id }) => {
+      if (nextTagIds.has(id)) {
+        selectedTagIds.add(id);
+      }
+    });
+    synchronizeControls();
+
+    if (stateOptions.notify !== false) {
+      options.onChange();
+    }
+  };
+
   const handleChange = (event: Event): void => {
     if (!(event.target instanceof HTMLInputElement) || event.target.type !== 'checkbox') {
       return;
@@ -163,12 +209,7 @@ export function mountPlaceFilters(
   };
 
   const clear = (): void => {
-    selectedCategoryIds.clear();
-    selectedTagIds.clear();
-    elements.root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((input) => {
-      input.checked = false;
-    });
-    options.onChange();
+    setState({ selectedCategoryIds: [], selectedTagIds: [] });
   };
 
   const handleClear = (): void => {
@@ -181,6 +222,7 @@ export function mountPlaceFilters(
 
   return {
     getState,
+    setState,
     clear,
     setMatchSummary(matchCount: number, activePlaceMatches: boolean | null): void {
       elements.root.dataset.matchCount = String(matchCount);

@@ -8,8 +8,13 @@ import {
 
 export interface PlaceSearchController {
   getQuery(): string;
+  setQuery(query: string, options?: PlaceSearchStateUpdateOptions): void;
   clear(): void;
   destroy(): void;
+}
+
+export interface PlaceSearchStateUpdateOptions {
+  readonly notify?: boolean;
 }
 
 export interface PlaceSearchOptions {
@@ -132,6 +137,16 @@ export function mountPlaceSearch(
 
   const publishQueryChange = (): void => options.onQueryChange?.(query);
 
+  const setQuery = (nextQuery: string, stateOptions: PlaceSearchStateUpdateOptions = {}): void => {
+    query = nextQuery;
+    elements.input.value = nextQuery;
+    render();
+
+    if (stateOptions.notify !== false) {
+      publishQueryChange();
+    }
+  };
+
   const handleInput = (): void => {
     query = elements.input.value;
     render();
@@ -139,10 +154,7 @@ export function mountPlaceSearch(
   };
 
   const handleClear = (): void => {
-    query = '';
-    elements.input.value = '';
-    render();
-    publishQueryChange();
+    setQuery('');
     elements.input.focus();
   };
 
@@ -205,6 +217,7 @@ export function mountPlaceSearch(
     getQuery(): string {
       return query;
     },
+    setQuery,
     clear: handleClear,
     destroy(): void {
       elements.input.removeEventListener('input', handleInput);
