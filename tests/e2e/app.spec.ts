@@ -45,7 +45,7 @@ test('loads the official URL through a neutral test response without console err
     page.getByRole('heading', { level: 1, name: 'El Atlas de los Nuevos Dioses' }),
   ).toBeVisible();
   await expect(page.locator('.leaflet-image-layer')).toHaveAttribute('src', OFFICIAL_MAP_URL);
-  await expect(page.getByText('Contenido de fans no oficial')).toBeVisible();
+  await expect(page.getByText('Contenido de fans no oficial', { exact: true })).toBeVisible();
   expect(applicationErrors).toEqual([]);
 });
 
@@ -79,14 +79,8 @@ test('supports bounded zoom and drag navigation', async ({ page }) => {
 
   const zoomOutControl = page.getByTitle('Alejar');
 
-  for (let index = 0; index < 12; index += 1) {
-    if ((await zoomOutControl.getAttribute('aria-disabled')) === 'true') {
-      break;
-    }
-
-    await zoomOutControl.click();
-  }
-
+  await zoomOutControl.click();
+  await expect(shell).toHaveAttribute('data-map-zoom', initialZoom.toFixed(2));
   await expect(zoomOutControl).toHaveClass(/leaflet-disabled/);
 });
 
