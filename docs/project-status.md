@@ -6,7 +6,7 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: alcance acordado y backlog creado; pendiente de clasificación en GitHub Projects.
+- Estado general: alcance cerrado, backlog creado y clasificado; MAP-013 lista para comenzar.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-04.
 
@@ -45,6 +45,8 @@ El alcance completo vive en `docs/beta-0.2-scope.md`. Las capacidades pospuestas
 
 ## Backlog Beta 0.2
 
+MAP-013 a MAP-030 están creadas, añadidas al GitHub Project y clasificadas con `Target: Beta 0.2`.
+
 Orden recomendado de ejecución:
 
 1. MAP-013 — Definir la arquitectura y seguridad de la Beta 0.2.
@@ -68,17 +70,14 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- Incorporar MAP-013 a MAP-030 al GitHub Project.
-- Crear la opción `Beta 0.2` en el campo `Target`.
-- Crear las áreas `Backend`, `Auth` y `Admin`.
-- Ejecutar `scripts/configure-beta-0.2-project.sh`.
+- MAP-013 — Definir la arquitectura y seguridad de la Beta 0.2.
 - Abrir un chat independiente para MAP-013.
+- Documentar mediante ADR las decisiones sobre Supabase, autenticación, RLS, estados de publicación, secretos, entornos y degradación del backend.
 
 ## Bloqueos
 
-- La conexión de ChatGPT no permite modificar campos personalizados ni vistas de GitHub Projects.
-- Antes de ejecutar el script de clasificación deben existir las nuevas opciones de campo.
-- La implementación requerirá crear y configurar un proyecto Supabase, pero esto pertenece a MAP-014.
+- No existen bloqueos activos para comenzar MAP-013.
+- La creación y configuración del proyecto Supabase será necesaria en MAP-014.
 
 ## Riesgos principales
 
@@ -93,7 +92,7 @@ Orden recomendado de ejecución:
 
 ## Próximo paso
 
-Clasificar MAP-013 a MAP-030 en el GitHub Project y comenzar MAP-013 en un chat nuevo.
+Comenzar MAP-013 en un chat nuevo y cerrar la arquitectura de Beta 0.2 antes de crear recursos de Supabase o modificar código de producción.
 
 ## Últimos cambios
 
@@ -104,3 +103,4 @@ Clasificar MAP-013 a MAP-030 en el GitHub Project y comenzar MAP-013 en un chat 
 | 2026-08-04 | Alcance de Beta 0.2 acordado |
 | 2026-08-04 | Backlog MAP-013 a MAP-030 creado |
 | 2026-08-04 | Traducciones y notas privadas registradas como mejoras futuras |
+| 2026-08-04 | Backlog de Beta 0.2 añadido y clasificado en GitHub Projects |
