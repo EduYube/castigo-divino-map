@@ -182,6 +182,35 @@ test('keeps filters, map and details usable in a mobile viewport', async ({ page
   expect(scrollWidth).toBeLessThanOrEqual(390);
 });
 
+test('wraps long category and tag names without horizontal overflow', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openReadyMap(page);
+
+  await page.locator('.place-filters__option-name').evaluateAll((names) => {
+    names.forEach((name, index) => {
+      name.textContent =
+        `Clasificación pública extraordinariamente extensa ${index + 1} ` +
+        'con varias palabras que deben ajustarse dentro del control';
+    });
+  });
+
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  const optionBoxes = await page.locator('.place-filters__option').evaluateAll((options) =>
+    options.map((option) => {
+      const box = option.getBoundingClientRect();
+
+      return { left: box.left, right: box.right, width: box.width };
+    }),
+  );
+
+  expect(scrollWidth).toBeLessThanOrEqual(390);
+  optionBoxes.forEach(({ left, right, width }) => {
+    expect(left).toBeGreaterThanOrEqual(0);
+    expect(right).toBeLessThanOrEqual(390);
+    expect(width).toBeLessThanOrEqual(390);
+  });
+});
+
 test('preserves filters and markers on the neutral surface when the remote map fails', async ({
   page,
 }) => {
