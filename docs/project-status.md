@@ -5,12 +5,12 @@
 - Proyecto: El Atlas de los Nuevos Dioses
 - Repositorio: `EduYube/castigo-divino-map`
 - Versión objetivo: Beta 0.1
-- Estado general: Aplicación base y calidad automática completadas; MAP-004 lista para comenzar
+- Estado general: Mapa navegable de Faerûn integrado; MAP-005 lista para comenzar
 - Última actualización: 2026-08-04
 
 ## Objetivo actual
 
-Integrar el mapa navegable de Faerûn con Leaflet usando la imagen oficial remota de baja resolución, sin almacenar ni transformar el recurso.
+Definir el modelo de datos público de campaña que alimentará marcadores, fichas, categorías y etiquetas sin incorporar secretos al artefacto publicado.
 
 ## Alcance de la Beta 0.1
 
@@ -48,16 +48,15 @@ Integrar el mapa navegable de Faerûn con Leaflet usando la imagen oficial remot
 
 ## Fase actual
 
-La fundación, la investigación del mapa base y el esqueleto ejecutable de la aplicación están completados. El repositorio dispone de Vite, TypeScript, Leaflet, una pantalla inicial responsive y una cadena automática de calidad validada en GitHub Actions.
+La fundación, la investigación del mapa base, el esqueleto ejecutable y la navegación cartográfica están completados. La aplicación carga exclusivamente la imagen oficial LowRes desde Wizards mediante Leaflet, funciona de forma responsive y dispone de estados accesibles de carga y error.
 
 ## Trabajo en curso
 
-- Ninguno tras el cierre de MAP-003.
-- Siguiente Issue: MAP-004 — Integrar el mapa navegable de Faerûn.
+- Ninguno tras el cierre de MAP-004.
+- Siguiente Issue: MAP-005 — Definir el modelo de datos de campaña.
 
 ## Backlog inicial
 
-- MAP-004 — Integrar el mapa navegable de Faerûn.
 - MAP-005 — Definir el modelo de datos de campaña.
 - MAP-006 — Mostrar marcadores y fichas de información.
 - MAP-007 — Implementar búsqueda por nombre y alias.
@@ -68,7 +67,7 @@ La fundación, la investigación del mapa base y el esqueleto ejecutable de la a
 
 ## Bloqueos
 
-- Ningún bloqueo para comenzar MAP-004.
+- Ningún bloqueo para comenzar MAP-005.
 - La redistribución o transformación del mapa oficial sigue requiriendo autorización escrita; la estrategia remota de Beta 0.1 evita esas operaciones.
 
 ## Decisiones cerradas
@@ -83,17 +82,19 @@ La fundación, la investigación del mapa base y el esqueleto ejecutable de la a
 - Datos estáticos para la beta.
 - GitHub como fuente de verdad.
 - Un chat por Issue.
-- La aplicación inicial usa TypeScript y CSS propios, sin framework de interfaz adicional.
-- Leaflet está aislado en `src/map/leaflet.ts`; la configuración cartográfica pertenece a MAP-004.
-- MAP-003 no incorpora `CRS.Simple`, `L.imageOverlay`, marcadores ni navegación.
+- La aplicación usa TypeScript y CSS propios, sin framework de interfaz adicional.
 - El mapa oficial con rótulos ingleses es aceptable para la beta.
 - La capa de nombres castellanos no es requisito imprescindible de la beta.
-- Los colores de los campos del Project son libres y sus descripciones son opcionales.
-- Las vistas Beta 0.1 y Trabajo actual pueden coincidir durante la fase inicial.
-- La Beta 0.1 usará `Sword-Coast-Map_LowRes.jpg` como imagen única remota desde `media.wizards.com`.
-- El mapa oficial no se almacenará en el repositorio, despliegue, CDN propio, releases ni artefactos de CI.
-- No se crearán mosaicos ni otros derivados sin autorización escrita.
-- La integración futura usará Leaflet con `CRS.Simple` e `L.imageOverlay`.
+- La Beta 0.1 usa `Sword-Coast-Map_LowRes.jpg` como imagen única remota desde `media.wizards.com`.
+- El mapa oficial no se almacena en el repositorio, despliegue, CDN propio, releases ni artefactos de CI.
+- No se crean mosaicos ni otros derivados sin autorización escrita.
+- Leaflet usa `CRS.Simple`, límites `[[0, 0], [2329, 3600]]` y `L.imageOverlay`.
+- El encuadre inicial muestra el mapa completo y el zoom mínimo se recalcula con el viewport.
+- El zoom máximo de MAP-004 es `1`, adecuado para una ampliación moderada de LowRes.
+- `maxBounds` y `maxBoundsViscosity: 1` impiden navegación indefinida fuera del mapa.
+- `ResizeObserver` e `invalidateSize` mantienen el comportamiento responsive.
+- Los fallos del recurso muestran un aviso accesible y una superficie CSS neutra, sin copias alternativas.
+- Las pruebas e2e interceptan la URL oficial y usan un SVG neutro generado en memoria.
 - La decisión técnica y legal está registrada en `docs/map-source-and-licensing.md` y ADR 0001.
 
 ## Riesgos
@@ -107,11 +108,11 @@ La fundación, la investigación del mapa base y el esqueleto ejecutable de la a
 
 ## Próximos pasos
 
-1. Abrir un chat nuevo para MAP-004.
-2. Integrar Leaflet con `CRS.Simple` y `L.imageOverlay` usando exclusivamente la URL oficial remota de LowRes.
-3. Definir límites, zoom útil y comportamiento responsive para ratón y táctil.
-4. Añadir estado de carga, error y alternativa neutra cuando el recurso remoto no esté disponible.
-5. Mantener fuera del repositorio, build y CI cualquier copia o derivado del mapa oficial.
+1. Abrir un chat nuevo para MAP-005.
+2. Definir esquemas TypeScript para lugares, categorías, etiquetas y contenido público.
+3. Establecer identificadores estables, alias, coordenadas y reglas de validación.
+4. Añadir un conjunto mínimo de datos de ejemplo sin secretos de campaña.
+5. Preparar el contrato que utilizará MAP-006 para marcadores y fichas.
 
 ## Últimos cambios
 
@@ -123,3 +124,4 @@ La fundación, la investigación del mapa base y el esqueleto ejecutable de la a
 | 2026-08-04 | GitHub Project clasificado y fundación cerrada; MAP-002 preparada |
 | 2026-08-04 | Fuente oficial, restricciones y estrategia del mapa base documentadas; ADR 0001 aceptado |
 | 2026-08-04 | Aplicación Vite + TypeScript, calidad automática, pruebas y CI completadas en MAP-003 |
+| 2026-08-04 | Mapa Leaflet navegable, responsive, acotado y con estados accesibles completado en MAP-004 |

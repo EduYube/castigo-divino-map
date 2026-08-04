@@ -4,7 +4,7 @@ Aplicación web para explorar un mapa interactivo de Faerûn y consultar informa
 
 ## Estado
 
-La base técnica de la Beta 0.1 está preparada con Vite, TypeScript, Leaflet y una cadena automática de calidad. La integración navegable del mapa se realizará en MAP-004.
+La Beta 0.1 dispone de una aplicación Vite + TypeScript con Leaflet, navegación responsive sobre el mapa oficial remoto de baja resolución y una cadena automática de calidad. Los marcadores y datos de campaña se incorporarán en Issues posteriores.
 
 Consulta [`docs/project-status.md`](docs/project-status.md) para conocer el estado actual y [`docs/working-agreement.md`](docs/working-agreement.md) para revisar el flujo de trabajo.
 
@@ -43,6 +43,16 @@ npm run build
 npm run preview
 ```
 
+La aplicación solicita el mapa directamente a la URL oficial de Wizards. Es necesaria conexión de red para visualizar la cartografía; si el recurso falla, la interfaz muestra un estado de error accesible y una superficie neutra sin copias alternativas.
+
+## Navegación del mapa
+
+- Arrastre con ratón, trackpad o gesto táctil para desplazarse.
+- Rueda, gesto de pellizco, doble pulsación o controles visibles para cambiar el zoom.
+- Encuadre inicial del mapa completo.
+- Límites y zoom mínimo recalculados al cambiar el tamaño del viewport.
+- Zoom máximo limitado a la resolución útil de la imagen LowRes.
+
 ## Comandos disponibles
 
 | Comando | Propósito |
@@ -59,27 +69,36 @@ npm run preview
 | `npm run test:e2e:ui` | Abre la interfaz de Playwright. |
 | `npm run test:all` | Ejecuta pruebas unitarias y end-to-end. |
 
+## Pruebas y recurso externo
+
+Las pruebas unitarias verifican dimensiones, límites y cálculos cartográficos sin red. Las pruebas e2e interceptan exclusivamente la URL oficial y responden con un SVG neutro generado en memoria para cubrir carga, navegación, responsive y error.
+
+La CI no descarga, almacena, archiva ni publica el mapa oficial. Tampoco genera recortes, recompressiones, conversiones, mosaicos o derivados.
+
 ## Integración continua
 
-El workflow `.github/workflows/ci.yml` se ejecuta en pull requests dirigidas a `master`. Instala las dependencias desde cero y valida formato, lint, pruebas unitarias, build y prueba e2e en Chromium.
+El workflow `.github/workflows/ci.yml` se ejecuta en pull requests dirigidas a `master`. Instala las dependencias desde cero y valida formato, lint, pruebas unitarias, build y pruebas e2e en Chromium.
 
-## Estructura inicial
+## Estructura cartográfica
 
 ```text
 src/
-├── app/          # Presentación y modelo de preparación
-├── map/          # Límite de integración de Leaflet
-└── styles/       # Estilos globales responsive
+├── app/
+│   └── renderApp.ts      # Presentación y estructura accesible
+├── map/
+│   ├── config.ts         # URL, dimensiones, límites y cálculos puros
+│   ├── config.test.ts    # Pruebas unitarias cartográficas
+│   └── leaflet.ts        # Adaptador Leaflet y ciclo de vida
+├── styles/
+│   └── main.css          # Diseño responsive y alternativa neutra
+└── main.ts               # Montaje de la aplicación
 tests/
-└── e2e/          # Flujos mínimos de navegador
+└── e2e/
+    └── app.spec.ts       # Carga simulada, navegación y error
 ```
-
-## Límite cartográfico de MAP-003
-
-Leaflet está instalado y disponible, pero MAP-003 no implementa `CRS.Simple`, `L.imageOverlay`, marcadores ni navegación cartográfica.
-
-La aplicación tampoco copia, descarga automáticamente ni incorpora el mapa oficial al repositorio, al build, a releases o a artefactos de CI. La fuente y las restricciones están documentadas en [`docs/map-source-and-licensing.md`](docs/map-source-and-licensing.md) y en [ADR 0001](docs/decisions/0001-use-remote-low-resolution-map-image.md).
 
 ## Privacidad y licencias
 
-El contenido publicado debe ser apto para jugadores. No deben incorporarse secretos narrativos ni recursos sin licencia. El mapa oficial no forma parte de este repositorio.
+El contenido publicado debe ser apto para jugadores. No deben incorporarse secretos narrativos ni recursos sin licencia.
+
+La Beta 0.1 usa directamente `Sword-Coast-Map_LowRes.jpg` desde `media.wizards.com` mediante `L.imageOverlay` y `L.CRS.Simple`. El JPEG no forma parte del repositorio, build, despliegue, releases ni artefactos de CI. La fuente y las restricciones están documentadas en [`docs/map-source-and-licensing.md`](docs/map-source-and-licensing.md) y en [ADR 0001](docs/decisions/0001-use-remote-low-resolution-map-image.md).

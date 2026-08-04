@@ -1,88 +1,92 @@
-import { leafletReadiness } from '../map/leaflet';
-import { countReadyItems, readinessItems, type ReadinessStatus } from './readiness';
-
-const statusLabels: Record<ReadinessStatus, string> = {
-  ready: 'Preparado',
-  planned: 'Siguiente fase',
-};
-
-function renderReadinessItems(): string {
-  return readinessItems
-    .map(
-      ({ title, description, status }) => `
-        <li class="readiness-card readiness-card--${status}">
-          <div class="readiness-card__header">
-            <h3>${title}</h3>
-            <span class="status-badge" aria-label="Estado: ${statusLabels[status]}">
-              ${statusLabels[status]}
-            </span>
-          </div>
-          <p>${description}</p>
-        </li>
-      `,
-    )
-    .join('');
-}
-
 export function renderApp(): string {
-  const readyCount = countReadyItems(readinessItems);
-
   return `
     <header class="site-header">
-      <a class="brand" href="#main-content" aria-label="Ir al inicio del Atlas">
+      <a class="brand" href="#main-content" aria-label="Ir al mapa del Atlas">
         <span class="brand__mark" aria-hidden="true">✦</span>
         <span>Castigo Divino</span>
       </a>
-      <span class="release-badge">Beta 0.1</span>
+      <div class="site-header__badges" aria-label="Estado de la aplicación">
+        <span class="release-badge">Beta 0.1</span>
+        <span class="fan-badge">Contenido de fans no oficial</span>
+      </div>
     </header>
 
-    <main id="main-content">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero__content">
-          <p class="eyebrow">Fundación técnica · MAP-003</p>
-          <h1 id="hero-title">El Atlas de los Nuevos Dioses</h1>
-          <p class="hero__lead">
-            Una base rápida, accesible y reproducible para explorar el conocimiento descubierto
-            de la campaña sobre Faerûn.
+    <main id="main-content" class="atlas-main">
+      <section class="map-introduction" aria-labelledby="atlas-title">
+        <div>
+          <p class="eyebrow">Cartografía interactiva · MAP-004</p>
+          <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
+          <p class="map-introduction__lead">
+            Explora la Costa de la Espada y el noroeste de Faerûn con zoom y desplazamiento
+            acotados a la cartografía disponible.
           </p>
-          <div class="hero__meta" aria-label="Estado técnico">
-            <span>${readyCount} bases listas</span>
-            <span aria-hidden="true">·</span>
-            <span>${leafletReadiness.library} ${leafletReadiness.version} instalado</span>
+        </div>
+        <p class="map-introduction__source">
+          Imagen oficial remota de baja resolución · 3600 × 2329 píxeles
+        </p>
+      </section>
+
+      <section class="map-experience" aria-labelledby="map-heading">
+        <div class="map-experience__heading">
+          <div>
+            <p class="eyebrow">Mapa navegable</p>
+            <h2 id="map-heading">Faerûn</h2>
           </div>
+          <p id="map-instructions" class="map-instructions">
+            Arrastra para desplazarte. Usa la rueda, el trackpad, los gestos táctiles o los
+            controles para acercar y alejar.
+          </p>
         </div>
 
-        <div class="map-placeholder" aria-labelledby="map-placeholder-title">
-          <div class="map-placeholder__compass" aria-hidden="true">
-            <span>N</span>
-          </div>
-          <div class="map-placeholder__copy">
-            <p class="eyebrow">Próxima expedición</p>
-            <h2 id="map-placeholder-title">Cartografía reservada</h2>
-            <p>
-              La navegación del mapa se integrará en ${leafletReadiness.integrationIssue}. Esta
-              entrega no descarga, almacena ni representa el mapa oficial.
-            </p>
-          </div>
+        <div
+          class="map-shell"
+          data-map-shell
+          data-map-state="loading"
+          data-testid="map-shell"
+          aria-busy="true"
+        >
+          <div
+            class="map-canvas"
+            data-map-canvas
+            aria-label="Mapa navegable de la Costa de la Espada y el noroeste de Faerûn"
+            aria-describedby="map-instructions"
+          ></div>
+          <p class="map-status" data-map-status role="status" aria-live="polite">
+            Cargando la cartografía oficial de Faerûn…
+          </p>
         </div>
       </section>
 
-      <section class="readiness" aria-labelledby="readiness-title">
-        <div class="section-heading">
-          <p class="eyebrow">Preparación de la expedición</p>
-          <h2 id="readiness-title">Una base lista para crecer</h2>
+      <aside class="map-notice" aria-labelledby="map-notice-title">
+        <div>
+          <p class="eyebrow">Uso responsable</p>
+          <h2 id="map-notice-title">La imagen no forma parte de la aplicación</h2>
         </div>
-        <ul class="readiness-grid">
-          ${renderReadinessItems()}
-        </ul>
-      </section>
+        <p>
+          El mapa se solicita directamente a Wizards of the Coast. Este repositorio, su build y
+          sus pruebas no almacenan, transforman ni publican copias o derivados del recurso.
+        </p>
+      </aside>
     </main>
 
     <footer class="site-footer">
       <p>
-        Proyecto de fans no oficial. No está aprobado ni respaldado por Wizards of the Coast.
+        El Atlas de los Nuevos Dioses es contenido de fans no oficial permitido por la Política de
+        contenido de fans. No está aprobado ni respaldado por Wizards. Parte de los materiales
+        utilizados es propiedad de Wizards of the Coast. ©Wizards of the Coast LLC. Cartografía:
+        Mike Schley.
       </p>
-      <p>El mapa oficial no forma parte de este repositorio ni de esta entrega.</p>
+      <nav aria-label="Información legal y fuente cartográfica">
+        <a href="https://company.wizards.com/es/legal/fancontentpolicy" rel="noreferrer">
+          Política de contenido de fans
+        </a>
+        <a
+          href="https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg"
+          rel="noreferrer"
+        >
+          Fuente oficial del mapa
+        </a>
+      </nav>
     </footer>
   `;
 }
