@@ -18,12 +18,18 @@ function expectIssue(value: unknown, code: CampaignDataValidationCode): void {
 
 describe('campaign data validation', () => {
   it('accepts the public demonstration catalog', () => {
-    expect(validateCampaignData(campaignCatalog)).toEqual({ valid: true, issues: [] });
+    expect(validateCampaignData(campaignCatalog)).toEqual({
+      valid: true,
+      issues: [],
+    });
     expect(() => assertValidCampaignData(campaignCatalog)).not.toThrow();
   });
 
   it('maps image x/y coordinates to Leaflet y/x coordinates', () => {
-    expect(toLeafletSimpleCoordinate({ x: 1080.5, y: 820 })).toEqual([820, 1080.5]);
+    expect(toLeafletSimpleCoordinate({ x: 1080.5, y: 820 })).toEqual([
+      820,
+      1080.5,
+    ]);
   });
 
   it('rejects duplicate stable IDs and slugs', () => {
@@ -60,7 +66,10 @@ describe('campaign data validation', () => {
     expectIssue(
       {
         ...campaignCatalog,
-        tags: [{ ...campaignCatalog.tags[0], id: 'Not Kebab Case' }, ...campaignCatalog.tags.slice(1)],
+        tags: [
+          { ...campaignCatalog.tags[0], id: 'Not Kebab Case' },
+          ...campaignCatalog.tags.slice(1),
+        ],
       },
       'invalid-format',
     );
@@ -107,14 +116,19 @@ describe('campaign data validation', () => {
   });
 
   it('rejects missing and empty required fields', () => {
-    const placeWithoutName: Record<string, unknown> = { ...campaignCatalog.places[0] };
+    const placeWithoutName: Record<string, unknown> = {
+      ...campaignCatalog.places[0],
+    };
     delete placeWithoutName.name;
 
     expectIssue(
       {
         ...campaignCatalog,
         places: [placeWithoutName, campaignCatalog.places[1]],
-        notes: [{ ...campaignCatalog.notes[0], body: '   ' }, campaignCatalog.notes[1]],
+        notes: [
+          { ...campaignCatalog.notes[0], body: '   ' },
+          campaignCatalog.notes[1],
+        ],
       },
       'required',
     );
@@ -172,7 +186,10 @@ describe('campaign data validation', () => {
     expect(() =>
       assertValidCampaignData({
         ...campaignCatalog,
-        notes: [{ ...campaignCatalog.notes[0], title: '' }, campaignCatalog.notes[1]],
+        notes: [
+          { ...campaignCatalog.notes[0], title: '' },
+          campaignCatalog.notes[1],
+        ],
       }),
     ).toThrow(CampaignDataValidationError);
   });
