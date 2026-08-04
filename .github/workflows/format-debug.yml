@@ -1,0 +1,21 @@
+name: Format debug
+
+on:
+  pull_request:
+
+jobs:
+  format-diff:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Print Prettier diff
+        run: |
+          npx prettier --write tests/e2e/app.spec.ts
+          git diff -- tests/e2e/app.spec.ts
