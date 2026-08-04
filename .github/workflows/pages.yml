@@ -1,0 +1,160 @@
+name: Deploy Beta 0.1 to GitHub Pages
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and upload production artifact
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'master') ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    outputs:
+      deploy_sha: ${{ steps.resolve-sha.outputs.sha }}
+
+    steps:
+      - name: Resolve validated commit
+        id: resolve-sha
+        env:
+          DEPLOY_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+        run: echo "sha=${DEPLOY_SHA}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout validated commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.resolve-sha.outputs.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting for manual recovery
+        if: github.event_name == 'workflow_dispatch'
+        run: npm run format:check
+
+      - name: Lint for manual recovery
+        if: github.event_name == 'workflow_dispatch'
+        run: npm run lint
+
+      - name: Run unit tests for manual recovery
+        if: github.event_name == 'workflow_dispatch'
+        run: npm run test
+
+      - name: Build application for GitHub Pages
+        run: npm run build:pages
+
+      - name: Audit production artifact
+        run: npm run verify:build
+
+      - name: Install Playwright browsers
+        env:
+          MANUAL_DEPLOYMENT: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [[ "${MANUAL_DEPLOYMENT}" == "true" ]]; then
+            npx playwright install --with-deps chromium firefox webkit
+          else
+            npx playwright install --with-deps chromium
+          fi
+
+      - name: Run full end-to-end validation for manual recovery
+        if: github.event_name == 'workflow_dispatch'
+        run: npm run test:e2e
+
+      - name: Smoke test the Pages build locally
+        run: npm run test:e2e:pages
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+          retention-days: 1
+
+  deploy:
+    name: Deploy GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: Record published URL
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: echo "Published Beta 0.1 at ${PAGE_URL}" >> "${GITHUB_STEP_SUMMARY}"
+
+  smoke:
+    name: Validate published Beta 0.1
+    needs:
+      - build
+      - deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      PAGES_URL: ${{ needs.deploy.outputs.page_url }}
+
+    steps:
+      - name: Checkout deployed commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.build.outputs.deploy_sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test the published URL
+        run: npm run test:e2e:pages
+
+      - name: Record validated URL
+        run: echo "Validated ${PAGES_URL}" >> "${GITHUB_STEP_SUMMARY}"

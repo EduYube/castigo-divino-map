@@ -10,7 +10,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:pages": "tsc --noEmit && vite build --mode pages",
     "preview": "vite preview",
+    "preview:pages": "vite preview --mode pages",
+    "verify:build": "node verify-production-build.mjs",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
@@ -18,6 +21,7 @@
     "test:watch": "vitest",
     "validate:data": "vitest run src/data/validate.test.ts",
     "test:e2e": "playwright test",
+    "test:e2e:pages": "playwright test --config playwright.pages.config.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:all": "npm run test && npm run test:e2e"
   },
