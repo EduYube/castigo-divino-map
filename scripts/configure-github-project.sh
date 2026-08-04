@@ -13,14 +13,14 @@ require_command() {
 }
 
 require_command gh
-require_command jq
+require_command awk
 
 if ! gh auth status >/dev/null 2>&1; then
   echo "Error: GitHub CLI no está autenticado. Ejecuta: gh auth login" >&2
   exit 1
 fi
 
-if ! PROJECT_JSON="$(gh project view "$PROJECT_NUMBER" --owner "$OWNER" --format json 2>/dev/null)"; then
+if ! PROJECT_ID="$(gh project view "$PROJECT_NUMBER" --owner "$OWNER" --format json --jq '.id' 2>/dev/null)"; then
   cat >&2 <<'MESSAGE'
 Error: no se puede acceder al GitHub Project.
 Autoriza el scope necesario y vuelve a ejecutar:
@@ -29,26 +29,31 @@ MESSAGE
   exit 1
 fi
 
-PROJECT_ID="$(jq -r '.id // empty' <<<"$PROJECT_JSON")"
 if [[ -z "$PROJECT_ID" ]]; then
   echo "Error: no se pudo obtener el ID interno del Project." >&2
   exit 1
 fi
 
-FIELDS_JSON="$(gh project field-list "$PROJECT_NUMBER" --owner "$OWNER" --limit 100 --format json)"
+FIELDS_TSV="$(
+  gh project field-list "$PROJECT_NUMBER" --owner "$OWNER" --limit 100 --format json \
+    --jq '.fields[] | [.name, .id] | @tsv'
+)"
+
+OPTIONS_TSV="$(
+  gh project field-list "$PROJECT_NUMBER" --owner "$OWNER" --limit 100 --format json \
+    --jq '.fields[] | .name as $field | .options[]? | [$field, .name, .id] | @tsv'
+)"
 
 field_id() {
   local field_name="$1"
-  jq -r --arg field_name "$field_name" \
-    '.fields[] | select(.name == $field_name) | .id' <<<"$FIELDS_JSON" | head -n 1
+  awk -F '\t' -v field_name="$field_name" '$1 == field_name { print $2; exit }' <<<"$FIELDS_TSV"
 }
 
 option_id() {
   local field_name="$1"
   local option_name="$2"
-  jq -r --arg field_name "$field_name" --arg option_name "$option_name" \
-    '.fields[] | select(.name == $field_name) | .options[]? | select(.name == $option_name) | .id' \
-    <<<"$FIELDS_JSON" | head -n 1
+  awk -F '\t' -v field_name="$field_name" -v option_name="$option_name" \
+    '$1 == field_name && $2 == option_name { print $3; exit }' <<<"$OPTIONS_TSV"
 }
 
 assert_option_exists() {
@@ -103,15 +108,17 @@ for entry in "${REQUIRED_OPTIONS[@]}"; do
   assert_option_exists "$field_name" "$option_name"
 done
 
-ITEMS_JSON="$(gh project item-list "$PROJECT_NUMBER" --owner "$OWNER" --limit 200 --format json)"
+ITEMS_TSV="$(
+  gh project item-list "$PROJECT_NUMBER" --owner "$OWNER" --limit 200 --format json \
+    --jq '.items[] | [(.content.url // ""), ((.content.number // "") | tostring), .id] | @tsv'
+)"
 
 project_item_id() {
   local issue_number="$1"
   local issue_url="https://github.com/${REPOSITORY}/issues/${issue_number}"
 
-  jq -r --arg issue_url "$issue_url" --argjson issue_number "$issue_number" \
-    '.items[] | select((.content.url? == $issue_url) or (.content.number? == $issue_number)) | .id' \
-    <<<"$ITEMS_JSON" | head -n 1
+  awk -F '\t' -v issue_url="$issue_url" -v issue_number="$issue_number" \
+    '$1 == issue_url || $2 == issue_number { print $3; exit }' <<<"$ITEMS_TSV"
 }
 
 ensure_project_item() {
@@ -131,6 +138,7 @@ ensure_project_item() {
     exit 1
   fi
 
+  ITEMS_TSV+=$'\n'"${issue_url}"$'\t'"${issue_number}"$'\t'"${item_id}"
   printf '%s' "$item_id"
 }
 
