@@ -22,6 +22,7 @@ const baseURL = normalizeBaseUrl(deployedUrl || `http://127.0.0.1:4174/${reposit
 
 export default defineConfig({
   testDir: './tests/deployment',
+  testMatch: '**/*.spec.ts',
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
