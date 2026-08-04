@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -30,53 +30,10 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: npm
 
-      - name: Bootstrap lockfile and install dependencies
-        run: npm install
-
-      - name: Upload generated lockfile
-        uses: actions/upload-artifact@v4
-        with:
-          name: generated-package-lock
-          path: package-lock.json
-          retention-days: 1
-
-      - name: Commit generated lockfile to the pull request branch
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          HEAD_BRANCH: ${{ github.head_ref }}
-        run: |
-          if git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
-            echo "package-lock.json is already tracked"
-            exit 0
-          fi
-
-          node --input-type=module <<'NODE'
-          import { readFile } from 'node:fs/promises';
-
-          const content = (await readFile('package-lock.json')).toString('base64');
-          const response = await fetch(
-            `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/contents/package-lock.json`,
-            {
-              method: 'PUT',
-              headers: {
-                Accept: 'application/vnd.github+json',
-                Authorization: `Bearer ${process.env.GH_TOKEN}`,
-                'X-GitHub-Api-Version': '2022-11-28',
-              },
-              body: JSON.stringify({
-                message: 'MAP-011: añadir lockfile reproducible',
-                content,
-                branch: process.env.HEAD_BRANCH,
-              }),
-            },
-          );
-
-          if (!response.ok) {
-            throw new Error(`${response.status} ${await response.text()}`);
-          }
-          NODE
+      - name: Install dependencies
+        run: npm ci
 
       - name: Check formatting
         run: npm run format:check
