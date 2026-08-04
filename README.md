@@ -4,9 +4,9 @@ Aplicación web para explorar un mapa interactivo de Faerûn y consultar informa
 
 ## Estado
 
-La Beta 0.1 dispone de una aplicación Vite + TypeScript con Leaflet, navegación responsive sobre el mapa oficial remoto de baja resolución y una cadena automática de calidad. Los marcadores y datos de campaña se incorporarán en Issues posteriores.
+La Beta 0.1 dispone de una aplicación Vite + TypeScript con Leaflet, navegación responsive sobre el mapa oficial remoto de baja resolución, un modelo público de datos de campaña y una cadena automática de calidad. Los marcadores y fichas visuales se incorporarán en MAP-006.
 
-Consulta [`docs/project-status.md`](docs/project-status.md) para conocer el estado actual y [`docs/working-agreement.md`](docs/working-agreement.md) para revisar el flujo de trabajo.
+Consulta [`docs/project-status.md`](docs/project-status.md) para conocer el estado actual, [`docs/data-model.md`](docs/data-model.md) para revisar el contrato de datos y [`docs/working-agreement.md`](docs/working-agreement.md) para revisar el flujo de trabajo.
 
 ## Requisitos
 
@@ -53,6 +53,28 @@ La aplicación solicita el mapa directamente a la URL oficial de Wizards. Es nec
 - Límites y zoom mínimo recalculados al cambiar el tamaño del viewport.
 - Zoom máximo limitado a la resolución útil de la imagen LowRes.
 
+## Datos de campaña
+
+El catálogo público vive en `src/data/catalog.ts`. Los tipos, relaciones, reglas de coordenadas y política de contenido están documentados en [`docs/data-model.md`](docs/data-model.md).
+
+Antes de añadir o modificar datos:
+
+1. confirma que la información es pública y conocida por los jugadores;
+2. crea IDs y slugs estables en kebab-case;
+3. añade primero las categorías y etiquetas referenciadas;
+4. usa coordenadas `{ x, y }` sobre la imagen de `3600 × 2329`, con origen en la esquina superior izquierda;
+5. ejecuta la validación específica y la cadena completa de calidad.
+
+```bash
+npm run validate:data
+npm run format:check
+npm run lint
+npm run test
+npm run build
+```
+
+No añadas notas privadas, spoilers, datos del director de juego ni campos ocultos. Todo lo incluido en el catálogo llega al frontend público.
+
 ## Comandos disponibles
 
 | Comando | Propósito |
@@ -65,26 +87,33 @@ La aplicación solicita el mapa directamente a la URL oficial de Wizards. Es nec
 | `npm run format:check` | Comprueba el formato sin modificar archivos. |
 | `npm run test` | Ejecuta las pruebas unitarias con Vitest. |
 | `npm run test:watch` | Ejecuta Vitest en modo observación. |
+| `npm run validate:data` | Valida el catálogo público y los principales casos inválidos. |
 | `npm run test:e2e` | Ejecuta las pruebas end-to-end con Playwright. |
 | `npm run test:e2e:ui` | Abre la interfaz de Playwright. |
 | `npm run test:all` | Ejecuta pruebas unitarias y end-to-end. |
 
 ## Pruebas y recurso externo
 
-Las pruebas unitarias verifican dimensiones, límites y cálculos cartográficos sin red. Las pruebas e2e interceptan exclusivamente la URL oficial y responden con un SVG neutro generado en memoria para cubrir carga, navegación, responsive y error.
+Las pruebas unitarias verifican dimensiones, límites, cálculos cartográficos, tipos de datos, relaciones, coordenadas, alias y política estructural de contenido público. Las pruebas e2e interceptan exclusivamente la URL oficial y responden con un SVG neutro generado en memoria para cubrir carga, navegación, responsive y error.
 
 La CI no descarga, almacena, archiva ni publica el mapa oficial. Tampoco genera recortes, recompressiones, conversiones, mosaicos o derivados.
 
 ## Integración continua
 
-El workflow `.github/workflows/ci.yml` se ejecuta en pull requests dirigidas a `master`. Instala las dependencias desde cero y valida formato, lint, pruebas unitarias, build y pruebas e2e en Chromium.
+El workflow `.github/workflows/ci.yml` se ejecuta en pull requests dirigidas a `master`. Instala las dependencias desde cero y valida formato, lint, pruebas unitarias, build y pruebas e2e en Chromium. La prueba unitaria del catálogo hace fallar la CI cuando los datos públicos son inválidos.
 
-## Estructura cartográfica
+## Estructura
 
 ```text
 src/
 ├── app/
 │   └── renderApp.ts      # Presentación y estructura accesible
+├── data/
+│   ├── catalog.ts        # Catálogo público y ejemplos neutros
+│   ├── coordinates.ts    # Conversión de x/y al orden de Leaflet
+│   ├── model.ts          # Entidades y relaciones TypeScript
+│   ├── validate.test.ts  # Catálogo válido y casos inválidos
+│   └── validate.ts       # Validación runtime estricta
 ├── map/
 │   ├── config.ts         # URL, dimensiones, límites y cálculos puros
 │   ├── config.test.ts    # Pruebas unitarias cartográficas
