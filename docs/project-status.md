@@ -5,12 +5,12 @@
 - Proyecto: El Atlas de los Nuevos Dioses
 - Repositorio: `EduYube/castigo-divino-map`
 - Versión objetivo: Beta 0.1
-- Estado general: Inicialización lista para revisión
-- Última actualización: 2026-08-03
+- Estado general: Fundación completada; Project preparado para clasificación automática
+- Última actualización: 2026-08-04
 
 ## Objetivo actual
 
-Fusionar la fundación del proyecto y comenzar la validación del mapa base.
+Completar la clasificación inicial de las Issues en GitHub Projects y comenzar la validación del mapa base.
 
 ## Alcance de la Beta 0.1
 
@@ -48,13 +48,13 @@ Fusionar la fundación del proyecto y comenzar la validación del mapa base.
 
 ## Fase actual
 
-Fundación del repositorio completada en una rama de trabajo y pendiente de integración.
+Fundación del repositorio completada. Los campos y vistas del GitHub Project han sido creados y existe una automatización reproducible para completar los valores de MAP-001 a MAP-011.
 
 ## Trabajo en curso
 
-- MAP-001 — Inicializar la estructura y gobernanza del proyecto.
-- Revisión e integración de la pull request fundacional.
-- Configuración manual de campos y vistas del GitHub Project.
+- MAP-001 — Completar la clasificación de las Issues en GitHub Projects.
+- Ejecutar `scripts/configure-github-project.sh` con GitHub CLI autorizado para Projects.
+- Preparar el inicio de MAP-002.
 
 ## Backlog inicial
 
@@ -72,7 +72,7 @@ Fundación del repositorio completada en una rama de trabajo y pendiente de inte
 ## Bloqueos
 
 - Validar la fuente, licencia y condiciones de redistribución del mapa oficial.
-- La conexión actual no permite configurar campos y vistas de GitHub Projects automáticamente.
+- La conexión de ChatGPT no expone operaciones de GitHub Projects; la clasificación inicial requiere ejecutar una vez el script local con GitHub CLI.
 
 ## Decisiones cerradas
 
@@ -85,6 +85,8 @@ Fundación del repositorio completada en una rama de trabajo y pendiente de inte
 - Un chat por Issue.
 - El mapa oficial con rótulos ingleses es aceptable para la beta.
 - La capa de nombres castellanos no es requisito imprescindible de la beta.
+- Los colores de los campos del Project son libres y sus descripciones son opcionales.
+- Las vistas Beta 0.1 y Trabajo actual pueden coincidir durante la fase inicial.
 
 ## Riesgos
 
@@ -96,14 +98,16 @@ Fundación del repositorio completada en una rama de trabajo y pendiente de inte
 
 ## Próximos pasos
 
-1. Revisar y fusionar la pull request de MAP-001.
-2. Configurar manualmente las vistas y campos del GitHub Project siguiendo `docs/github-project-setup.md`.
-3. Abrir un chat nuevo para MAP-002.
-4. Investigar y validar el mapa base oficial.
+1. Ejecutar la automatización de clasificación del GitHub Project.
+2. Verificar que MAP-001 aparece como Done y MAP-002/MAP-003 como Ready.
+3. Cerrar definitivamente MAP-001.
+4. Abrir un chat nuevo para MAP-002.
+5. Investigar y validar el mapa base oficial.
 
 ## Últimos cambios
 
 | Fecha | Cambio |
 |---|---|
 | 2026-08-03 | Creación inicial del estado del proyecto |
-| 2026-08-03 | Backlog Beta 0.1 creado y fundación lista para revisión |
+| 2026-08-03 | Backlog Beta 0.1 creado y fundación integrada |
+| 2026-08-04 | Campos y vistas del Project confirmados; automatización de clasificación añadida |
