@@ -315,15 +315,11 @@ export function mountFaerunMap(
     map,
     setActivePlace(placeId: PlaceId | null): void {
       activePlaceId = placeId;
-      markerByPlaceId.forEach((_marker, markerPlaceId) =>
-        updateMarkerPresentation(markerPlaceId),
-      );
+      markerByPlaceId.forEach((_marker, markerPlaceId) => updateMarkerPresentation(markerPlaceId));
     },
     setMatchingPlaces(placeIds: ReadonlySet<PlaceId>): void {
       matchingPlaceIds = new Set(placeIds);
-      markerByPlaceId.forEach((_marker, markerPlaceId) =>
-        updateMarkerPresentation(markerPlaceId),
-      );
+      markerByPlaceId.forEach((_marker, markerPlaceId) => updateMarkerPresentation(markerPlaceId));
     },
     locatePlace(placeId: PlaceId): void {
       const marker = markerByPlaceId.get(placeId);
