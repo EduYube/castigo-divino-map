@@ -31,6 +31,18 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Apply formatting for MAP-005
+        run: npm run format
+
+      - name: Upload formatted MAP-005 files
+        uses: actions/upload-artifact@v4
+        with:
+          name: map-005-formatted-files
+          path: |
+            src/data/coordinates.ts
+            src/data/validate.ts
+            src/data/validate.test.ts
+
       - name: Check formatting
         run: npm run format:check
 
