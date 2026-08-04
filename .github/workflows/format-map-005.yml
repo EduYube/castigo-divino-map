@@ -1,0 +1,40 @@
+name: Format MAP-005
+
+on:
+  push:
+    branches:
+      - agent/map-005-data-model
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/map-005-data-model
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Apply repository formatting
+        run: npm run format
+
+      - name: Remove temporary workflow
+        run: rm .github/workflows/format-map-005.yml
+
+      - name: Commit formatted files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/coordinates.ts src/data/validate.ts src/data/validate.test.ts .github/workflows/format-map-005.yml
+          git commit -m "MAP-005 apply repository formatting"
+          git push origin HEAD:agent/map-005-data-model
