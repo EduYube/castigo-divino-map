@@ -4,102 +4,103 @@
 
 - Proyecto: El Atlas de los Nuevos Dioses.
 - Repositorio: `EduYube/castigo-divino-map`.
-- Versión: Beta 0.1.
-- Estado: publicada y validada mediante GitHub Pages.
+- Versión publicada: Beta 0.1.
+- Próxima versión: Beta 0.2.
+- Estado general: alcance acordado y backlog creado; pendiente de clasificación en GitHub Projects.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-04.
 
-## Alcance completado
+## Beta 0.1
 
-MAP-001 a MAP-011 están cerradas. La aplicación dispone de:
+MAP-001 a MAP-011 están completadas. La versión publicada dispone de:
 
-- esqueleto Vite + TypeScript y calidad automática;
-- Leaflet con `CRS.Simple`, mapa remoto y superficie neutra de error;
-- catálogo público normalizado y validado;
-- marcadores accesibles y selección única;
-- fichas públicas construidas como texto;
-- búsqueda por nombre, alias y título de nota;
-- filtros por categorías y etiquetas;
-- URL canónica con `place`, `q`, `category` y `tag`;
-- historial nativo mediante `replaceState`, `pushState` y `popstate`;
-- diseño responsive desde 320 px;
-- matriz Playwright con Chromium, Firefox y WebKit móvil emulado;
-- despliegue automático mediante GitHub Pages después de CI verde sobre `master`.
+- Vite + TypeScript + Leaflet;
+- mapa oficial remoto con `L.CRS.Simple`;
+- catálogo público validado;
+- marcadores, fichas, búsqueda y filtros;
+- URLs compartibles e historial;
+- diseño responsive y accesible;
+- CI y despliegue automático en GitHub Pages;
+- funcionamiento degradado cuando falla la imagen cartográfica remota.
 
-## MAP-011
+## Objetivo de Beta 0.2
 
-Estado de la Issue: completada.  
-PR de implementación: #28, fusionada en `ebbd363e9da4f9e4476ba86895de7ed87130cada`.  
-PR de observabilidad: #29, fusionada en `9b7f4d2e29e7933c6665b4685b62adffa5ef656c`.  
-PR de documentación del bloqueo inicial: #30, fusionada en `d697ed81f27c2626afaa5d25f59205127c37da89`.  
-Workflow de calidad: `.github/workflows/ci.yml` / **CI**.  
-Workflow de publicación: `.github/workflows/pages.yml` / **Deploy Beta 0.1 to GitHub Pages**.  
-Run de despliegue validado: `30945777039`.  
-Commit desplegado: `d697ed81f27c2626afaa5d25f59205127c37da89`.
+Añadir persistencia y administración segura sin perder ninguna funcionalidad pública de Beta 0.1.
 
-La arquitectura mantiene CI y Pages separados. CI valida pull requests y commits integrados. Pages solo se activa tras una conclusión satisfactoria de CI sobre `master`; la ejecución manual se limita a `master` y repite toda la validación.
+Decisiones cerradas:
 
-El build de Pages deriva `/castigo-divino-map/` desde el entorno. Solo `dist` se sube al artefacto. La auditoría rechaza imágenes raster, archivos compatibles con mapas o mosaicos y patrones conocidos de credenciales. El JPEG oficial no se almacena ni transforma.
+- Supabase con PostgreSQL, Auth y Row Level Security.
+- Un único perfil administrativo con permisos de escritura.
+- Visitantes sin cuenta y con todas las funciones públicas actuales.
+- Entidades de tipo personaje y emplazamiento.
+- Disposición independiente: aliado, enemigo, neutral o desconocido.
+- Estados de contenido: borrador, publicado y archivado.
+- Archivado como eliminación habitual.
+- Nombres geográficos únicamente en inglés durante Beta 0.2.
+- Traducciones y notas privadas del director de juego pospuestas.
+- Solicitudes públicas con lista cerrada de tipos, sin categorías, etiquetas ni código de campaña.
+- Indicador visible de estado de Supabase y snapshot público de respaldo.
 
-## Resultados verificados
+El alcance completo vive en `docs/beta-0.2-scope.md`. Las capacidades pospuestas viven en `docs/future-improvements.md`.
 
-La validación de MAP-011 terminó en verde con:
+## Backlog Beta 0.2
 
-- instalación reproducible mediante `npm ci` y 0 vulnerabilidades detectadas;
-- formato y lint correctos;
-- 73 pruebas unitarias en 9 archivos;
-- build de Vite bajo `/castigo-divino-map/`;
-- auditoría de 3 archivos de producción;
-- 45 pruebas e2e;
-- 2 smoke tests del preview de Pages;
-- subida exclusiva de `dist` mediante la acción oficial de Pages;
-- despliegue correcto en el entorno `github-pages`;
-- 2 smoke tests contra la URL pública real;
-- estado `github-pages/deployment` en éxito y enlazado al run `30945777039`.
+Orden recomendado de ejecución:
 
-El smoke público confirmó que la página y los recursos cargan desde el subdirectorio esperado, que una URL completa restaura y conserva el estado, que atrás y adelante mantienen la política de historial, y que la experiencia crítica sigue disponible a 320 px incluso cuando falla el mapa remoto.
+1. MAP-013 — Definir la arquitectura y seguridad de la Beta 0.2.
+2. MAP-014 — Preparar Supabase, migraciones y políticas RLS.
+3. MAP-015 — Evolucionar el modelo de entidades y relaciones.
+4. MAP-016 — Implementar acceso público resiliente y estado del backend.
+5. MAP-017 — Implementar login y autorización administrativa.
+6. MAP-018 — Crear el CRUD administrativo de categorías, etiquetas y nombres.
+7. MAP-019 — Crear el CRUD de pines con editor visual y previsualización.
+8. MAP-020 — Relacionar personajes importantes con emplazamientos.
+9. MAP-021 — Implementar búsqueda geográfica por nombres del mapa.
+10. MAP-022 — Diferenciar visualmente tipos y disposiciones de pines.
+11. MAP-023 — Rediseñar la ficha compacta de los pines.
+12. MAP-024 — Crear la ficha completa en una pestaña nueva.
+13. MAP-025 — Hacer colapsables la búsqueda y los filtros.
+14. MAP-026 — Permitir solicitudes públicas de nuevos pines.
+15. MAP-027 — Moderar y convertir solicitudes en borradores.
+16. MAP-028 — Migrar el catálogo estático y preparar la transición a Supabase.
+17. MAP-029 — Validar seguridad, accesibilidad y rendimiento de Beta 0.2.
+18. MAP-030 — Publicar y validar la Beta 0.2.
 
-## Fuentes únicas y contratos cerrados
+## Trabajo actual
 
-- `src/app/placeSearch.ts`: consulta.
-- `src/app/placeFilters.ts`: categorías y etiquetas seleccionadas.
-- `src/app/placeSelection.ts`: lugar activo.
-- `src/app/urlState.ts`: representación URL pura.
-- `src/data/`: catálogo público y lógica derivada.
-- `src/map/config.ts`: URL, dimensiones, límites y estrategia del mapa.
-- `docs/data-model.md`: contrato semántico de datos.
-- ADR 0001: imagen oficial remota de baja resolución, sin copia ni derivados.
+- Incorporar MAP-013 a MAP-030 al GitHub Project.
+- Crear la opción `Beta 0.2` en el campo `Target`.
+- Crear las áreas `Backend`, `Auth` y `Admin`.
+- Ejecutar `scripts/configure-beta-0.2-project.sh`.
+- Abrir un chat independiente para MAP-013.
 
-Leaflet no conserva búsqueda, filtros, selección o URL. La publicación no introduce backend, router, autenticación, persistencia, analítica, rastreo, CDN propio ni service worker.
+## Bloqueos
 
-## Riesgos y limitaciones
+- La conexión de ChatGPT no permite modificar campos personalizados ni vistas de GitHub Projects.
+- Antes de ejecutar el script de clasificación deben existir las nuevas opciones de campo.
+- La implementación requerirá crear y configurar un proyecto Supabase, pero esto pertenece a MAP-014.
 
-- La URL cartográfica oficial es histórica y no ofrece SLA.
-- GitHub Pages y Actions son dependencias externas.
-- La imagen LowRes consume aproximadamente 32 MiB decodificada.
-- La emulación móvil no sustituye dispositivos físicos ni tecnologías de asistencia reales.
-- La validación automática no puede identificar semánticamente todos los spoilers o datos privados.
-- El catálogo actual contiene datos ficticios de demostración.
-- El repositorio es público; cualquier contenido integrado en código, historial, issues o pull requests debe tratarse como público.
+## Riesgos principales
 
-## Recuperación
+- Exposición accidental de claves o contenido no publicado.
+- Políticas RLS incompletas o inconsistentes.
+- Dependencia de Supabase y posible pausa del plan gratuito.
+- Migración de IDs, slugs y URLs existentes.
+- Concurrencia entre edición administrativa y lectura pública.
+- Spam o abuso del formulario de solicitudes.
+- Complejidad responsive de las herramientas administrativas.
+- Filtración editorial de secretos en contenido destinado a publicación.
 
-El rollback usa `git revert` mediante PR y un nuevo despliegue validado. No se reescribe `master`. Un fallo transitorio puede recuperarse con ejecución manual sobre `master`. Si aparece contenido privado o sin licencia, se revierte, puede deshabilitarse Pages temporalmente y se revocan credenciales expuestas.
+## Próximo paso
 
-El procedimiento completo vive en `docs/deployment-and-rollback.md`.
-
-## Siguiente fase propuesta
-
-MAP-012 — Incorporar el primer lote de contenido público real.
+Clasificar MAP-013 a MAP-030 en el GitHub Project y comenzar MAP-013 en un chat nuevo.
 
 ## Últimos cambios
 
 | Fecha | Cambio |
 |---|---|
 | 2026-08-03 | Fundación, alcance, arquitectura y acuerdo de trabajo |
-| 2026-08-04 | MAP-002: fuente y estrategia legal del mapa |
-| 2026-08-04 | MAP-003 a MAP-009: aplicación, datos, búsqueda, filtros y URL |
-| 2026-08-04 | MAP-010: responsive y accesibilidad transversal |
-| 2026-08-04 | MAP-011: PR #28 integra Pages, auditoría, smoke tests, rollback y checklist |
-| 2026-08-04 | MAP-011: PR #29 añade estado verificable del despliegue |
-| 2026-08-04 | MAP-011: run `30945777039` publica y valida la Beta 0.1 en GitHub Pages |
+| 2026-08-04 | MAP-002 a MAP-011 completadas y Beta 0.1 publicada |
+| 2026-08-04 | Alcance de Beta 0.2 acordado |
+| 2026-08-04 | Backlog MAP-013 a MAP-030 creado |
+| 2026-08-04 | Traducciones y notas privadas registradas como mejoras futuras |
