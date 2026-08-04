@@ -18,6 +18,7 @@ import { mountFaerunMap } from './map/leaflet';
 import './styles/main.css';
 import './styles/search.css';
 import './styles/filters.css';
+import './styles/accessibility.css';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
