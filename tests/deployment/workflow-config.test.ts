@@ -13,7 +13,7 @@ describe('GitHub Pages deployment contracts', () => {
     expect(workflow).toContain('npm ci');
     expect(workflow).toContain('npm run build:pages');
     expect(workflow).toContain('npm run verify:build');
-    expect(workflow).toContain('playwright.pages.config.ts');
+    expect(workflow).toContain('npm run test:e2e:pages');
   });
 
   it('deploys only successful master validation through the official Pages actions', async () => {
