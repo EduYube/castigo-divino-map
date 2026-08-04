@@ -122,6 +122,6 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
     .click();
   await expect(page.getByTestId('place-details')).toBeHidden();
   await expect(
-    page.getByTestId('place-marker').filter({ has: page.locator('[data-place-id="place-demo-pass"]') }),
+    page.locator('[data-testid="place-marker"][data-place-id="place-demo-pass"]'),
   ).toBeFocused();
 });
