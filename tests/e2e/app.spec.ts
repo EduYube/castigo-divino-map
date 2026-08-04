@@ -102,53 +102,50 @@ test('provides a visibly labelled search that ignores accents and case', async (
 
   await expect(page.locator('[data-place-search-status]')).toHaveText('1 lugar encontrado.');
   await expect(
-    page
-      .getByRole('list', { name: 'Resultados de búsqueda de lugares' })
-      .getByRole('button', {
-        name: /Puerto de demostración.*Coincidencia por nombre principal/i,
-      }),
+    page.getByRole('list', { name: 'Resultados de búsqueda de lugares' }).getByRole('button', {
+      name: /Puerto de demostración.*Coincidencia por nombre principal/i,
+    }),
   ).toBeVisible();
 });
 
-test(
-  'selects an alias result, locates the map and opens the existing active place details',
-  async ({ page }) => {
-    await openReadyMap(page);
+test('selects an alias result, locates the map and opens the existing active place details', async ({
+  page,
+}) => {
+  await openReadyMap(page);
 
-    const shell = page.getByTestId('map-shell');
-    const initialCenter = await shell.getAttribute('data-map-center');
-    const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  const shell = page.getByTestId('map-shell');
+  const initialCenter = await shell.getAttribute('data-map-center');
+  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
 
-    await searchbox.fill('PUERTO DE EJEMPLO');
+  await searchbox.fill('PUERTO DE EJEMPLO');
 
-    const result = page
-      .getByRole('list', { name: 'Resultados de búsqueda de lugares' })
-      .getByRole('button', {
-        name: /Puerto de demostración.*Coincidencia por alias: Puerto de ejemplo/i,
-      });
-
-    await result.click();
-
-    const panel = page.getByTestId('place-details');
-    const marker = page.getByRole('button', {
-      name: 'Puerto de demostración. Categoría: Asentamiento.',
+  const result = page
+    .getByRole('list', { name: 'Resultados de búsqueda de lugares' })
+    .getByRole('button', {
+      name: /Puerto de demostración.*Coincidencia por alias: Puerto de ejemplo/i,
     });
 
-    await expect(panel).toBeVisible();
-    await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
-    await expect(
-      panel.getByRole('heading', { level: 3, name: 'Puerto de demostración' }),
-    ).toBeFocused();
-    await expect(marker).toHaveAttribute('aria-pressed', 'true');
-    await expect(marker).toHaveClass(/campaign-marker-icon--active/);
-    await expect.poll(async () => shell.getAttribute('data-map-center')).not.toBe(initialCenter);
+  await result.click();
 
-    await panel.getByRole('button', { name: 'Cerrar la ficha del lugar' }).click();
+  const panel = page.getByTestId('place-details');
+  const marker = page.getByRole('button', {
+    name: 'Puerto de demostración. Categoría: Asentamiento.',
+  });
 
-    await expect(panel).toBeHidden();
-    await expect(marker).toBeFocused();
-  },
-);
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
+  await expect(
+    panel.getByRole('heading', { level: 3, name: 'Puerto de demostración' }),
+  ).toBeFocused();
+  await expect(marker).toHaveAttribute('aria-pressed', 'true');
+  await expect(marker).toHaveClass(/campaign-marker-icon--active/);
+  await expect.poll(async () => shell.getAttribute('data-map-center')).not.toBe(initialCenter);
+
+  await panel.getByRole('button', { name: 'Cerrar la ficha del lugar' }).click();
+
+  await expect(panel).toBeHidden();
+  await expect(marker).toBeFocused();
+});
 
 test('selects a note title result and opens the associated place', async ({ page }) => {
   await openReadyMap(page);
@@ -346,9 +343,7 @@ test('keeps search, map and details useful in a mobile viewport', async ({ page 
   expect(mapBox?.height).toBeGreaterThan(360);
   await expect(page.getByRole('button', { name: 'Limpiar búsqueda' })).toBeVisible();
 
-  await results
-    .getByRole('button', { name: /Puerto de demostración.*nombre principal/i })
-    .click();
+  await results.getByRole('button', { name: /Puerto de demostración.*nombre principal/i }).click();
 
   const panel = page.getByTestId('place-details');
 
