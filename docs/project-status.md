@@ -5,12 +5,12 @@
 - Proyecto: El Atlas de los Nuevos Dioses
 - Repositorio: `EduYube/castigo-divino-map`
 - Versión objetivo: Beta 0.1
-- Estado general: Fuente y estrategia del mapa base validadas; MAP-003 lista para comenzar
+- Estado general: Aplicación base y calidad automática completadas; MAP-004 lista para comenzar
 - Última actualización: 2026-08-04
 
 ## Objetivo actual
 
-Inicializar la aplicación web, las herramientas de calidad y la integración continua sin incorporar todavía el mapa navegable.
+Integrar el mapa navegable de Faerûn con Leaflet usando la imagen oficial remota de baja resolución, sin almacenar ni transformar el recurso.
 
 ## Alcance de la Beta 0.1
 
@@ -48,16 +48,15 @@ Inicializar la aplicación web, las herramientas de calidad y la integración co
 
 ## Fase actual
 
-La fundación y la investigación del mapa base están completadas. MAP-002 ha validado una fuente oficial de Wizards, sus restricciones y una estrategia compatible con móvil para la Beta 0.1.
+La fundación, la investigación del mapa base y el esqueleto ejecutable de la aplicación están completados. El repositorio dispone de Vite, TypeScript, Leaflet, una pantalla inicial responsive y una cadena automática de calidad validada en GitHub Actions.
 
 ## Trabajo en curso
 
-- Ninguno tras el cierre de MAP-002.
-- Siguiente Issue: MAP-003 — Inicializar la aplicación web y calidad automática.
+- Ninguno tras el cierre de MAP-003.
+- Siguiente Issue: MAP-004 — Integrar el mapa navegable de Faerûn.
 
 ## Backlog inicial
 
-- MAP-003 — Inicializar la aplicación web y calidad automática.
 - MAP-004 — Integrar el mapa navegable de Faerûn.
 - MAP-005 — Definir el modelo de datos de campaña.
 - MAP-006 — Mostrar marcadores y fichas de información.
@@ -69,18 +68,24 @@ La fundación y la investigación del mapa base están completadas. MAP-002 ha v
 
 ## Bloqueos
 
-- Ningún bloqueo para comenzar MAP-003.
-- La redistribución o transformación del mapa oficial sigue requiriendo autorización escrita; no bloquea la estrategia remota de Beta 0.1.
+- Ningún bloqueo para comenzar MAP-004.
+- La redistribución o transformación del mapa oficial sigue requiriendo autorización escrita; la estrategia remota de Beta 0.1 evita esas operaciones.
 
 ## Decisiones cerradas
 
 - Vite, TypeScript y Leaflet.
 - Vitest y Playwright.
+- ESLint y Prettier con configuración reproducible.
+- GitHub Actions valida instalación, formato, lint, pruebas unitarias, build y e2e en pull requests.
+- Node.js 22 es la versión de desarrollo y CI acordada.
 - GitHub Actions y GitHub Pages.
 - Desarrollo individual.
 - Datos estáticos para la beta.
 - GitHub como fuente de verdad.
 - Un chat por Issue.
+- La aplicación inicial usa TypeScript y CSS propios, sin framework de interfaz adicional.
+- Leaflet está aislado en `src/map/leaflet.ts`; la configuración cartográfica pertenece a MAP-004.
+- MAP-003 no incorpora `CRS.Simple`, `L.imageOverlay`, marcadores ni navegación.
 - El mapa oficial con rótulos ingleses es aceptable para la beta.
 - La capa de nombres castellanos no es requisito imprescindible de la beta.
 - Los colores de los campos del Project son libres y sus descripciones son opcionales.
@@ -98,13 +103,15 @@ La fundación y la investigación del mapa base están completadas. MAP-002 ha v
 - El uso de una imagen única consume aproximadamente 32 MiB una vez decodificada.
 - Exposición accidental de notas privadas.
 - Crecimiento del catálogo de lugares y etiquetas.
+- Las dependencias frontend deberán mantenerse actualizadas durante la beta.
 
 ## Próximos pasos
 
-1. Abrir un chat nuevo para MAP-003.
-2. Inicializar Vite y TypeScript conforme al acuerdo de trabajo.
-3. Configurar lint, formato, pruebas y CI.
-4. Mantener fuera de alcance la integración de Leaflet hasta MAP-004.
+1. Abrir un chat nuevo para MAP-004.
+2. Integrar Leaflet con `CRS.Simple` y `L.imageOverlay` usando exclusivamente la URL oficial remota de LowRes.
+3. Definir límites, zoom útil y comportamiento responsive para ratón y táctil.
+4. Añadir estado de carga, error y alternativa neutra cuando el recurso remoto no esté disponible.
+5. Mantener fuera del repositorio, build y CI cualquier copia o derivado del mapa oficial.
 
 ## Últimos cambios
 
@@ -115,3 +122,4 @@ La fundación y la investigación del mapa base están completadas. MAP-002 ha v
 | 2026-08-04 | Campos y vistas del Project confirmados; automatización de clasificación añadida |
 | 2026-08-04 | GitHub Project clasificado y fundación cerrada; MAP-002 preparada |
 | 2026-08-04 | Fuente oficial, restricciones y estrategia del mapa base documentadas; ADR 0001 aceptado |
+| 2026-08-04 | Aplicación Vite + TypeScript, calidad automática, pruebas y CI completadas en MAP-003 |
