@@ -99,9 +99,7 @@ test('preserves the same state after reload and in a new page', async ({ page, c
     'data-active-place-id',
     'place-demo-harbor',
   );
-  await expect(sharedPage.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue(
-    'puerto',
-  );
+  await expect(sharedPage.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('puerto');
   await sharedPage.close();
 });
 
@@ -121,9 +119,7 @@ test('updates query with replaceState and discrete actions with pushState', asyn
   expect(await page.evaluate(() => window.history.length)).toBe(initialHistoryLength + 1);
 
   await marker(page, 'place-demo-pass').click();
-  await expect(page).toHaveURL(
-    /\?place=paso-de-demostracion&q=paso&category=lugares-destacados$/,
-  );
+  await expect(page).toHaveURL(/\?place=paso-de-demostracion&q=paso&category=lugares-destacados$/);
   expect(await page.evaluate(() => window.history.length)).toBe(initialHistoryLength + 2);
 });
 
