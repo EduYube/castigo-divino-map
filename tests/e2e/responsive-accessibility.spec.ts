@@ -70,53 +70,56 @@ async function expectTouchTarget(locator: Locator): Promise<void> {
   expect(box.height).toBeGreaterThanOrEqual(44);
 }
 
-test('keeps semantic regions, names, focus and touch targets usable from 320 px', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 740 });
-  await openReadyMap(page);
+test(
+  'keeps semantic regions, names, focus and touch targets usable from 320 px',
+  async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 740 });
+    await openReadyMap(page);
 
-  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
-  const categoryGroup = page.getByRole('group', { name: 'Categorías' });
-  const tagGroup = page.getByRole('group', { name: 'Etiquetas' });
-  const mapRegion = page.getByRole('region', {
-    name: 'Mapa navegable de la Costa de la Espada y el noroeste de Faerûn',
-  });
-  const zoomIn = page.getByTitle('Acercar');
-  const zoomOut = page.getByTitle('Alejar');
+    const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+    const categoryGroup = page.getByRole('group', { name: 'Categorías' });
+    const tagGroup = page.getByRole('group', { name: 'Etiquetas' });
+    const mapRegion = page.getByRole('region', {
+      name: 'Mapa navegable de la Costa de la Espada y el noroeste de Faerûn',
+    });
+    const zoomIn = page.getByTitle('Acercar');
+    const zoomOut = page.getByTitle('Alejar');
 
-  await expect(page.getByRole('banner')).toBeVisible();
-  await expect(page.getByRole('main')).toBeVisible();
-  await expect(page.getByRole('contentinfo')).toBeVisible();
-  await expect(page.getByRole('search', { name: 'Buscar lugares' })).toBeVisible();
-  await expect(categoryGroup).toBeVisible();
-  await expect(tagGroup).toBeVisible();
-  await expect(mapRegion).toBeVisible();
-  await expect(zoomIn).toHaveAttribute('aria-label', 'Acercar');
-  await expect(zoomOut).toHaveAttribute('aria-label', 'Alejar');
+    await expect(page.getByRole('banner')).toBeVisible();
+    await expect(page.getByRole('main')).toBeVisible();
+    await expect(page.getByRole('contentinfo')).toBeVisible();
+    await expect(page.getByRole('search', { name: 'Buscar lugares' })).toBeVisible();
+    await expect(categoryGroup).toBeVisible();
+    await expect(tagGroup).toBeVisible();
+    await expect(mapRegion).toBeVisible();
+    await expect(zoomIn).toHaveAttribute('aria-label', 'Acercar');
+    await expect(zoomOut).toHaveAttribute('aria-label', 'Alejar');
 
-  await expectNoHorizontalOverflow(page);
-  await expectWithinViewportWidth(page, page.locator('.site-header'));
-  await expectWithinViewportWidth(page, page.locator('[data-place-search]'));
-  await expectWithinViewportWidth(page, page.locator('[data-place-filters]'));
-  await expectWithinViewportWidth(page, page.getByTestId('map-shell'));
-  await expectTouchTarget(page.getByRole('button', { name: 'Limpiar búsqueda' }));
-  await expectTouchTarget(page.getByRole('button', { name: 'Limpiar filtros' }));
-  await expectTouchTarget(zoomIn);
-  await expectTouchTarget(zoomOut);
-  await expectTouchTarget(marker(page, 'place-demo-harbor'));
+    await expectNoHorizontalOverflow(page);
+    await expectWithinViewportWidth(page, page.locator('.site-header'));
+    await expectWithinViewportWidth(page, page.locator('[data-place-search]'));
+    await expectWithinViewportWidth(page, page.locator('[data-place-filters]'));
+    await expectWithinViewportWidth(page, page.getByTestId('map-shell'));
+    await expectTouchTarget(page.getByRole('button', { name: 'Limpiar búsqueda' }));
+    await expectTouchTarget(page.getByRole('button', { name: 'Limpiar filtros' }));
+    await expectTouchTarget(zoomIn);
+    await expectTouchTarget(zoomOut);
+    await expectTouchTarget(marker(page, 'place-demo-harbor'));
 
-  await searchbox.focus();
-  const focusStyle = await searchbox.evaluate((element) => {
-    const style = getComputedStyle(element);
+    await searchbox.focus();
+    const focusStyle = await searchbox.evaluate((element) => {
+      const style = getComputedStyle(element);
 
-    return {
-      outlineStyle: style.outlineStyle,
-      outlineWidth: Number.parseFloat(style.outlineWidth),
-    };
-  });
+      return {
+        outlineStyle: style.outlineStyle,
+        outlineWidth: Number.parseFloat(style.outlineWidth),
+      };
+    });
 
-  expect(focusStyle.outlineStyle).not.toBe('none');
-  expect(focusStyle.outlineWidth).toBeGreaterThanOrEqual(2);
-});
+    expect(focusStyle.outlineStyle).not.toBe('none');
+    expect(focusStyle.outlineWidth).toBeGreaterThanOrEqual(2);
+  },
+);
 
 test('preserves a logical keyboard flow for search and filters', async ({ page }) => {
   await openReadyMap(page);
