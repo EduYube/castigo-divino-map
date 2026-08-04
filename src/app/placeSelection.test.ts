@@ -12,11 +12,7 @@ describe('place selection controller', () => {
     controller.select('place-demo-pass');
     controller.clear();
 
-    expect(listener.mock.calls).toEqual([
-      ['place-demo-harbor'],
-      ['place-demo-pass'],
-      [null],
-    ]);
+    expect(listener.mock.calls).toEqual([['place-demo-harbor'], ['place-demo-pass'], [null]]);
     expect(controller.getActivePlaceId()).toBeNull();
   });
 

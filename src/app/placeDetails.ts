@@ -57,7 +57,12 @@ function appendAliases(parent: HTMLElement, aliases: readonly string[]): void {
   }
 
   const section = document.createElement('section');
-  const heading = appendTextElement(section, 'h4', 'place-details__section-title', 'Alias públicos');
+  const heading = appendTextElement(
+    section,
+    'h4',
+    'place-details__section-title',
+    'Alias públicos',
+  );
   const list = document.createElement('ul');
 
   heading.id = 'place-details-aliases-title';

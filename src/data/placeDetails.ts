@@ -34,10 +34,7 @@ export interface PlaceDetailModel {
   readonly notes: readonly PublicNoteDetailModel[];
 }
 
-function resolveCategory(
-  catalog: CampaignCatalog,
-  place: CampaignPlace,
-): CampaignCategory {
+function resolveCategory(catalog: CampaignCatalog, place: CampaignPlace): CampaignCategory {
   const category = catalog.categories.find(({ id }) => id === place.categoryId);
 
   if (!category) {
@@ -47,10 +44,7 @@ function resolveCategory(
   return category;
 }
 
-function resolveTags(
-  catalog: CampaignCatalog,
-  tagIds: readonly string[],
-): readonly CampaignTag[] {
+function resolveTags(catalog: CampaignCatalog, tagIds: readonly string[]): readonly CampaignTag[] {
   return tagIds.map((tagId) => {
     const tag = catalog.tags.find(({ id }) => id === tagId);
 
@@ -69,9 +63,7 @@ export function getPublicNotesForPlace(
   return catalog.notes.filter((note) => note.placeId === placeId);
 }
 
-export function createPlaceMarkerModels(
-  catalog: CampaignCatalog,
-): readonly PlaceMarkerModel[] {
+export function createPlaceMarkerModels(catalog: CampaignCatalog): readonly PlaceMarkerModel[] {
   return catalog.places.map((place) => {
     const category = resolveCategory(catalog, place);
     const categoryIndex = catalog.categories.findIndex(({ id }) => id === category.id);

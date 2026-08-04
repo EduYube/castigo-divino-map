@@ -94,7 +94,9 @@ test('opens the correct public place details and closes back to its marker', asy
 
   await expect(panel).toBeVisible();
   await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
-  await expect(page.getByRole('heading', { level: 3, name: 'Puerto de demostración' })).toBeFocused();
+  await expect(
+    page.getByRole('heading', { level: 3, name: 'Puerto de demostración' }),
+  ).toBeFocused();
   await expect(panel.getByText('Puerto de ejemplo', { exact: true })).toBeVisible();
   await expect(panel.getByText('Asentamiento', { exact: true })).toBeVisible();
   await expect(panel.getByText('Costero', { exact: true })).toBeVisible();
@@ -114,7 +116,9 @@ test('opens the correct public place details and closes back to its marker', asy
   await expect(marker).toBeFocused();
 });
 
-test('supports keyboard marker activation and keyboard close without a focus trap', async ({ page }) => {
+test('supports keyboard marker activation and keyboard close without a focus trap', async ({
+  page,
+}) => {
   await openReadyMap(page);
 
   const marker = page.getByRole('button', {

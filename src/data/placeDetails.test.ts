@@ -31,11 +31,7 @@ describe('public place presentation models', () => {
       name: 'Puerto de demostración',
       aliases: ['Puerto de ejemplo'],
       category: { name: 'Asentamiento' },
-      tags: [
-        { name: 'Costero' },
-        { name: 'Dato de demostración' },
-        { name: 'Ruta comercial' },
-      ],
+      tags: [{ name: 'Costero' }, { name: 'Dato de demostración' }, { name: 'Ruta comercial' }],
       notes: [
         {
           title: 'Información pública de demostración',

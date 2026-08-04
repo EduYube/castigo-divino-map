@@ -194,15 +194,12 @@ export function mountFaerunMap(
 
   options.markers?.forEach((marker) => {
     const activate = (): void => options.onPlaceActivate?.(marker.id);
-    const leafletMarker = L.marker(
-      L.latLng(marker.coordinate[0], marker.coordinate[1]),
-      {
-        icon: createMarkerIcon(marker),
-        keyboard: true,
-        riseOnHover: true,
-        title: `${marker.name} — ${marker.categoryName}`,
-      },
-    );
+    const leafletMarker = L.marker(L.latLng(marker.coordinate[0], marker.coordinate[1]), {
+      icon: createMarkerIcon(marker),
+      keyboard: true,
+      riseOnHover: true,
+      title: `${marker.name} — ${marker.categoryName}`,
+    });
 
     leafletMarker.on('click', activate);
     leafletMarker.on('add', () =>
