@@ -40,10 +40,7 @@ export function createSimpleImageBounds(size: PixelSize = FAERUN_MAP_SIZE): Simp
   ];
 }
 
-export function calculateFitZoom(
-  viewport: PixelSize,
-  image: PixelSize = FAERUN_MAP_SIZE,
-): number {
+export function calculateFitZoom(viewport: PixelSize, image: PixelSize = FAERUN_MAP_SIZE): number {
   assertPositiveSize(viewport, 'Viewport');
   assertPositiveSize(image, 'Map image');
 
