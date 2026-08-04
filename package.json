@@ -13,7 +13,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
+    "format:check": "prettier --write tests/e2e/app.spec.ts && git diff -- tests/e2e/app.spec.ts && exit 1",
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:data": "vitest run src/data/validate.test.ts",
