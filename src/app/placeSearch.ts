@@ -15,6 +15,7 @@ export interface PlaceSearchController {
 export interface PlaceSearchOptions {
   readonly catalog: CampaignCatalog;
   readonly onSelect: (placeId: PlaceId) => void;
+  readonly onQueryChange?: (query: string) => void;
 }
 
 interface PlaceSearchElements {
@@ -129,15 +130,19 @@ export function mountPlaceSearch(
     elements.results.hidden = false;
   };
 
+  const publishQueryChange = (): void => options.onQueryChange?.(query);
+
   const handleInput = (): void => {
     query = elements.input.value;
     render();
+    publishQueryChange();
   };
 
   const handleClear = (): void => {
     query = '';
     elements.input.value = '';
     render();
+    publishQueryChange();
     elements.input.focus();
   };
 

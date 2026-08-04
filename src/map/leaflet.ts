@@ -9,6 +9,7 @@ export type MapLoadState = 'loading' | 'ready' | 'error';
 export interface FaerunMapController {
   readonly map: LeafletMap;
   setActivePlace(placeId: PlaceId | null): void;
+  setMatchingPlaces(placeIds: ReadonlySet<PlaceId>): void;
   locatePlace(placeId: PlaceId): void;
   focusMarker(placeId: PlaceId): void;
   destroy(): void;
@@ -190,8 +191,41 @@ export function mountFaerunMap(
   constrainViewport(map, bounds, true);
 
   const markerByPlaceId = new Map<PlaceId, Marker>();
+  const markerModelByPlaceId = new Map<PlaceId, PlaceMarkerModel>();
   const markerClickHandlers = new Map<PlaceId, () => void>();
   const markerDomListeners: MarkerDomListener[] = [];
+  let activePlaceId: PlaceId | null = null;
+  let matchingPlaceIds = new Set<PlaceId>((options.markers ?? []).map(({ id }) => id));
+
+  const updateMarkerPresentation = (placeId: PlaceId): void => {
+    const marker = markerByPlaceId.get(placeId);
+    const markerModel = markerModelByPlaceId.get(placeId);
+    const element = marker?.getElement();
+
+    if (!marker || !markerModel || !element) {
+      return;
+    }
+
+    const isActive = placeId === activePlaceId;
+    const isMatching = matchingPlaceIds.has(placeId);
+
+    element.classList.toggle('campaign-marker-icon--active', isActive);
+    element.classList.toggle('campaign-marker-icon--matching', isMatching);
+    element.classList.toggle('campaign-marker-icon--dimmed', !isMatching);
+    element.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    element.setAttribute(
+      'aria-description',
+      isMatching
+        ? isActive
+          ? 'Lugar activo. Coincide con la búsqueda y los filtros actuales.'
+          : 'Coincide con la búsqueda y los filtros actuales.'
+        : isActive
+          ? 'Lugar activo. No coincide con la búsqueda y los filtros actuales, pero sigue disponible.'
+          : 'No coincide con la búsqueda y los filtros actuales, pero sigue disponible.',
+    );
+    element.dataset.filterMatch = isMatching ? 'true' : 'false';
+    marker.setZIndexOffset(isActive ? 1000 : isMatching ? 200 : 0);
+  };
 
   options.markers?.forEach((marker) => {
     const activate = (): void => options.onPlaceActivate?.(marker.id);
@@ -203,12 +237,14 @@ export function mountFaerunMap(
     });
 
     leafletMarker.on('click', activate);
-    leafletMarker.on('add', () =>
-      decorateMarkerElement(leafletMarker, marker, activate, markerDomListeners),
-    );
-    leafletMarker.addTo(map);
+    leafletMarker.on('add', () => {
+      decorateMarkerElement(leafletMarker, marker, activate, markerDomListeners);
+      updateMarkerPresentation(marker.id);
+    });
     markerByPlaceId.set(marker.id, leafletMarker);
+    markerModelByPlaceId.set(marker.id, marker);
     markerClickHandlers.set(marker.id, activate);
+    leafletMarker.addTo(map);
   });
 
   const imageOverlay = L.imageOverlay(OFFICIAL_MAP_URL, bounds, {
@@ -278,14 +314,12 @@ export function mountFaerunMap(
   return {
     map,
     setActivePlace(placeId: PlaceId | null): void {
-      markerByPlaceId.forEach((marker, markerPlaceId) => {
-        const isActive = markerPlaceId === placeId;
-        const element = marker.getElement();
-
-        element?.classList.toggle('campaign-marker-icon--active', isActive);
-        element?.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-        marker.setZIndexOffset(isActive ? 1000 : 0);
-      });
+      activePlaceId = placeId;
+      markerByPlaceId.forEach((_marker, markerPlaceId) => updateMarkerPresentation(markerPlaceId));
+    },
+    setMatchingPlaces(placeIds: ReadonlySet<PlaceId>): void {
+      matchingPlaceIds = new Set(placeIds);
+      markerByPlaceId.forEach((_marker, markerPlaceId) => updateMarkerPresentation(markerPlaceId));
     },
     locatePlace(placeId: PlaceId): void {
       const marker = markerByPlaceId.get(placeId);

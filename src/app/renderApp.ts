@@ -14,11 +14,11 @@ export function renderApp(): string {
     <main id="main-content" class="atlas-main">
       <section class="map-introduction" aria-labelledby="atlas-title">
         <div>
-          <p class="eyebrow">Cartografía interactiva · MAP-007</p>
+          <p class="eyebrow">Cartografía interactiva · MAP-008</p>
           <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
           <p class="map-introduction__lead">
             Explora lugares públicos de la campaña sobre la Costa de la Espada, búscalos por su
-            nombre, alias o notas públicas y consulta sus categorías y etiquetas.
+            nombre, alias o notas públicas y filtra sus categorías y etiquetas.
           </p>
         </div>
         <p class="map-introduction__source">
@@ -33,9 +33,9 @@ export function renderApp(): string {
             <h2 id="map-heading">Faerûn</h2>
           </div>
           <p id="map-instructions" class="map-instructions">
-            Busca lugares por nombre, alias o título de nota. Recorre los resultados y marcadores
-            con Tab o las flechas indicadas, y actívalos con Enter o la barra espaciadora. Arrastra
-            el mapa y usa la rueda, los gestos táctiles o los controles para cambiar el zoom.
+            Busca y filtra lugares. Recorre controles, resultados y marcadores con Tab, y actívalos
+            con Enter o la barra espaciadora. Arrastra el mapa y usa la rueda, los gestos táctiles o
+            los controles para cambiar el zoom. Los marcadores atenuados siguen siendo operables.
           </p>
         </div>
 
@@ -94,6 +94,59 @@ export function renderApp(): string {
           ></ul>
         </section>
 
+        <section
+          class="place-filters"
+          data-place-filters
+          data-has-matches="true"
+          aria-labelledby="place-filters-title"
+        >
+          <div class="place-filters__header">
+            <div>
+              <h3 id="place-filters-title" class="place-filters__title">Filtrar lugares</h3>
+              <p id="place-filters-hint" class="place-filters__hint">
+                Dentro de cada grupo se aplica OR; categoría, etiquetas y búsqueda se combinan con
+                AND. Las etiquetas incluyen las asociadas a notas públicas.
+              </p>
+            </div>
+            <button
+              class="place-filters__clear"
+              data-place-filters-clear
+              type="button"
+              aria-describedby="place-filters-hint place-filters-status"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+          <div class="place-filters__groups">
+            <fieldset class="place-filters__group">
+              <legend>Categorías</legend>
+              <div
+                class="place-filters__options"
+                data-place-filter-categories
+                aria-describedby="place-filters-hint"
+              ></div>
+            </fieldset>
+            <fieldset class="place-filters__group">
+              <legend>Etiquetas</legend>
+              <div
+                class="place-filters__options"
+                data-place-filter-tags
+                aria-describedby="place-filters-hint"
+              ></div>
+            </fieldset>
+          </div>
+          <p
+            id="place-filters-status"
+            class="place-filters__status"
+            data-place-filters-status
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            Todos los lugares coinciden.
+          </p>
+        </section>
+
         <div class="map-workspace" data-map-workspace>
           <div
             class="map-shell"
@@ -106,7 +159,7 @@ export function renderApp(): string {
               class="map-canvas"
               data-map-canvas
               aria-label="Mapa navegable de la Costa de la Espada y el noroeste de Faerûn"
-              aria-describedby="map-instructions"
+              aria-describedby="map-instructions place-filters-status"
             ></div>
             <p class="map-status" data-map-status role="status" aria-live="polite">
               Cargando la cartografía oficial de Faerûn…

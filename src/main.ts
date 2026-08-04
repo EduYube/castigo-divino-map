@@ -1,15 +1,18 @@
 import 'leaflet/dist/leaflet.css';
 
 import { mountPlaceDetails } from './app/placeDetails';
+import { mountPlaceFilters } from './app/placeFilters';
 import { mountPlaceSearch } from './app/placeSearch';
 import { createPlaceSelectionController } from './app/placeSelection';
 import { renderApp } from './app/renderApp';
 import { campaignCatalog } from './data/catalog';
+import { deriveMatchingPublicPlaceIds } from './data/filters';
 import type { PlaceId } from './data/model';
 import { buildPlaceDetailModel, createPlaceMarkerModels } from './data/placeDetails';
 import { mountFaerunMap } from './map/leaflet';
 import './styles/main.css';
 import './styles/search.css';
+import './styles/filters.css';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -50,21 +53,14 @@ const showPlaceDetails = (placeId: PlaceId): boolean => {
   return true;
 };
 
-selection.subscribe((activePlaceId) => {
-  mapController.setActivePlace(activePlaceId);
-
-  if (!activePlaceId) {
-    placeDetailsController.hide();
-    return;
-  }
-
-  if (!showPlaceDetails(activePlaceId)) {
-    selection.clear();
-  }
+const placeFiltersController = mountPlaceFilters(app, {
+  catalog: campaignCatalog,
+  onChange: updateMatchingPlaces,
 });
 
-mountPlaceSearch(app, {
+const placeSearchController = mountPlaceSearch(app, {
   catalog: campaignCatalog,
+  onQueryChange: updateMatchingPlaces,
   onSelect(placeId): void {
     const wasAlreadyActive = selection.getActivePlaceId() === placeId;
 
@@ -76,3 +72,35 @@ mountPlaceSearch(app, {
     }
   },
 });
+
+function updateMatchingPlaces(): void {
+  const matchingPlaceIds = deriveMatchingPublicPlaceIds(
+    campaignCatalog,
+    placeSearchController.getQuery(),
+    placeFiltersController.getState(),
+  );
+  const matchingPlaceIdSet = new Set(matchingPlaceIds);
+  const activePlaceId = selection.getActivePlaceId();
+
+  mapController.setMatchingPlaces(matchingPlaceIdSet);
+  placeFiltersController.setMatchSummary(
+    matchingPlaceIds.length,
+    activePlaceId ? matchingPlaceIdSet.has(activePlaceId) : null,
+  );
+}
+
+selection.subscribe((activePlaceId) => {
+  mapController.setActivePlace(activePlaceId);
+  updateMatchingPlaces();
+
+  if (!activePlaceId) {
+    placeDetailsController.hide();
+    return;
+  }
+
+  if (!showPlaceDetails(activePlaceId)) {
+    selection.clear();
+  }
+});
+
+updateMatchingPlaces();
