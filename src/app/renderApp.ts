@@ -1,5 +1,7 @@
 export function renderApp(): string {
   return `
+    <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+
     <header class="site-header">
       <a class="brand" href="#main-content" aria-label="Ir al mapa del Atlas">
         <span class="brand__mark" aria-hidden="true">✦</span>
