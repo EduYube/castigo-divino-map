@@ -31,11 +31,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Format branch for diagnostics
-        run: |
-          npm run format
-          git diff --check
-          git diff -- src tests
+      - name: Check formatting
+        run: npm run format:check
 
       - name: Lint
         run: npm run lint
