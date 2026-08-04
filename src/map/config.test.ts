@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  FAERUN_MAP_SIZE,
-  calculateFitZoom,
-  createSimpleImageBounds,
-} from './config';
+import { FAERUN_MAP_SIZE, calculateFitZoom, createSimpleImageBounds } from './config';
 
 describe('Faerûn map configuration', () => {
   it('creates CRS.Simple bounds with latitude mapped to image height', () => {
