@@ -83,9 +83,7 @@ test('combines search, categories and tags with AND without hiding search result
   await page.getByRole('checkbox', { name: /Asentamiento/ }).check();
   await page.getByRole('searchbox', { name: 'Buscar lugares' }).fill('paso');
 
-  await expect(page.locator('[data-place-filters-status]')).toContainText(
-    'Ningún lugar coincide',
-  );
+  await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún lugar coincide');
   await expect(marker(page, 'place-demo-harbor')).toHaveAttribute('data-filter-match', 'false');
   await expect(marker(page, 'place-demo-pass')).toHaveAttribute('data-filter-match', 'false');
 
