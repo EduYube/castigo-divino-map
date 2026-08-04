@@ -14,11 +14,11 @@ export function renderApp(): string {
     <main id="main-content" class="atlas-main">
       <section class="map-introduction" aria-labelledby="atlas-title">
         <div>
-          <p class="eyebrow">Cartografía interactiva · MAP-004</p>
+          <p class="eyebrow">Cartografía interactiva · MAP-006</p>
           <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
           <p class="map-introduction__lead">
-            Explora la Costa de la Espada y el noroeste de Faerûn con zoom y desplazamiento
-            acotados a la cartografía disponible.
+            Explora lugares públicos de la campaña sobre la Costa de la Espada y consulta sus
+            categorías, etiquetas y notas mediante marcadores accesibles.
           </p>
         </div>
         <p class="map-introduction__source">
@@ -34,26 +34,52 @@ export function renderApp(): string {
           </div>
           <p id="map-instructions" class="map-instructions">
             Arrastra para desplazarte. Usa la rueda, el trackpad, los gestos táctiles o los
-            controles para acercar y alejar.
+            controles para acercar y alejar. Recorre los marcadores con Tab y actívalos con Enter
+            o la barra espaciadora.
           </p>
         </div>
 
-        <div
-          class="map-shell"
-          data-map-shell
-          data-map-state="loading"
-          data-testid="map-shell"
-          aria-busy="true"
-        >
+        <div class="map-workspace" data-map-workspace>
           <div
-            class="map-canvas"
-            data-map-canvas
-            aria-label="Mapa navegable de la Costa de la Espada y el noroeste de Faerûn"
-            aria-describedby="map-instructions"
-          ></div>
-          <p class="map-status" data-map-status role="status" aria-live="polite">
-            Cargando la cartografía oficial de Faerûn…
-          </p>
+            class="map-shell"
+            data-map-shell
+            data-map-state="loading"
+            data-testid="map-shell"
+            aria-busy="true"
+          >
+            <div
+              class="map-canvas"
+              data-map-canvas
+              aria-label="Mapa navegable de la Costa de la Espada y el noroeste de Faerûn"
+              aria-describedby="map-instructions"
+            ></div>
+            <p class="map-status" data-map-status role="status" aria-live="polite">
+              Cargando la cartografía oficial de Faerûn…
+            </p>
+          </div>
+
+          <aside
+            class="place-details"
+            data-place-details
+            data-testid="place-details"
+            role="region"
+            aria-labelledby="place-details-title"
+            aria-live="polite"
+            hidden
+          >
+            <div class="place-details__toolbar">
+              <p class="place-details__label">Ficha del lugar activo</p>
+              <button
+                class="place-details__close"
+                type="button"
+                data-place-details-close
+                aria-label="Cerrar la ficha del lugar"
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <div class="place-details__content" data-place-details-content></div>
+          </aside>
         </div>
       </section>
 
