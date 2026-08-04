@@ -5,7 +5,7 @@ import { createPlaceSelectionController } from './app/placeSelection';
 import { renderApp } from './app/renderApp';
 import { campaignCatalog } from './data/catalog';
 import { buildPlaceDetailModel, createPlaceMarkerModels } from './data/placeDetails';
-import { mountFaerunMap, type FaerunMapController } from './map/leaflet';
+import { mountFaerunMap } from './map/leaflet';
 import './styles/main.css';
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -17,7 +17,12 @@ if (!app) {
 app.innerHTML = renderApp();
 
 const selection = createPlaceSelectionController();
-let mapController: FaerunMapController | undefined;
+const mapController = mountFaerunMap(app, {
+  markers: createPlaceMarkerModels(campaignCatalog),
+  onPlaceActivate(placeId): void {
+    selection.select(placeId);
+  },
+});
 
 const placeDetailsController = mountPlaceDetails(app, {
   onClose(): void {
@@ -26,20 +31,13 @@ const placeDetailsController = mountPlaceDetails(app, {
     selection.clear();
 
     if (previouslyActivePlaceId) {
-      window.requestAnimationFrame(() => mapController?.focusMarker(previouslyActivePlaceId));
+      window.requestAnimationFrame(() => mapController.focusMarker(previouslyActivePlaceId));
     }
   },
 });
 
-mapController = mountFaerunMap(app, {
-  markers: createPlaceMarkerModels(campaignCatalog),
-  onPlaceActivate(placeId): void {
-    selection.select(placeId);
-  },
-});
-
 selection.subscribe((activePlaceId) => {
-  mapController?.setActivePlace(activePlaceId);
+  mapController.setActivePlace(activePlaceId);
 
   if (!activePlaceId) {
     placeDetailsController.hide();
