@@ -14,11 +14,11 @@ export function renderApp(): string {
     <main id="main-content" class="atlas-main">
       <section class="map-introduction" aria-labelledby="atlas-title">
         <div>
-          <p class="eyebrow">Cartografía interactiva · MAP-006</p>
+          <p class="eyebrow">Cartografía interactiva · MAP-007</p>
           <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
           <p class="map-introduction__lead">
-            Explora lugares públicos de la campaña sobre la Costa de la Espada y consulta sus
-            categorías, etiquetas y notas mediante marcadores accesibles.
+            Explora lugares públicos de la campaña sobre la Costa de la Espada, búscalos por su
+            nombre, alias o notas públicas y consulta sus categorías y etiquetas.
           </p>
         </div>
         <p class="map-introduction__source">
@@ -33,11 +33,66 @@ export function renderApp(): string {
             <h2 id="map-heading">Faerûn</h2>
           </div>
           <p id="map-instructions" class="map-instructions">
-            Arrastra para desplazarte. Usa la rueda, el trackpad, los gestos táctiles o los
-            controles para acercar y alejar. Recorre los marcadores con Tab y actívalos con Enter
-            o la barra espaciadora.
+            Busca lugares por nombre, alias o título de nota. Recorre los resultados y marcadores
+            con Tab o las flechas indicadas, y actívalos con Enter o la barra espaciadora. Arrastra
+            el mapa y usa la rueda, los gestos táctiles o los controles para cambiar el zoom.
           </p>
         </div>
+
+        <section
+          class="place-search"
+          data-place-search
+          role="search"
+          aria-labelledby="place-search-label"
+        >
+          <div class="place-search__header">
+            <div>
+              <label id="place-search-label" class="place-search__label" for="place-search-input">
+                Buscar lugares
+              </label>
+              <p id="place-search-hint" class="place-search__hint">
+                Nombre principal, alias público o título de una nota pública.
+              </p>
+            </div>
+            <div class="place-search__controls">
+              <input
+                id="place-search-input"
+                class="place-search__input"
+                data-place-search-input
+                type="search"
+                name="place-search"
+                autocomplete="off"
+                spellcheck="false"
+                aria-describedby="place-search-hint place-search-status"
+              />
+              <button
+                class="place-search__clear"
+                data-place-search-clear
+                type="button"
+                aria-controls="place-search-results"
+              >
+                Limpiar búsqueda
+              </button>
+            </div>
+          </div>
+          <p
+            id="place-search-status"
+            class="place-search__status"
+            data-place-search-status
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            Escribe un nombre, alias o título de nota pública.
+          </p>
+          <ul
+            id="place-search-results"
+            class="place-search__results"
+            data-place-search-results
+            aria-label="Resultados de búsqueda de lugares"
+            hidden
+          ></ul>
+        </section>
 
         <div class="map-workspace" data-map-workspace>
           <div

@@ -9,6 +9,7 @@ export type MapLoadState = 'loading' | 'ready' | 'error';
 export interface FaerunMapController {
   readonly map: LeafletMap;
   setActivePlace(placeId: PlaceId | null): void;
+  locatePlace(placeId: PlaceId): void;
   focusMarker(placeId: PlaceId): void;
   destroy(): void;
 }
@@ -285,6 +286,22 @@ export function mountFaerunMap(
         element?.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         marker.setZIndexOffset(isActive ? 1000 : 0);
       });
+    },
+    locatePlace(placeId: PlaceId): void {
+      const marker = markerByPlaceId.get(placeId);
+
+      if (!marker) {
+        return;
+      }
+
+      const targetZoom = Math.min(
+        FAERUN_MAP_CONFIG.maxZoom,
+        Math.max(map.getZoom(), map.getMinZoom() + 1),
+      );
+
+      map.setView(marker.getLatLng(), targetZoom, { animate: false });
+      map.panInsideBounds(bounds, { animate: false });
+      synchronizeView();
     },
     focusMarker(placeId: PlaceId): void {
       markerByPlaceId.get(placeId)?.getElement()?.focus({ preventScroll: true });
