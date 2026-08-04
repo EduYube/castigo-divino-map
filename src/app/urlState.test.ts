@@ -63,9 +63,9 @@ function serialize(state: PublicAppUrlState): string {
 describe('public application URL state', () => {
   it('serializes a completely empty state without parameters', () => {
     expect(serialize(EMPTY_PUBLIC_APP_URL_STATE)).toBe('');
-    expect(
-      createCanonicalPublicAppUrl(urlCatalog, baseUrl, EMPTY_PUBLIC_APP_URL_STATE).href,
-    ).toBe(baseUrl.href);
+    expect(createCanonicalPublicAppUrl(urlCatalog, baseUrl, EMPTY_PUBLIC_APP_URL_STATE).href).toBe(
+      baseUrl.href,
+    );
   });
 
   it('serializes only the active place using its stable slug', () => {
@@ -130,11 +130,7 @@ describe('public application URL state', () => {
     expect(
       normalizePublicAppUrlState(urlCatalog, {
         ...EMPTY_PUBLIC_APP_URL_STATE,
-        selectedCategoryIds: [
-          'category-landmark',
-          'category-settlement',
-          'category-landmark',
-        ],
+        selectedCategoryIds: ['category-landmark', 'category-settlement', 'category-landmark'],
         selectedTagIds: ['mountain-pass', 'coastal', 'mountain-pass'],
       }),
     ).toEqual({
@@ -211,9 +207,7 @@ describe('public application URL state', () => {
   it('accepts stable IDs and canonicalizes them to public slugs where available', () => {
     const parsed = parsePublicAppUrlState(
       urlCatalog,
-      new URL(
-        `${baseUrl.href}?place=place-demo-pass&category=category-landmark&tag=trade-route`,
-      ),
+      new URL(`${baseUrl.href}?place=place-demo-pass&category=category-landmark&tag=trade-route`),
     );
 
     expect(parsed.state.activePlaceId).toBe('place-demo-pass');
