@@ -26,10 +26,7 @@ describe('campaign data validation', () => {
   });
 
   it('maps image x/y coordinates to Leaflet y/x coordinates', () => {
-    expect(toLeafletSimpleCoordinate({ x: 1080.5, y: 820 })).toEqual([
-      820,
-      1080.5,
-    ]);
+    expect(toLeafletSimpleCoordinate({ x: 1080.5, y: 820 })).toEqual([820, 1080.5]);
   });
 
   it('rejects duplicate stable IDs and slugs', () => {
@@ -125,10 +122,7 @@ describe('campaign data validation', () => {
       {
         ...campaignCatalog,
         places: [placeWithoutName, campaignCatalog.places[1]],
-        notes: [
-          { ...campaignCatalog.notes[0], body: '   ' },
-          campaignCatalog.notes[1],
-        ],
+        notes: [{ ...campaignCatalog.notes[0], body: '   ' }, campaignCatalog.notes[1]],
       },
       'required',
     );
@@ -186,10 +180,7 @@ describe('campaign data validation', () => {
     expect(() =>
       assertValidCampaignData({
         ...campaignCatalog,
-        notes: [
-          { ...campaignCatalog.notes[0], title: '' },
-          campaignCatalog.notes[1],
-        ],
+        notes: [{ ...campaignCatalog.notes[0], title: '' }, campaignCatalog.notes[1]],
       }),
     ).toThrow(CampaignDataValidationError);
   });

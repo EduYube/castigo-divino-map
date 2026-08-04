@@ -311,18 +311,10 @@ function validateCategory(
     issues,
   );
   validateNonEmptyString(readRequiredField(record, 'name'), `${path}.name`, issues);
-  validateNonEmptyString(
-    readRequiredField(record, 'description'),
-    `${path}.description`,
-    issues,
-  );
+  validateNonEmptyString(readRequiredField(record, 'description'), `${path}.description`, issues);
 }
 
-function validateTag(
-  value: unknown,
-  index: number,
-  issues: CampaignDataValidationIssue[],
-): void {
+function validateTag(value: unknown, index: number, issues: CampaignDataValidationIssue[]): void {
   const path = `$.tags[${index}]`;
   const record = validateStrictRecord(
     value,
@@ -344,11 +336,7 @@ function validateTag(
     issues,
   );
   validateNonEmptyString(readRequiredField(record, 'name'), `${path}.name`, issues);
-  validateNonEmptyString(
-    readRequiredField(record, 'description'),
-    `${path}.description`,
-    issues,
-  );
+  validateNonEmptyString(readRequiredField(record, 'description'), `${path}.description`, issues);
 }
 
 function validatePlace(
@@ -408,11 +396,7 @@ function validatePlace(
   );
 }
 
-function validateNote(
-  value: unknown,
-  index: number,
-  issues: CampaignDataValidationIssue[],
-): void {
+function validateNote(value: unknown, index: number, issues: CampaignDataValidationIssue[]): void {
   const path = `$.notes[${index}]`;
   const record = validateStrictRecord(
     value,
@@ -492,12 +476,7 @@ function reportDuplicates(
     const firstPath = firstPaths.get(entry.value);
 
     if (firstPath) {
-      addIssue(
-        issues,
-        code,
-        entry.path,
-        `${label} "${entry.value}" duplicates ${firstPath}.`,
-      );
+      addIssue(issues, code, entry.path, `${label} "${entry.value}" duplicates ${firstPath}.`);
     } else {
       firstPaths.set(entry.value, entry.path);
     }
@@ -558,13 +537,7 @@ function validateReferences(
 ): void {
   places.forEach((place, index) => {
     const path = `$.places[${index}]`;
-    reportMissingReference(
-      place.categoryId,
-      categoryIds,
-      `${path}.categoryId`,
-      'Category',
-      issues,
-    );
+    reportMissingReference(place.categoryId, categoryIds, `${path}.categoryId`, 'Category', issues);
     reportDuplicateReferences(place, path, 'tagIds', issues);
 
     if (Array.isArray(place.tagIds)) {
