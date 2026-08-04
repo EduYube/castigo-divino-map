@@ -1,9 +1,4 @@
-import type {
-  CampaignCatalog,
-  CampaignCategory,
-  PlaceId,
-  TagId,
-} from '../data/model';
+import type { CampaignCatalog, CampaignCategory, PlaceId, TagId } from '../data/model';
 
 export interface PublicAppUrlState {
   readonly activePlaceId: PlaceId | null;
@@ -37,25 +32,17 @@ function normalizeQuery(query: string): string {
 }
 
 function findPlaceId(catalog: CampaignCatalog, value: string): PlaceId | null {
-  return (
-    catalog.places.find((place) => place.slug === value || place.id === value)?.id ?? null
-  );
+  return catalog.places.find((place) => place.slug === value || place.id === value)?.id ?? null;
 }
 
-function findCategoryId(
-  catalog: CampaignCatalog,
-  value: string,
-): CampaignCategory['id'] | null {
+function findCategoryId(catalog: CampaignCatalog, value: string): CampaignCategory['id'] | null {
   return (
     catalog.categories.find((category) => category.slug === value || category.id === value)?.id ??
     null
   );
 }
 
-function getFirstValidPlaceId(
-  catalog: CampaignCatalog,
-  values: readonly string[],
-): PlaceId | null {
+function getFirstValidPlaceId(catalog: CampaignCatalog, values: readonly string[]): PlaceId | null {
   for (const value of values) {
     const placeId = findPlaceId(catalog, value.trim());
 
@@ -81,16 +68,12 @@ export function normalizePublicAppUrlState(
 
   return {
     activePlaceId:
-      state.activePlaceId && validPlaceIds.has(state.activePlaceId)
-        ? state.activePlaceId
-        : null,
+      state.activePlaceId && validPlaceIds.has(state.activePlaceId) ? state.activePlaceId : null,
     query: normalizeQuery(state.query),
     selectedCategoryIds: catalog.categories
       .filter(({ id }) => selectedCategoryIds.has(id))
       .map(({ id }) => id),
-    selectedTagIds: catalog.tags
-      .filter(({ id }) => selectedTagIds.has(id))
-      .map(({ id }) => id),
+    selectedTagIds: catalog.tags.filter(({ id }) => selectedTagIds.has(id)).map(({ id }) => id),
   };
 }
 
