@@ -102,11 +102,7 @@ function writePublicStateToHistory(mode: 'push' | 'replace'): void {
   }
 
   const currentUrl = new URL(window.location.href);
-  const nextUrl = createCanonicalPublicAppUrl(
-    campaignCatalog,
-    currentUrl,
-    getCurrentPublicState(),
-  );
+  const nextUrl = createCanonicalPublicAppUrl(campaignCatalog, currentUrl, getCurrentPublicState());
 
   if (nextUrl.href === currentUrl.href) {
     return;
