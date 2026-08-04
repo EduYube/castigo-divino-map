@@ -1,12 +1,15 @@
 import 'leaflet/dist/leaflet.css';
 
 import { mountPlaceDetails } from './app/placeDetails';
+import { mountPlaceSearch } from './app/placeSearch';
 import { createPlaceSelectionController } from './app/placeSelection';
 import { renderApp } from './app/renderApp';
 import { campaignCatalog } from './data/catalog';
+import type { PlaceId } from './data/model';
 import { buildPlaceDetailModel, createPlaceMarkerModels } from './data/placeDetails';
 import { mountFaerunMap } from './map/leaflet';
 import './styles/main.css';
+import './styles/search.css';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -36,6 +39,17 @@ const placeDetailsController = mountPlaceDetails(app, {
   },
 });
 
+const showPlaceDetails = (placeId: PlaceId): boolean => {
+  const details = buildPlaceDetailModel(campaignCatalog, placeId);
+
+  if (!details) {
+    return false;
+  }
+
+  placeDetailsController.show(details);
+  return true;
+};
+
 selection.subscribe((activePlaceId) => {
   mapController.setActivePlace(activePlaceId);
 
@@ -44,12 +58,21 @@ selection.subscribe((activePlaceId) => {
     return;
   }
 
-  const details = buildPlaceDetailModel(campaignCatalog, activePlaceId);
-
-  if (!details) {
+  if (!showPlaceDetails(activePlaceId)) {
     selection.clear();
-    return;
   }
+});
 
-  placeDetailsController.show(details);
+mountPlaceSearch(app, {
+  catalog: campaignCatalog,
+  onSelect(placeId): void {
+    const wasAlreadyActive = selection.getActivePlaceId() === placeId;
+
+    mapController.locatePlace(placeId);
+    selection.select(placeId);
+
+    if (wasAlreadyActive && !showPlaceDetails(placeId)) {
+      selection.clear();
+    }
+  },
 });
