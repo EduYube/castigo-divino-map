@@ -5,12 +5,12 @@
 - Proyecto: El Atlas de los Nuevos Dioses
 - Repositorio: `EduYube/castigo-divino-map`
 - Versión objetivo: Beta 0.1
-- Estado general: Enlaces directos y restauración completa de estado completados; MAP-010 es la siguiente Issue
+- Estado general: Diseño responsive y accesibilidad transversal completados; MAP-011 es la siguiente Issue
 - Última actualización: 2026-08-04
 
 ## Objetivo actual
 
-Preparar MAP-010 para consolidar el diseño responsive y la accesibilidad de la experiencia completa, partiendo de las fuentes únicas de consulta, filtros y selección y del contrato de URL estable integrados hasta MAP-009.
+Preparar MAP-011 para publicar y validar la Beta 0.1 sobre la experiencia consolidada hasta MAP-010.
 
 ## Alcance de la Beta 0.1
 
@@ -48,7 +48,7 @@ Preparar MAP-010 para consolidar el diseño responsive y la accesibilidad de la 
 
 ## Fase actual
 
-La fundación, la investigación del mapa base, el esqueleto ejecutable, la navegación cartográfica, el contrato público de datos, la presentación de marcadores y fichas, la búsqueda pública, los filtros y los enlaces directos están completados.
+La fundación, la investigación del mapa base, el esqueleto ejecutable, la navegación cartográfica, el contrato público de datos, la presentación de marcadores y fichas, la búsqueda pública, los filtros, los enlaces directos y la consolidación responsive y accesible están completados.
 
 MAP-007 incorporó búsqueda pura sobre `campaignCatalog` por nombre principal, alias y título de nota pública, sin indexar cuerpos y con un resultado representativo por lugar en orden estable.
 
@@ -66,21 +66,29 @@ La carga inicial y la navegación de historial no roban el foco. Las interaccion
 
 Todos los marcadores permanecen visibles y operables. Leaflet recibe únicamente el conjunto final mediante `setMatchingPlaces`, resalta coincidencias, atenúa el resto y conserva la prioridad del marcador activo. Si el lugar activo no coincide, su ficha permanece abierta y el estado accesible lo comunica.
 
+MAP-010 consolida la experiencia completa desde 320 píxeles, evita overflow horizontal accidental, integra la ficha debajo del mapa cuando el espacio es limitado, acota resultados y filtros con scroll interno y conserva una superficie cartográfica útil en móvil vertical y horizontal. Los cambios de tamaño continúan pasando por `ResizeObserver` y los límites existentes de Leaflet.
+
+La política de foco se mantiene sobre las fuentes existentes: Tab sigue el orden visual, los resultados conservan flechas, Inicio, Fin y Escape, los checkboxes y botones de limpieza retienen o devuelven el foco documentado, abrir directamente enfoca el título, cerrar devuelve el foco al marcador y la carga inicial o `popstate` no lo roban.
+
+Los landmarks, fieldsets, legends, regiones, estados y nombres accesibles se revisan sin introducir widgets ARIA personalizados. Los marcadores exponen lugar, categoría, selección y coincidencia. Los estados coincidente, atenuado, activo y enfocado se distinguen mediante borde, forma, opacidad, escala, anillos y texto accesible, no solo por color.
+
+Los objetivos principales alcanzan al menos 44 × 44 píxeles. La presentación respeta `prefers-reduced-motion` y conserva indicadores en colores forzados. Playwright mantiene Chromium como cobertura completa y ejecuta la suite crítica en Firefox y WebKit con perfil móvil emulado; esta emulación no se presenta como prueba en un dispositivo físico.
+
 ## Trabajo en curso
 
-- Ninguno tras la integración de MAP-009 mediante PR #26.
-- Siguiente Issue: MAP-010 — Consolidar diseño responsive y accesibilidad.
+- Ninguno tras la integración de MAP-010.
+- Siguiente Issue: MAP-011 — Publicar y validar la Beta 0.1.
 
 ## Backlog inicial
 
-- MAP-010 — Consolidar diseño responsive y accesibilidad.
 - MAP-011 — Publicar y validar la Beta 0.1.
 
 ## Bloqueos
 
-- Ningún bloqueo técnico para comenzar MAP-010.
+- Ningún bloqueo técnico para comenzar MAP-011.
 - La redistribución o transformación del mapa oficial sigue requiriendo autorización escrita; la estrategia remota de Beta 0.1 evita esas operaciones.
 - El catálogo actual contiene datos ficticios de demostración; los datos reales deberán confirmarse como públicos antes de sustituirlos o ampliarlos.
+- La emulación automatizada no sustituye pruebas manuales futuras con Safari, VoiceOver, TalkBack o dispositivos físicos.
 
 ## Decisiones cerradas
 
@@ -132,6 +140,17 @@ Todos los marcadores permanecen visibles y operables. Leaflet recibe únicamente
 - `popstate` restaura sin recargar ni escribir una entrada nueva; la canonicalización usa únicamente `replaceState`.
 - La carga inicial y `popstate` no fuerzan el foco; una interacción directa conserva el foco definido en MAP-006.
 - No se introduce `localStorage`, `sessionStorage`, IndexedDB, cookies, backend ni un router completo.
+- El diseño es fluido desde 320 px y evita overflow horizontal accidental.
+- La ficha pasa debajo del mapa por debajo de 64 rem; búsqueda y filtros pasan a una columna por debajo de 48 rem.
+- El mapa mantiene al menos 22 rem en móvil vertical y 18 rem en móvil horizontal de poca altura.
+- Resultados y grupos de filtros usan scroll interno acotado.
+- El foco visible combina contorno de 3 px, separación y halo de contraste.
+- No existen `tabindex` positivos ni trampas de foco.
+- Los objetivos táctiles principales alcanzan al menos 44 × 44 px.
+- Los estados visuales no dependen solo del color.
+- La ficha no es una región viva completa; las restauraciones no generan anuncios repetitivos ni roban foco.
+- Chromium ejecuta la suite e2e completa; Firefox y WebKit móvil ejecutan la suite crítica.
+- `mobile-webkit` es emulación automatizada con perfil iPhone 13 y no equivale a una prueba física.
 
 ## Riesgos
 
@@ -144,15 +163,16 @@ Todos los marcadores permanecen visibles y operables. Leaflet recibe únicamente
 - Una sustitución de la imagen base requeriría migrar coordenadas explícitamente.
 - Las dependencias frontend deberán mantenerse actualizadas durante la beta.
 - Un catálogo mucho mayor podría justificar índices derivados en memoria, pero no deben persistirse ni duplicar el contrato sin una necesidad medida.
-- MAP-010 deberá verificar de forma transversal anchos desde 320 px, foco visible, orden de teclado, contraste, tamaños táctiles y varios motores de navegador sin reabrir las decisiones de estado ya cerradas.
+- La accesibilidad automatizada no sustituye una auditoría certificada ni pruebas con tecnologías de asistencia reales.
+- GitHub Pages deberá validar ruta base, caché, disponibilidad y rollback en MAP-011.
 
 ## Próximos pasos
 
-1. Abrir un chat nuevo para MAP-010.
-2. Auditar todos los flujos desde 320 px y eliminar cualquier desbordamiento horizontal accidental.
-3. Revisar orden, visibilidad y restauración del foco en búsqueda, filtros, marcadores, zoom, ficha e historial.
-4. Verificar nombres accesibles, semántica, contraste y objetivos táctiles.
-5. Ampliar Playwright a los navegadores y viewports requeridos y mantener CI en verde.
+1. Configurar el despliegue automático de GitHub Pages.
+2. Ajustar la base de Vite para la ruta del repositorio.
+3. Añadir validación previa al despliegue y una estrategia de rollback.
+4. Ejecutar la checklist final de Beta 0.1 sobre la URL pública.
+5. Confirmar que no se publica contenido privado ni una copia del recurso cartográfico oficial.
 
 ## Últimos cambios
 
@@ -168,3 +188,4 @@ Todos los marcadores permanecen visibles y operables. Leaflet recibe únicamente
 | 2026-08-04 | Búsqueda pública por nombre, alias y título de nota, orden estable, centrado, accesibilidad y pruebas completados en MAP-007 |
 | 2026-08-04 | Filtros por categorías y etiquetas, combinación con búsqueda, estados de marcadores, accesibilidad, responsive y pruebas completados en MAP-008 mediante PR #25 |
 | 2026-08-04 | Contrato de URL canónico, restauración inicial, historial nativo, inválidos, foco, móvil y error remoto completados en MAP-009 mediante PR #26 |
+| 2026-08-04 | Responsive desde 320 px, accesibilidad transversal y matriz multibrowser completados en MAP-010 |

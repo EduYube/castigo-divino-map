@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const criticalAccessibilitySuite = /responsive-accessibility\.spec\.ts/;
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -15,6 +17,16 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      testMatch: criticalAccessibilitySuite,
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'mobile-webkit',
+      testMatch: criticalAccessibilitySuite,
+      use: { ...devices['iPhone 13'] },
     },
   ],
   webServer: {

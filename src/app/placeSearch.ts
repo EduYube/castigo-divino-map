@@ -100,6 +100,12 @@ function getResultButtons(results: HTMLUListElement): readonly HTMLButtonElement
   return Array.from(results.querySelectorAll<HTMLButtonElement>('.place-search__result'));
 }
 
+function setStatusText(status: HTMLElement, message: string): void {
+  if (status.textContent !== message) {
+    status.textContent = message;
+  }
+}
+
 export function mountPlaceSearch(
   root: ParentNode = document,
   options: PlaceSearchOptions,
@@ -117,21 +123,23 @@ export function mountPlaceSearch(
     );
 
     if (!normalizedQuery) {
-      elements.status.textContent = 'Escribe un nombre, alias o título de nota pública.';
+      setStatusText(elements.status, 'Escribe un nombre, alias o título de nota pública.');
       elements.results.hidden = true;
       return;
     }
 
     if (searchResults.length === 0) {
-      elements.status.textContent = `No hay lugares para “${query.trim()}”.`;
+      setStatusText(elements.status, `No hay lugares para “${query.trim()}”.`);
       elements.results.hidden = true;
       return;
     }
 
-    elements.status.textContent =
+    setStatusText(
+      elements.status,
       searchResults.length === 1
         ? '1 lugar encontrado.'
-        : `${searchResults.length} lugares encontrados.`;
+        : `${searchResults.length} lugares encontrados.`,
+    );
     elements.results.hidden = false;
   };
 

@@ -4,7 +4,7 @@ Aplicación web para explorar un mapa interactivo de Faerûn y consultar informa
 
 ## Estado
 
-La Beta 0.1 dispone de una aplicación Vite + TypeScript con Leaflet, navegación responsive sobre el mapa oficial remoto de baja resolución, un catálogo público validado, marcadores accesibles, fichas de información, búsqueda por nombre principal, alias público y título de nota pública, filtros combinables por categorías y etiquetas, y restauración completa del estado desde la URL.
+La Beta 0.1 dispone de una aplicación Vite + TypeScript con Leaflet, navegación responsive sobre el mapa oficial remoto de baja resolución, un catálogo público validado, marcadores accesibles, fichas de información, búsqueda por nombre principal, alias público y título de nota pública, filtros combinables por categorías y etiquetas, restauración completa del estado desde la URL y una experiencia consolidada desde 320 píxeles.
 
 Consulta [`docs/project-status.md`](docs/project-status.md) para conocer el estado actual, [`docs/data-model.md`](docs/data-model.md) para revisar el contrato de datos y [`docs/architecture.md`](docs/architecture.md) para revisar la separación entre datos, búsqueda, filtros, selección, URL, mapa y presentación.
 
@@ -25,7 +25,7 @@ Desde un clon limpio:
 
 ```bash
 npm install
-npx playwright install --with-deps chromium
+npx playwright install --with-deps chromium firefox webkit
 ```
 
 ## Ejecución
@@ -41,7 +41,41 @@ npm run build
 npm run preview
 ```
 
-La aplicación solicita el mapa directamente a la URL oficial de Wizards. Es necesaria conexión de red para visualizar la cartografía; si el recurso falla, la interfaz muestra un estado de error accesible y una superficie neutra. La búsqueda, los filtros, los enlaces directos, los marcadores y sus fichas continúan disponibles sin descargar una copia alternativa.
+La aplicación solicita el mapa directamente a la URL oficial de Wizards. Es necesaria conexión de red para visualizar la cartografía; si el recurso falla, la interfaz muestra un estado de error accesible y una superficie neutra con la misma geometría útil. La búsqueda, los filtros, los enlaces directos, el zoom, los marcadores y sus fichas continúan disponibles sin descargar una copia alternativa.
+
+## Responsive y accesibilidad
+
+La experiencia se cubre desde 320 píxeles de ancho mediante CSS fluido, `minmax()`, `clamp()`, unidades `svh`, contenido capaz de romper línea y listas internas acotadas. No debe aparecer desplazamiento horizontal accidental.
+
+- La cabecera, introducción, búsqueda, resultados, filtros, mapa, controles de zoom, ficha y aviso legal permanecen dentro del ancho del viewport.
+- Nombres, alias, etiquetas, títulos, descripciones, cuerpos y URLs largas pueden partir línea sin ensanchar la página.
+- La ficha es lateral cuando existe espacio y se integra debajo del mapa por debajo de 64 rem.
+- Búsqueda y grupos de filtros pasan a una sola columna por debajo de 48 rem.
+- Los resultados y cada grupo de filtros conservan scroll interno para que todas las opciones sigan alcanzables.
+- El mapa mantiene al menos 22 rem de altura en móvil vertical y 18 rem en móvil horizontal de poca altura.
+- La superficie de error remoto usa la misma caja del mapa cargado.
+- `ResizeObserver` invalida Leaflet y vuelve a aplicar los límites después de cambios de tamaño u orientación.
+
+Los viewports automatizados representativos incluyen escritorio, 320 × 740 y 667 × 375. La configuración móvil usa WebKit con perfil iPhone 13 emulado.
+
+### Teclado y foco
+
+- El enlace **Saltar al contenido principal** es el primer acceso rápido.
+- Tab recorre los controles según el orden visual y no existen `tabindex` positivos.
+- Desde el campo de búsqueda, Flecha abajo lleva al primer resultado.
+- En resultados, Flecha arriba, Flecha abajo, Inicio y Fin desplazan el foco; Escape vuelve al campo.
+- Enter y barra espaciadora activan resultados, botones y marcadores según su semántica.
+- Cambiar un filtro conserva el foco en su checkbox.
+- **Limpiar búsqueda** devuelve el foco al campo.
+- **Limpiar filtros** conserva el foco en el botón.
+- Abrir una ficha mediante interacción directa enfoca su título.
+- Cerrar la ficha devuelve el foco al marcador activo cuando corresponde.
+- La carga inicial desde URL y `popstate` restauran el estado sin enfocar la ficha ni mover el foco del control actual.
+- No existe una trampa de foco ni se conserva foco dentro de contenido oculto o sustituido.
+
+El foco visible combina un contorno de 3 píxeles, separación y un halo de contraste sobre paneles, mapa y superficie de error. No depende solo del color. Los controles principales, marcadores y zoom ofrecen una referencia mínima de 44 × 44 píxeles.
+
+La presentación respeta `prefers-reduced-motion` para transiciones no esenciales y conserva bordes y contornos en modo de colores forzados. Los estados coincidente, atenuado, activo y enfocado combinan borde, forma, escala, opacidad, anillos y texto accesible.
 
 ## Búsqueda
 
@@ -57,7 +91,7 @@ La aplicación solicita el mapa directamente a la URL oficial de Wizards. Es nec
 - Enter o la barra espaciadora activan el botón enfocado.
 - Seleccionar un resultado centra el mapa, activa el marcador existente y abre la misma ficha pública que los marcadores, aunque ese lugar no coincida con los filtros activos.
 
-La lista de resultados explica únicamente las coincidencias de la consulta. El estado visual del mapa se deriva por separado de la intersección entre esa consulta y los filtros activos, sin duplicar el algoritmo de búsqueda.
+La lista de resultados explica únicamente las coincidencias de la consulta. El estado visual del mapa se deriva por separado de la intersección entre esa consulta y los filtros activos, sin duplicar el algoritmo de búsqueda. El estado vivo solo cambia cuando cambia el mensaje para evitar anuncios repetitivos.
 
 ## Filtros por categorías y etiquetas
 
@@ -73,7 +107,7 @@ La combinación es determinista:
 
 Una etiqueta coincide cuando está asociada directamente al lugar o a cualquiera de sus notas públicas. Esta relación se deriva en memoria del catálogo, se deduplica y no modifica el contrato de datos.
 
-La interfaz usa fieldsets y checkboxes HTML nativos con nombres accesibles. Tab recorre los filtros y la barra espaciadora cambia el checkbox enfocado. El botón **Limpiar filtros** desmarca categorías y etiquetas, recalcula las coincidencias y conserva el foco en el propio botón. Las categorías o etiquetas sin lugares asociados se muestran deshabilitadas y explican su estado.
+La interfaz usa `fieldset`, `legend`, `label` y checkboxes HTML nativos. El nombre accesible procede del texto visible; la descripción y el recuento se asocian mediante `aria-describedby`. Tab recorre los filtros y la barra espaciadora cambia el checkbox enfocado. El botón **Limpiar filtros** desmarca categorías y etiquetas, recalcula las coincidencias y conserva el foco en el propio botón. Las categorías o etiquetas sin lugares asociados se muestran deshabilitadas y explican su estado.
 
 Todos los marcadores permanecen visibles y operables. Los coincidentes se resaltan; los no coincidentes se atenúan mediante varias propiedades visuales; el lugar activo conserva la máxima prioridad aunque no coincida; y el estado accesible informa del recuento o de una combinación sin resultados.
 
@@ -156,12 +190,13 @@ No se usa `localStorage`, `sessionStorage`, IndexedDB, cookies ni un router comp
 - Usa rueda, pellizco, doble pulsación o controles visibles para cambiar el zoom.
 - Recorre los marcadores con Tab.
 - Activa el marcador enfocado con Enter o la barra espaciadora.
-- Cada marcador anuncia el nombre del lugar, su categoría y si coincide con la búsqueda y los filtros actuales.
+- Cada marcador anuncia el nombre del lugar y su categoría, expone la selección mediante `aria-pressed` y describe si coincide con la búsqueda y los filtros actuales.
 - La categoría se diferencia mediante símbolo, forma, clase visual y texto accesible, no solo mediante color.
 - Al seleccionar un lugar directamente, el foco pasa al título de su ficha.
 - La ficha muestra nombre, alias públicos, categoría, etiquetas y todas las notas públicas asociadas.
 - El botón de cierre devuelve el foco al marcador activo.
 - En escritorio la ficha se muestra lateralmente; en pantallas estrechas pasa debajo del mapa.
+- Los controles de zoom reciben nombres accesibles inequívocos y permanecen dentro del viewport.
 
 ## Datos de campaña
 
@@ -199,9 +234,29 @@ No añadas notas privadas, spoilers, datos del director de juego ni campos ocult
 | `npm run test` | Ejecuta las pruebas unitarias con Vitest. |
 | `npm run test:watch` | Ejecuta Vitest en modo observación. |
 | `npm run validate:data` | Valida el catálogo público y los principales casos inválidos. |
-| `npm run test:e2e` | Ejecuta las pruebas end-to-end con Playwright. |
+| `npm run test:e2e` | Ejecuta la matriz end-to-end con Playwright. |
 | `npm run test:e2e:ui` | Abre la interfaz de Playwright. |
 | `npm run test:all` | Ejecuta pruebas unitarias y end-to-end. |
+
+### Proyectos de Playwright
+
+```bash
+# Suite completa en Chromium
+npx playwright test --project=chromium
+
+# Suite crítica en Firefox
+npx playwright test --project=firefox
+
+# Suite crítica con WebKit y perfil móvil emulado
+npx playwright test --project=mobile-webkit
+
+# Suite crítica en todos los proyectos aplicables
+npx playwright test tests/e2e/responsive-accessibility.spec.ts
+```
+
+`chromium` es el navegador principal de CI y ejecuta toda la suite. `firefox` y `mobile-webkit` ejecutan la suite crítica responsive y accesible para evitar duplicación innecesaria.
+
+La configuración `mobile-webkit` emula el perfil de un iPhone 13: motor WebKit, viewport, user agent, capacidades táctiles y escala configurados por Playwright. No equivale a una prueba manual en un iPhone físico ni garantiza Safari, VoiceOver, teclado virtual o integración del sistema operativo. Tampoco se afirma haber probado dispositivos físicos.
 
 ## Pruebas y recurso externo
 
@@ -209,11 +264,15 @@ Las pruebas unitarias verifican dimensiones, límites, cálculos cartográficos,
 
 Las pruebas e2e interceptan exclusivamente la URL oficial y responden con un SVG neutro generado en memoria. Cubren marcadores, fichas, búsqueda, filtros, URLs estables, restauración, recarga, nueva página, historial, inválidos, teclado, foco, responsive, combinación sin coincidencias y error del recurso remoto.
 
+La suite crítica añadida en MAP-010 comprueba 320 píxeles, ausencia de overflow, cajas dentro del viewport, landmarks y nombres, fieldsets y legends, objetivos táctiles, foco visible, navegación de resultados, limpieza, activación de marcadores coincidentes y atenuados, restauración de foco, URL móvil completa, atrás y adelante y móvil horizontal con error remoto.
+
+Las comprobaciones visuales usan geometría, visibilidad, atributos, nombres accesibles, foco y estilos computados. No dependen de coordenadas absolutas frágiles ni de snapshots visuales masivos.
+
 La CI no descarga, almacena, archiva ni publica el mapa oficial. Tampoco genera recortes, recompressiones, conversiones, mosaicos o derivados.
 
 ## Integración continua
 
-El workflow `.github/workflows/ci.yml` se ejecuta en pull requests dirigidas a `master`. Instala las dependencias desde cero y valida formato, lint, pruebas unitarias, build y pruebas e2e en Chromium.
+El workflow `.github/workflows/ci.yml` se ejecuta en pull requests dirigidas a `master`. Instala las dependencias desde cero y valida formato, lint, pruebas unitarias y build, instala Chromium, Firefox y WebKit y ejecuta la matriz Playwright. Chromium conserva la cobertura exhaustiva; los demás motores ejecutan el flujo crítico.
 
 ## Estructura
 
@@ -238,15 +297,17 @@ src/
 │   ├── config.ts             # URL, dimensiones, límites y cálculos puros
 │   └── leaflet.ts            # Mapa, overlay y reflejo mínimo de estados
 ├── styles/
+│   ├── accessibility.css     # Garantías responsive, foco y objetivos táctiles
 │   ├── filters.css           # Filtros responsive y estados de coincidencia
 │   ├── main.css              # Diseño general, marcadores y ficha
 │   └── search.css            # Búsqueda responsive y resultados acotados
 └── main.ts                   # Orquestación, restauración e historial
 tests/
 └── e2e/
-    ├── app.spec.ts           # Flujos base de mapa, búsqueda, marcadores y ficha
-    ├── filters.spec.ts       # Filtros, combinación, accesibilidad y responsive
-    └── url-state.spec.ts     # Enlaces directos, historial, inválidos y error remoto
+    ├── app.spec.ts                         # Flujos base de mapa, búsqueda, marcadores y ficha
+    ├── filters.spec.ts                     # Filtros, combinación y estados
+    ├── responsive-accessibility.spec.ts    # Responsive, teclado y accesibilidad multibrowser
+    └── url-state.spec.ts                   # Enlaces directos, historial, inválidos y error remoto
 ```
 
 ## Privacidad y licencias

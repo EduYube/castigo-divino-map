@@ -1,0 +1,344 @@
+:root {
+  --focus-ring: #fff1a8;
+  --focus-ring-shadow: rgba(17, 23, 19, 0.96);
+  --touch-target: 2.75rem;
+}
+
+html {
+  overflow-x: clip;
+  scroll-padding-top: 1rem;
+}
+
+body,
+#app {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+:where(h1, h2, h3, h4, h5, p, a, button, label, legend, li, span) {
+  overflow-wrap: anywhere;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 2000;
+  min-height: var(--touch-target);
+  padding: 0.7rem 1rem;
+  color: #111713;
+  font-weight: 800;
+  background: var(--focus-ring);
+  border-radius: 0.65rem;
+  transform: translateY(calc(-100% - 1rem));
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+:where(a, button, input, [role='button'], [tabindex]):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px var(--focus-ring-shadow);
+}
+
+:where(button, input, a, [role='button']):disabled,
+[aria-disabled='true'] {
+  opacity: 0.72;
+}
+
+.brand,
+.place-search__clear,
+.place-search__result,
+.place-filters__clear,
+.place-filters__option,
+.place-details__close,
+.leaflet-control-zoom a,
+.campaign-marker-icon {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+
+.brand {
+  padding-block: 0.45rem;
+}
+
+.place-search__input {
+  min-height: var(--touch-target);
+}
+
+.place-search__clear,
+.place-filters__clear,
+.place-details__close {
+  touch-action: manipulation;
+}
+
+.place-filters__option input {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.place-filters__option:has(input:disabled) {
+  opacity: 0.72;
+}
+
+.place-filters__option:has(input:checked)::after {
+  flex: 0 0 auto;
+  margin-left: auto;
+  content: 'Seleccionado';
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.map-shell {
+  min-height: 0;
+}
+
+.map-canvas {
+  height: clamp(24rem, 68svh, 58rem);
+  min-height: 22rem;
+}
+
+.leaflet-control-zoom a {
+  display: grid !important;
+  width: var(--touch-target) !important;
+  height: var(--touch-target) !important;
+  place-items: center;
+  font-size: 1.4rem !important;
+  line-height: 1 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  max-width: calc(100% - 1rem);
+}
+
+.leaflet-right {
+  right: 0.25rem;
+}
+
+.leaflet-top {
+  top: 0.25rem;
+}
+
+.campaign-marker-icon {
+  touch-action: manipulation;
+}
+
+.campaign-marker-icon--matching .campaign-marker-icon__symbol {
+  outline-width: 3px;
+  outline-style: solid;
+}
+
+.campaign-marker-icon--dimmed {
+  opacity: 0.58;
+  filter: grayscale(0.82) contrast(0.92);
+}
+
+.campaign-marker-icon--dimmed .campaign-marker-icon__symbol {
+  border-style: dashed;
+  border-width: 3px;
+}
+
+.campaign-marker-icon--active,
+.campaign-marker-icon--active.campaign-marker-icon--dimmed {
+  opacity: 1;
+  filter: none;
+}
+
+.campaign-marker-icon:focus-visible .campaign-marker-icon__symbol {
+  box-shadow:
+    0 0 0 4px var(--focus-ring),
+    0 0 0 8px var(--focus-ring-shadow),
+    0 12px 24px rgba(0, 0, 0, 0.54);
+}
+
+.place-details__content,
+.place-details__note,
+.place-details__aliases,
+.place-details__tags {
+  min-width: 0;
+}
+
+.site-footer nav {
+  min-width: 0;
+}
+
+@media (max-width: 64rem) {
+  .map-workspace[data-details-open='true'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .place-details {
+    max-height: min(34rem, 64svh);
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 48rem) {
+  :root {
+    --page-inline: clamp(0.75rem, 4vw, 1.25rem);
+  }
+
+  .site-header {
+    align-items: flex-start;
+    min-height: auto;
+    padding-block: 0.85rem;
+  }
+
+  .site-header__badges {
+    max-width: 50%;
+  }
+
+  .map-introduction,
+  .map-experience__heading,
+  .place-search__header,
+  .place-search__controls,
+  .place-filters__groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .map-introduction__source {
+    max-width: none;
+    text-align: left;
+  }
+
+  .map-experience__heading {
+    align-items: start;
+  }
+
+  .place-search,
+  .place-filters,
+  .map-experience__heading {
+    padding: clamp(0.85rem, 4vw, 1.1rem);
+  }
+
+  .place-search__clear,
+  .place-filters__clear {
+    width: 100%;
+  }
+
+  .place-search__results {
+    max-height: min(12rem, 30svh);
+  }
+
+  .place-filters__header {
+    display: grid;
+  }
+
+  .place-filters__options {
+    max-height: min(11rem, 30svh);
+    overscroll-behavior: contain;
+  }
+
+  .map-canvas {
+    height: clamp(22rem, 58svh, 34rem);
+    min-height: 22rem;
+  }
+
+  .map-status {
+    width: min(calc(100% - 1.25rem), 30rem);
+  }
+
+  .place-details {
+    max-height: min(32rem, 68svh);
+  }
+
+  .site-footer nav {
+    display: grid;
+    justify-items: start;
+  }
+}
+
+@media (max-width: 22rem) {
+  .site-header {
+    display: grid;
+  }
+
+  .site-header__badges {
+    max-width: 100%;
+    justify-content: flex-start;
+  }
+
+  h1 {
+    font-size: clamp(2.1rem, 13vw, 3rem);
+  }
+
+  .release-badge,
+  .fan-badge {
+    font-size: 0.68rem;
+  }
+
+  .place-filters__option:has(input:checked)::after {
+    content: 'Sí';
+  }
+}
+
+@media (orientation: landscape) and (max-height: 32rem) {
+  .atlas-main {
+    padding-block: 1.25rem;
+  }
+
+  .map-canvas {
+    height: max(18rem, 72svh);
+    min-height: 18rem;
+  }
+
+  .place-search__results,
+  .place-filters__options {
+    max-height: 9rem;
+  }
+
+  .place-details {
+    max-height: 72svh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .campaign-marker-icon--matching .campaign-marker-icon__symbol,
+  .campaign-marker-icon--active .campaign-marker-icon__symbol {
+    outline: 3px solid Highlight;
+  }
+
+  .campaign-marker-icon--dimmed .campaign-marker-icon__symbol {
+    border-style: dashed;
+  }
+}

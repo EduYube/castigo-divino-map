@@ -28,6 +28,7 @@
 - Tratar el contenido del catálogo como texto público, nunca como HTML confiable.
 - Evitar que Leaflet o la URL sean fuentes de verdad para búsqueda, filtros o selección.
 - Usar las APIs nativas de URL e historial antes que introducir un router.
+- Preferir HTML nativo y CSS flexible frente a widgets ARIA personalizados o valores rígidos redundantes.
 
 ## Estructura ejecutable
 
@@ -59,6 +60,7 @@ src/
 │   ├── config.test.ts
 │   └── leaflet.ts
 ├── styles/
+│   ├── accessibility.css
 │   ├── filters.css
 │   ├── main.css
 │   └── search.css
@@ -67,9 +69,12 @@ tests/
 └── e2e/
     ├── app.spec.ts
     ├── filters.spec.ts
+    ├── responsive-accessibility.spec.ts
     └── url-state.spec.ts
 docs/decisions/
 ```
+
+`src/styles/accessibility.css` se importa en último lugar. Es una capa transversal de garantías responsive, foco, contraste, objetivos táctiles, estados no dependientes solo del color y reducción de movimiento. No duplica ni conserva estado de búsqueda, filtros, selección, URL o Leaflet.
 
 ## Capas de presentación y estado de aplicación
 
@@ -77,11 +82,11 @@ docs/decisions/
 
 `src/app/renderApp.ts` genera la estructura semántica de la aplicación, la búsqueda, los grupos de filtros, el contenedor del mapa, las instrucciones de interacción, los estados accesibles, el espacio responsive para la ficha y el aviso legal. No conoce detalles de la API de Leaflet ni interpreta relaciones del catálogo.
 
-La búsqueda se declara como una región `role="search"` con etiqueta visible, campo `type="search"`, botón de limpieza, estado vivo y lista de resultados. Los resultados son botones HTML reales dentro de una lista; no se usa un patrón combobox ARIA incompleto.
+La búsqueda se declara como una región `role="search"` con etiqueta visible, campo `type="search"`, botón de limpieza, estado con `role="status"` y lista de resultados. Los resultados son botones HTML reales dentro de una lista; no se usa un patrón combobox ARIA incompleto. El texto del estado solo se sustituye cuando el mensaje cambia para reducir anuncios repetitivos.
 
-Los filtros se declaran como una sección con encabezado visible, dos `fieldset` con `legend` para categorías y etiquetas, checkboxes HTML nativos, botón de limpieza y un estado `aria-live="polite"` que comunica el número final de coincidencias. Los controles se insertan mediante APIs DOM y `textContent` desde las colecciones de `campaignCatalog`.
+Los filtros se declaran como una sección con encabezado visible, dos `fieldset` con `legend` para categorías y etiquetas, checkboxes HTML nativos, botón de limpieza y un estado con `role="status"` que comunica el número final de coincidencias. Los controles se insertan mediante APIs DOM y `textContent` desde las colecciones de `campaignCatalog`. El nombre de cada checkbox procede del texto visible; descripción y recuento se relacionan mediante `aria-describedby`.
 
-La ficha se declara como una región con nombre accesible y `aria-live="polite"`. Permanece oculta cuando no hay selección y contiene un botón de cierre de al menos 44 × 44 píxeles.
+El mapa se expone como una región con nombre accesible e instrucciones asociadas. La ficha se declara como una región nombrada por el título del lugar, permanece oculta cuando no hay selección y contiene un botón de cierre de al menos 44 × 44 píxeles. La ficha completa no es una región viva: las aperturas directas se comunican mediante foco y las restauraciones no generan anuncios repetitivos.
 
 ### Fuente única de consulta
 
@@ -97,7 +102,7 @@ El controlador expone `setQuery(query, { notify })` como operación mínima de r
 
 `getState()` devuelve una instantánea inmutable ordenada según `catalog.categories` y `catalog.tags`. `setState(state, { notify })` es la operación mínima para restaurar un estado externo ya validado: vuelve a validar por pertenencia al catálogo, sustituye los conjuntos, sincroniza checkboxes y puede omitir la notificación durante una restauración coordinada.
 
-El controlador construye categorías y etiquetas directamente desde `campaignCatalog`. También deriva el número de lugares asociado a cada opción. Una opción sin lugares se mantiene visible, se deshabilita y muestra el texto “Sin lugares asociados”.
+El controlador construye categorías y etiquetas directamente desde `campaignCatalog`. También deriva el número de lugares asociado a cada opción. Una opción sin lugares se mantiene visible, se deshabilita y muestra el texto “Sin lugares asociados”. Cambiar un checkbox vuelve a sincronizar la presentación desde los conjuntos internos, por lo que el DOM sigue sin convertirse en fuente de verdad.
 
 ### Fuente única de selección
 
@@ -117,7 +122,7 @@ Seleccionar un marcador atenuado o un resultado de búsqueda que no satisface lo
 
 `src/app/placeDetails.ts` crea todos los nodos de contenido mediante APIs DOM y `textContent`. No usa `innerHTML` con nombres, alias, etiquetas, descripciones o notas del catálogo.
 
-`show(details, { focus })` conserva el comportamiento directo de MAP-006 por defecto: al abrir mediante clic, teclado o resultado de búsqueda, enfoca el título. La restauración inicial y `popstate` usan `focus: false`, de modo que la ficha se presenta y puede anunciarse mediante su región viva sin robar el foco. Cuando el mismo lugar ya está visible, el contenido se reutiliza para evitar reemplazos y saltos de foco innecesarios.
+`show(details, { focus })` conserva el comportamiento directo de MAP-006 por defecto: al abrir mediante clic, teclado o resultado de búsqueda, enfoca el título. La restauración inicial y `popstate` usan `focus: false`, de modo que la ficha se presenta sin robar el foco. Cuando el mismo lugar ya está visible, el contenido se reutiliza para evitar reemplazos y saltos de foco innecesarios.
 
 Cerrar mediante el botón sigue limpiando `placeSelection` y devuelve el foco al marcador previamente activo. Cerrar como consecuencia de una entrada de historial no fuerza ese retorno. No existe una trampa de foco.
 
@@ -133,7 +138,7 @@ Cerrar mediante el botón sigue limpiando `placeSelection` y devuelve el foco al
 - `filters.ts` deriva etiquetas asociadas, coincidencias de filtros y la intersección final con búsqueda;
 - `validate.ts` comprueba estructura, formatos, unicidad, referencias, límites y ambigüedad de alias.
 
-El catálogo está normalizado: los lugares referencian una categoría y etiquetas; las notas referencian su lugar y etiquetas. No se almacenan listas inversas ni estado de interfaz. `docs/data-model.md` no cambia semánticamente para MAP-009.
+El catálogo está normalizado: los lugares referencian una categoría y etiquetas; las notas referencian su lugar y etiquetas. No se almacenan listas inversas ni estado de interfaz. `docs/data-model.md` no cambia semánticamente para MAP-010.
 
 ## Normalización, búsqueda y filtrado
 
@@ -263,9 +268,83 @@ Marcadores, búsqueda, filtros, URL y fichas se crean desde el catálogo indepen
 
 Los filtros usan controles HTML nativos. La búsqueda conserva sus reglas de flechas y Escape. Los marcadores admiten ratón, táctil, Enter y barra espaciadora. No se implementa un widget ARIA personalizado.
 
-La carga inicial y `popstate` no fuerzan el foco sobre la ficha, el mapa, un marcador o un control. Una interacción directa sigue enfocando el título al abrir y devuelve el foco al marcador al cerrar. La restauración puede actualizar las regiones vivas existentes, pero no genera anuncios específicos para cada parámetro inválido.
+La carga inicial y `popstate` no fuerzan el foco sobre la ficha, el mapa, un marcador o un control. Una interacción directa sigue enfocando el título al abrir y devuelve el foco al marcador al cerrar. La restauración puede actualizar los estados existentes, pero no genera anuncios específicos para cada parámetro inválido ni convierte la ficha completa en una región viva.
 
 Las URLs no se imprimen en la interfaz, por lo que una cadena larga no introduce desbordamiento. El usuario comparte la URL canónica de la barra de direcciones. Búsqueda, limpieza, filtros, zoom, mapa y ficha conservan sus objetivos táctiles y su distribución responsive. La restauración se prueba en un viewport móvil y sobre la superficie neutra de error.
+
+### Estrategia responsive final
+
+La interfaz se resuelve primero con CSS flexible: cuadrículas `minmax(0, 1fr)`, tamaños con `clamp()`, anchos máximos, contenido con `overflow-wrap: anywhere` y alturas basadas en `svh`. Los breakpoints solo cambian la composición cuando ya no existe espacio suficiente.
+
+El ancho mínimo soportado es `20rem`, equivalente a 320 píxeles con el tamaño raíz estándar. `html`, `body` y `#app` impiden el desbordamiento horizontal accidental. Nombres, alias, etiquetas, títulos, descripciones y textos legales pueden partir línea sin ensanchar el documento.
+
+| Criterio | Decisión |
+|---|---|
+| Fluido, sin breakpoint | Anchura general, espacios, tipografía, mapa y columnas con `minmax`. |
+| `max-width: 64rem` | La ficha deja de ser lateral y se integra debajo del mapa. |
+| `max-width: 48rem` | Cabecera, introducción, búsqueda, controles y grupos pasan a una columna. |
+| `max-width: 22rem` | Ajustes compactos para anchos cercanos a 320 px. |
+| Horizontal con `max-height: 32rem` | Se acotan listas y se mantiene una superficie cartográfica útil. |
+
+El mapa conserva al menos 22 rem en móvil vertical y 18 rem en móvil horizontal de poca altura. La superficie de error usa la misma caja. Resultados y grupos de filtros tienen scroll interno acotado; los botones de limpieza ocupan todo el ancho en pantallas estrechas. `ResizeObserver` invalida Leaflet y reaplica los límites cuando cambia la caja.
+
+### Orden y restauración del foco
+
+El orden de Tab sigue el DOM y el orden visual: enlace para saltar, cabecera, búsqueda, resultados, filtros, mapa, controles de zoom, marcadores, ficha y enlaces legales. No se usan `tabindex` positivos.
+
+| Interacción | Política |
+|---|---|
+| Flecha abajo en búsqueda | Enfoca el primer resultado. |
+| Flechas, Inicio y Fin | Recorren botones de resultado. |
+| Escape en resultados | Devuelve el foco al campo. |
+| Limpiar búsqueda | Vacía y enfoca el campo. |
+| Cambiar filtro | Conserva el foco en el checkbox. |
+| Limpiar filtros | Conserva el foco en el botón. |
+| Abrir directamente | Enfoca el título de la ficha. |
+| Cerrar directamente | Devuelve el foco al marcador activo. |
+| Carga inicial o `popstate` | No mueve el foco. |
+
+El foco visible usa contorno de 3 píxeles, separación y halo de contraste. Se aplica a enlaces, botones, campos, marcadores y controles Leaflet incluso sobre mapa o error. No existe trampa de foco y los nodos ocultos se retiran antes de que puedan conservarlo.
+
+### Patrones semánticos y nombres
+
+Los patrones son nativos: `header`, `main`, `footer`, región de búsqueda, listas de botones, `fieldset` y `legend`, checkboxes, regiones de mapa y ficha, botones y enlaces. La carga y los recuentos usan `role="status"`; el error remoto usa `role="alert"` solo cuando ocurre.
+
+Los marcadores exponen lugar y categoría mediante `aria-label`, selección mediante `aria-pressed`, atajo mediante `aria-keyshortcuts` y coincidencia mediante `aria-description`. Los controles de zoom reciben nombres inequívocos a partir de sus títulos. No se añaden ARIA redundantes a botones, inputs o checkboxes nativos.
+
+### Contraste y estados visuales
+
+Los estados no dependen solo del color:
+
+- coincidente: contorno sólido;
+- atenuado: menor opacidad, escala y borde discontinuo;
+- activo: anillos, escala y prioridad de apilado;
+- activo sin coincidencia: anillos de activo y borde discontinuo;
+- enfocado: anillo de foco por encima de los demás estados.
+
+Los checkboxes seleccionados conservan el estado nativo y añaden fondo, borde y texto “Seleccionado”. Los controles deshabilitados mantienen legibilidad y explicación. Hover nunca es el único indicador. `prefers-reduced-motion` reduce transiciones no esenciales y los colores forzados conservan contornos y bordes.
+
+### Objetivos táctiles
+
+Los botones de limpieza, resultados, opciones de filtro, cierre, controles de zoom y marcadores tienen una referencia mínima de 44 × 44 píxeles. Los checkboxes miden 24 × 24 píxeles dentro de una etiqueta táctil de al menos 44 píxeles. Los controles mantienen separación mediante `gap` y no quedan parcialmente fuera del viewport. Leaflet conserva paneo y zoom táctil.
+
+### Matriz de Playwright y límites de emulación
+
+| Proyecto | Motor y perfil | Cobertura |
+|---|---|---|
+| `chromium` | Chromium, Desktop Chrome | Suite e2e completa. |
+| `firefox` | Firefox, Desktop Firefox | Suite crítica `responsive-accessibility.spec.ts`. |
+| `mobile-webkit` | WebKit, iPhone 13 emulado | Suite crítica móvil y accesible. |
+
+Chromium mantiene la cobertura exhaustiva. Firefox y WebKit ejecutan los flujos transversales de mayor riesgo para evitar duplicar innecesariamente toda la suite.
+
+`mobile-webkit` configura motor, viewport, user agent, capacidades táctiles y escala de dispositivo mediante Playwright. No equivale a una prueba manual en un iPhone físico ni garantiza Safari, VoiceOver, teclado virtual o integración del sistema operativo. Los perfiles de escritorio también son ejecuciones automatizadas del motor, no pruebas manuales en instalaciones de usuario.
+
+### Restauración, error remoto y pruebas estables
+
+Una URL completa se restaura en móvil sin robar foco. Atrás y adelante mantienen el foco del control actual y no crean entradas. Si falla el overlay, la misma caja conserva zoom, marcadores, selección, ficha y estado restaurado.
+
+Las pruebas visuales comprueban geometría, visibilidad, `scrollWidth`, nombres accesibles, atributos, foco, estilos computados y tamaños táctiles. Evitan posiciones absolutas frágiles y snapshots masivos. La URL oficial se intercepta exclusivamente con un SVG neutro generado en memoria; no se descarga ni se usa una copia alternativa.
 
 ## Construcción y calidad
 
@@ -279,7 +358,9 @@ Las URLs no se imprimen en la interfaz, por lo que una cadena larga no introduce
 
 Vitest cubre estado vacío, dimensiones aisladas, estado completo, codificación, orden canónico, deduplicación, inválidos, mezcla válida e inválida, parámetros vacíos y desconocidos, ida y vuelta, comparación e inmutabilidad.
 
-Playwright cubre URL estable por marcador, restauración de consulta, filtros y ficha, recarga, apertura en otra página, escritura de URL, política de historial, atrás y adelante, ausencia de entradas durante `popstate`, inválidos, estado sin coincidencias, selección única, foco, móvil y fallo del mapa remoto.
+Playwright cubre URL estable por marcador, restauración de consulta, filtros y ficha, recarga, apertura en otra página, escritura de URL, política de historial, atrás y adelante, ausencia de entradas durante `popstate`, inválidos, estado sin coincidencias, selección única, foco, móvil y fallo del mapa remoto. MAP-010 añade semántica, 320 píxeles, overflow, objetivos táctiles, foco visible, orden de teclado, marcadores atenuados, restauración móvil y móvil horizontal.
+
+CI instala Chromium, Firefox y WebKit. La suite completa se ejecuta en Chromium; Firefox y `mobile-webkit` ejecutan la suite crítica para mantener una duración razonable.
 
 ## Estrategia de pruebas del mapa remoto
 

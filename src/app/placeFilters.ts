@@ -58,6 +58,9 @@ function createFilterOption(
   const text = document.createElement('span');
   const nameElement = document.createElement('span');
   const countElement = document.createElement('span');
+  const descriptionElement = document.createElement('span');
+  const countId = `place-filter-${kind}-${id}-count`;
+  const descriptionId = `place-filter-${kind}-${id}-description`;
 
   label.className = 'place-filters__option';
   input.type = 'checkbox';
@@ -66,11 +69,12 @@ function createFilterOption(
   input.dataset.placeFilterKind = kind;
   input.dataset.placeFilterId = id;
   input.disabled = placeCount === 0;
-  input.setAttribute('aria-label', `${name}. ${description}`);
+  input.setAttribute('aria-describedby', `${descriptionId} ${countId}`);
 
   text.className = 'place-filters__option-text';
   nameElement.className = 'place-filters__option-name';
   nameElement.textContent = name;
+  countElement.id = countId;
   countElement.className = 'place-filters__option-count';
   countElement.textContent =
     placeCount === 0
@@ -78,8 +82,11 @@ function createFilterOption(
       : placeCount === 1
         ? '1 lugar'
         : `${placeCount} lugares`;
+  descriptionElement.id = descriptionId;
+  descriptionElement.className = 'visually-hidden';
+  descriptionElement.textContent = description;
 
-  text.append(nameElement, countElement);
+  text.append(nameElement, countElement, descriptionElement);
   label.append(input, text);
 
   return label;
@@ -205,6 +212,7 @@ export function mountPlaceFilters(
       return;
     }
 
+    synchronizeControls();
     options.onChange();
   };
 
@@ -217,6 +225,7 @@ export function mountPlaceFilters(
     elements.clearButton.focus();
   };
 
+  synchronizeControls();
   elements.root.addEventListener('change', handleChange);
   elements.clearButton.addEventListener('click', handleClear);
 
@@ -238,8 +247,11 @@ export function mountPlaceFilters(
         activePlaceMatches === false
           ? ' El lugar activo no coincide, pero permanece disponible y se puede consultar.'
           : '';
+      const message = `${countMessage}${activeMessage}`;
 
-      elements.status.textContent = `${countMessage}${activeMessage}`;
+      if (elements.status.textContent !== message) {
+        elements.status.textContent = message;
+      }
     },
     destroy(): void {
       elements.root.removeEventListener('change', handleChange);
