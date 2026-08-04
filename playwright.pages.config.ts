@@ -18,9 +18,7 @@ function normalizeBaseUrl(url: string): string {
 
 const repositoryName = getRepositoryName();
 const deployedUrl = process.env.PAGES_URL?.trim();
-const baseURL = normalizeBaseUrl(
-  deployedUrl || `http://127.0.0.1:4174/${repositoryName}/`,
-);
+const baseURL = normalizeBaseUrl(deployedUrl || `http://127.0.0.1:4174/${repositoryName}/`);
 
 export default defineConfig({
   testDir: './tests/deployment',
