@@ -1,12 +1,21 @@
-import L, { type LatLngBounds, type Map as LeafletMap } from 'leaflet';
+import L, { type LatLngBounds, type Map as LeafletMap, type Marker } from 'leaflet';
 
+import type { PlaceId } from '../data/model';
+import type { PlaceMarkerModel } from '../data/placeDetails';
 import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './config';
 
 export type MapLoadState = 'loading' | 'ready' | 'error';
 
 export interface FaerunMapController {
   readonly map: LeafletMap;
+  setActivePlace(placeId: PlaceId | null): void;
+  focusMarker(placeId: PlaceId): void;
   destroy(): void;
+}
+
+export interface FaerunMapOptions {
+  readonly markers?: readonly PlaceMarkerModel[];
+  readonly onPlaceActivate?: (placeId: PlaceId) => void;
 }
 
 interface MapElements {
@@ -15,11 +24,18 @@ interface MapElements {
   readonly status: HTMLElement;
 }
 
+interface MarkerDomListener {
+  readonly element: HTMLElement;
+  readonly handler: (event: KeyboardEvent) => void;
+}
+
 const stateMessages: Record<Exclude<MapLoadState, 'ready'>, string> = {
   loading: 'Cargando la cartografía oficial de Faerûn…',
   error:
     'No se ha podido cargar la cartografía oficial. Se muestra una superficie neutra y la navegación permanece disponible.',
 };
+
+const markerSymbols = ['◆', '▲', '●', '✦'] as const;
 
 function getRequiredElement<T extends HTMLElement>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector);
@@ -83,7 +99,58 @@ function constrainViewport(
   map.panInsideBounds(bounds, { animate: false });
 }
 
-export function mountFaerunMap(root: ParentNode = document): FaerunMapController {
+function createMarkerIcon(marker: PlaceMarkerModel): L.DivIcon {
+  const variant = marker.categoryIndex % markerSymbols.length;
+  const symbol = markerSymbols[variant];
+
+  return L.divIcon({
+    className: `campaign-marker-icon campaign-marker-icon--variant-${variant}`,
+    html: `<span class="campaign-marker-icon__symbol" aria-hidden="true">${symbol}</span>`,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+  });
+}
+
+function decorateMarkerElement(
+  leafletMarker: Marker,
+  marker: PlaceMarkerModel,
+  activate: () => void,
+  domListeners: MarkerDomListener[],
+): void {
+  const element = leafletMarker.getElement();
+
+  if (!element) {
+    return;
+  }
+
+  element.setAttribute('role', 'button');
+  element.setAttribute('aria-label', `${marker.name}. Categoría: ${marker.categoryName}.`);
+  element.setAttribute('aria-pressed', 'false');
+  element.setAttribute('data-testid', 'place-marker');
+  element.dataset.placeId = marker.id;
+  element.dataset.categoryId = marker.categoryId;
+  element.dataset.categorySlug = marker.categorySlug;
+  element.dataset.markerLat = String(marker.coordinate[0]);
+  element.dataset.markerLng = String(marker.coordinate[1]);
+
+  const handleKeyDown = (event: KeyboardEvent): void => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    activate();
+  };
+
+  element.addEventListener('keydown', handleKeyDown);
+  domListeners.push({ element, handler: handleKeyDown });
+}
+
+export function mountFaerunMap(
+  root: ParentNode = document,
+  options: FaerunMapOptions = {},
+): FaerunMapController {
   const elements = resolveMapElements(root);
   const bounds = createLeafletBounds();
 
@@ -120,6 +187,28 @@ export function mountFaerunMap(root: ParentNode = document): FaerunMapController
 
   map.fitBounds(bounds, { animate: false });
   constrainViewport(map, bounds, true);
+
+  const markerByPlaceId = new Map<PlaceId, Marker>();
+  const markerClickHandlers = new Map<PlaceId, () => void>();
+  const markerDomListeners: MarkerDomListener[] = [];
+
+  options.markers?.forEach((marker) => {
+    const activate = (): void => options.onPlaceActivate?.(marker.id);
+    const leafletMarker = L.marker(L.latLng(marker.coordinate[0], marker.coordinate[1]), {
+      icon: createMarkerIcon(marker),
+      keyboard: true,
+      riseOnHover: true,
+      title: `${marker.name} — ${marker.categoryName}`,
+    });
+
+    leafletMarker.on('click', activate);
+    leafletMarker.on('add', () =>
+      decorateMarkerElement(leafletMarker, marker, activate, markerDomListeners),
+    );
+    leafletMarker.addTo(map);
+    markerByPlaceId.set(marker.id, leafletMarker);
+    markerClickHandlers.set(marker.id, activate);
+  });
 
   const imageOverlay = L.imageOverlay(OFFICIAL_MAP_URL, bounds, {
     alt: 'Mapa oficial de la Costa de la Espada y el noroeste de Faerûn',
@@ -187,12 +276,35 @@ export function mountFaerunMap(root: ParentNode = document): FaerunMapController
 
   return {
     map,
+    setActivePlace(placeId: PlaceId | null): void {
+      markerByPlaceId.forEach((marker, markerPlaceId) => {
+        const isActive = markerPlaceId === placeId;
+        const element = marker.getElement();
+
+        element?.classList.toggle('campaign-marker-icon--active', isActive);
+        element?.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        marker.setZIndexOffset(isActive ? 1000 : 0);
+      });
+    },
+    focusMarker(placeId: PlaceId): void {
+      markerByPlaceId.get(placeId)?.getElement()?.focus({ preventScroll: true });
+    },
     destroy(): void {
       destroyed = true;
       imageOverlay.off('load', handleImageLoad);
       imageOverlay.off('error', handleImageError);
       map.off('zoomend', synchronizeView);
       map.off('moveend', synchronizeView);
+      markerByPlaceId.forEach((marker, placeId) => {
+        const clickHandler = markerClickHandlers.get(placeId);
+
+        if (clickHandler) {
+          marker.off('click', clickHandler);
+        }
+      });
+      markerDomListeners.forEach(({ element, handler }) => {
+        element.removeEventListener('keydown', handler);
+      });
       resizeObserver?.disconnect();
       window.removeEventListener('resize', handleResize);
 
