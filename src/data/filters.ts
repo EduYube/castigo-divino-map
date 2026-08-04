@@ -1,10 +1,4 @@
-import type {
-  CampaignCatalog,
-  CampaignCategory,
-  CampaignPlace,
-  PlaceId,
-  TagId,
-} from './model';
+import type { CampaignCatalog, CampaignCategory, CampaignPlace, PlaceId, TagId } from './model';
 import { normalizePlaceSearchQuery, searchPublicPlaces } from './search';
 
 export interface PublicPlaceFilterState {
@@ -57,10 +51,7 @@ export function filterPublicPlaces(
     .map(({ id }) => id);
 }
 
-export function searchPublicPlaceIds(
-  catalog: CampaignCatalog,
-  query: string,
-): readonly PlaceId[] {
+export function searchPublicPlaceIds(catalog: CampaignCatalog, query: string): readonly PlaceId[] {
   if (!normalizePlaceSearchQuery(query)) {
     return catalog.places.map(({ id }) => id);
   }
