@@ -1,7 +1,4 @@
-import {
-  getPublicPlaceFilterTagIds,
-  type PublicPlaceFilterState,
-} from '../data/filters';
+import { getPublicPlaceFilterTagIds, type PublicPlaceFilterState } from '../data/filters';
 import type { CampaignCatalog, CampaignCategory, TagId } from '../data/model';
 
 export interface PlaceFiltersController {
@@ -119,13 +116,7 @@ export function mountPlaceFilters(
   );
   elements.tags.replaceChildren(
     ...options.catalog.tags.map((tag) =>
-      createFilterOption(
-        'tag',
-        tag.id,
-        tag.name,
-        tag.description,
-        tagPlaceCounts.get(tag.id) ?? 0,
-      ),
+      createFilterOption('tag', tag.id, tag.name, tag.description, tagPlaceCounts.get(tag.id) ?? 0),
     ),
   );
 
@@ -150,12 +141,22 @@ export function mountPlaceFilters(
       return;
     }
 
-    const targetSet = kind === 'category' ? selectedCategoryIds : selectedTagIds;
+    if (kind === 'category') {
+      const categoryId = id as CampaignCategory['id'];
 
-    if (event.target.checked) {
-      targetSet.add(id as CampaignCategory['id'] & TagId);
+      if (event.target.checked) {
+        selectedCategoryIds.add(categoryId);
+      } else {
+        selectedCategoryIds.delete(categoryId);
+      }
+    } else if (kind === 'tag') {
+      if (event.target.checked) {
+        selectedTagIds.add(id);
+      } else {
+        selectedTagIds.delete(id);
+      }
     } else {
-      targetSet.delete(id as CampaignCategory['id'] & TagId);
+      return;
     }
 
     options.onChange();
@@ -164,11 +165,9 @@ export function mountPlaceFilters(
   const clear = (): void => {
     selectedCategoryIds.clear();
     selectedTagIds.clear();
-    elements.root
-      .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
-      .forEach((input) => {
-        input.checked = false;
-      });
+    elements.root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((input) => {
+      input.checked = false;
+    });
     options.onChange();
   };
 
