@@ -4,7 +4,7 @@
 
 Este documento define el flujo reproducible y seguro para desarrollar, validar, desplegar y recuperar la base de datos de Beta 0.2. Complementa `docs/architecture.md`, `docs/data-model.md`, `docs/security.md` y los ADR 0002 a 0005.
 
-MAP-014 prepara la base local y la validación automática. No enlaza ni modifica todavía el proyecto alojado de producción.
+MAP-014 prepara la base local, la validación automática y el aprovisionamiento inicial controlado del único proyecto alojado. Las cuatro migraciones iniciales ya están aplicadas sin semillas; cualquier cambio posterior debe realizarse mediante nuevas migraciones y siguiendo los controles descritos aquí.
 
 ## Fuente de verdad
 
@@ -127,17 +127,20 @@ La creación del proyecto de producción es una acción manual y separada. Antes
 1. elegir organización y región;
 2. comprobar la versión principal de PostgreSQL del proyecto alojado;
 3. confirmar que coincide con `db.major_version = 17` o actualizar deliberadamente la configuración local antes de desplegar;
-4. deshabilitar registro público, usuarios anónimos y proveedores sociales no usados;
-5. crear manualmente el único usuario administrativo y confirmar su correo;
-6. configurar las URLs permitidas de Auth para desarrollo local y GitHub Pages;
-7. obtener la URL y una clave publicable para el frontend;
-8. crear el GitHub Environment protegido `supabase-production` antes de automatizar despliegues.
+4. deshabilitar registro público, usuarios anónimos, enlace manual y proveedores no usados;
+5. configurar los requisitos de contraseña y las URLs permitidas de Auth para desarrollo local y GitHub Pages;
+6. obtener la URL y una clave publicable para el frontend sin exponer sus valores;
+7. crear el GitHub Environment protegido `supabase-production` antes de automatizar despliegues.
+
+Después de disponer del esquema de autorización se crea manualmente el único usuario administrativo, se confirma su correo y se añade su UUID a `private.admin_users`. No se utilizan metadatos editables del usuario para conceder permisos.
 
 No debe introducirse ningún dato real de campaña durante la validación inicial de infraestructura.
 
 ## Despliegue de migraciones
 
-La promoción a producción se hará únicamente desde `master`, con CI verde, aprobación humana y ejecución serializada.
+El aprovisionamiento inicial de MAP-014 se realizó desde su rama de trabajo con CI verde, dry run revisado y confirmación humana explícita en cada operación dependiente. Se aplicaron exactamente las cuatro migraciones versionadas y no se incluyó `seed.sql`.
+
+Después de integrar MAP-014, las promociones posteriores a producción se harán desde `master`, con CI verde, aprobación humana y ejecución serializada.
 
 Variables previstas para un workflow protegido:
 
@@ -145,25 +148,45 @@ Variables previstas para un workflow protegido:
 - secreto `SUPABASE_ACCESS_TOKEN`;
 - secreto `SUPABASE_DB_PASSWORD`.
 
-Secuencia operativa prevista:
+Secuencia operativa:
 
 ```bash
 supabase link --project-ref <PROJECT_REF>
 supabase migration list --linked
 supabase db push --linked --dry-run
 supabase db push --linked
+supabase migration list --linked
+supabase db lint --linked --fail-on warning
 ```
 
 Reglas:
 
-- revisar el dry run antes de aplicar;
+- revisar el historial remoto y el dry run antes de aplicar;
+- detenerse si aparecen migraciones inesperadas o divergencias no documentadas;
 - no usar `--include-seed` en producción;
 - no ejecutar `db reset --linked` contra producción;
 - no editar el esquema de producción desde Dashboard o SQL Editor fuera de una recuperación documentada;
 - no ejecutar dos despliegues simultáneos;
-- verificar después el historial remoto y las políticas RLS.
+- verificar después el historial remoto, el lint y las políticas RLS.
 
-MAP-014 documenta este procedimiento, pero no crea todavía un workflow de despliegue ni ejecuta estos comandos.
+MAP-014 no crea todavía un workflow de despliegue remoto. El enlace, el dry run y el primer `db push` se ejecutaron manualmente bajo puntos de control; la automatización futura deberá usar un GitHub Environment protegido.
+
+## Validación posterior al aprovisionamiento inicial
+
+Tras aplicar las migraciones se verificó:
+
+- coincidencia exacta entre las cuatro versiones locales y remotas;
+- lint remoto sin errores ni advertencias;
+- ausencia de ejecución de `seed.sql`;
+- existencia de un único usuario administrativo real con correo confirmado;
+- autorización positiva del UUID incluido en `private.admin_users`;
+- rechazo de un UUID autenticado no incluido en la lista blanca;
+- lectura anónima limitada a contenido publicado;
+- bloqueo de escritura para visitantes y usuarios autenticados no autorizados;
+- escritura editorial permitida al administrador;
+- rollback limpio de los datos usados por la prueba remota.
+
+Las consultas de verificación que simulan roles deben ejecutarse dentro de una transacción y terminar con `rollback`. No deben incluirse UUID, correos, contraseñas, tokens o claves en Issues, PRs, documentación o capturas.
 
 ## Copia lógica previa a cambios destructivos
 
