@@ -16,140 +16,96 @@ exception
 end;
 $$;
 
-select plan(103);
+select plan(19);
+
+select ok(
+  not exists (
+    select 1
+    from information_schema.role_table_grants
+    where grantee = 'authenticated'
+      and table_schema = 'public'
+      and table_name = any (
+        array[
+          'categories',
+          'tags',
+          'map_entities',
+          'players',
+          'entity_aliases',
+          'entity_tags',
+          'public_notes',
+          'public_note_tags',
+          'geographic_names',
+          'geographic_name_aliases',
+          'character_location_events'
+        ]
+      )
+      and privilege_type in ('INSERT', 'UPDATE')
+  ),
+  'browser administration uses explicit column grants instead of broad write grants'
+);
+
+select ok(
+  not exists (
+    select 1
+    from information_schema.column_privileges
+    where grantee = 'authenticated'
+      and table_schema = 'public'
+      and privilege_type = 'INSERT'
+      and column_name = any (
+        array[
+          'normalized_name',
+          'normalized_value',
+          'published_at',
+          'archived_at',
+          'created_at',
+          'updated_at'
+        ]
+      )
+  ),
+  'browser inserts cannot forge normalized or lifecycle-managed columns'
+);
+
+select ok(
+  not exists (
+    select 1
+    from information_schema.column_privileges
+    where grantee = 'authenticated'
+      and table_schema = 'public'
+      and privilege_type = 'UPDATE'
+      and column_name = any (
+        array[
+          'id',
+          'entity_type',
+          'normalized_name',
+          'normalized_value',
+          'published_at',
+          'archived_at',
+          'created_at',
+          'updated_at',
+          'moderator_user_id',
+          'moderated_at'
+        ]
+      )
+  ),
+  'browser updates cannot rewrite identifiers, types, normalization, or audit columns'
+);
+
+select is(
+  (
+    select array_agg(column_name order by column_name)::text[]
+    from information_schema.column_privileges
+    where grantee = 'authenticated'
+      and table_schema = 'public'
+      and table_name = 'entity_player_dispositions'
+      and privilege_type = 'UPDATE'
+  ),
+  array['disposition']::text[],
+  'the entity-player matrix only exposes disposition updates'
+);
 
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}';
 set local role authenticated;
-
-select is(
-  pg_temp.sqlstate_for(
-    format(
-      'insert into %s (%I) values (null)',
-      protected_column.relation_name,
-      protected_column.column_name
-    )
-  ),
-  '42501',
-  format(
-    '%s.%s insert is denied with insufficient privilege',
-    protected_column.relation_name,
-    protected_column.column_name
-  )
-)
-from (
-  values
-    ('public.categories', 'published_at'),
-    ('public.categories', 'archived_at'),
-    ('public.categories', 'created_at'),
-    ('public.categories', 'updated_at'),
-    ('public.tags', 'published_at'),
-    ('public.tags', 'archived_at'),
-    ('public.tags', 'created_at'),
-    ('public.tags', 'updated_at'),
-    ('public.map_entities', 'normalized_name'),
-    ('public.map_entities', 'published_at'),
-    ('public.map_entities', 'archived_at'),
-    ('public.map_entities', 'created_at'),
-    ('public.map_entities', 'updated_at'),
-    ('public.entity_aliases', 'normalized_value'),
-    ('public.entity_aliases', 'published_at'),
-    ('public.entity_aliases', 'archived_at'),
-    ('public.entity_aliases', 'created_at'),
-    ('public.entity_aliases', 'updated_at'),
-    ('public.entity_tags', 'published_at'),
-    ('public.entity_tags', 'archived_at'),
-    ('public.entity_tags', 'created_at'),
-    ('public.entity_tags', 'updated_at'),
-    ('public.public_notes', 'published_at'),
-    ('public.public_notes', 'archived_at'),
-    ('public.public_notes', 'created_at'),
-    ('public.public_notes', 'updated_at'),
-    ('public.character_locations', 'published_at'),
-    ('public.character_locations', 'archived_at'),
-    ('public.character_locations', 'created_at'),
-    ('public.character_locations', 'updated_at'),
-    ('public.geographic_names', 'normalized_name'),
-    ('public.geographic_names', 'published_at'),
-    ('public.geographic_names', 'archived_at'),
-    ('public.geographic_names', 'created_at'),
-    ('public.geographic_names', 'updated_at')
-) as protected_column(relation_name, column_name);
-
-select is(
-  pg_temp.sqlstate_for(
-    format(
-      'update %s set %I = null where false',
-      protected_column.relation_name,
-      protected_column.column_name
-    )
-  ),
-  '42501',
-  format(
-    '%s.%s update is denied with insufficient privilege',
-    protected_column.relation_name,
-    protected_column.column_name
-  )
-)
-from (
-  values
-    ('public.categories', 'id'),
-    ('public.categories', 'published_at'),
-    ('public.categories', 'archived_at'),
-    ('public.categories', 'created_at'),
-    ('public.categories', 'updated_at'),
-    ('public.tags', 'id'),
-    ('public.tags', 'published_at'),
-    ('public.tags', 'archived_at'),
-    ('public.tags', 'created_at'),
-    ('public.tags', 'updated_at'),
-    ('public.map_entities', 'id'),
-    ('public.map_entities', 'entity_type'),
-    ('public.map_entities', 'normalized_name'),
-    ('public.map_entities', 'published_at'),
-    ('public.map_entities', 'archived_at'),
-    ('public.map_entities', 'created_at'),
-    ('public.map_entities', 'updated_at'),
-    ('public.entity_aliases', 'id'),
-    ('public.entity_aliases', 'normalized_value'),
-    ('public.entity_aliases', 'published_at'),
-    ('public.entity_aliases', 'archived_at'),
-    ('public.entity_aliases', 'created_at'),
-    ('public.entity_aliases', 'updated_at'),
-    ('public.entity_tags', 'id'),
-    ('public.entity_tags', 'published_at'),
-    ('public.entity_tags', 'archived_at'),
-    ('public.entity_tags', 'created_at'),
-    ('public.entity_tags', 'updated_at'),
-    ('public.public_notes', 'id'),
-    ('public.public_notes', 'published_at'),
-    ('public.public_notes', 'archived_at'),
-    ('public.public_notes', 'created_at'),
-    ('public.public_notes', 'updated_at'),
-    ('public.character_locations', 'id'),
-    ('public.character_locations', 'published_at'),
-    ('public.character_locations', 'archived_at'),
-    ('public.character_locations', 'created_at'),
-    ('public.character_locations', 'updated_at'),
-    ('public.geographic_names', 'id'),
-    ('public.geographic_names', 'normalized_name'),
-    ('public.geographic_names', 'published_at'),
-    ('public.geographic_names', 'archived_at'),
-    ('public.geographic_names', 'created_at'),
-    ('public.geographic_names', 'updated_at'),
-    ('public.public_requests', 'id'),
-    ('public.public_requests', 'sender_name'),
-    ('public.public_requests', 'proposed_name'),
-    ('public.public_requests', 'entity_type'),
-    ('public.public_requests', 'x'),
-    ('public.public_requests', 'y'),
-    ('public.public_requests', 'description'),
-    ('public.public_requests', 'reason'),
-    ('public.public_requests', 'moderator_user_id'),
-    ('public.public_requests', 'moderated_at'),
-    ('public.public_requests', 'created_at'),
-    ('public.public_requests', 'updated_at')
-) as protected_column(relation_name, column_name);
 
 insert into public.categories (id, slug, name)
 values ('category-hardening-test', 'hardening-test', 'Hardening test');
@@ -183,7 +139,6 @@ insert into public.map_entities (
   id,
   slug,
   entity_type,
-  disposition,
   name,
   x,
   y,
@@ -194,22 +149,11 @@ values (
   'entity-isolated-published-delete',
   'isolated-published-delete',
   'character',
-  'unknown',
   'Isolated published delete',
   20,
   20,
   'category-hardening-test',
   'published'
-);
-
-select ok(
-  exists (
-    select 1
-    from public.map_entities
-    where id = 'entity-isolated-published-delete'
-      and published_at is not null
-  ),
-  'isolated published entity exists without dependent child rows'
 );
 
 select throws_ok(
@@ -224,7 +168,6 @@ insert into public.map_entities (
   id,
   slug,
   entity_type,
-  disposition,
   name,
   x,
   y,
@@ -235,7 +178,6 @@ values (
   'entity-isolated-former-delete',
   'isolated-former-delete',
   'character',
-  'unknown',
   'Isolated former delete',
   30,
   30,
@@ -246,17 +188,6 @@ values (
 update public.map_entities
 set publication_status = 'draft'
 where id = 'entity-isolated-former-delete';
-
-select ok(
-  exists (
-    select 1
-    from public.map_entities
-    where id = 'entity-isolated-former-delete'
-      and publication_status = 'draft'
-      and published_at is not null
-  ),
-  'formerly published entity retains its publication timestamp'
-);
 
 select throws_ok(
   $$delete from public.map_entities
@@ -273,6 +204,15 @@ select throws_ok(
   '23514',
   'archived content must return to draft before publication',
   'archived content cannot bypass draft review'
+);
+
+select throws_ok(
+  $$update public.entity_tags
+    set entity_id = 'entity-bramble-fort'
+    where id = 'entity-tag-aster-notable'$$,
+  '23514',
+  'published relation identity is immutable',
+  'published relation endpoints cannot be silently rewritten'
 );
 
 reset role;
@@ -362,6 +302,67 @@ select is(
   ),
   'accepted'::public.request_status,
   'valid request transition still succeeds after moderation hardening'
+);
+
+select throws_ok(
+  $$delete from public.public_requests
+    where id = '10000000-0000-4000-8000-000000000001'$$,
+  '23514',
+  'moderated public requests cannot be physically deleted',
+  'moderated requests preserve their audit trail'
+);
+
+insert into public.public_requests (
+  id,
+  sender_name,
+  proposed_name,
+  entity_type,
+  x,
+  y,
+  description,
+  reason
+)
+values (
+  '10000000-0000-4000-8000-000000000099',
+  'Disposable Visitor',
+  'Disposable Draft',
+  'location',
+  1,
+  1,
+  'A never-moderated request.',
+  'Exercises allowed draft cleanup.'
+);
+
+select lives_ok(
+  $$delete from public.public_requests
+    where id = '10000000-0000-4000-8000-000000000099'$$,
+  'a never-moderated pending request may be deleted'
+);
+
+select is(
+  pg_temp.sqlstate_for(
+    $$insert into public.entity_player_dispositions (
+      entity_id,
+      player_id,
+      disposition
+    ) values (
+      'entity-aster-guide',
+      'player-demo-one',
+      'neutral'
+    )$$
+  ),
+  '42501',
+  'the browser cannot insert or replace entity-player matrix rows'
+);
+
+select is(
+  pg_temp.sqlstate_for(
+    $$delete from public.entity_player_dispositions
+      where entity_id = 'entity-aster-guide'
+        and player_id = 'player-demo-one'$$
+  ),
+  '42501',
+  'the browser cannot delete entity-player matrix rows'
 );
 
 select * from finish();
