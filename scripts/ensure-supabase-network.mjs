@@ -18,15 +18,18 @@ if (inspect.status === 0) {
   process.exit(0);
 }
 
-const create = runDocker([
-  'network',
-  'create',
-  '--driver',
-  'bridge',
-  '--opt',
-  BIND_OPTION,
-  NETWORK_NAME,
-], { inherit: true });
+const create = runDocker(
+  [
+    'network',
+    'create',
+    '--driver',
+    'bridge',
+    '--opt',
+    BIND_OPTION,
+    NETWORK_NAME,
+  ],
+  { inherit: true },
+);
 
 if (create.error) {
   console.error(`Unable to run Docker: ${create.error.message}`);
