@@ -16,8 +16,8 @@
     "verify:build": "node verify-production-build.mjs",
     "verify:security": "node scripts/verify-supabase-security.mjs",
     "lint": "eslint .",
-    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
-    "format:check": "prettier --check --end-of-line auto \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
+    "format:check": "prettier --check --end-of-line auto \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:data": "vitest run src/data/validate.test.ts",
@@ -33,8 +33,9 @@
     "supabase:migration:list": "supabase migration list --local",
     "supabase:db:reset": "supabase db reset --local",
     "supabase:db:test": "supabase test db --local",
+    "supabase:db:test:concurrency": "node scripts/test-supabase-concurrency.mjs",
     "supabase:db:lint": "supabase db lint --local --fail-on warning",
-    "supabase:db:validate": "npm run supabase:db:reset && npm run supabase:db:lint && npm run supabase:db:test",
+    "supabase:db:validate": "npm run supabase:db:reset && npm run supabase:db:lint && npm run supabase:db:test && npm run supabase:db:test:concurrency",
     "supabase:types": "supabase gen types typescript --local --schema public > src/database.types.ts"
   },
   "dependencies": {
