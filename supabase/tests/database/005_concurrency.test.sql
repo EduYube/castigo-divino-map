@@ -7,15 +7,11 @@ set local search_path = public, extensions;
 select plan(6);
 
 do $setup$
+declare
+  test_connection text := 'dbname=' || current_database() || ' password=unused-test-value';
 begin
-  perform extensions.dblink_connect(
-    'category_publisher',
-    'dbname=' || current_database()
-  );
-  perform extensions.dblink_connect(
-    'category_withdrawer',
-    'dbname=' || current_database()
-  );
+  perform extensions.dblink_connect('category_publisher', test_connection);
+  perform extensions.dblink_connect('category_withdrawer', test_connection);
 
   perform extensions.dblink_exec('category_publisher', 'begin');
   perform extensions.dblink_exec(
@@ -72,15 +68,11 @@ select is(
 );
 
 do $tag_setup$
+declare
+  test_connection text := 'dbname=' || current_database() || ' password=unused-test-value';
 begin
-  perform extensions.dblink_connect(
-    'tag_publisher',
-    'dbname=' || current_database()
-  );
-  perform extensions.dblink_connect(
-    'tag_withdrawer',
-    'dbname=' || current_database()
-  );
+  perform extensions.dblink_connect('tag_publisher', test_connection);
+  perform extensions.dblink_connect('tag_withdrawer', test_connection);
 
   perform extensions.dblink_exec('tag_publisher', 'begin');
   perform extensions.dblink_exec(
