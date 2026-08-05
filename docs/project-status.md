@@ -6,9 +6,9 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: arquitectura funcional, técnica, de datos y de seguridad de Beta 0.2 cerrada; MAP-014 preparada para comenzar.
+- Estado general: MAP-014 dispone de una base Supabase local reproducible y probada; quedan la validación CI, la revisión por PR y la configuración manual del proyecto alojado.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
-- Última actualización: 2026-08-04.
+- Última actualización: 2026-08-05.
 
 ## Beta 0.1
 
@@ -47,6 +47,28 @@ MAP-013 define:
 
 Las decisiones completas viven en `docs/architecture.md`, `docs/data-model.md`, `docs/security.md` y ADR 0002 a 0005 bajo `docs/adr/`.
 
+## Base Supabase preparada en MAP-014
+
+La rama `agent/map-014-supabase-foundation` contiene:
+
+- Supabase CLI fijada exactamente en `2.111.0`;
+- `supabase/config.toml` endurecido para desarrollo local;
+- red Docker local vinculada a `127.0.0.1`;
+- cuatro migraciones SQL ordenadas e inmutables tras su primera validación;
+- tablas, restricciones, índices, triggers, funciones y ciclo editorial;
+- lista blanca `private.admin_users` y autorización mediante `private.is_admin()`;
+- grants explícitos y RLS en todas las tablas públicas;
+- lectura pública de contenido publicado y escritura administrativa autorizada;
+- RPC cerrada para solicitudes públicas;
+- semilla determinista con datos y usuarios completamente ficticios;
+- 69 pruebas pgTAP de estructura, RLS e invariantes;
+- reconstrucción local, lint SQL y pruebas pgTAP correctos;
+- auditoría de credenciales en archivos versionados y en el artefacto de Pages;
+- documentación operativa en `docs/supabase-operations.md`;
+- trabajo CI separado para reconstruir, analizar y probar la base local sin secretos remotos.
+
+No se ha enlazado ni modificado todavía ningún proyecto Supabase alojado.
+
 ## Objetivo de Beta 0.2
 
 Añadir persistencia y administración segura sin perder ninguna funcionalidad pública de Beta 0.1.
@@ -74,7 +96,7 @@ MAP-013 a MAP-030 están creadas, añadidas al GitHub Project y clasificadas con
 Orden recomendado de ejecución:
 
 1. MAP-013 — Definir la arquitectura y seguridad de la Beta 0.2. **Completada.**
-2. MAP-014 — Preparar Supabase, migraciones y políticas RLS. **Siguiente.**
+2. MAP-014 — Preparar Supabase, migraciones y políticas RLS. **En curso.**
 3. MAP-015 — Evolucionar el modelo de entidades y relaciones.
 4. MAP-016 — Implementar acceso público resiliente y estado del backend.
 5. MAP-017 — Implementar login y autorización administrativa.
@@ -94,27 +116,35 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- MAP-014 — Preparar Supabase, migraciones y políticas RLS.
-- Abrir un chat independiente para MAP-014.
-- Crear en MAP-014 la estructura `supabase/`, migraciones, semillas y pruebas locales de RLS sin implementar todavía login ni CRUD.
-- Completar las acciones manuales de Supabase únicamente cuando MAP-014 las necesite.
+- Validar en GitHub Actions el nuevo trabajo local de Supabase.
+- Revisar el diff completo de MAP-014 mediante pull request.
+- Completar las acciones manuales imprescindibles del proyecto Supabase alojado sin copiar secretos al repositorio o al chat.
+- Confirmar los criterios de aceptación de la Issue #33 antes de fusionar.
 
 ## Acciones manuales para MAP-014
 
+Completadas:
+
+- Docker Desktop disponible para desarrollo local.
+- Supabase CLI `2.111.0` instalada como dependencia fijada del proyecto.
+- Stack local inicializado, reconstruido y probado desde cero.
+
+Pendientes:
+
 - Crear el proyecto Supabase de producción en la organización y región elegidas.
-- Instalar Docker y una versión fijada de Supabase CLI para desarrollo local.
+- Comprobar que la versión principal de PostgreSQL alojada coincide con `db.major_version = 17` antes del primer despliegue.
 - Obtener la URL y una clave publicable `sb_publishable_...`.
 - Crear un GitHub Environment protegido `supabase-production` y guardar allí `SUPABASE_ACCESS_TOKEN` y `SUPABASE_DB_PASSWORD` cuando exista el workflow de migración.
 - Crear manualmente el único usuario administrativo, confirmar su correo y deshabilitar registro público, usuarios anónimos y proveedores no usados.
 - Configurar las URLs permitidas de Auth para desarrollo local y GitHub Pages.
-- Definir y probar un procedimiento de `supabase db dump` previo a cambios destructivos; no asumir backups gestionados que el plan elegido no garantice.
+- Ejecutar y custodiar fuera del repositorio un dump lógico previo al primer cambio destructivo real.
 
 Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, repositorio, Issues, PRs, logs o artefactos.
 
 ## Bloqueos
 
-- MAP-014 requiere intervención manual en el Dashboard de Supabase para crear y configurar el proyecto alojado.
-- No existen decisiones críticas de arquitectura pendientes para comenzar MAP-014.
+- La configuración del proyecto alojado requiere intervención manual en el Dashboard de Supabase.
+- La CI de base de datos debe ejecutarse correctamente en la pull request antes de considerar cumplido el criterio de validación automática.
 
 ## Riesgos aceptados
 
@@ -127,17 +157,15 @@ Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, reposi
 
 ## Riesgos pendientes de MAP-014 a MAP-030
 
-- Implementar y probar exhaustivamente las políticas RLS reales.
-- Confirmar configuración de Auth, URLs, correo y protección de contraseña del plan seleccionado.
-- Diseñar el esquema ejecutable sin romper IDs, slugs, coordenadas o URLs existentes.
+- Confirmar en el proyecto alojado Auth, URLs, correo, versión PostgreSQL y protección de contraseña.
+- Migrar el catálogo de Beta 0.1 sin romper IDs, slugs, coordenadas o URLs existentes.
 - Automatizar y auditar la generación del snapshot público.
-- Extender la auditoría de `dist` a claves Supabase privilegiadas y contenido no publicado.
 - Validar abuso de solicitudes, accesibilidad administrativa, rendimiento y recuperación real.
 - Evitar filtraciones editoriales de secretos en contenido destinado a publicación.
 
 ## Próximo paso
 
-Comenzar MAP-014 — Preparar Supabase, migraciones y políticas RLS — desde una rama independiente y convertir esta arquitectura en migraciones reproducibles, semillas y pruebas locales de permisos.
+Abrir la pull request de MAP-014, validar CI y completar los puntos manuales mínimos del proyecto Supabase alojado antes de fusionar y cerrar la Issue #33.
 
 ## Últimos cambios
 
@@ -151,3 +179,5 @@ Comenzar MAP-014 — Preparar Supabase, migraciones y políticas RLS — desde u
 | 2026-08-04 | Backlog de Beta 0.2 añadido y clasificado en GitHub Projects |
 | 2026-08-04 | MAP-013 cerró arquitectura, seguridad, entornos, publicación, degradación, migraciones y rollback de Beta 0.2 |
 | 2026-08-04 | PR #52 fusionada, Issue #32 cerrada y MAP-014 establecida como trabajo actual |
+| 2026-08-05 | MAP-014 añadió Supabase local reproducible, cuatro migraciones, semillas ficticias y 69 pruebas pgTAP correctas |
+| 2026-08-05 | Auditorías de credenciales, documentación operativa y validación local de RLS preparadas; CI y proyecto alojado pendientes |
