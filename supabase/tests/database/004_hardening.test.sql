@@ -16,125 +16,7 @@ exception
 end;
 $$;
 
-select plan(27);
-
-select ok(
-  not has_column_privilege('authenticated', 'public.categories', 'created_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.categories', 'created_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.categories', 'updated_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.categories', 'updated_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.categories', 'published_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.categories', 'published_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.categories', 'archived_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.categories', 'archived_at', 'UPDATE'),
-  'authenticated cannot supply category system timestamps'
-);
-
-select ok(
-  not has_column_privilege('authenticated', 'public.tags', 'created_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.tags', 'created_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.tags', 'updated_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.tags', 'updated_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.tags', 'published_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.tags', 'published_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.tags', 'archived_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.tags', 'archived_at', 'UPDATE'),
-  'authenticated cannot supply tag system timestamps'
-);
-
-select ok(
-  not has_column_privilege('authenticated', 'public.map_entities', 'normalized_name', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.map_entities', 'normalized_name', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.map_entities', 'entity_type', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.map_entities', 'created_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.map_entities', 'created_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.map_entities', 'updated_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.map_entities', 'updated_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.map_entities', 'published_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.map_entities', 'published_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.map_entities', 'archived_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.map_entities', 'archived_at', 'UPDATE'),
-  'authenticated cannot supply entity derived or system columns'
-);
-
-select ok(
-  not has_column_privilege('authenticated', 'public.entity_aliases', 'normalized_value', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.entity_aliases', 'normalized_value', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.entity_aliases', 'created_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.entity_aliases', 'created_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.entity_aliases', 'updated_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.entity_aliases', 'updated_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.entity_aliases', 'published_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.entity_aliases', 'published_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.entity_aliases', 'archived_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.entity_aliases', 'archived_at', 'UPDATE'),
-  'authenticated cannot supply alias derived or system columns'
-);
-
-select ok(
-  not has_column_privilege('authenticated', 'public.entity_tags', 'created_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.entity_tags', 'created_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.entity_tags', 'updated_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.entity_tags', 'updated_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.entity_tags', 'published_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.entity_tags', 'published_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.entity_tags', 'archived_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.entity_tags', 'archived_at', 'UPDATE'),
-  'authenticated cannot supply entity-tag system timestamps'
-);
-
-select ok(
-  not has_column_privilege('authenticated', 'public.public_notes', 'created_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.public_notes', 'created_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_notes', 'updated_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.public_notes', 'updated_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_notes', 'published_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.public_notes', 'published_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_notes', 'archived_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.public_notes', 'archived_at', 'UPDATE'),
-  'authenticated cannot supply note system timestamps'
-);
-
-select ok(
-  not has_column_privilege('authenticated', 'public.character_locations', 'created_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.character_locations', 'created_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.character_locations', 'updated_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.character_locations', 'updated_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.character_locations', 'published_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.character_locations', 'published_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.character_locations', 'archived_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.character_locations', 'archived_at', 'UPDATE'),
-  'authenticated cannot supply relation system timestamps'
-);
-
-select ok(
-  not has_column_privilege('authenticated', 'public.geographic_names', 'normalized_name', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.geographic_names', 'normalized_name', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.geographic_names', 'created_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.geographic_names', 'created_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.geographic_names', 'updated_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.geographic_names', 'updated_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.geographic_names', 'published_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.geographic_names', 'published_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.geographic_names', 'archived_at', 'INSERT')
-  and not has_column_privilege('authenticated', 'public.geographic_names', 'archived_at', 'UPDATE'),
-  'authenticated cannot supply geographic-name derived or system columns'
-);
-
-select ok(
-  not has_column_privilege('authenticated', 'public.public_requests', 'sender_name', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_requests', 'proposed_name', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_requests', 'entity_type', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_requests', 'x', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_requests', 'y', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_requests', 'description', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_requests', 'reason', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_requests', 'moderator_user_id', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_requests', 'moderated_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_requests', 'created_at', 'UPDATE')
-  and not has_column_privilege('authenticated', 'public.public_requests', 'updated_at', 'UPDATE'),
-  'authenticated can update only closed moderation inputs'
-);
+select plan(103);
 
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}';
@@ -142,86 +24,132 @@ set local role authenticated;
 
 select is(
   pg_temp.sqlstate_for(
-    $$insert into public.categories (
-      id, slug, name, created_at
-    ) values (
-      'category-protected-created-at',
-      'protected-created-at',
-      'Protected created at',
-      '2000-01-01T00:00:00Z'
-    )$$
+    format(
+      'insert into %s (%I) values (null)',
+      protected_column.relation_name,
+      protected_column.column_name
+    )
   ),
   '42501',
-  'category created_at insert is denied with insufficient privilege'
-);
+  format(
+    '%s.%s insert is denied with insufficient privilege',
+    protected_column.relation_name,
+    protected_column.column_name
+  )
+)
+from (
+  values
+    ('public.categories', 'published_at'),
+    ('public.categories', 'archived_at'),
+    ('public.categories', 'created_at'),
+    ('public.categories', 'updated_at'),
+    ('public.tags', 'published_at'),
+    ('public.tags', 'archived_at'),
+    ('public.tags', 'created_at'),
+    ('public.tags', 'updated_at'),
+    ('public.map_entities', 'normalized_name'),
+    ('public.map_entities', 'published_at'),
+    ('public.map_entities', 'archived_at'),
+    ('public.map_entities', 'created_at'),
+    ('public.map_entities', 'updated_at'),
+    ('public.entity_aliases', 'normalized_value'),
+    ('public.entity_aliases', 'published_at'),
+    ('public.entity_aliases', 'archived_at'),
+    ('public.entity_aliases', 'created_at'),
+    ('public.entity_aliases', 'updated_at'),
+    ('public.entity_tags', 'published_at'),
+    ('public.entity_tags', 'archived_at'),
+    ('public.entity_tags', 'created_at'),
+    ('public.entity_tags', 'updated_at'),
+    ('public.public_notes', 'published_at'),
+    ('public.public_notes', 'archived_at'),
+    ('public.public_notes', 'created_at'),
+    ('public.public_notes', 'updated_at'),
+    ('public.character_locations', 'published_at'),
+    ('public.character_locations', 'archived_at'),
+    ('public.character_locations', 'created_at'),
+    ('public.character_locations', 'updated_at'),
+    ('public.geographic_names', 'normalized_name'),
+    ('public.geographic_names', 'published_at'),
+    ('public.geographic_names', 'archived_at'),
+    ('public.geographic_names', 'created_at'),
+    ('public.geographic_names', 'updated_at')
+) as protected_column(relation_name, column_name);
 
 select is(
   pg_temp.sqlstate_for(
-    $$update public.categories
-      set updated_at = '2000-01-01T00:00:00Z'
-      where id = 'category-people'$$
+    format(
+      'update %s set %I = null where false',
+      protected_column.relation_name,
+      protected_column.column_name
+    )
   ),
   '42501',
-  'category updated_at update is denied with insufficient privilege'
-);
-
-select is(
-  pg_temp.sqlstate_for(
-    $$update public.categories
-      set published_at = '2000-01-01T00:00:00Z'
-      where id = 'category-people'$$
-  ),
-  '42501',
-  'category published_at update is denied with insufficient privilege'
-);
-
-select is(
-  pg_temp.sqlstate_for(
-    $$insert into public.map_entities (
-      id,
-      slug,
-      entity_type,
-      disposition,
-      name,
-      normalized_name,
-      x,
-      y,
-      category_id
-    ) values (
-      'entity-protected-normalized',
-      'protected-normalized',
-      'character',
-      'unknown',
-      'Protected normalized',
-      'forged normalized value',
-      10,
-      10,
-      'category-people'
-    )$$
-  ),
-  '42501',
-  'entity normalized_name insert is denied with insufficient privilege'
-);
-
-select is(
-  pg_temp.sqlstate_for(
-    $$update public.public_requests
-      set moderator_user_id = '00000000-0000-4000-8000-000000000002'
-      where id = '10000000-0000-4000-8000-000000000001'$$
-  ),
-  '42501',
-  'request moderator identity update is denied with insufficient privilege'
-);
-
-select is(
-  pg_temp.sqlstate_for(
-    $$update public.public_requests
-      set moderated_at = '2000-01-01T00:00:00Z'
-      where id = '10000000-0000-4000-8000-000000000001'$$
-  ),
-  '42501',
-  'request moderation timestamp update is denied with insufficient privilege'
-);
+  format(
+    '%s.%s update is denied with insufficient privilege',
+    protected_column.relation_name,
+    protected_column.column_name
+  )
+)
+from (
+  values
+    ('public.categories', 'id'),
+    ('public.categories', 'published_at'),
+    ('public.categories', 'archived_at'),
+    ('public.categories', 'created_at'),
+    ('public.categories', 'updated_at'),
+    ('public.tags', 'id'),
+    ('public.tags', 'published_at'),
+    ('public.tags', 'archived_at'),
+    ('public.tags', 'created_at'),
+    ('public.tags', 'updated_at'),
+    ('public.map_entities', 'id'),
+    ('public.map_entities', 'entity_type'),
+    ('public.map_entities', 'normalized_name'),
+    ('public.map_entities', 'published_at'),
+    ('public.map_entities', 'archived_at'),
+    ('public.map_entities', 'created_at'),
+    ('public.map_entities', 'updated_at'),
+    ('public.entity_aliases', 'id'),
+    ('public.entity_aliases', 'normalized_value'),
+    ('public.entity_aliases', 'published_at'),
+    ('public.entity_aliases', 'archived_at'),
+    ('public.entity_aliases', 'created_at'),
+    ('public.entity_aliases', 'updated_at'),
+    ('public.entity_tags', 'id'),
+    ('public.entity_tags', 'published_at'),
+    ('public.entity_tags', 'archived_at'),
+    ('public.entity_tags', 'created_at'),
+    ('public.entity_tags', 'updated_at'),
+    ('public.public_notes', 'id'),
+    ('public.public_notes', 'published_at'),
+    ('public.public_notes', 'archived_at'),
+    ('public.public_notes', 'created_at'),
+    ('public.public_notes', 'updated_at'),
+    ('public.character_locations', 'id'),
+    ('public.character_locations', 'published_at'),
+    ('public.character_locations', 'archived_at'),
+    ('public.character_locations', 'created_at'),
+    ('public.character_locations', 'updated_at'),
+    ('public.geographic_names', 'id'),
+    ('public.geographic_names', 'normalized_name'),
+    ('public.geographic_names', 'published_at'),
+    ('public.geographic_names', 'archived_at'),
+    ('public.geographic_names', 'created_at'),
+    ('public.geographic_names', 'updated_at'),
+    ('public.public_requests', 'id'),
+    ('public.public_requests', 'sender_name'),
+    ('public.public_requests', 'proposed_name'),
+    ('public.public_requests', 'entity_type'),
+    ('public.public_requests', 'x'),
+    ('public.public_requests', 'y'),
+    ('public.public_requests', 'description'),
+    ('public.public_requests', 'reason'),
+    ('public.public_requests', 'moderator_user_id'),
+    ('public.public_requests', 'moderated_at'),
+    ('public.public_requests', 'created_at'),
+    ('public.public_requests', 'updated_at')
+) as protected_column(relation_name, column_name);
 
 insert into public.categories (id, slug, name)
 values ('category-hardening-test', 'hardening-test', 'Hardening test');
