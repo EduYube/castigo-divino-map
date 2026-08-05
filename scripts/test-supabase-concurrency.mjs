@@ -202,7 +202,9 @@ async function verifyScenario(containerName, scenario) {
 
   try {
     publisher = startPsqlSession(containerName);
-    publisher.child.stdin.write(`begin;\n${scenario.publisherSql}\n\\echo ${scenario.lockMarker}\n`);
+    publisher.child.stdin.write(
+      `begin;\n${scenario.publisherSql}\n\\echo ${scenario.lockMarker}\n`,
+    );
     await waitForMarker(publisher, scenario.lockMarker);
 
     withdrawer = startPsqlSession(containerName);
