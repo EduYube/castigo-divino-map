@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-create temporary table _map_014_test_helpers (id integer);
+create temporary table _map_015_rls_helpers (id integer);
 
 create function pg_temp.statement_fails(statement text)
 returns boolean
@@ -44,7 +44,7 @@ begin
 end;
 $$;
 
-select plan(37);
+select plan(44);
 
 select is(
   (select count(*) from auth.users where email like '%@example.invalid'),
@@ -65,7 +65,7 @@ select is(
     where id = '00000000-0000-4000-8000-000000000002'
   ),
   'admin',
-  'the non-admin seed deliberately carries editable admin-like metadata'
+  'editable user metadata does not define the allowlist'
 );
 
 select is(
@@ -79,11 +79,27 @@ set local role anon;
 select is((select count(*) from public.map_entities), 2::bigint, 'anon sees only published entities');
 select is((select count(*) from public.categories), 2::bigint, 'anon sees only published categories');
 select is((select count(*) from public.tags), 1::bigint, 'anon sees only published tags');
+select is((select count(*) from public.players), 2::bigint, 'anon sees the two published player perspectives');
+select is(
+  (select count(*) from public.entity_player_dispositions),
+  4::bigint,
+  'anon sees one disposition for every public entity and public player'
+);
 select is((select count(*) from public.entity_aliases), 1::bigint, 'anon does not see aliases of withdrawn entities');
 select is((select count(*) from public.entity_tags), 1::bigint, 'anon does not see tag relations of withdrawn entities');
 select is((select count(*) from public.public_notes), 1::bigint, 'anon does not see notes of withdrawn entities');
-select is((select count(*) from public.character_locations), 1::bigint, 'anon does not see relations with withdrawn endpoints');
+select is((select count(*) from public.public_note_tags), 1::bigint, 'anon sees note tags only through public endpoints');
+select is(
+  (select count(*) from public.character_location_events),
+  2::bigint,
+  'anon sees the public sighting and departure for a public character'
+);
 select is((select count(*) from public.geographic_names), 2::bigint, 'anon sees only valid published geographic names');
+select is(
+  (select count(*) from public.geographic_name_aliases),
+  1::bigint,
+  'anon sees aliases only for published geographic names'
+);
 
 select ok(pg_temp.statement_fails('select * from public.public_requests'), 'anon cannot enumerate requests');
 select ok(pg_temp.statement_fails('select * from private.admin_users'), 'anon cannot read the administrative allowlist');
@@ -174,6 +190,11 @@ set local role authenticated;
 
 select is((select private.is_admin()), false, 'editable user metadata does not grant administration');
 select is((select count(*) from public.map_entities), 2::bigint, 'authenticated non-admin keeps public reads');
+select is(
+  (select count(*) from public.entity_player_dispositions),
+  4::bigint,
+  'authenticated non-admin keeps only public disposition reads'
+);
 
 select ok(
   pg_temp.statement_fails(
@@ -210,6 +231,12 @@ set local role authenticated;
 
 select is((select private.is_admin()), true, 'allowlisted user is an administrator');
 select is((select count(*) from public.map_entities), 5::bigint, 'administrator sees every entity state');
+select is((select count(*) from public.players), 2::bigint, 'administrator sees every player state');
+select is(
+  (select count(*) from public.entity_player_dispositions),
+  10::bigint,
+  'administrator sees the complete entity-player matrix'
+);
 select is((select count(*) from public.public_requests), 2::bigint, 'administrator can enumerate requests');
 
 select ok(
