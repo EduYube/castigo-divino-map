@@ -31,6 +31,19 @@ exception
 end;
 $$;
 
+create function pg_temp.statement_affected_rows(statement text)
+returns bigint
+language plpgsql
+as $$
+declare
+  affected_rows bigint;
+begin
+  execute statement;
+  get diagnostics affected_rows = row_count;
+  return affected_rows;
+end;
+$$;
+
 select plan(37);
 
 select is(
@@ -174,14 +187,10 @@ select ok(
 );
 
 select is(
-  (
-    with changed as (
-      update public.map_entities
+  pg_temp.statement_affected_rows(
+    $$update public.map_entities
       set summary = 'Unauthorized change'
-      where id = 'entity-aster-guide'
-      returning 1
-    )
-    select count(*) from changed
+      where id = 'entity-aster-guide'$$
   ),
   0::bigint,
   'authenticated non-admin cannot update visible content'
