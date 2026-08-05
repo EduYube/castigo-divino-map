@@ -4,7 +4,7 @@
 
 Este documento define el flujo reproducible y seguro para desarrollar, validar, desplegar y recuperar la base de datos de Beta 0.2. Complementa `docs/architecture.md`, `docs/data-model.md`, `docs/security.md` y los ADR 0002 a 0005.
 
-MAP-014 prepara el stack local, la validación automática y el aprovisionamiento controlado del único proyecto alojado. Las cuatro migraciones iniciales están aplicadas sin semillas. La migración de endurecimiento `20260805150000_harden_admin_writes_and_relational_locks.sql` está validada localmente y en CI, pero permanece pendiente de revisión y aplicación remota.
+MAP-014 prepara el stack local, la validación automática y el aprovisionamiento controlado del único proyecto alojado. Las cuatro migraciones iniciales y la migración de endurecimiento `20260805150000_harden_admin_writes_and_relational_locks.sql` están aplicadas sin semillas, con historial y lint remotos correctos y verificaciones alojadas completadas.
 
 ## Fuente de verdad e inmutabilidad
 
@@ -23,7 +23,7 @@ Las cuatro migraciones iniciales se consideran inmutables:
 3. `20260805122000_create_public_request_rpc.sql`;
 4. `20260805123000_fix_public_name_uniqueness.sql`.
 
-La quinta migración es una corrección hacia delante y no reescribe ese historial.
+La quinta migración es una corrección hacia delante que no reescribe ese historial. Tras su aplicación remota también se considera inmutable.
 
 ## Requisitos locales
 
@@ -220,15 +220,17 @@ Existe un único usuario administrativo real con correo confirmado. Su UUID est�
 
 El aprovisionamiento inicial se realizó con historial remoto vacío, dry run revisado y confirmación humana. Se aplicaron exclusivamente las cuatro migraciones iniciales y no se incluyó `seed.sql`.
 
-La quinta migración de endurecimiento permanece pendiente hasta completar:
+La quinta migración de endurecimiento siguió el mismo protocolo:
 
 1. CI verde sobre el head definitivo;
 2. sincronización limpia del checkout;
 3. comparación del historial local y remoto;
 4. `db push --linked --dry-run` con una única migración pendiente;
 5. aprobación humana explícita;
-6. aplicación sin semillas;
-7. historial, lint y comprobaciones remotas posteriores.
+6. aplicación aislada sin semillas;
+7. historial local/remoto, lint y comprobaciones remotas posteriores correctos.
+
+Las cinco migraciones están aplicadas y se consideran inmutables. Cualquier corrección posterior debe añadirse mediante una nueva migración hacia delante.
 
 Secuencia operativa:
 
@@ -266,13 +268,17 @@ Después del aprovisionamiento inicial se verificó:
 - escritura editorial permitida al administrador;
 - rollback limpio de los datos temporales.
 
-Después de aplicar la quinta migración deberán verificarse además, sin exponer valores privados:
+Después de aplicar la quinta migración se verificó además:
 
-- cinco versiones locales y remotas coincidentes;
-- columnas de sistema sin privilegios de cliente;
-- escritura válida en columnas editoriales permitidas;
-- timestamps y moderador generados por la base;
-- lint remoto limpio.
+- coincidencia exacta de las cinco versiones locales y remotas;
+- lint remoto sin errores;
+- ausencia de privilegios completos de escritura sobre las tablas expuestas;
+- columnas gestionadas por el sistema sin privilegios de cliente;
+- escritura válida en las columnas editoriales permitidas;
+- timestamps de publicación generados por PostgreSQL;
+- identidad y fecha de moderación forzadas por la base;
+- presencia de los bloqueos relacionales `FOR SHARE`;
+- rollback limpio de todos los datos temporales de la prueba alojada.
 
 Las consultas de verificación se ejecutan dentro de una transacción y terminan con `rollback` cuando crean datos temporales.
 
