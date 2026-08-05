@@ -159,6 +159,7 @@ Completadas:
 - Lectura pública, bloqueo de escritura, acceso administrativo y rollback limpio verificados en remoto.
 - Privilegios por columna, timestamps de sistema, autoría de moderación, escrituras administrativas permitidas, bloqueos relacionales y rollback limpio verificados en remoto.
 - PR #56 fusionada mediante merge commit tras revisión y autorización humanas.
+- Issue #33 cerrada como completada.
 
 Diferidas hasta que exista una operación que las requiera:
 
@@ -211,4 +212,4 @@ Sincronizar el checkout local con `master` y comenzar MAP-015 — Evolucionar el
 | 2026-08-05 | La revisión de seguridad añadió una quinta migración, grants por columna, timestamps y moderación forzados, bloqueos relacionales, auditoría ampliada, validación de red y Actions inmutables |
 | 2026-08-05 | La quinta migración se desplegó sin semillas y el hardening remoto quedó validado con rollback limpio |
 | 2026-08-05 | CI #138 validó 172 aserciones pgTAP, seis comprobaciones concurrentes, errores críticos exactos y Actions de CI y Pages fijadas a SHA completo |
-| 2026-08-05 | PR #56 fusionada mediante merge commit, MAP-014 completada y MAP-015 establecida como siguiente trabajo |
+| 2026-08-05 | PR #56 fusionada mediante merge commit, Issue #33 cerrada y MAP-015 establecida como siguiente trabajo |
