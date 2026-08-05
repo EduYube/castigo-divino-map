@@ -6,7 +6,7 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: MAP-014 dispone de una base Supabase local reproducible y probada; quedan la validación CI, la revisión por PR y la configuración manual del proyecto alojado.
+- Estado general: MAP-014 dispone de una base Supabase reproducible y probada localmente y en CI; la configuración alojada de PostgreSQL y Auth está validada y quedan el enlace controlado, el dry run, el despliegue de migraciones y la autorización del administrador.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-05.
 
@@ -67,7 +67,7 @@ La rama `agent/map-014-supabase-foundation` contiene:
 - documentación operativa en `docs/supabase-operations.md`;
 - trabajo CI separado para reconstruir, analizar y probar la base local sin secretos remotos.
 
-No se ha enlazado ni modificado todavía ningún proyecto Supabase alojado.
+CI #96 validó correctamente los trabajos de frontend y base de datos. El proyecto alojado usa PostgreSQL 17.6 y tiene verificados el registro cerrado, la confirmación de correo, los requisitos fuertes de contraseña, las URLs permitidas, la URL de proyecto y una clave publicable. No se ha enlazado todavía el checkout ni se han aplicado migraciones al proyecto alojado.
 
 ## Objetivo de Beta 0.2
 
@@ -116,9 +116,10 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- Validar en GitHub Actions el nuevo trabajo local de Supabase.
-- Revisar el diff completo de MAP-014 mediante pull request.
-- Completar las acciones manuales imprescindibles del proyecto Supabase alojado sin copiar secretos al repositorio o al chat.
+- Enlazar de forma controlada el checkout local con el proyecto alojado.
+- Revisar el historial remoto y ejecutar `db push --linked --dry-run` sin aplicar SQL.
+- Aplicar las migraciones únicamente tras validar el dry run.
+- Crear y autorizar manualmente el único usuario administrativo sin exponer datos privados ni credenciales.
 - Confirmar los criterios de aceptación de la Issue #33 antes de fusionar.
 
 ## Acciones manuales para MAP-014
@@ -128,23 +129,29 @@ Completadas:
 - Docker Desktop disponible para desarrollo local.
 - Supabase CLI `2.111.0` instalada como dependencia fijada del proyecto.
 - Stack local inicializado, reconstruido y probado desde cero.
+- CI #96 correcta en frontend y base de datos.
+- Proyecto Supabase alojado creado con PostgreSQL 17.6.
+- Registro público, acceso anónimo y enlace manual deshabilitados.
+- Proveedor de correo, confirmación de correo y cambio seguro de correo habilitados.
+- Longitud mínima de contraseña 12 y requisito fuerte de caracteres configurados.
+- Site URL y cinco Redirect URLs verificadas.
+- URL de proyecto y clave `sb_publishable_...` disponibles sin exponer sus valores.
 
 Pendientes:
 
-- Crear el proyecto Supabase de producción en la organización y región elegidas.
-- Comprobar que la versión principal de PostgreSQL alojada coincide con `db.major_version = 17` antes del primer despliegue.
-- Obtener la URL y una clave publicable `sb_publishable_...`.
+- Enlazar el checkout con el proyecto alojado sin registrar credenciales.
+- Revisar el historial remoto y el dry run de las cuatro migraciones.
+- Aplicar las migraciones sin incluir `seed.sql`.
+- Crear manualmente el único usuario administrativo, confirmar su correo y añadirlo a `private.admin_users`.
 - Crear un GitHub Environment protegido `supabase-production` y guardar allí `SUPABASE_ACCESS_TOKEN` y `SUPABASE_DB_PASSWORD` cuando exista el workflow de migración.
-- Crear manualmente el único usuario administrativo, confirmar su correo y deshabilitar registro público, usuarios anónimos y proveedores no usados.
-- Configurar las URLs permitidas de Auth para desarrollo local y GitHub Pages.
 - Ejecutar y custodiar fuera del repositorio un dump lógico previo al primer cambio destructivo real.
 
 Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, repositorio, Issues, PRs, logs o artefactos.
 
 ## Bloqueos
 
-- La configuración del proyecto alojado requiere intervención manual en el Dashboard de Supabase.
-- La CI de base de datos debe ejecutarse correctamente en la pull request antes de considerar cumplido el criterio de validación automática.
+- El despliegue inicial requiere un enlace CLI y un dry run revisados por una persona.
+- La autorización administrativa depende de crear el usuario alojado después de disponer de `private.admin_users`.
 
 ## Riesgos aceptados
 
@@ -154,10 +161,10 @@ Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, reposi
 - La sesión administrativa limitada a la pestaña reduce persistencia y exige volver a autenticarse al cerrar el navegador.
 - La protección básica de solicitudes puede requerir Edge Function, CAPTCHA y limitación distribuida antes del lanzamiento.
 - En planes sin recuperación avanzada, el rollback de migraciones destructivas depende de dumps operativos y correcciones hacia delante.
+- La protección contra contraseñas filtradas no está disponible en el plan actual; se mantienen longitud 12 y requisitos fuertes de caracteres.
 
 ## Riesgos pendientes de MAP-014 a MAP-030
 
-- Confirmar en el proyecto alojado Auth, URLs, correo, versión PostgreSQL y protección de contraseña.
 - Migrar el catálogo de Beta 0.1 sin romper IDs, slugs, coordenadas o URLs existentes.
 - Automatizar y auditar la generación del snapshot público.
 - Validar abuso de solicitudes, accesibilidad administrativa, rendimiento y recuperación real.
@@ -165,7 +172,7 @@ Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, reposi
 
 ## Próximo paso
 
-Abrir la pull request de MAP-014, validar CI y completar los puntos manuales mínimos del proyecto Supabase alojado antes de fusionar y cerrar la Issue #33.
+Enlazar el checkout con el proyecto alojado y revisar el historial remoto y el dry run de migraciones sin aplicar todavía cambios de esquema.
 
 ## Últimos cambios
 
@@ -180,4 +187,5 @@ Abrir la pull request de MAP-014, validar CI y completar los puntos manuales mí
 | 2026-08-04 | MAP-013 cerró arquitectura, seguridad, entornos, publicación, degradación, migraciones y rollback de Beta 0.2 |
 | 2026-08-04 | PR #52 fusionada, Issue #32 cerrada y MAP-014 establecida como trabajo actual |
 | 2026-08-05 | MAP-014 añadió Supabase local reproducible, cuatro migraciones, semillas ficticias y 69 pruebas pgTAP correctas |
-| 2026-08-05 | Auditorías de credenciales, documentación operativa y validación local de RLS preparadas; CI y proyecto alojado pendientes |
+| 2026-08-05 | Auditorías de credenciales, documentación operativa y validación local de RLS preparadas |
+| 2026-08-05 | CI #96 pasó en frontend y base de datos; PostgreSQL 17.6 y la configuración alojada de Auth y URLs quedaron validados |
