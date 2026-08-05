@@ -6,7 +6,7 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: MAP-014 dispone de una base Supabase reproducible y probada localmente, en CI y en el proyecto alojado; las cinco migraciones están desplegadas, RLS y el hardening de escritura están validados, y el único administrador está autorizado mediante lista blanca. Quedan la revisión final de la PR y el punto de control humano previo a integrar.
+- Estado general: MAP-014 dispone de una base Supabase reproducible y probada localmente, en CI y en el proyecto alojado; las cinco migraciones están desplegadas, RLS y el hardening de escritura están validados, y el único administrador está autorizado mediante lista blanca. Quedan la validación del registro documental final y el punto de control humano previo a integrar.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-05.
 
@@ -63,15 +63,17 @@ La rama `agent/map-014-supabase-foundation` contiene:
 - bloqueos relacionales que serializan las invariantes estrictas de categoría y etiqueta;
 - RPC cerrada para solicitudes públicas;
 - semilla determinista con datos y usuarios completamente ficticios;
-- 96 pruebas pgTAP de estructura, RLS, privilegios e invariantes;
+- 172 aserciones pgTAP de estructura, RLS, privilegios e invariantes;
+- 91 intentos de escritura sobre columnas protegidas que exigen SQLSTATE `42501`;
+- SQLSTATE y mensajes exactos para reservas, colisiones de nombres públicos, retiradas editoriales, borrado y transiciones terminales;
 - seis comprobaciones concurrentes con dos sesiones PostgreSQL en dos escenarios;
 - reconstrucción local, lint SQL, pruebas pgTAP y pruebas concurrentes correctos;
 - auditoría de credenciales en todos los archivos versionados no binarios y en el artefacto de Pages;
-- GitHub Actions fijadas a SHA completo y mantenimiento configurado con Dependabot;
+- todas las GitHub Actions de CI y Pages fijadas a SHA completo, con mantenimiento configurado mediante Dependabot;
 - documentación operativa en `docs/supabase-operations.md`;
 - trabajo CI separado para reconstruir, analizar y probar la base local sin secretos remotos.
 
-CI #128 y CI #129 validaron correctamente los trabajos de frontend y base de datos tras el hardening. El proyecto alojado usa PostgreSQL 17.6 y tiene verificados el registro cerrado, la confirmación de correo, los requisitos fuertes de contraseña, las URLs permitidas, la URL de proyecto y una clave publicable.
+CI #136 validó correctamente los trabajos de frontend y base de datos tras completar el hardening y la revisión final. El proyecto alojado usa PostgreSQL 17.6 y tiene verificados el registro cerrado, la confirmación de correo, los requisitos fuertes de contraseña, las URLs permitidas, la URL de proyecto y una clave publicable.
 
 El checkout se enlazó de forma controlada sin registrar credenciales. Las cuatro migraciones iniciales se aplicaron en orden sin incluir `seed.sql`. Después de la revisión de seguridad, una quinta migración hacia delante se revisó mediante dry run y se aplicó de forma aislada. El historial local y remoto coincide en las cinco versiones y `supabase db lint --linked --fail-on warning` no encuentra errores.
 
@@ -126,9 +128,9 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- Validar CI sobre el commit que registra el despliegue y las pruebas alojadas del hardening.
-- Actualizar la PR #56 y la Issue #33 con los resultados finales y los criterios de aceptación cumplidos.
-- Revisar el diff completo y comprobar que no existen conversaciones de revisión pendientes.
+- Validar CI sobre el commit documental definitivo.
+- Actualizar la PR #56 y la Issue #33 con el recuento final y CI correcta.
+- Comprobar de nuevo el diff, la condición de merge y las conversaciones de revisión.
 - Marcar la PR como lista para revisión únicamente después de esas comprobaciones.
 - Solicitar un punto de control humano explícito antes de fusionar.
 
@@ -139,7 +141,7 @@ Completadas:
 - Docker Desktop disponible para desarrollo local.
 - Supabase CLI `2.111.0` instalada como dependencia fijada del proyecto.
 - Stack local inicializado, reconstruido y probado desde cero.
-- CI de frontend y base de datos correcta tras el hardening.
+- CI #136 de frontend y base de datos correcta tras el hardening y la revisión final.
 - Proyecto Supabase alojado creado con PostgreSQL 17.6.
 - Registro público, acceso anónimo y enlace manual deshabilitados.
 - Proveedor de correo, confirmación de correo y cambio seguro de correo habilitados.
@@ -166,7 +168,7 @@ Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, reposi
 
 ## Bloqueos
 
-No hay bloqueos técnicos conocidos para completar MAP-014. La integración permanece detenida hasta terminar la revisión de la PR y recibir aprobación humana explícita para fusionar.
+No hay bloqueos técnicos conocidos para completar MAP-014. La integración permanece detenida hasta terminar la validación documental final y recibir aprobación humana explícita para fusionar.
 
 ## Riesgos aceptados
 
@@ -188,7 +190,7 @@ No hay bloqueos técnicos conocidos para completar MAP-014. La integración perm
 
 ## Próximo paso
 
-Validar CI sobre este registro final, revisar el diff completo y las conversaciones de la PR #56, actualizar la Issue #33 y preparar el punto de control humano previo a fusionar MAP-014.
+Validar CI sobre este registro documental, comprobar el estado final de la PR #56 y preparar el punto de control humano previo a fusionar MAP-014.
 
 ## Últimos cambios
 
@@ -206,4 +208,5 @@ Validar CI sobre este registro final, revisar el diff completo y las conversacio
 | 2026-08-05 | Auditorías de credenciales, documentación operativa y validación local de RLS preparadas |
 | 2026-08-05 | Las cuatro migraciones iniciales se desplegaron sin semillas; el historial remoto, el lint, la lista blanca administrativa, RLS y el rollback remoto quedaron validados |
 | 2026-08-05 | La revisión de seguridad añadió una quinta migración, grants por columna, timestamps y moderación forzados, bloqueos relacionales, auditoría ampliada, validación de red y Actions inmutables |
-| 2026-08-05 | CI #128 y CI #129 pasaron; la quinta migración se desplegó sin semillas y el hardening remoto quedó validado con rollback limpio |
+| 2026-08-05 | La quinta migración se desplegó sin semillas y el hardening remoto quedó validado con rollback limpio |
+| 2026-08-05 | CI #136 validó 172 aserciones pgTAP, seis comprobaciones concurrentes, errores críticos exactos y Actions de CI y Pages fijadas a SHA completo |
