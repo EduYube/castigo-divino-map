@@ -65,21 +65,13 @@ select lives_ok(
   'a public departure may have no related sighting or known destination'
 );
 
-update public.character_location_events
-set publication_status = 'draft'
-where id = 'relation-aster-bramble';
-
-reset role;
-set local role anon;
-
-select is(
-  (
-    select count(*)
-    from public.character_location_events
-    where id = 'location-event-aster-departure'
-  ),
-  0::bigint,
-  'a public departure is hidden when its related sighting is no longer public'
+select throws_ok(
+  $$update public.character_location_events
+    set publication_status = 'draft'
+    where id = 'relation-aster-bramble'$$,
+  '23514',
+  'a sighting referenced by a published departure cannot be withdrawn',
+  'a public departure cannot retain a hidden related sighting'
 );
 
 select * from finish();
