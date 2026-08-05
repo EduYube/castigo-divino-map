@@ -8,7 +8,9 @@ select plan(6);
 
 do $setup$
 declare
-  test_connection text := 'dbname=' || current_database() || ' password=unused-test-value';
+  -- Supabase CLI's documented local-only database role and password.
+  test_connection text :=
+    'dbname=' || current_database() || ' user=postgres password=postgres';
 begin
   perform extensions.dblink_connect('category_publisher', test_connection);
   perform extensions.dblink_connect('category_withdrawer', test_connection);
@@ -69,7 +71,9 @@ select is(
 
 do $tag_setup$
 declare
-  test_connection text := 'dbname=' || current_database() || ' password=unused-test-value';
+  -- Supabase CLI's documented local-only database role and password.
+  test_connection text :=
+    'dbname=' || current_database() || ' user=postgres password=postgres';
 begin
   perform extensions.dblink_connect('tag_publisher', test_connection);
   perform extensions.dblink_connect('tag_withdrawer', test_connection);
