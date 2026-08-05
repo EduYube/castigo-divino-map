@@ -19,15 +19,7 @@ if (inspect.status === 0) {
 }
 
 const create = runDocker(
-  [
-    'network',
-    'create',
-    '--driver',
-    'bridge',
-    '--opt',
-    BIND_OPTION,
-    NETWORK_NAME,
-  ],
+  ['network', 'create', '--driver', 'bridge', '--opt', BIND_OPTION, NETWORK_NAME],
   { inherit: true },
 );
 
