@@ -52,17 +52,17 @@ select ok(
   'entity coordinates reject values below the map bounds'
 );
 
-select ok(
-  pg_temp.statement_fails(
-    $$insert into public.map_entities (
-      id, slug, entity_type, disposition, name, summary, description, x, y, category_id,
-      publication_status
-    ) values (
-      'entity-draft-category-public', 'draft-category-public', 'character', 'ally',
-      'Draft Category Public', '', '', 10, 10, 'category-draft', 'published'
-    )$$
-  ),
-  'published entities require a published category'
+select throws_ok(
+  $$insert into public.map_entities (
+    id, slug, entity_type, disposition, name, summary, description, x, y, category_id,
+    publication_status
+  ) values (
+    'entity-draft-category-public', 'draft-category-public', 'character', 'ally',
+    'Draft Category Public', '', '', 10, 10, 'category-draft', 'published'
+  )$$,
+  '23514',
+  'a published entity requires a published category',
+  'published entities require a published category for the expected reason'
 );
 
 select ok(
@@ -95,15 +95,15 @@ select ok(
   'public IDs are immutable even before publication'
 );
 
-select ok(
-  pg_temp.statement_fails(
-    $$insert into public.entity_aliases (
-      id, entity_id, language, value, publication_status
-    ) values (
-      'alias-ambiguous-name', 'entity-aster-guide', 'en', 'Aster Guide', 'published'
-    )$$
-  ),
-  'published aliases cannot collide with published entity names'
+select throws_ok(
+  $$insert into public.entity_aliases (
+    id, entity_id, language, value, publication_status
+  ) values (
+    'alias-ambiguous-name', 'entity-aster-guide', 'en', 'Aster Guide', 'published'
+  )$$,
+  '23505',
+  'published names and aliases must be unambiguous',
+  'published aliases reject public-name collisions with the expected uniqueness error'
 );
 
 select ok(
@@ -117,34 +117,34 @@ select ok(
   'character-location relations enforce endpoint types'
 );
 
-select ok(
-  pg_temp.statement_fails(
-    $$update public.categories
-      set publication_status = 'draft'
-      where id = 'category-people'$$
-  ),
-  'published categories cannot be withdrawn while published entities use them'
+select throws_ok(
+  $$update public.categories
+    set publication_status = 'draft'
+    where id = 'category-people'$$,
+  '23514',
+  'a category used by published entities cannot be withdrawn',
+  'published categories reject withdrawal for the expected invariant'
 );
 
-select ok(
-  pg_temp.statement_fails(
-    $$update public.tags
-      set publication_status = 'draft'
-      where id = 'notable'$$
-  ),
-  'published tags cannot be withdrawn while published relations use them'
+select throws_ok(
+  $$update public.tags
+    set publication_status = 'draft'
+    where id = 'notable'$$,
+  '23514',
+  'a tag used by published relations cannot be withdrawn',
+  'published tags reject withdrawal for the expected invariant'
 );
 
-select ok(
-  pg_temp.statement_fails(
-    $$insert into public.map_entities (
-      id, slug, entity_type, disposition, name, summary, description, x, y, category_id
-    ) values (
-      'entity-reserved-test', 'reserved-test', 'character', 'unknown',
-      'Reserved Test', '', '', 10, 10, 'category-people'
-    )$$
-  ),
-  'reserved public identifiers cannot be reused'
+select throws_ok(
+  $$insert into public.map_entities (
+    id, slug, entity_type, disposition, name, summary, description, x, y, category_id
+  ) values (
+    'entity-reserved-test', 'reserved-test', 'character', 'unknown',
+    'Reserved Test', '', '', 10, 10, 'category-people'
+  )$$,
+  '23505',
+  'the public identifier is reserved and cannot be reused',
+  'reserved public identifiers reject reuse with the expected uniqueness error'
 );
 
 select ok(
@@ -168,13 +168,13 @@ select ok(
   'pending requests can be archived by an administrator'
 );
 
-select ok(
-  pg_temp.statement_fails(
-    $$update public.public_requests
-      set request_status = 'accepted'
-      where id = '10000000-0000-4000-8000-000000000001'$$
-  ),
-  'archived requests are terminal'
+select throws_ok(
+  $$update public.public_requests
+    set request_status = 'accepted'
+    where id = '10000000-0000-4000-8000-000000000001'$$,
+  '23514',
+  'invalid public request status transition',
+  'archived requests are terminal for the expected transition error'
 );
 
 select ok(
