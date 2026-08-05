@@ -1,24 +1,25 @@
 # Modelo de datos de campaña
 
 - Versión de contrato: Beta 0.2
-- Estado: arquitectura aceptada; SQL pendiente de MAP-014 y detalle de dominio pendiente de MAP-015
-- Fecha: 2026-08-04
+- Estado: dominio físico y semántico definido por MAP-014 y MAP-015
+- Fecha: 2026-08-05
 
 ## Propósito
 
-Este documento define el modelo conceptual y las invariantes que compartirán PostgreSQL, el frontend, las migraciones y el snapshot público de la Beta 0.2. Sustituye al catálogo TypeScript como fuente de verdad persistente, pero preserva sus IDs, slugs, coordenadas, relaciones públicas y reglas de seguridad.
+Este documento define el contrato compartido por PostgreSQL, las migraciones, la Data API, el snapshot público y el frontend de la Beta 0.2. Sustituye progresivamente al catálogo TypeScript de Beta 0.1 como fuente de verdad persistente, conservando sus IDs, slugs, coordenadas, tags, notas y URLs mientras se demuestra equivalencia funcional.
 
-El esquema SQL exacto se creará mediante migraciones versionadas. Los nombres aquí indicados son contratos recomendados; MAP-015 podrá ajustar normalización o nombres físicos sin cambiar las decisiones semánticas.
+Todo dato que PostgreSQL entregue al navegador o que se incluya en un snapshot debe considerarse público. Las notas privadas, secretos de campaña, identidades reales de participantes y credenciales no pertenecen a este modelo.
 
 ## Principios
 
-- Todo dato entregado al navegador se considera público.
-- Tipo, disposición y estado de publicación son dimensiones independientes.
+- Los tipos de entidad, la visibilidad cartográfica y las disposiciones por jugador son dimensiones independientes.
+- Una disposición siempre expresa la relación entre una entidad y un jugador concreto.
 - IDs y slugs publicados son estables y no se reutilizan.
-- Las coordenadas pertenecen al contenido y mantienen el espacio `3600 × 2329` de Beta 0.1.
-- PostgreSQL aplica restricciones, referencias, transiciones y RLS.
-- El snapshot contiene exclusivamente una proyección de filas publicadas.
-- Las notas privadas y secretos de campaña no pertenecen a este modelo.
+- Las relaciones publicadas conservan su identidad histórica.
+- Las coordenadas usan el espacio `3600 × 2329` de Beta 0.1.
+- PostgreSQL aplica restricciones, referencias, transiciones, RLS y grants mínimos.
+- La Data API y el snapshot exponen la misma semántica pública.
+- Beta 0.2 persiste e indexa únicamente nombres en inglés.
 
 ## Tipos cerrados
 
@@ -27,14 +28,25 @@ El esquema SQL exacto se creará mediante migraciones versionadas. Los nombres a
 - `character`
 - `location`
 
-### `disposition`
+### `map_visibility`
+
+- `pin`: entidad completa con marcador permanente.
+- `search_only`: entidad completa, buscable y con ficha, pero sin marcador permanente.
+
+`search_only` no oculta datos. La fila sigue siendo pública bajo las mismas reglas RLS y puede centrar o resaltar temporalmente el mapa.
+
+### `player_disposition`
 
 - `ally`
 - `enemy`
 - `neutral`
-- `unknown`
 
-La disposición es obligatoria para personajes. Los emplazamientos usarán `unknown` salvo que MAP-015 documente un significado público explícito; no se infiere a partir del tipo, categoría o color.
+No existe `unknown`. La ausencia de evidencia a favor o en contra se expresa como `neutral`.
+
+### `character_location_event_type`
+
+- `sighting`
+- `departure`
 
 ### `publication_status`
 
@@ -50,292 +62,329 @@ La disposición es obligatoria para personajes. Los emplazamientos usarán `unkn
 - `converted`
 - `archived`
 
-Una solicitud nunca comparte `publication_status` con contenido editorial y nunca se publica automáticamente.
+Una solicitud pública no comparte `publication_status` con contenido editorial y nunca publica una entidad automáticamente.
 
 ## Identificadores
 
 ### IDs públicos
 
-Los IDs son texto estable con prefijo, igual que en Beta 0.1:
+Los IDs son texto estable con prefijo:
 
-- entidades: `entity-...` o el ID histórico `place-...` durante la migración;
+- entidades: `entity-...` o el ID histórico `place-...`;
+- jugadores: `player-...`;
 - categorías: `category-...`;
-- notas o secciones: `note-...`;
-- relaciones: identificador técnico estable cuando sea necesario;
-- etiquetas: ID legible en kebab-case, conservando el contrato existente.
+- notas: `note-...`;
+- nombres geográficos: `geo-...`;
+- eventos de localización: `location-event-...` o IDs históricos `relation-...` migrados;
+- etiquetas: kebab-case legible;
+- relaciones editoriales: prefijos específicos y estables.
 
-Los IDs históricos se importan sin conversión. Los nuevos IDs se generan una sola vez, se validan en PostgreSQL y no se reutilizan, aunque la fila quede archivada o sea purgada por incidente.
-
-No se introduce un UUID público obligatorio en Beta 0.2. Las tablas internas pueden usar UUID adicionales cuando aporten valor operativo, pero las referencias y URLs públicas conservan el identificador estable del dominio.
+Los IDs publicados quedan reservados incluso tras una purga excepcional. No se introduce un UUID público obligatorio para el contenido editorial.
 
 ### Slugs
 
-- Son únicos dentro de su espacio público y aptos para URL.
-- Pueden cambiar mientras la entidad nunca se haya publicado.
+- Son únicos en su espacio público.
+- Pueden cambiar mientras el registro nunca se haya publicado.
 - Quedan congelados tras la primera publicación.
 - Un nombre visible puede cambiar sin cambiar el slug.
-- Un slug retirado no se asigna a otra entidad.
+- Un slug retirado no se reasigna.
 
-### Nombres y alias
+### Idioma y normalización
 
-- `name` es el texto público principal.
-- Los alias son registros normalizados independientes, no etiquetas.
-- Beta 0.2 carga e indexa únicamente nombres en inglés.
-- La columna de idioma se conserva para evolución futura, con valor inicial `en`.
-- La normalización de búsqueda mantiene NFKD, eliminación de diacríticos, minúsculas, separación de puntuación y colapso de espacios.
+- Los nombres principales declaran `name_language = 'en'`.
+- Los aliases declaran `language = 'en'`.
+- Otros idiomas requerirán una evolución posterior del contrato.
+- La normalización aplica eliminación de diacríticos, minúsculas, separación de puntuación y colapso de espacios.
+- Nombres y aliases publicados no pueden crear colisiones ambiguas dentro de su espacio de búsqueda.
 
-## Entidades conceptuales
+## Entidades y clasificación
 
 ### `map_entities`
 
-Registro común de personajes y emplazamientos posicionables.
+Registro común de personajes y emplazamientos.
 
 | Campo | Invariante |
 |---|---|
 | `id` | Texto estable y único. |
-| `slug` | Único, estable tras publicar. |
-| `entity_type` | `character` o `location`. |
-| `disposition` | Valor cerrado e independiente. |
-| `name` | Texto público no vacío. |
-| `summary` | Texto público breve, sin HTML confiable. |
-| `description` | Texto público, sin contenido privado. |
-| `x`, `y` | Números finitos dentro de `3600 × 2329`. |
-| `category_id` | Referencia válida a categoría. |
-| `publication_status` | `draft`, `published` o `archived`. |
-| `published_at` | Obligatorio cuando se publica por primera vez; no se borra al retirar. |
-| `archived_at` | Presente cuando el estado es `archived`. |
-| `created_at`, `updated_at` | Timestamps UTC gestionados por base de datos. |
+| `slug` | Único y estable tras publicar. |
+| `entity_type` | `character` o `location`; inmutable. |
+| `visibility` | `pin` o `search_only`. |
+| `name`, `normalized_name` | Nombre principal público y valor derivado de búsqueda. |
+| `name_language` | `en` en Beta 0.2. |
+| `summary`, `description` | Texto público plano. |
+| `x`, `y` | Coordenadas finitas dentro de `3600 × 2329`. |
+| `category_id` | Categoría existente; publicada cuando la entidad se publica. |
+| `publication_status` | Ciclo editorial. |
+| timestamps | Gestionados por PostgreSQL. |
 
-El nombre físico puede dividirse en tablas especializadas si MAP-015 demuestra una ventaja clara. En tal caso debe existir una proyección de dominio unificada para búsqueda, filtros, mapa y snapshot.
+`map_entities` no contiene una disposición global. Tanto personajes como emplazamientos usan disposiciones por jugador.
+
+### `players`
+
+Define las perspectivas públicas respecto a las que se expresa una disposición.
+
+| Campo | Invariante |
+|---|---|
+| `id`, `slug` | Estables y reservados después de publicar. |
+| `display_name` | Nombre público de la perspectiva. |
+| `name_language` | `en` en Beta 0.2. |
+| `publication_status` | Solo jugadores publicados participan en la proyección pública. |
+
+El esquema admite más jugadores sin añadir columnas. Las semillas de desarrollo utilizan identidades ficticias.
+
+### `entity_player_dispositions`
+
+Matriz completa entre entidades y jugadores.
+
+| Campo | Invariante |
+|---|---|
+| `entity_id` | Entidad existente. |
+| `player_id` | Jugador existente. |
+| `disposition` | `ally`, `enemy` o `neutral`. |
+
+La clave primaria es `(entity_id, player_id)`. Triggers crean una fila neutral al añadir una entidad o un jugador. El navegador administrativo solo puede actualizar `disposition`; no puede insertar ni eliminar filas de la matriz.
+
+Ejemplo válido:
+
+```text
+Entidad: un NPC
+Jugador A: ally
+Jugador B: neutral
+```
+
+También es válido que una ubicación sea `enemy` para un jugador y `ally` para otro.
+
+### `categories`, `tags` y `entity_tags`
+
+- Cada entidad tiene una categoría principal.
+- Los tags son clasificación transversal reutilizable.
+- `entity_tags` no admite parejas duplicadas.
+- Una relación solo es pública cuando sus extremos y la relación están publicados.
+- Una categoría o tag usado por relaciones publicadas no puede retirarse sin resolver antes sus consumidores.
+
+## Nombres y contenido editorial
 
 ### `entity_aliases`
 
-| Campo | Invariante |
-|---|---|
-| `id` | Identificador estable. |
-| `entity_id` | Entidad existente. |
-| `language` | `en` en Beta 0.2. |
-| `value` | Texto público no vacío. |
-| `normalized_value` | Valor derivado para colisiones y búsqueda. |
-| `publication_status` | No puede hacer público un alias de entidad no publicada. |
+Los aliases de entidades son registros normalizados independientes.
 
-No puede existir una colisión ambigua entre nombre y alias públicos tras normalización.
-
-### `categories`
-
-Clasificación principal y única por entidad.
-
-| Campo | Invariante |
-|---|---|
-| `id` | Prefijo `category-`, estable. |
-| `slug` | Único y estable tras publicar. |
-| `name`, `description` | Texto público. |
-| `publication_status` | Control editorial propio. |
-
-Una entidad publicada no puede referenciar una categoría no publicada. Archivar una categoría con consumidores publicados requiere reasignarlos o retirarlos en la misma operación controlada.
-
-### `tags`
-
-Clasificación transversal reusable.
-
-| Campo | Invariante |
-|---|---|
-| `id` | Kebab-case legible y estable. |
-| `name`, `description` | Texto público. |
-| `publication_status` | Control editorial propio. |
-
-### `entity_tags`
-
-Tabla de unión sin duplicados. Una relación solo es pública cuando entidad y etiqueta están publicadas.
+- pertenecen a una entidad;
+- declaran idioma;
+- tienen ciclo editorial propio;
+- no pueden publicar un alias de una entidad no publicada;
+- `entity_id` queda inmutable después de la primera publicación.
 
 ### `public_notes`
 
-Conserva la semántica de las notas públicas de Beta 0.1 y permite contenido editorial separado de la descripción principal.
+Contenido editorial público separado de la descripción principal.
 
-| Campo | Invariante |
-|---|---|
-| `id`, `slug` | Estables. |
-| `entity_id` | Entidad existente. |
-| `title`, `body` | Texto público, no HTML confiable. |
-| `publication_status` | Independiente, pero nunca visible si la entidad no está publicada. |
-| `sort_order` | Entero no negativo y estable dentro de la entidad. |
+- `id` y `slug` estables;
+- `entity_id` identifica la ficha propietaria;
+- `title` y `body` son texto plano público;
+- `sort_order` es no negativo y único dentro de la entidad;
+- una nota publicada exige una entidad publicada;
+- `entity_id` queda congelado después de publicar.
 
-### `character_locations`
+### `public_note_tags`
 
-Relación explícita entre personajes y emplazamientos.
+Restaura el contrato de Beta 0.1 por el que las notas poseen tags propios.
 
-- El extremo personaje debe tener `entity_type = 'character'`.
-- El extremo emplazamiento debe tener `entity_type = 'location'`.
-- La relación puede incluir un rótulo público y orden.
-- Solo es pública cuando ambos extremos y la relación están publicados.
-- No se duplican relaciones equivalentes.
+- pareja única `(note_id, tag_id)`;
+- una relación publicada exige nota, entidad y tag publicados;
+- sus extremos quedan inmutables tras la primera publicación.
+
+## Nomenclátor cartográfico
+
+### Diferencia entre entidad `search_only` y `geographic_names`
+
+Una entidad `search_only` es una ficha completa: tiene categoría, tags, disposiciones, notas, relaciones y coordenadas. Solo se omite su marcador permanente.
+
+Un `geographic_name` es un registro ligero para localizar texto o accidentes geográficos del mapa. No necesita categoría, tags, disposiciones, notas ni ficha propia.
+
+Regla práctica:
+
+```text
+¿Tiene información propia, clasificación o relaciones? -> map_entity
+¿Solo hay que encontrar el nombre escrito en el mapa?  -> geographic_name
+```
 
 ### `geographic_names`
 
-Nombres cartográficos buscables aunque no exista un pin visible.
+| Campo | Invariante |
+|---|---|
+| `id`, `slug` | Estables y reservados. |
+| `name`, `normalized_name` | Nombre público y valor de búsqueda. |
+| `language` | `en`. |
+| `x`, `y` | Punto al que centrar el mapa. |
+| `recommended_zoom` | Zoom opcional dentro del rango permitido. |
+| `entity_id` | Enlace opcional únicamente a una entidad `location`. |
+| `publication_status` | Ciclo editorial propio. |
 
-- ID y slug estables.
-- Nombre y alias en inglés.
-- Coordenadas y zoom recomendado validados.
-- Estado de publicación propio.
-- Puede relacionarse opcionalmente con una entidad, pero no exige pin.
+`entity_id` significa que el nombre cartográfico y la ficha representan la misma ubicación. No significa contención territorial, propiedad ni posición de un personaje.
+
+Un resultado sin `entity_id` centra y resalta el mapa. Un resultado enlazado puede además abrir la ficha de la ubicación.
+
+### `geographic_name_aliases`
+
+Los aliases geográficos se almacenan como filas normalizadas, no como un array.
+
+- idioma y estado editorial por alias;
+- unicidad por nombre geográfico;
+- ausencia de colisiones públicas entre nombres principales y aliases;
+- identidad del nombre geográfico congelada tras publicar.
+
+## Rastro público de personajes
+
+### `character_location_events`
+
+Representa noticias públicas cronológicas sobre la posición de un personaje. Sustituye a la relación estática `character_locations`.
+
+| Campo | Invariante |
+|---|---|
+| `id` | Identificador estable del acontecimiento. |
+| `character_id` | Entidad existente de tipo `character`. |
+| `event_type` | `sighting` o `departure`. |
+| `location_entity_id` | Ubicación completa opcional de tipo `location`. |
+| `geographic_name_id` | Nombre geográfico opcional. |
+| `x`, `y` | Coordenadas libres opcionales y siempre en pareja. |
+| `location_label` | Descripción pública opcional del punto. |
+| `summary` | Texto público breve de la pista. |
+| `language` | `en`. |
+| `observed_at` | Momento del mundo conocido públicamente; opcional. |
+| `related_sighting_id` | Avistamiento anterior opcional del mismo personaje. |
+| `publication_status` | Ciclo editorial. |
+
+Cada evento debe tener al menos una fuente de ubicación: entidad, nombre geográfico o coordenadas.
+
+Un personaje puede:
+
+- no tener ninguna posición conocida;
+- tener múltiples avistamientos publicados;
+- abandonar un lugar con destino desconocido;
+- aparecer en una entidad, un nombre geográfico o un punto en mitad de la nada.
+
+Una salida relacionada:
+
+- debe apuntar a un evento `sighting`;
+- debe pertenecer al mismo personaje;
+- no puede precederlo cuando ambas fechas sean conocidas;
+- exige que el avistamiento esté publicado si la salida se publica.
+
+La última pista se deriva ordenando eventos publicados por `observed_at` y, como desempate, por creación. No se sobrescriben acontecimientos anteriores ni se dibuja una ruta exacta que los datos no demuestren.
+
+Después de publicar quedan congelados personaje, tipo, referencias de ubicación, coordenadas, idioma, fecha observada y avistamiento relacionado. Una corrección semántica requiere retirar el evento y crear otro.
+
+## Solicitudes públicas
 
 ### `public_requests`
 
-Entrada no confiable de visitantes.
+Entrada no confiable de visitantes mediante una RPC cerrada.
 
-| Campo | Regla |
-|---|---|
-| `id` | Generado por base de datos, nunca suministrado por el visitante. |
-| `sender_name` | Longitud limitada; no acredita identidad. |
-| `proposed_name` | Texto limitado. |
-| `entity_type` | Lista cerrada permitida por el formulario. |
-| `x`, `y` | Coordenadas válidas. |
-| `description`, `reason` | Texto limitado y tratado como no confiable. |
-| `request_status` | Forzado inicialmente a `pending`. |
-| `created_at` | Generado por base de datos. |
-| campos de moderación | Solo administrador; nunca aceptados desde la operación pública. |
+- El ID, estado inicial y timestamps los genera PostgreSQL.
+- El visitante solo aporta los campos expresamente permitidos.
+- Toda solicitud comienza `pending` sin campos de moderación.
+- Las transiciones son cerradas y el moderador se deriva de `auth.uid()`.
+- Una solicitud convertida exige una entidad `draft`, del mismo tipo solicitado y con visibilidad `pin`.
+- El destino convertido queda inmutable y no puede pertenecer a otra solicitud convertida.
+- Una solicitud moderada no puede eliminarse físicamente; se archiva.
 
-No contiene categorías, etiquetas, código de campaña, estado de publicación ni referencias administrativas suministradas por el visitante.
+La futura interfaz administrativa consumirá estas reglas sin sustituirlas por validación de frontend.
 
-### `private.admin_users`
+## Seguridad y publicación
 
-Lista blanca de usuarios Auth autorizados.
+### Lectura pública
 
-- Vive en esquema no expuesto.
-- Clave primaria `user_id` referenciada a `auth.users`.
-- No se consulta directamente desde el navegador.
-- Una función `private.is_admin()` encapsula la comprobación para RLS.
+RLS entrega únicamente:
 
-### Reserva de identificadores
+- categorías, tags, jugadores y entidades publicados;
+- disposiciones cuyos dos extremos son públicos;
+- aliases, notas y relaciones con extremos públicos;
+- nombres geográficos y aliases publicados;
+- eventos publicados cuyos extremos referenciados también son públicos.
 
-Una tabla privada o mecanismo equivalente conserva IDs y slugs que no pueden reutilizarse después de una purga excepcional. No contiene el texto sensible eliminado.
+`search_only` no modifica la política de lectura.
 
-## Ciclo de publicación
+### Escritura administrativa
 
-### Transiciones válidas
+- La allowlist `private.admin_users` decide quién es administrador.
+- RLS limita filas y grants de columna limitan campos suministrables.
+- Campos normalizados, timestamps, IDs y auditoría no se confían al navegador.
+- Los cambios de estado y validaciones referenciales se ejecutan en PostgreSQL.
+
+### Ciclo editorial
+
+Transiciones permitidas:
 
 ```text
-draft ──> published
-draft ──> archived
-published ──> draft
-published ──> archived
-archived ──> draft
+draft -> published
+draft -> archived
+published -> draft
+published -> archived
+archived -> draft
 ```
 
-No se permite `archived -> published` ni una transición a un valor fuera del enum.
+`archived -> published` exige volver primero a `draft`.
 
-### Invariantes temporales
+`published_at` se fija en la primera publicación y no se reinicia. El contenido publicado o anteriormente publicado no se elimina físicamente mediante la aplicación.
 
-- `published_at` se fija en la primera publicación y no se reinicia al volver a borrador.
-- `archived_at` se fija al archivar y se limpia al restaurar a borrador.
-- `updated_at` cambia en toda mutación real.
-- La transición debe ser atómica con las validaciones referenciales que exige el estado final.
+## Proyección y snapshot público
 
-### Eliminación física
+El contrato TypeScript vive en `src/data/beta02-model.ts`.
 
-Permitida solo para:
-
-- borradores o solicitudes nunca publicados y sin referencias;
-- importaciones fallidas antes de exposición;
-- purga legal o de seguridad.
-
-El contenido publicado se archiva. Una purga de contenido publicado requiere procedimiento manual, reserva de ID/slug, regeneración del snapshot y revisión de artefactos y logs.
-
-## Proyección pública
-
-La Data API y el snapshot deben producir la misma proyección semántica:
-
-- entidades `published`;
-- categorías y etiquetas `published` referenciadas por esas entidades;
-- alias y notas `published` cuyas entidades estén publicadas;
-- relaciones cuyos extremos estén publicados;
-- nombres geográficos `published`;
-- ningún usuario, solicitud, estado administrativo, correo, timestamp interno innecesario ni campo privado.
-
-La proyección no debe depender de filtrar en JavaScript filas que PostgreSQL ya entregó. RLS impide la entrega; el frontend valida como defensa adicional.
-
-## Contrato del snapshot
+La proyección pública contiene:
 
 ```ts
-interface PublicCatalogSnapshot {
-  readonly schemaVersion: number;
+interface PublicCatalogSnapshotV2 {
+  readonly schemaVersion: 2;
   readonly generatedAt: string;
   readonly sourceRevision: string;
   readonly checksum: string;
   readonly categories: readonly PublicCategory[];
   readonly tags: readonly PublicTag[];
+  readonly players: readonly PublicPlayer[];
   readonly entities: readonly PublicMapEntity[];
+  readonly dispositions: readonly PublicEntityPlayerDisposition[];
   readonly notes: readonly PublicNote[];
-  readonly characterLocations: readonly PublicCharacterLocation[];
   readonly geographicNames: readonly PublicGeographicName[];
+  readonly characterLocationEvents: readonly PublicCharacterLocationEvent[];
 }
 ```
 
 Reglas:
 
-- JSON UTF-8 determinista, con orden estable para producir diffs revisables.
-- `schemaVersion` cambia solo cuando cambia el contrato.
-- `generatedAt` usa ISO 8601 UTC.
-- `sourceRevision` identifica la exportación o revisión de datos.
-- `checksum` se calcula sobre la representación canónica sin el propio campo.
-- El mismo validador runtime acepta respuesta remota y snapshot.
-- Un snapshot inválido hace fallar CI.
+- JSON UTF-8 determinista y con orden estable;
+- checksum sobre la representación canónica sin el propio checksum;
+- Data API y snapshot usan la misma semántica;
+- un snapshot inválido hace fallar CI;
+- no se incluyen usuarios, solicitudes, campos privados ni timestamps internos innecesarios.
 
-## Validación por capas
+## Compatibilidad con Beta 0.1
 
-### Frontend
+El catálogo estático actual permanece operativo hasta MAP-028. No se modifica en MAP-015 porque contiene contenido ficticio en castellano y un contrato limitado a lugares.
 
-- Feedback inmediato y accesible.
-- Normalización de campos y coordenadas.
-- No se considera una protección de seguridad.
+Se conservan:
 
-### Operación/RPC
+- IDs históricos `place-...`;
+- slugs y coordenadas;
+- categorías, tags y tags de notas;
+- el parámetro público `place`;
+- búsqueda, filtros, fichas, historial y URLs actuales.
 
-- Lista explícita de argumentos.
-- Rechazo de campos adicionales.
-- Forzado de valores de sistema.
-- Errores genéricos que no revelan filas protegidas.
+No se construye una adaptación con pérdida que convierta personajes, pistas o entidades `search_only` en marcadores de lugar. MAP-028 deberá demostrar equivalencia antes de hacer que la UI consuma el dominio Beta 0.2.
 
-### PostgreSQL
+## Propiedad y control
 
-- enums o checks para valores cerrados;
-- `not null`, unicidad e índices;
-- foreign keys y checks de coordenadas/longitud;
-- triggers o funciones para transiciones y slugs;
-- RLS para lectura y escritura;
-- grants mínimos a `anon` y `authenticated`.
-
-### Revisión editorial
-
-La validación técnica no detecta spoilers o secretos redactados como texto público. Antes de publicar, la revisión humana confirma que todo el contenido es apto para cualquier visitante.
-
-## Migración desde Beta 0.1
-
-| Beta 0.1 | Beta 0.2 |
-|---|---|
-| `CampaignPlace` | `map_entities` con `entity_type = 'location'` |
-| `CampaignCategory` | `categories` |
-| `CampaignTag` | `tags` |
-| `PublicNote` | `public_notes` |
-| `aliases` | `entity_aliases` |
-| `categoryId` | `category_id` |
-| `tagIds` | `entity_tags` |
-| `{ x, y }` | mismas coordenadas |
-| slug público | mismo slug |
-| ID prefijado | mismo ID |
-
-La importación inicial se prueba como `draft`, se compara con el catálogo actual y se publica explícitamente. El adaptador estático permanece durante la transición hasta demostrar equivalencia de búsqueda, filtros, fichas y URLs.
+MAP-015 no introduce `owners`. Los tags pueden describir características públicas, pero no deben codificar una relación de propiedad como si fuera texto libre. Un futuro modelo deberá definir primero si pueden poseer o controlar una ubicación personajes, jugadores, organizaciones, facciones u otras entidades.
 
 ## Política de contenido público
 
-Está prohibido almacenar en tablas del alcance, snapshot, bundle, logs, Issues o PRs:
+Está prohibido almacenar en tablas públicas, snapshots, bundles, logs, Issues o PRs:
 
 - notas privadas del director de juego;
-- identidades, motivaciones, ubicaciones o consecuencias secretas;
+- identidades, motivaciones o consecuencias secretas;
 - datos personales de participantes;
 - credenciales, tokens, claves o URLs privadas;
-- contenido oculto solo mediante CSS, flags o filtros del frontend;
+- contenido oculto únicamente mediante CSS o filtros de frontend;
 - HTML arbitrario o scripts.
 
-Todo texto se almacena como texto plano. Una futura incorporación de Markdown o contenido enriquecido requiere ADR, sanitización con allowlist y pruebas XSS antes de aceptarse.
+Todo texto se almacena como texto plano. Markdown o contenido enriquecido requerirán ADR, sanitización con allowlist y pruebas XSS.
