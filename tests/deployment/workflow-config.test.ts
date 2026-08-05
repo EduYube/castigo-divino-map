@@ -16,7 +16,7 @@ describe('GitHub Pages deployment contracts', () => {
     expect(workflow).toContain('npm run test:e2e:pages');
   });
 
-  it('deploys only successful master validation through the official Pages actions', async () => {
+  it('deploys only successful master validation through immutable official Pages actions', async () => {
     const workflow = await readText('.github/workflows/pages.yml');
 
     expect(workflow).toMatch(/workflow_run:[\s\S]*workflows:[\s\S]*- CI/);
@@ -24,10 +24,17 @@ describe('GitHub Pages deployment contracts', () => {
     expect(workflow).toContain("github.event.workflow_run.head_branch == 'master'");
     expect(workflow).toContain("github.ref == 'refs/heads/master'");
     expect(workflow).toContain('cancel-in-progress: false');
-    expect(workflow).toContain('actions/configure-pages@v6');
-    expect(workflow).toContain('actions/upload-pages-artifact@v5');
+    expect(workflow).toContain(
+      'actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6',
+    );
+    expect(workflow).toContain(
+      'actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5',
+    );
     expect(workflow).toContain('path: dist');
-    expect(workflow).toContain('actions/deploy-pages@v5');
+    expect(workflow).toContain(
+      'actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5',
+    );
+    expect(workflow).not.toMatch(/uses:\s+actions\/[\w-]+@v\d+/u);
     expect(workflow).toContain('environment:');
     expect(workflow).toContain('name: github-pages');
     expect(workflow).toContain('pages: write');
