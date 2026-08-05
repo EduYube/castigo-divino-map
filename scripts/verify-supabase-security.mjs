@@ -22,25 +22,13 @@ const TEXT_FILENAMES = new Set(['.env.example', '.gitignore']);
 const DIRECT_SECRET_PATTERNS = [
   ['Supabase secret key', /sb_secret_[A-Za-z0-9_-]{20,}/g],
   ['Supabase management access token', /\bsbp_[A-Za-z0-9]{20,}\b/g],
-  [
-    'JWT-like credential',
-    /\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/g,
-  ],
+  ['JWT-like credential', /\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/g],
   ['private key', /-----BEGIN (?:EC |OPENSSH |RSA )?PRIVATE KEY-----/g],
 ];
 const ASSIGNMENT_PATTERNS = [
-  [
-    'SUPABASE_ACCESS_TOKEN',
-    /\bSUPABASE_ACCESS_TOKEN\s*[:=]\s*["']?([^\s"'#]+)/gi,
-  ],
-  [
-    'SUPABASE_DB_PASSWORD',
-    /\bSUPABASE_DB_PASSWORD\s*[:=]\s*["']?([^\s"'#]+)/gi,
-  ],
-  [
-    'SUPABASE_SERVICE_ROLE_KEY',
-    /\bSUPABASE_SERVICE_ROLE_KEY\s*[:=]\s*["']?([^\s"'#]+)/gi,
-  ],
+  ['SUPABASE_ACCESS_TOKEN', /\bSUPABASE_ACCESS_TOKEN\s*[:=]\s*["']?([^\s"'#]+)/gi],
+  ['SUPABASE_DB_PASSWORD', /\bSUPABASE_DB_PASSWORD\s*[:=]\s*["']?([^\s"'#]+)/gi],
+  ['SUPABASE_SERVICE_ROLE_KEY', /\bSUPABASE_SERVICE_ROLE_KEY\s*[:=]\s*["']?([^\s"'#]+)/gi],
 ];
 const DATABASE_URL_PATTERN = /postgres(?:ql)?:\/\/[^:\s/@]+:([^@\s/]+)@[^\s/]+/gi;
 
@@ -67,8 +55,7 @@ function listTrackedFiles() {
 
 function isTextFile(filePath) {
   return (
-    TEXT_EXTENSIONS.has(extname(filePath).toLowerCase()) ||
-    TEXT_FILENAMES.has(basename(filePath))
+    TEXT_EXTENSIONS.has(extname(filePath).toLowerCase()) || TEXT_FILENAMES.has(basename(filePath))
   );
 }
 
