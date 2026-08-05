@@ -21,19 +21,14 @@ describe('Supabase tracked-file security audit', () => {
 
   it('detects privileged assignments in extensionless and npm configuration files', () => {
     const password = 'b'.repeat(24);
-    const npmResult = scanTrackedContent(
-      '.npmrc',
-      Buffer.from(`SUPABASE_DB_PASSWORD=${password}`),
-    );
+    const npmResult = scanTrackedContent('.npmrc', Buffer.from(`SUPABASE_DB_PASSWORD=${password}`));
     const token = ['sbp', 'c'.repeat(24)].join('_');
     const scriptResult = scanTrackedContent(
       'deploy',
       Buffer.from(`SUPABASE_ACCESS_TOKEN=${token}`),
     );
 
-    expect(npmResult.findings).toEqual([
-      '.npmrc: non-placeholder SUPABASE_DB_PASSWORD assignment',
-    ]);
+    expect(npmResult.findings).toEqual(['.npmrc: non-placeholder SUPABASE_DB_PASSWORD assignment']);
     expect(scriptResult.findings).toEqual([
       'deploy: Supabase management access token',
       'deploy: non-placeholder SUPABASE_ACCESS_TOKEN assignment',
@@ -41,18 +36,10 @@ describe('Supabase tracked-file security audit', () => {
   });
 
   it('detects a credentialed PostgreSQL URL in a PowerShell script', () => {
-    const databaseUrl = [
-      'postgresql://operator',
-      'password@db.example.invalid/postgres',
-    ].join(':');
-    const result = scanTrackedContent(
-      'deploy.ps1',
-      Buffer.from(`$url = '${databaseUrl}'`),
-    );
+    const databaseUrl = ['postgresql://operator', 'password@db.example.invalid/postgres'].join(':');
+    const result = scanTrackedContent('deploy.ps1', Buffer.from(`$url = '${databaseUrl}'`));
 
-    expect(result.findings).toEqual([
-      'deploy.ps1: PostgreSQL URL with an embedded password',
-    ]);
+    expect(result.findings).toEqual(['deploy.ps1: PostgreSQL URL with an embedded password']);
   });
 
   it('accepts documented placeholders', () => {
