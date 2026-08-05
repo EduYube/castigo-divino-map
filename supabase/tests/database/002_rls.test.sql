@@ -196,8 +196,9 @@ select is(
   'authenticated non-admin cannot update visible content'
 );
 
-select ok(
-  pg_temp.statement_fails('select * from public.public_requests'),
+select is(
+  (select count(*) from public.public_requests),
+  0::bigint,
   'authenticated non-admin cannot enumerate requests'
 );
 
