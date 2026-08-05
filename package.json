@@ -23,7 +23,16 @@
     "test:e2e": "playwright test",
     "test:e2e:pages": "playwright test --config playwright.pages.config.ts",
     "test:e2e:ui": "playwright test --ui",
-    "test:all": "npm run test && npm run test:e2e"
+    "test:all": "npm run test && npm run test:e2e",
+    "supabase:init": "supabase init",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:db:reset": "supabase db reset --local",
+    "supabase:db:test": "supabase test db",
+    "supabase:db:lint": "supabase db lint --local --fail-on warning",
+    "supabase:db:validate": "npm run supabase:db:reset && npm run supabase:db:lint && npm run supabase:db:test",
+    "supabase:types": "supabase gen types typescript --local --schema public > src/database.types.ts"
   },
   "dependencies": {
     "leaflet": "^1.9.4"
