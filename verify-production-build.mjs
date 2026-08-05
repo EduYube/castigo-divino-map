@@ -23,6 +23,12 @@ const SECRET_PATTERNS = [
   /AKIA[0-9A-Z]{16}/,
   /AIza[0-9A-Za-z_-]{35}/,
   /sk-(?:proj-)?[A-Za-z0-9_-]{20,}/,
+  /sb_secret_[A-Za-z0-9_-]{20,}/,
+  /\bsbp_[A-Za-z0-9]{20,}\b/,
+  /\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/,
+  /\bservice_role\b/i,
+  /SUPABASE_(?:ACCESS_TOKEN|DB_PASSWORD|SERVICE_ROLE_KEY)/,
+  /postgres(?:ql)?:\/\/[^:\s/@]+:[^@\s/]+@/i,
 ];
 
 function fail(message) {
@@ -139,5 +145,5 @@ for (const pattern of SECRET_PATTERNS) {
 }
 
 console.log(
-  `Verified ${publicPaths.length} production files for ${expectedBase}: index, JavaScript, CSS, remote map reference, no raster map copy and no known credential patterns.`,
+  `Verified ${publicPaths.length} production files for ${expectedBase}: index, JavaScript, CSS, remote map reference, no raster map copy and no known or privileged Supabase credential patterns.`,
 );
