@@ -99,7 +99,7 @@ Resultado esperado tras el endurecimiento:
 
 - reset completo sin errores;
 - lint sin advertencias;
-- 96 aserciones pgTAP correctas en cuatro archivos;
+- 172 aserciones pgTAP correctas en cuatro archivos;
 - seis comprobaciones concurrentes correctas en dos escenarios;
 - ninguna credencial privilegiada detectada en archivos versionados.
 
@@ -120,7 +120,9 @@ Las pruebas comprueban, entre otros contratos:
 - operaciones administrativas válidas;
 - ciclo editorial, slugs e identificadores estables;
 - eliminación física restringida con SQLSTATE y mensaje exactos;
-- privilegio insuficiente `42501` al suministrar columnas gestionadas por la base;
+- 91 intentos reales sobre columnas protegidas que deben devolver `42501`;
+- reservas y colisiones públicas que deben devolver `23505` y el mensaje previsto;
+- retiradas editoriales y transiciones terminales que deben devolver `23514` y el mensaje previsto;
 - timestamps de publicación y moderación generados por PostgreSQL;
 - identidad del moderador forzada a `auth.uid()`;
 - serialización entre publicación y retirada de categorías o etiquetas.
@@ -183,7 +185,7 @@ La suite incluye fixtures negativos construidos durante la prueba para no almace
 
 El trabajo de base de datos no usa `SUPABASE_ACCESS_TOKEN`, contraseña remota, `service_role` ni un proyecto enlazado. El runner crea únicamente recursos Docker locales y los elimina al finalizar.
 
-`actions/checkout` y `actions/setup-node` están fijadas a SHA completos, con la versión legible indicada en comentario. Dependabot revisa semanalmente las referencias de GitHub Actions.
+Todas las Actions oficiales utilizadas en los workflows de CI y Pages están fijadas a SHA completos, con la versión legible indicada en comentario. Dependabot revisa semanalmente las referencias de GitHub Actions y los tests exigen referencias inmutables sin codificar un SHA concreto, para que esas actualizaciones puedan avanzar.
 
 ## Valores permitidos y prohibidos
 
