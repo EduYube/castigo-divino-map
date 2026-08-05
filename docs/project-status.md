@@ -6,7 +6,7 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: alcance acordado y backlog creado; pendiente de clasificación en GitHub Projects.
+- Estado general: arquitectura funcional, técnica, de datos y de seguridad de Beta 0.2 cerrada; MAP-014 preparada para comenzar.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-04.
 
@@ -23,11 +23,35 @@ MAP-001 a MAP-011 están completadas. La versión publicada dispone de:
 - CI y despliegue automático en GitHub Pages;
 - funcionamiento degradado cuando falla la imagen cartográfica remota.
 
+Beta 0.2 conservará estos contratos públicos, incluidos el pathname de Pages, la query string, los IDs, slugs, coordenadas, búsqueda, filtros, historial, accesibilidad y tratamiento del mapa remoto.
+
+## Arquitectura cerrada para Beta 0.2
+
+MAP-013 define:
+
+- GitHub Pages como alojamiento estático del frontend Vite y del snapshot público;
+- Supabase como Data API y Auth sobre PostgreSQL;
+- PostgreSQL, restricciones y RLS como frontera definitiva de seguridad;
+- una capa de acceso a datos desacoplada de Leaflet y la presentación;
+- Supabase local para desarrollo y CI y un único proyecto alojado para producción;
+- URL y clave publicable como únicos valores de Supabase permitidos en el navegador;
+- claves secretas, `service_role`, access token de gestión y contraseña de base de datos fuera del frontend y de los artefactos;
+- login administrativo por correo y contraseña, registro deshabilitado y lista blanca separada;
+- estados `draft`, `published` y `archived`, con archivado habitual y eliminación física excepcional;
+- IDs, slugs y URLs publicados estables y no reutilizables;
+- lectura pública exclusiva de contenido publicado y escritura exclusiva para administradores mediante RLS;
+- solicitudes públicas a través de una operación controlada, nunca publicadas automáticamente;
+- estados de backend `connected`, `degraded` y `offline`;
+- snapshot público versionado, validado y generado desde contenido publicado;
+- migraciones SQL versionadas, pruebas positivas y negativas de permisos y rollback expand/contract.
+
+Las decisiones completas viven en `docs/architecture.md`, `docs/data-model.md`, `docs/security.md` y ADR 0002 a 0005 bajo `docs/adr/`.
+
 ## Objetivo de Beta 0.2
 
 Añadir persistencia y administración segura sin perder ninguna funcionalidad pública de Beta 0.1.
 
-Decisiones cerradas:
+Decisiones de producto vigentes:
 
 - Supabase con PostgreSQL, Auth y Row Level Security.
 - Un único perfil administrativo con permisos de escritura.
@@ -45,10 +69,12 @@ El alcance completo vive en `docs/beta-0.2-scope.md`. Las capacidades pospuestas
 
 ## Backlog Beta 0.2
 
+MAP-013 a MAP-030 están creadas, añadidas al GitHub Project y clasificadas con `Target: Beta 0.2`.
+
 Orden recomendado de ejecución:
 
-1. MAP-013 — Definir la arquitectura y seguridad de la Beta 0.2.
-2. MAP-014 — Preparar Supabase, migraciones y políticas RLS.
+1. MAP-013 — Definir la arquitectura y seguridad de la Beta 0.2. **Completada.**
+2. MAP-014 — Preparar Supabase, migraciones y políticas RLS. **Siguiente.**
 3. MAP-015 — Evolucionar el modelo de entidades y relaciones.
 4. MAP-016 — Implementar acceso público resiliente y estado del backend.
 5. MAP-017 — Implementar login y autorización administrativa.
@@ -68,32 +94,50 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- Incorporar MAP-013 a MAP-030 al GitHub Project.
-- Crear la opción `Beta 0.2` en el campo `Target`.
-- Crear las áreas `Backend`, `Auth` y `Admin`.
-- Ejecutar `scripts/configure-beta-0.2-project.sh`.
-- Abrir un chat independiente para MAP-013.
+- MAP-014 — Preparar Supabase, migraciones y políticas RLS.
+- Abrir un chat independiente para MAP-014.
+- Crear en MAP-014 la estructura `supabase/`, migraciones, semillas y pruebas locales de RLS sin implementar todavía login ni CRUD.
+- Completar las acciones manuales de Supabase únicamente cuando MAP-014 las necesite.
+
+## Acciones manuales para MAP-014
+
+- Crear el proyecto Supabase de producción en la organización y región elegidas.
+- Instalar Docker y una versión fijada de Supabase CLI para desarrollo local.
+- Obtener la URL y una clave publicable `sb_publishable_...`.
+- Crear un GitHub Environment protegido `supabase-production` y guardar allí `SUPABASE_ACCESS_TOKEN` y `SUPABASE_DB_PASSWORD` cuando exista el workflow de migración.
+- Crear manualmente el único usuario administrativo, confirmar su correo y deshabilitar registro público, usuarios anónimos y proveedores no usados.
+- Configurar las URLs permitidas de Auth para desarrollo local y GitHub Pages.
+- Definir y probar un procedimiento de `supabase db dump` previo a cambios destructivos; no asumir backups gestionados que el plan elegido no garantice.
+
+Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, repositorio, Issues, PRs, logs o artefactos.
 
 ## Bloqueos
 
-- La conexión de ChatGPT no permite modificar campos personalizados ni vistas de GitHub Projects.
-- Antes de ejecutar el script de clasificación deben existir las nuevas opciones de campo.
-- La implementación requerirá crear y configurar un proyecto Supabase, pero esto pertenece a MAP-014.
+- MAP-014 requiere intervención manual en el Dashboard de Supabase para crear y configurar el proyecto alojado.
+- No existen decisiones críticas de arquitectura pendientes para comenzar MAP-014.
 
-## Riesgos principales
+## Riesgos aceptados
 
-- Exposición accidental de claves o contenido no publicado.
-- Políticas RLS incompletas o inconsistentes.
-- Dependencia de Supabase y posible pausa del plan gratuito.
-- Migración de IDs, slugs y URLs existentes.
-- Concurrencia entre edición administrativa y lectura pública.
-- Spam o abuso del formulario de solicitudes.
-- Complejidad responsive de las herramientas administrativas.
-- Filtración editorial de secretos en contenido destinado a publicación.
+- GitHub Pages, Supabase y la imagen cartográfica remota no ofrecen un SLA propio del proyecto.
+- Un único proyecto Supabase alojado reduce coste y complejidad, pero exige disciplina para no probar contra producción.
+- El snapshot puede quedar temporalmente por detrás del catálogo publicado hasta el siguiente build validado.
+- La sesión administrativa limitada a la pestaña reduce persistencia y exige volver a autenticarse al cerrar el navegador.
+- La protección básica de solicitudes puede requerir Edge Function, CAPTCHA y limitación distribuida antes del lanzamiento.
+- En planes sin recuperación avanzada, el rollback de migraciones destructivas depende de dumps operativos y correcciones hacia delante.
+
+## Riesgos pendientes de MAP-014 a MAP-030
+
+- Implementar y probar exhaustivamente las políticas RLS reales.
+- Confirmar configuración de Auth, URLs, correo y protección de contraseña del plan seleccionado.
+- Diseñar el esquema ejecutable sin romper IDs, slugs, coordenadas o URLs existentes.
+- Automatizar y auditar la generación del snapshot público.
+- Extender la auditoría de `dist` a claves Supabase privilegiadas y contenido no publicado.
+- Validar abuso de solicitudes, accesibilidad administrativa, rendimiento y recuperación real.
+- Evitar filtraciones editoriales de secretos en contenido destinado a publicación.
 
 ## Próximo paso
 
-Clasificar MAP-013 a MAP-030 en el GitHub Project y comenzar MAP-013 en un chat nuevo.
+Comenzar MAP-014 — Preparar Supabase, migraciones y políticas RLS — desde una rama independiente y convertir esta arquitectura en migraciones reproducibles, semillas y pruebas locales de permisos.
 
 ## Últimos cambios
 
@@ -104,3 +148,6 @@ Clasificar MAP-013 a MAP-030 en el GitHub Project y comenzar MAP-013 en un chat 
 | 2026-08-04 | Alcance de Beta 0.2 acordado |
 | 2026-08-04 | Backlog MAP-013 a MAP-030 creado |
 | 2026-08-04 | Traducciones y notas privadas registradas como mejoras futuras |
+| 2026-08-04 | Backlog de Beta 0.2 añadido y clasificado en GitHub Projects |
+| 2026-08-04 | MAP-013 cerró arquitectura, seguridad, entornos, publicación, degradación, migraciones y rollback de Beta 0.2 |
+| 2026-08-04 | PR #52 fusionada, Issue #32 cerrada y MAP-014 establecida como trabajo actual |
