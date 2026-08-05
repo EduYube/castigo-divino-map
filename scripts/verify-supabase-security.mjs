@@ -1,24 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
-import { basename, extname } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-const TEXT_EXTENSIONS = new Set([
-  '.css',
-  '.html',
-  '.js',
-  '.json',
-  '.md',
-  '.mjs',
-  '.sql',
-  '.svg',
-  '.toml',
-  '.ts',
-  '.txt',
-  '.xml',
-  '.yaml',
-  '.yml',
-]);
-const TEXT_FILENAMES = new Set(['.env.example', '.gitignore']);
 const DIRECT_SECRET_PATTERNS = [
   ['Supabase secret key', /sb_secret_[A-Za-z0-9_-]{20,}/g],
   ['Supabase management access token', /\bsbp_[A-Za-z0-9]{20,}\b/g],
@@ -53,10 +36,8 @@ function listTrackedFiles() {
   return result.stdout.split('\0').filter(Boolean);
 }
 
-function isTextFile(filePath) {
-  return (
-    TEXT_EXTENSIONS.has(extname(filePath).toLowerCase()) || TEXT_FILENAMES.has(basename(filePath))
-  );
+export function isBinaryContent(content) {
+  return content.includes(0);
 }
 
 function isPlaceholder(value) {
@@ -73,28 +54,24 @@ function isPlaceholder(value) {
   );
 }
 
-const findings = [];
-const trackedFiles = listTrackedFiles();
-let scannedFiles = 0;
-
-for (const filePath of trackedFiles) {
-  if (!isTextFile(filePath)) {
-    continue;
+export function scanTrackedContent(filePath, content) {
+  if (isBinaryContent(content)) {
+    return { findings: [], skippedBinary: true };
   }
 
-  const content = await readFile(filePath, 'utf8');
-  scannedFiles += 1;
+  const text = content.toString('utf8');
+  const findings = [];
 
   for (const [name, pattern] of DIRECT_SECRET_PATTERNS) {
     pattern.lastIndex = 0;
-    if (pattern.test(content)) {
+    if (pattern.test(text)) {
       findings.push(`${filePath}: ${name}`);
     }
   }
 
   for (const [name, pattern] of ASSIGNMENT_PATTERNS) {
     pattern.lastIndex = 0;
-    for (const match of content.matchAll(pattern)) {
+    for (const match of text.matchAll(pattern)) {
       if (!isPlaceholder(match[1])) {
         findings.push(`${filePath}: non-placeholder ${name} assignment`);
       }
@@ -102,17 +79,44 @@ for (const filePath of trackedFiles) {
   }
 
   DATABASE_URL_PATTERN.lastIndex = 0;
-  for (const match of content.matchAll(DATABASE_URL_PATTERN)) {
+  for (const match of text.matchAll(DATABASE_URL_PATTERN)) {
     if (!isPlaceholder(match[1])) {
       findings.push(`${filePath}: PostgreSQL URL with an embedded password`);
     }
   }
+
+  return { findings, skippedBinary: false };
 }
 
-if (findings.length > 0) {
-  fail(`credential-like content was found:\n- ${findings.join('\n- ')}`);
+export async function verifyTrackedFiles() {
+  const findings = [];
+  const trackedFiles = listTrackedFiles();
+  let scannedFiles = 0;
+  let skippedBinaryFiles = 0;
+
+  for (const filePath of trackedFiles) {
+    const content = await readFile(filePath);
+    const result = scanTrackedContent(filePath, content);
+
+    if (result.skippedBinary) {
+      skippedBinaryFiles += 1;
+      continue;
+    }
+
+    scannedFiles += 1;
+    findings.push(...result.findings);
+  }
+
+  if (findings.length > 0) {
+    fail(`credential-like content was found:\n- ${findings.join('\n- ')}`);
+  }
+
+  console.log(
+    `Verified ${scannedFiles} tracked non-binary files and skipped ${skippedBinaryFiles} binary files: no Supabase secret keys, management tokens, JWT credentials, private keys, privileged assignments or database passwords were found.`,
+  );
 }
 
-console.log(
-  `Verified ${scannedFiles} tracked text files: no Supabase secret keys, management tokens, JWT credentials, privileged assignments or database passwords were found.`,
-);
+const invokedPath = process.argv[1];
+if (invokedPath && import.meta.url === pathToFileURL(invokedPath).href) {
+  await verifyTrackedFiles();
+}
