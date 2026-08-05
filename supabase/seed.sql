@@ -16,64 +16,142 @@ values
     '{"is_admin": true, "role": "admin"}'::jsonb
   );
 
-insert into private.admin_users (user_id, created_at)
-values ('00000000-0000-4000-8000-000000000001', '2026-01-01T00:00:00Z');
+insert into private.admin_users (user_id)
+values ('00000000-0000-4000-8000-000000000001');
 
 insert into public.players (
-  id, slug, display_name, name_language, publication_status,
-  published_at, archived_at, created_at, updated_at
+  id,
+  slug,
+  display_name,
+  name_language,
+  publication_status
 )
 values
+  ('player-demo-one', 'demo-one', 'Demo Player One', 'en', 'published'),
+  ('player-demo-two', 'demo-two', 'Demo Player Two', 'en', 'published');
+
+insert into public.categories (id, slug, name, description, publication_status)
+values
   (
-    'player-demo-one',
-    'demo-one',
-    'Demo Player One',
-    'en',
-    'published',
-    '2026-01-01T00:00:00Z',
-    null,
-    '2026-01-01T00:00:00Z',
-    '2026-01-01T00:00:00Z'
+    'category-people',
+    'people',
+    'People',
+    'Fictitious characters used by local tests.',
+    'published'
   ),
   (
-    'player-demo-two',
-    'demo-two',
-    'Demo Player Two',
-    'en',
-    'published',
-    '2026-01-01T00:00:00Z',
-    null,
-    '2026-01-01T00:00:00Z',
-    '2026-01-01T00:00:00Z'
+    'category-places',
+    'places',
+    'Places',
+    'Fictitious locations used by local tests.',
+    'published'
+  ),
+  (
+    'category-draft',
+    'draft-category',
+    'Draft category',
+    'A category that is not public.',
+    'draft'
+  ),
+  (
+    'category-archive',
+    'archived-category',
+    'Archived category',
+    'A category archived before publication.',
+    'archived'
   );
 
-insert into public.categories (
-  id, slug, name, description, publication_status, published_at, archived_at, created_at, updated_at
-)
+insert into public.tags (id, name, description, publication_status)
 values
-  ('category-people', 'people', 'People', 'Fictitious characters used by local tests.', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('category-places', 'places', 'Places', 'Fictitious locations used by local tests.', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('category-draft', 'draft-category', 'Draft category', 'A category that is not public.', 'draft', null, null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('category-archive', 'archived-category', 'Archived category', 'A category archived before publication.', 'archived', null, '2026-01-02T00:00:00Z', '2026-01-01T00:00:00Z', '2026-01-02T00:00:00Z');
-
-insert into public.tags (
-  id, name, description, publication_status, published_at, archived_at, created_at, updated_at
-)
-values
-  ('notable', 'Notable', 'A published fictitious tag.', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('draft-tag', 'Draft tag', 'A tag that is not public.', 'draft', null, null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('archived-tag', 'Archived tag', 'A tag archived before publication.', 'archived', null, '2026-01-02T00:00:00Z', '2026-01-01T00:00:00Z', '2026-01-02T00:00:00Z');
+  ('notable', 'Notable', 'A published fictitious tag.', 'published'),
+  ('draft-tag', 'Draft tag', 'A tag that is not public.', 'draft'),
+  ('archived-tag', 'Archived tag', 'A tag archived before publication.', 'archived');
 
 insert into public.map_entities (
-  id, slug, entity_type, visibility, name_language, name, summary, description, x, y, category_id,
-  publication_status, published_at, archived_at, created_at, updated_at
+  id,
+  slug,
+  entity_type,
+  visibility,
+  name_language,
+  name,
+  summary,
+  description,
+  x,
+  y,
+  category_id,
+  publication_status
 )
 values
-  ('entity-aster-guide', 'aster-guide', 'character', 'pin', 'en', 'Aster Guide', 'A fictitious ally.', 'Aster exists only to exercise the local database.', 800, 500, 'category-people', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('entity-bramble-fort', 'bramble-fort', 'location', 'search_only', 'en', 'Bramble Fort', 'A fictitious location.', 'Bramble Fort exists only to exercise the local database.', 1800, 1200, 'category-places', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('entity-cinder-rival', 'cinder-rival', 'character', 'pin', 'en', 'Cinder Rival', 'A withdrawn fictitious enemy.', 'This row is left in draft after a simulated withdrawal.', 1200, 700, 'category-people', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('entity-dawn-envoy', 'dawn-envoy', 'character', 'pin', 'en', 'Dawn Envoy', 'An archived fictitious neutral character.', 'This row exercises the archived lifecycle.', 1400, 900, 'category-people', 'archived', '2026-01-01T00:00:00Z', '2026-01-03T00:00:00Z', '2026-01-01T00:00:00Z', '2026-01-03T00:00:00Z'),
-  ('entity-echo-wanderer', 'echo-wanderer', 'character', 'search_only', 'en', 'Echo Wanderer', 'A fictitious neutral draft.', 'This row has never been published.', 1600, 1000, 'category-people', 'draft', null, null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+  (
+    'entity-aster-guide',
+    'aster-guide',
+    'character',
+    'pin',
+    'en',
+    'Aster Guide',
+    'A fictitious ally.',
+    'Aster exists only to exercise the local database.',
+    800,
+    500,
+    'category-people',
+    'published'
+  ),
+  (
+    'entity-bramble-fort',
+    'bramble-fort',
+    'location',
+    'search_only',
+    'en',
+    'Bramble Fort',
+    'A fictitious location.',
+    'Bramble Fort exists only to exercise the local database.',
+    1800,
+    1200,
+    'category-places',
+    'published'
+  ),
+  (
+    'entity-cinder-rival',
+    'cinder-rival',
+    'character',
+    'pin',
+    'en',
+    'Cinder Rival',
+    'A withdrawn fictitious enemy.',
+    'This row is left in draft after a simulated withdrawal.',
+    1200,
+    700,
+    'category-people',
+    'published'
+  ),
+  (
+    'entity-dawn-envoy',
+    'dawn-envoy',
+    'character',
+    'pin',
+    'en',
+    'Dawn Envoy',
+    'An archived fictitious neutral character.',
+    'This row exercises the archived lifecycle.',
+    1400,
+    900,
+    'category-people',
+    'archived'
+  ),
+  (
+    'entity-echo-wanderer',
+    'echo-wanderer',
+    'character',
+    'search_only',
+    'en',
+    'Echo Wanderer',
+    'A fictitious neutral draft.',
+    'This row has never been published.',
+    1600,
+    1000,
+    'category-people',
+    'draft'
+  );
 
 update public.entity_player_dispositions as relation
 set disposition = values_to_apply.disposition::public.player_disposition
@@ -90,58 +168,164 @@ where relation.entity_id = values_to_apply.entity_id
   and relation.player_id = values_to_apply.player_id;
 
 insert into public.entity_aliases (
-  id, entity_id, language, value, publication_status, published_at, archived_at, created_at, updated_at
+  id,
+  entity_id,
+  language,
+  value,
+  publication_status
 )
 values
-  ('alias-aster-lantern', 'entity-aster-guide', 'en', 'The Lantern Guide', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('alias-cinder-ember', 'entity-cinder-rival', 'en', 'The Ember Rival', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('alias-echo-draft', 'entity-echo-wanderer', 'en', 'The Quiet Wanderer', 'draft', null, null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+  (
+    'alias-aster-lantern',
+    'entity-aster-guide',
+    'en',
+    'The Lantern Guide',
+    'published'
+  ),
+  (
+    'alias-cinder-ember',
+    'entity-cinder-rival',
+    'en',
+    'The Ember Rival',
+    'published'
+  ),
+  (
+    'alias-echo-draft',
+    'entity-echo-wanderer',
+    'en',
+    'The Quiet Wanderer',
+    'draft'
+  );
 
-insert into public.entity_tags (
-  id, entity_id, tag_id, publication_status, published_at, archived_at, created_at, updated_at
-)
+insert into public.entity_tags (id, entity_id, tag_id, publication_status)
 values
-  ('entity-tag-aster-notable', 'entity-aster-guide', 'notable', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('entity-tag-cinder-notable', 'entity-cinder-rival', 'notable', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('entity-tag-echo-draft', 'entity-echo-wanderer', 'draft-tag', 'draft', null, null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+  ('entity-tag-aster-notable', 'entity-aster-guide', 'notable', 'published'),
+  ('entity-tag-cinder-notable', 'entity-cinder-rival', 'notable', 'published'),
+  ('entity-tag-echo-draft', 'entity-echo-wanderer', 'draft-tag', 'draft');
 
 insert into public.public_notes (
-  id, slug, entity_id, title, body, sort_order, publication_status, published_at, archived_at, created_at, updated_at
+  id,
+  slug,
+  entity_id,
+  title,
+  body,
+  sort_order,
+  publication_status
 )
 values
-  ('note-aster-arrival', 'aster-arrival', 'entity-aster-guide', 'Arrival', 'A fictitious public note.', 0, 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('note-cinder-withdrawn', 'cinder-withdrawn', 'entity-cinder-rival', 'Withdrawn note', 'This note remains marked published but its entity is not public.', 0, 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('note-echo-draft', 'echo-draft', 'entity-echo-wanderer', 'Draft note', 'A fictitious draft note.', 0, 'draft', null, null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+  (
+    'note-aster-arrival',
+    'aster-arrival',
+    'entity-aster-guide',
+    'Arrival',
+    'A fictitious public note.',
+    0,
+    'published'
+  ),
+  (
+    'note-cinder-withdrawn',
+    'cinder-withdrawn',
+    'entity-cinder-rival',
+    'Withdrawn note',
+    'This note remains marked published but its entity is not public.',
+    0,
+    'published'
+  ),
+  (
+    'note-echo-draft',
+    'echo-draft',
+    'entity-echo-wanderer',
+    'Draft note',
+    'A fictitious draft note.',
+    0,
+    'draft'
+  );
 
-insert into public.public_note_tags (
-  id, note_id, tag_id, publication_status, published_at, archived_at, created_at, updated_at
-)
+insert into public.public_note_tags (id, note_id, tag_id, publication_status)
 values
-  ('note-tag-aster-notable', 'note-aster-arrival', 'notable', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('note-tag-cinder-notable', 'note-cinder-withdrawn', 'notable', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('note-tag-echo-draft', 'note-echo-draft', 'draft-tag', 'draft', null, null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+  ('note-tag-aster-notable', 'note-aster-arrival', 'notable', 'published'),
+  ('note-tag-cinder-notable', 'note-cinder-withdrawn', 'notable', 'published'),
+  ('note-tag-echo-draft', 'note-echo-draft', 'draft-tag', 'draft');
 
 insert into public.geographic_names (
-  id, slug, name, language, x, y, recommended_zoom, entity_id,
-  publication_status, published_at, archived_at, created_at, updated_at
+  id,
+  slug,
+  name,
+  language,
+  x,
+  y,
+  recommended_zoom,
+  entity_id,
+  publication_status
 )
 values
-  ('geo-silver-crossing', 'silver-crossing', 'Silver Crossing', 'en', 2200, 1400, 1, null, 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('geo-bramble-fort', 'bramble-fort-name', 'Bramble Fort Region', 'en', 1800, 1200, 1, 'entity-bramble-fort', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('geo-echo-trail', 'echo-trail', 'Echo Trail', 'en', 1600, 1000, 0, null, 'draft', null, null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+  (
+    'geo-silver-crossing',
+    'silver-crossing',
+    'Silver Crossing',
+    'en',
+    2200,
+    1400,
+    1,
+    null,
+    'published'
+  ),
+  (
+    'geo-bramble-fort',
+    'bramble-fort-name',
+    'Bramble Fort Region',
+    'en',
+    1800,
+    1200,
+    1,
+    'entity-bramble-fort',
+    'published'
+  ),
+  (
+    'geo-echo-trail',
+    'echo-trail',
+    'Echo Trail',
+    'en',
+    1600,
+    1000,
+    0,
+    null,
+    'draft'
+  );
 
 insert into public.geographic_name_aliases (
-  id, geographic_name_id, language, value, publication_status,
-  published_at, archived_at, created_at, updated_at
+  id,
+  geographic_name_id,
+  language,
+  value,
+  publication_status
 )
 values
-  ('geo-alias-silver-crossing', 'geo-silver-crossing', 'en', 'The Crossing', 'published', '2026-01-01T00:00:00Z', null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  ('geo-alias-echo-trail', 'geo-echo-trail', 'en', 'Quiet Trail', 'draft', null, null, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+  (
+    'geo-alias-silver-crossing',
+    'geo-silver-crossing',
+    'en',
+    'The Crossing',
+    'published'
+  ),
+  ('geo-alias-echo-trail', 'geo-echo-trail', 'en', 'Quiet Trail', 'draft');
 
+-- Sightings are inserted before departures so related-sighting validation never
+-- depends on visibility between rows of the same multi-row INSERT statement.
 insert into public.character_location_events (
-  id, character_id, event_type, location_entity_id, geographic_name_id,
-  x, y, location_label, summary, language, observed_at, related_sighting_id,
-  publication_status, published_at, archived_at, created_at, updated_at
+  id,
+  character_id,
+  event_type,
+  location_entity_id,
+  geographic_name_id,
+  x,
+  y,
+  location_label,
+  summary,
+  language,
+  observed_at,
+  related_sighting_id,
+  publication_status
 )
 values
   (
@@ -157,30 +341,7 @@ values
     'en',
     '2026-01-02T10:00:00Z',
     null,
-    'published',
-    '2026-01-02T12:00:00Z',
-    null,
-    '2026-01-02T12:00:00Z',
-    '2026-01-02T12:00:00Z'
-  ),
-  (
-    'location-event-aster-departure',
-    'entity-aster-guide',
-    'departure',
-    'entity-bramble-fort',
-    null,
-    null,
-    null,
-    'Left Bramble Fort',
-    'Aster was reported to have left the fort.',
-    'en',
-    '2026-01-03T08:00:00Z',
-    'relation-aster-bramble',
-    'published',
-    '2026-01-03T09:00:00Z',
-    null,
-    '2026-01-03T09:00:00Z',
-    '2026-01-03T09:00:00Z'
+    'published'
   ),
   (
     'relation-cinder-bramble',
@@ -195,11 +356,7 @@ values
     'en',
     '2026-01-02T11:00:00Z',
     null,
-    'published',
-    '2026-01-02T12:00:00Z',
-    null,
-    '2026-01-02T12:00:00Z',
-    '2026-01-02T12:00:00Z'
+    'published'
   ),
   (
     'location-event-echo-road',
@@ -214,15 +371,44 @@ values
     'en',
     null,
     null,
-    'draft',
-    null,
-    null,
-    '2026-01-01T00:00:00Z',
-    '2026-01-01T00:00:00Z'
+    'draft'
   );
 
+insert into public.character_location_events (
+  id,
+  character_id,
+  event_type,
+  location_entity_id,
+  location_label,
+  summary,
+  language,
+  observed_at,
+  related_sighting_id,
+  publication_status
+)
+values (
+  'location-event-aster-departure',
+  'entity-aster-guide',
+  'departure',
+  'entity-bramble-fort',
+  'Left Bramble Fort',
+  'Aster was reported to have left the fort.',
+  'en',
+  '2026-01-03T08:00:00Z',
+  'relation-aster-bramble',
+  'published'
+);
+
 insert into public.public_requests (
-  id, sender_name, proposed_name, entity_type, x, y, description, reason, request_status, created_at, updated_at
+  id,
+  sender_name,
+  proposed_name,
+  entity_type,
+  x,
+  y,
+  description,
+  reason,
+  request_status
 )
 values (
   '10000000-0000-4000-8000-000000000001',
@@ -233,9 +419,7 @@ values (
   1300,
   'A deterministic local request.',
   'Used to exercise moderation policies.',
-  'pending',
-  '2026-01-01T00:00:00Z',
-  '2026-01-01T00:00:00Z'
+  'pending'
 );
 
 -- Simulate previously published content being withdrawn. Its published children
