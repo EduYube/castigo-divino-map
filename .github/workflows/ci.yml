@@ -32,11 +32,11 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check formatting
-        run: npm run format:check
+      - name: Diagnose formatting
+        run: |
+          npm ci
+          npm run format
+          git diff --exit-code
 
       - name: Audit tracked files for privileged credentials
         run: npm run verify:security
