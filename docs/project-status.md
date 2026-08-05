@@ -6,9 +6,9 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: arquitectura funcional, técnica, de datos y de seguridad de Beta 0.2 cerrada; MAP-014 preparada para comenzar.
+- Estado general: MAP-014 dispone de una base Supabase reproducible y probada localmente, en CI y en el proyecto alojado; las cinco migraciones están desplegadas, RLS y el hardening de escritura están validados, y el único administrador está autorizado mediante lista blanca. Quedan la validación del registro documental final y el punto de control humano previo a integrar.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
-- Última actualización: 2026-08-04.
+- Última actualización: 2026-08-05.
 
 ## Beta 0.1
 
@@ -47,6 +47,40 @@ MAP-013 define:
 
 Las decisiones completas viven en `docs/architecture.md`, `docs/data-model.md`, `docs/security.md` y ADR 0002 a 0005 bajo `docs/adr/`.
 
+## Base Supabase preparada en MAP-014
+
+La rama `agent/map-014-supabase-foundation` contiene:
+
+- Supabase CLI fijada exactamente en `2.111.0`;
+- `supabase/config.toml` endurecido para desarrollo local;
+- red Docker local vinculada a `127.0.0.1`, con validación del driver `bridge` y del binding exacto antes de reutilizarla;
+- cinco migraciones SQL ordenadas e inmutables tras su primera aplicación;
+- tablas, restricciones, índices, triggers, funciones y ciclo editorial;
+- lista blanca `private.admin_users` y autorización mediante `private.is_admin()`;
+- grants por columna y RLS en todas las tablas públicas;
+- lectura pública de contenido publicado y escritura administrativa limitada a campos editables;
+- timestamps editoriales y autoría de moderación forzados por PostgreSQL;
+- bloqueos relacionales que serializan las invariantes estrictas de categoría y etiqueta;
+- RPC cerrada para solicitudes públicas;
+- semilla determinista con datos y usuarios completamente ficticios;
+- 172 aserciones pgTAP de estructura, RLS, privilegios e invariantes;
+- 91 intentos de escritura sobre columnas protegidas que exigen SQLSTATE `42501`;
+- SQLSTATE y mensajes exactos para reservas, colisiones de nombres públicos, retiradas editoriales, borrado y transiciones terminales;
+- seis comprobaciones concurrentes con dos sesiones PostgreSQL en dos escenarios;
+- reconstrucción local, lint SQL, pruebas pgTAP y pruebas concurrentes correctos;
+- auditoría de credenciales en todos los archivos versionados no binarios y en el artefacto de Pages;
+- todas las GitHub Actions de CI y Pages fijadas a SHA completo, con mantenimiento configurado mediante Dependabot;
+- documentación operativa en `docs/supabase-operations.md`;
+- trabajo CI separado para reconstruir, analizar y probar la base local sin secretos remotos.
+
+CI #136 validó correctamente los trabajos de frontend y base de datos tras completar el hardening y la revisión final. El proyecto alojado usa PostgreSQL 17.6 y tiene verificados el registro cerrado, la confirmación de correo, los requisitos fuertes de contraseña, las URLs permitidas, la URL de proyecto y una clave publicable.
+
+El checkout se enlazó de forma controlada sin registrar credenciales. Las cuatro migraciones iniciales se aplicaron en orden sin incluir `seed.sql`. Después de la revisión de seguridad, una quinta migración hacia delante se revisó mediante dry run y se aplicó de forma aislada. El historial local y remoto coincide en las cinco versiones y `supabase db lint --linked --fail-on warning` no encuentra errores.
+
+Existe exactamente un usuario administrativo real, creado con contraseña y correo confirmado. Su UUID está incluido en `private.admin_users`; `private.is_admin()` reconoce al usuario autorizado y rechaza un UUID autenticado no incluido en la lista blanca. Una prueba remota transaccional confirmó que los visitantes solo leen contenido publicado, que visitantes y usuarios autenticados no autorizados no pueden escribir ni leer borradores, que el administrador puede escribir y leer contenido editorial, y que el rollback no dejó datos de prueba.
+
+Una segunda prueba remota transaccional confirmó que no quedan privilegios completos de escritura sobre las tablas expuestas, que las columnas gestionadas por el sistema están protegidas, que PostgreSQL fuerza los timestamps editoriales y la identidad y fecha de moderación, que las escrituras administrativas permitidas siguen funcionando, que los bloqueos relacionales están instalados y que el rollback no dejó datos temporales.
+
 ## Objetivo de Beta 0.2
 
 Añadir persistencia y administración segura sin perder ninguna funcionalidad pública de Beta 0.1.
@@ -74,7 +108,7 @@ MAP-013 a MAP-030 están creadas, añadidas al GitHub Project y clasificadas con
 Orden recomendado de ejecución:
 
 1. MAP-013 — Definir la arquitectura y seguridad de la Beta 0.2. **Completada.**
-2. MAP-014 — Preparar Supabase, migraciones y políticas RLS. **Siguiente.**
+2. MAP-014 — Preparar Supabase, migraciones y políticas RLS. **En revisión final.**
 3. MAP-015 — Evolucionar el modelo de entidades y relaciones.
 4. MAP-016 — Implementar acceso público resiliente y estado del backend.
 5. MAP-017 — Implementar login y autorización administrativa.
@@ -94,27 +128,47 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- MAP-014 — Preparar Supabase, migraciones y políticas RLS.
-- Abrir un chat independiente para MAP-014.
-- Crear en MAP-014 la estructura `supabase/`, migraciones, semillas y pruebas locales de RLS sin implementar todavía login ni CRUD.
-- Completar las acciones manuales de Supabase únicamente cuando MAP-014 las necesite.
+- Validar CI sobre el commit documental definitivo.
+- Actualizar la PR #56 y la Issue #33 con el recuento final y CI correcta.
+- Comprobar de nuevo el diff, la condición de merge y las conversaciones de revisión.
+- Marcar la PR como lista para revisión únicamente después de esas comprobaciones.
+- Solicitar un punto de control humano explícito antes de fusionar.
 
 ## Acciones manuales para MAP-014
 
-- Crear el proyecto Supabase de producción en la organización y región elegidas.
-- Instalar Docker y una versión fijada de Supabase CLI para desarrollo local.
-- Obtener la URL y una clave publicable `sb_publishable_...`.
-- Crear un GitHub Environment protegido `supabase-production` y guardar allí `SUPABASE_ACCESS_TOKEN` y `SUPABASE_DB_PASSWORD` cuando exista el workflow de migración.
-- Crear manualmente el único usuario administrativo, confirmar su correo y deshabilitar registro público, usuarios anónimos y proveedores no usados.
-- Configurar las URLs permitidas de Auth para desarrollo local y GitHub Pages.
-- Definir y probar un procedimiento de `supabase db dump` previo a cambios destructivos; no asumir backups gestionados que el plan elegido no garantice.
+Completadas:
+
+- Docker Desktop disponible para desarrollo local.
+- Supabase CLI `2.111.0` instalada como dependencia fijada del proyecto.
+- Stack local inicializado, reconstruido y probado desde cero.
+- CI #136 de frontend y base de datos correcta tras el hardening y la revisión final.
+- Proyecto Supabase alojado creado con PostgreSQL 17.6.
+- Registro público, acceso anónimo y enlace manual deshabilitados.
+- Proveedor de correo, confirmación de correo y cambio seguro de correo habilitados.
+- Longitud mínima de contraseña 12 y requisito fuerte de caracteres configurados.
+- Site URL y cinco Redirect URLs verificadas.
+- URL de proyecto y clave `sb_publishable_...` disponibles sin exponer sus valores.
+- Checkout enlazado al proyecto alojado sin registrar credenciales.
+- Historial remoto y dry run revisados antes de cada aplicación de cambios.
+- Cuatro migraciones iniciales aplicadas en orden sin incluir `seed.sql`.
+- Quinta migración de hardening revisada mediante dry run y aplicada de forma aislada sin semillas.
+- Historial local y remoto coincidentes en las cinco migraciones y lint remoto sin errores.
+- Único usuario administrativo creado con contraseña y correo confirmado.
+- Usuario administrativo añadido a `private.admin_users` sin usar metadatos de autorización.
+- Autorización positiva y negativa de `private.is_admin()` verificada en remoto.
+- Lectura pública, bloqueo de escritura, acceso administrativo y rollback limpio verificados en remoto.
+- Privilegios por columna, timestamps de sistema, autoría de moderación, escrituras administrativas permitidas, bloqueos relacionales y rollback limpio verificados en remoto.
+
+Diferidas hasta que exista una operación que las requiera:
+
+- Crear un GitHub Environment protegido `supabase-production` y guardar allí `SUPABASE_ACCESS_TOKEN` y `SUPABASE_DB_PASSWORD` cuando exista un workflow de migración remota.
+- Ejecutar y custodiar fuera del repositorio un dump lógico antes del primer cambio destructivo real.
 
 Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, repositorio, Issues, PRs, logs o artefactos.
 
 ## Bloqueos
 
-- MAP-014 requiere intervención manual en el Dashboard de Supabase para crear y configurar el proyecto alojado.
-- No existen decisiones críticas de arquitectura pendientes para comenzar MAP-014.
+No hay bloqueos técnicos conocidos para completar MAP-014. La integración permanece detenida hasta terminar la validación documental final y recibir aprobación humana explícita para fusionar.
 
 ## Riesgos aceptados
 
@@ -124,20 +178,19 @@ Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, reposi
 - La sesión administrativa limitada a la pestaña reduce persistencia y exige volver a autenticarse al cerrar el navegador.
 - La protección básica de solicitudes puede requerir Edge Function, CAPTCHA y limitación distribuida antes del lanzamiento.
 - En planes sin recuperación avanzada, el rollback de migraciones destructivas depende de dumps operativos y correcciones hacia delante.
+- La protección contra contraseñas filtradas no está disponible en el plan actual; se mantienen longitud 12 y requisitos fuertes de caracteres.
+- Docker Engine anterior a 28 puede permitir acceso desde el mismo segmento de red a puertos publicados en localhost; se recomienda Docker Engine 28 o posterior en redes no confiables.
 
 ## Riesgos pendientes de MAP-014 a MAP-030
 
-- Implementar y probar exhaustivamente las políticas RLS reales.
-- Confirmar configuración de Auth, URLs, correo y protección de contraseña del plan seleccionado.
-- Diseñar el esquema ejecutable sin romper IDs, slugs, coordenadas o URLs existentes.
+- Migrar el catálogo de Beta 0.1 sin romper IDs, slugs, coordenadas o URLs existentes.
 - Automatizar y auditar la generación del snapshot público.
-- Extender la auditoría de `dist` a claves Supabase privilegiadas y contenido no publicado.
 - Validar abuso de solicitudes, accesibilidad administrativa, rendimiento y recuperación real.
 - Evitar filtraciones editoriales de secretos en contenido destinado a publicación.
 
 ## Próximo paso
 
-Comenzar MAP-014 — Preparar Supabase, migraciones y políticas RLS — desde una rama independiente y convertir esta arquitectura en migraciones reproducibles, semillas y pruebas locales de permisos.
+Validar CI sobre este registro documental, comprobar el estado final de la PR #56 y preparar el punto de control humano previo a fusionar MAP-014.
 
 ## Últimos cambios
 
@@ -151,3 +204,9 @@ Comenzar MAP-014 — Preparar Supabase, migraciones y políticas RLS — desde u
 | 2026-08-04 | Backlog de Beta 0.2 añadido y clasificado en GitHub Projects |
 | 2026-08-04 | MAP-013 cerró arquitectura, seguridad, entornos, publicación, degradación, migraciones y rollback de Beta 0.2 |
 | 2026-08-04 | PR #52 fusionada, Issue #32 cerrada y MAP-014 establecida como trabajo actual |
+| 2026-08-05 | MAP-014 añadió Supabase local reproducible, cuatro migraciones, semillas ficticias y 69 pruebas pgTAP correctas |
+| 2026-08-05 | Auditorías de credenciales, documentación operativa y validación local de RLS preparadas |
+| 2026-08-05 | Las cuatro migraciones iniciales se desplegaron sin semillas; el historial remoto, el lint, la lista blanca administrativa, RLS y el rollback remoto quedaron validados |
+| 2026-08-05 | La revisión de seguridad añadió una quinta migración, grants por columna, timestamps y moderación forzados, bloqueos relacionales, auditoría ampliada, validación de red y Actions inmutables |
+| 2026-08-05 | La quinta migración se desplegó sin semillas y el hardening remoto quedó validado con rollback limpio |
+| 2026-08-05 | CI #136 validó 172 aserciones pgTAP, seis comprobaciones concurrentes, errores críticos exactos y Actions de CI y Pages fijadas a SHA completo |
