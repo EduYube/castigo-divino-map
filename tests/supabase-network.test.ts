@@ -35,8 +35,7 @@ describe('Supabase Docker network validation', () => {
   it('rejects a pre-existing network without the localhost binding option', () => {
     expect(validateNetworkInspection(inspection({ Options: {} }))).toEqual({
       ok: false,
-      reason:
-        'Expected com.docker.network.bridge.host_binding_ipv4=127.0.0.1, received undefined.',
+      reason: 'Expected com.docker.network.bridge.host_binding_ipv4=127.0.0.1, received undefined.',
     });
   });
 
@@ -51,16 +50,13 @@ describe('Supabase Docker network validation', () => {
       ),
     ).toEqual({
       ok: false,
-      reason:
-        'Expected com.docker.network.bridge.host_binding_ipv4=127.0.0.1, received 0.0.0.0.',
+      reason: 'Expected com.docker.network.bridge.host_binding_ipv4=127.0.0.1, received 0.0.0.0.',
     });
   });
 
   it('rejects malformed inspection output and recognizes only missing-network errors', () => {
     expect(validateNetworkInspection('not-json')).toMatchObject({ ok: false });
-    expect(
-      isMissingNetworkError('Error response from daemon: network local not found'),
-    ).toBe(true);
+    expect(isMissingNetworkError('Error response from daemon: network local not found')).toBe(true);
     expect(isMissingNetworkError('Cannot connect to the Docker daemon')).toBe(false);
   });
 });
