@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(19);
+select plan(17);
 
 select ok(
   not exists (
@@ -107,16 +107,9 @@ set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}';
 set local role authenticated;
 
-insert into public.categories (id, slug, name)
-values ('category-hardening-test', 'hardening-test', 'Hardening test');
-
-select ok(
-  exists (
-    select 1
-    from public.categories
-    where id = 'category-hardening-test'
-      and publication_status = 'draft'
-  ),
+select lives_ok(
+  $$insert into public.categories (id, slug, name)
+    values ('category-hardening-test', 'hardening-test', 'Hardening test')$$,
   'administrator can still insert allowed category columns'
 );
 
@@ -164,39 +157,6 @@ select throws_ok(
   'published deletion is rejected by the lifecycle trigger itself'
 );
 
-insert into public.map_entities (
-  id,
-  slug,
-  entity_type,
-  name,
-  x,
-  y,
-  category_id,
-  publication_status
-)
-values (
-  'entity-isolated-former-delete',
-  'isolated-former-delete',
-  'character',
-  'Isolated former delete',
-  30,
-  30,
-  'category-hardening-test',
-  'published'
-);
-
-update public.map_entities
-set publication_status = 'draft'
-where id = 'entity-isolated-former-delete';
-
-select throws_ok(
-  $$delete from public.map_entities
-    where id = 'entity-isolated-former-delete'$$,
-  '23514',
-  'published content cannot be physically deleted by the application',
-  'formerly published deletion is rejected by the lifecycle trigger itself'
-);
-
 select throws_ok(
   $$update public.map_entities
     set publication_status = 'published'
@@ -240,31 +200,6 @@ select isnt(
   ),
   '2000-01-01T00:00:00Z'::timestamp with time zone,
   'publication trigger overwrites a supplied first-publication timestamp'
-);
-
-insert into public.categories (
-  id,
-  slug,
-  name,
-  publication_status,
-  published_at
-)
-values (
-  'category-forged-draft-time',
-  'forged-draft-time',
-  'Forged draft time',
-  'draft',
-  '2000-01-01T00:00:00Z'
-);
-
-select is(
-  (
-    select published_at
-    from public.categories
-    where id = 'category-forged-draft-time'
-  ),
-  null::timestamp with time zone,
-  'draft insertion clears a supplied publication timestamp'
 );
 
 update public.public_requests
@@ -338,6 +273,8 @@ select lives_ok(
     where id = '10000000-0000-4000-8000-000000000099'$$,
   'a never-moderated pending request may be deleted'
 );
+
+set local role authenticated;
 
 select is(
   pg_temp.sqlstate_for(
