@@ -6,7 +6,7 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: MAP-014 dispone de una base Supabase reproducible y probada localmente, en CI y en el proyecto alojado; las cinco migraciones están desplegadas, RLS y el hardening de escritura están validados, y el único administrador está autorizado mediante lista blanca. Quedan la validación del registro documental final y el punto de control humano previo a integrar.
+- Estado general: MAP-014 está completada e integrada mediante la PR #56. La base Supabase es reproducible y está probada localmente, en CI y en el proyecto alojado; las cinco migraciones están desplegadas e inmutables, RLS y el hardening de escritura están validados, y el único administrador está autorizado mediante lista blanca. MAP-015 es el siguiente trabajo.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-05.
 
@@ -49,7 +49,7 @@ Las decisiones completas viven en `docs/architecture.md`, `docs/data-model.md`, 
 
 ## Base Supabase preparada en MAP-014
 
-La rama `agent/map-014-supabase-foundation` contiene:
+El historial integrado en `master` contiene:
 
 - Supabase CLI fijada exactamente en `2.111.0`;
 - `supabase/config.toml` endurecido para desarrollo local;
@@ -73,7 +73,7 @@ La rama `agent/map-014-supabase-foundation` contiene:
 - documentación operativa en `docs/supabase-operations.md`;
 - trabajo CI separado para reconstruir, analizar y probar la base local sin secretos remotos.
 
-CI #136 validó correctamente los trabajos de frontend y base de datos tras completar el hardening y la revisión final. El proyecto alojado usa PostgreSQL 17.6 y tiene verificados el registro cerrado, la confirmación de correo, los requisitos fuertes de contraseña, las URLs permitidas, la URL de proyecto y una clave publicable.
+CI #138 validó correctamente los trabajos de frontend y base de datos sobre el head definitivo previo a la integración. El proyecto alojado usa PostgreSQL 17.6 y tiene verificados el registro cerrado, la confirmación de correo, los requisitos fuertes de contraseña, las URLs permitidas, la URL de proyecto y una clave publicable.
 
 El checkout se enlazó de forma controlada sin registrar credenciales. Las cuatro migraciones iniciales se aplicaron en orden sin incluir `seed.sql`. Después de la revisión de seguridad, una quinta migración hacia delante se revisó mediante dry run y se aplicó de forma aislada. El historial local y remoto coincide en las cinco versiones y `supabase db lint --linked --fail-on warning` no encuentra errores.
 
@@ -108,8 +108,8 @@ MAP-013 a MAP-030 están creadas, añadidas al GitHub Project y clasificadas con
 Orden recomendado de ejecución:
 
 1. MAP-013 — Definir la arquitectura y seguridad de la Beta 0.2. **Completada.**
-2. MAP-014 — Preparar Supabase, migraciones y políticas RLS. **En revisión final.**
-3. MAP-015 — Evolucionar el modelo de entidades y relaciones.
+2. MAP-014 — Preparar Supabase, migraciones y políticas RLS. **Completada.**
+3. MAP-015 — Evolucionar el modelo de entidades y relaciones. **Siguiente.**
 4. MAP-016 — Implementar acceso público resiliente y estado del backend.
 5. MAP-017 — Implementar login y autorización administrativa.
 6. MAP-018 — Crear el CRUD administrativo de categorías, etiquetas y nombres.
@@ -128,11 +128,11 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- Validar CI sobre el commit documental definitivo.
-- Actualizar la PR #56 y la Issue #33 con el recuento final y CI correcta.
-- Comprobar de nuevo el diff, la condición de merge y las conversaciones de revisión.
-- Marcar la PR como lista para revisión únicamente después de esas comprobaciones.
-- Solicitar un punto de control humano explícito antes de fusionar.
+- MAP-015 — Evolucionar el modelo de entidades y relaciones.
+- Abrir un chat independiente dedicado exclusivamente a MAP-015.
+- Revisar la Issue de MAP-015 y sus dependencias antes de modificar nuevas migraciones.
+- Mantener inmutables las cinco migraciones aplicadas por MAP-014.
+- Añadir cualquier evolución del esquema mediante nuevas migraciones hacia delante.
 
 ## Acciones manuales para MAP-014
 
@@ -141,7 +141,7 @@ Completadas:
 - Docker Desktop disponible para desarrollo local.
 - Supabase CLI `2.111.0` instalada como dependencia fijada del proyecto.
 - Stack local inicializado, reconstruido y probado desde cero.
-- CI #136 de frontend y base de datos correcta tras el hardening y la revisión final.
+- CI #138 de frontend y base de datos correcta tras el hardening y la revisión final.
 - Proyecto Supabase alojado creado con PostgreSQL 17.6.
 - Registro público, acceso anónimo y enlace manual deshabilitados.
 - Proveedor de correo, confirmación de correo y cambio seguro de correo habilitados.
@@ -158,6 +158,7 @@ Completadas:
 - Autorización positiva y negativa de `private.is_admin()` verificada en remoto.
 - Lectura pública, bloqueo de escritura, acceso administrativo y rollback limpio verificados en remoto.
 - Privilegios por columna, timestamps de sistema, autoría de moderación, escrituras administrativas permitidas, bloqueos relacionales y rollback limpio verificados en remoto.
+- PR #56 fusionada mediante merge commit tras revisión y autorización humanas.
 
 Diferidas hasta que exista una operación que las requiera:
 
@@ -168,7 +169,7 @@ Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, reposi
 
 ## Bloqueos
 
-No hay bloqueos técnicos conocidos para completar MAP-014. La integración permanece detenida hasta terminar la validación documental final y recibir aprobación humana explícita para fusionar.
+No hay bloqueos técnicos conocidos para cerrar MAP-014. MAP-015 debe comenzar desde una rama independiente y con una revisión explícita de su alcance antes de cambiar el esquema.
 
 ## Riesgos aceptados
 
@@ -181,7 +182,7 @@ No hay bloqueos técnicos conocidos para completar MAP-014. La integración perm
 - La protección contra contraseñas filtradas no está disponible en el plan actual; se mantienen longitud 12 y requisitos fuertes de caracteres.
 - Docker Engine anterior a 28 puede permitir acceso desde el mismo segmento de red a puertos publicados en localhost; se recomienda Docker Engine 28 o posterior en redes no confiables.
 
-## Riesgos pendientes de MAP-014 a MAP-030
+## Riesgos pendientes de MAP-015 a MAP-030
 
 - Migrar el catálogo de Beta 0.1 sin romper IDs, slugs, coordenadas o URLs existentes.
 - Automatizar y auditar la generación del snapshot público.
@@ -190,7 +191,7 @@ No hay bloqueos técnicos conocidos para completar MAP-014. La integración perm
 
 ## Próximo paso
 
-Validar CI sobre este registro documental, comprobar el estado final de la PR #56 y preparar el punto de control humano previo a fusionar MAP-014.
+Sincronizar el checkout local con `master` y comenzar MAP-015 — Evolucionar el modelo de entidades y relaciones — en una rama y un chat independientes.
 
 ## Últimos cambios
 
@@ -209,4 +210,5 @@ Validar CI sobre este registro documental, comprobar el estado final de la PR #5
 | 2026-08-05 | Las cuatro migraciones iniciales se desplegaron sin semillas; el historial remoto, el lint, la lista blanca administrativa, RLS y el rollback remoto quedaron validados |
 | 2026-08-05 | La revisión de seguridad añadió una quinta migración, grants por columna, timestamps y moderación forzados, bloqueos relacionales, auditoría ampliada, validación de red y Actions inmutables |
 | 2026-08-05 | La quinta migración se desplegó sin semillas y el hardening remoto quedó validado con rollback limpio |
-| 2026-08-05 | CI #136 validó 172 aserciones pgTAP, seis comprobaciones concurrentes, errores críticos exactos y Actions de CI y Pages fijadas a SHA completo |
+| 2026-08-05 | CI #138 validó 172 aserciones pgTAP, seis comprobaciones concurrentes, errores críticos exactos y Actions de CI y Pages fijadas a SHA completo |
+| 2026-08-05 | PR #56 fusionada mediante merge commit, MAP-014 completada y MAP-015 establecida como siguiente trabajo |
