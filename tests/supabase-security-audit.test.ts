@@ -2,10 +2,7 @@ import { Buffer } from 'node:buffer';
 
 import { describe, expect, it } from 'vitest';
 
-import {
-  isBinaryContent,
-  scanTrackedContent,
-} from '../scripts/verify-supabase-security.mjs';
+import { isBinaryContent, scanTrackedContent } from '../scripts/verify-supabase-security.mjs';
 
 describe('Supabase tracked-file security audit', () => {
   it('detects a private key in a PEM file', () => {
@@ -44,8 +41,14 @@ describe('Supabase tracked-file security audit', () => {
   });
 
   it('detects a credentialed PostgreSQL URL in a PowerShell script', () => {
-    const databaseUrl = ['postgresql://operator', 'password@db.example.invalid/postgres'].join(':');
-    const result = scanTrackedContent('deploy.ps1', Buffer.from(`$url = '${databaseUrl}'`));
+    const databaseUrl = [
+      'postgresql://operator',
+      'password@db.example.invalid/postgres',
+    ].join(':');
+    const result = scanTrackedContent(
+      'deploy.ps1',
+      Buffer.from(`$url = '${databaseUrl}'`),
+    );
 
     expect(result.findings).toEqual([
       'deploy.ps1: PostgreSQL URL with an embedded password',
