@@ -2,56 +2,37 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
-const SUPABASE_PATTERN = 'https://map016-test.supabase.co/rest/v1/**';
+const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
+const SUPABASE_PATTERN = '**/rest/v1/**';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
   </svg>
 `;
-const SUPABASE_CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'apikey',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-} as const;
 
 type BackendMode = 'success' | 'failure';
 
 async function configurePublicDataTest(page: Page): Promise<{ setMode(mode: BackendMode): void }> {
   let mode: BackendMode = 'success';
 
-  await page.addInitScript(() => {
+  await page.addInitScript((projectUrl) => {
     window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
-      projectUrl: 'https://map016-test.supabase.co',
+      projectUrl,
       publishableKey: 'sb_publishable_map016_test_key',
       timeoutMs: 100,
       retryDelaysMs: [0, 0, 0],
     };
-  });
+  }, LOCAL_SUPABASE_URL);
   await page.route(OFFICIAL_MAP_URL, async (route) => {
     await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: TEST_MAP });
   });
   await page.route(SUPABASE_PATTERN, async (route: Route) => {
-    if (route.request().method() === 'OPTIONS') {
-      await route.fulfill({ status: 204, headers: SUPABASE_CORS_HEADERS });
-      return;
-    }
-
     if (mode === 'failure') {
-      await route.fulfill({
-        status: 503,
-        contentType: 'application/json',
-        headers: SUPABASE_CORS_HEADERS,
-        body: '{}',
-      });
+      await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
       return;
     }
 
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers: SUPABASE_CORS_HEADERS,
-      body: '[]',
-    });
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
   });
 
   return {
