@@ -30,7 +30,9 @@ function findDatabaseContainer() {
 
   if (!runningContainers.includes(DATABASE_CONTAINER)) {
     fail(
-      `Expected running local database container ${DATABASE_CONTAINER}; found ${runningContainers.join(', ') || 'none'}.`,
+      `Expected running local database container ${DATABASE_CONTAINER}; found ${
+        runningContainers.join(', ') || 'none'
+      }.`,
     );
   }
 
@@ -221,7 +223,9 @@ async function verifyWithdrawalScenario(containerName, scenario) {
 
     if (publisherExit.code !== 0) {
       fail(
-        `${scenario.subject} publisher exited with ${String(publisherExit.code)}: ${publisher.output}`,
+        `${scenario.subject} publisher exited with ${String(
+          publisherExit.code,
+        )}: ${publisher.output}`,
       );
     }
 
@@ -233,7 +237,9 @@ async function verifyWithdrawalScenario(containerName, scenario) {
 
     if (!withdrawer.output.includes(scenario.expectedError)) {
       fail(
-        `${scenario.subject} withdrawal failed for an unexpected reason: ${withdrawer.output || 'no output'}`,
+        `${scenario.subject} withdrawal failed for an unexpected reason: ${
+          withdrawer.output || 'no output'
+        }`,
       );
     }
     console.log(`ok - ${scenario.subject} withdrawal rechecks the invariant after waiting`);
@@ -436,7 +442,9 @@ async function verifyRelatedSightingScenario(containerName) {
 
     if (!sightingUpdateSession.output.includes('a departure cannot precede its related sighting')) {
       fail(
-        `Concurrent sighting mutation failed for an unexpected reason: ${sightingUpdateSession.output || 'no output'}`,
+        `Concurrent sighting mutation failed for an unexpected reason: ${
+          sightingUpdateSession.output || 'no output'
+        }`,
       );
     }
     console.log('ok - sighting mutation rechecks dependent departures after waiting');
