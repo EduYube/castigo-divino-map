@@ -1,0 +1,81 @@
+.backend-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 1.9rem;
+  max-width: min(100%, 34rem);
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  background: rgba(18, 24, 20, 0.78);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.backend-status__symbol {
+  display: grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  font-weight: 900;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.backend-status[data-backend-state='checking'] .backend-status__symbol {
+  animation: backend-status-spin 0.9s linear infinite;
+}
+
+.backend-status[data-backend-state='connected'] {
+  color: #dcebd5;
+  background: rgba(35, 66, 43, 0.78);
+}
+
+.backend-status[data-backend-state='degraded'] {
+  color: #ffe0a8;
+  background: rgba(79, 56, 24, 0.86);
+}
+
+.backend-status[data-backend-state='offline'] {
+  color: #ffd2c5;
+  background: rgba(77, 39, 32, 0.88);
+}
+
+.backend-status__retry {
+  min-width: 5.5rem;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.75rem;
+  color: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  background: rgba(247, 241, 227, 0.08);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+}
+
+@keyframes backend-status-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (max-width: 48rem) {
+  .site-header {
+    align-items: flex-start;
+    padding-block: 0.8rem;
+  }
+
+  .backend-status {
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 0.8rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backend-status[data-backend-state='checking'] .backend-status__symbol {
+    animation: none;
+  }
+}
