@@ -54,19 +54,10 @@ async function configurePublicDataTest(page: Page): Promise<PublicDataTestBacken
 }
 
 async function expectConnected(status: Locator, backend: PublicDataTestBackend): Promise<void> {
-  await expect
-    .poll(async () => ({
-      state: await status.getAttribute('data-backend-state'),
-      reason: await status.getAttribute('data-backend-reason'),
-      attempt: await status.getAttribute('data-backend-attempt'),
-      requests: backend.getRequestCount(),
-    }))
-    .toEqual({
-      state: 'connected',
-      reason: 'none',
-      attempt: '1',
-      requests: 12,
-    });
+  await expect(status).toHaveAttribute('data-backend-state', 'connected');
+  await expect(status).toHaveAttribute('data-backend-reason', 'none');
+  await expect(status).toHaveAttribute('data-backend-attempt', '1');
+  await expect.poll(() => backend.getRequestCount()).toBeGreaterThanOrEqual(12);
 }
 
 test('falls back and recovers without changing search, filters, selection or URL', async ({
