@@ -2,7 +2,12 @@ import { readFile } from 'node:fs/promises';
 
 import { describe, expect, test } from 'vitest';
 
-import { parsePublicCatalogSnapshotV1, PUBLIC_SNAPSHOT_MAX_AGE_MS } from './publicCatalogSnapshot';
+import { campaignCatalog } from '../../data/catalog';
+import {
+  parsePublicCatalogSnapshotV1,
+  PUBLIC_SNAPSHOT_MAX_AGE_MS,
+  StaticPublicCatalogRepository,
+} from './publicCatalogSnapshot';
 
 const SNAPSHOT_URL = new URL('../../../public/data/public-catalog.snapshot.json', import.meta.url);
 
@@ -43,5 +48,16 @@ describe('public catalog snapshot', () => {
 
     expect(result.metadata.stale).toBe(true);
     expect(result.data.contract).toBe('beta01');
+  });
+
+  test('marks the undated static fallback as stale instead of claiming fresh content', async () => {
+    const repository = new StaticPublicCatalogRepository(campaignCatalog, {
+      sourceRevision: 'beta01-static-catalog',
+      now: () => Date.parse('2026-08-06T00:00:00.000Z'),
+    });
+    const result = await repository.load({ signal: new AbortController().signal });
+
+    expect(result.source).toBe('legacy-static');
+    expect(result.metadata.stale).toBe(true);
   });
 });
