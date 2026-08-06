@@ -146,7 +146,7 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
 
     this.#projectUrl = projectUrl.replace(/\/$/, '');
     this.#publishableKey = publishableKey;
-    this.#fetchImplementation = options.fetchImplementation ?? fetch;
+    this.#fetchImplementation = options.fetchImplementation ?? globalThis.fetch.bind(globalThis);
     this.#now = options.now ?? Date.now;
   }
 
