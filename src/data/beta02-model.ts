@@ -3,9 +3,7 @@ export type PlayerId = `player-${string}`;
 export type CategoryId = `category-${string}`;
 export type NoteId = `note-${string}`;
 export type GeographicNameId = `geo-${string}`;
-export type CharacterLocationEventId =
-  | `location-event-${string}`
-  | `relation-${string}`;
+export type CharacterLocationEventId = `location-event-${string}` | `relation-${string}`;
 export type TagId = string;
 export type Slug = string;
 export type LanguageCode = 'en';
