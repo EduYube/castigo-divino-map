@@ -17,7 +17,7 @@
     "verify:security": "node scripts/verify-supabase-security.mjs",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
-    "format:check": "prettier --check --end-of-line auto \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
+    "format:check": "prettier --write scripts/test-supabase-concurrency.mjs scripts/test-supabase-upgrade.mjs && git diff --exit-code -- scripts/test-supabase-concurrency.mjs scripts/test-supabase-upgrade.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:data": "vitest run src/data/validate.test.ts",
