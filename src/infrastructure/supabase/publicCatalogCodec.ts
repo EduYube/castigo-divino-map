@@ -21,6 +21,11 @@ import {
   type PublicCatalogTablePayloads,
 } from './publicCatalogRows';
 
+type PublicCatalogContentV2 = Omit<
+  PublicCatalogSnapshotV2,
+  'generatedAt' | 'sourceRevision' | 'checksum'
+>;
+
 function invalidResponse(message: string): never {
   throw new PublicDataRepositoryError('invalid-response', message, { source: 'supabase' });
 }
@@ -31,6 +36,22 @@ function expectRecord(value: unknown, path: string): Record<string, unknown> {
   }
 
   return value as Record<string, unknown>;
+}
+
+function expectRecords(value: unknown, path: string): readonly Record<string, unknown>[] {
+  if (!Array.isArray(value)) {
+    invalidResponse(`${path} debe ser una colección.`);
+  }
+
+  return value.map((entry, index) => expectRecord(entry, `${path}[${index}]`));
+}
+
+function expectValues(value: unknown, path: string): readonly unknown[] {
+  if (!Array.isArray(value)) {
+    invalidResponse(`${path} debe ser una colección.`);
+  }
+
+  return value;
 }
 
 function assertAllowedProperties(
@@ -54,6 +75,16 @@ function expectString(value: unknown, path: string): string {
   return value;
 }
 
+function expectChecksum(value: unknown, path: string): string {
+  const checksum = expectString(value, path);
+
+  if (!/^sha256:[0-9a-f]{64}$/.test(checksum)) {
+    invalidResponse(`${path} no contiene un SHA-256 válido.`);
+  }
+
+  return checksum;
+}
+
 function assertUnique(values: readonly string[], label: string): void {
   const seen = new Set<string>();
 
@@ -66,27 +97,52 @@ function assertUnique(values: readonly string[], label: string): void {
   });
 }
 
-function assertReferences(snapshot: PublicCatalogSnapshotV2): void {
-  const categoryIds = new Set(snapshot.categories.map(({ id }) => id));
-  const tagIds = new Set(snapshot.tags.map(({ id }) => id));
-  const playerIds = new Set(snapshot.players.map(({ id }) => id));
-  const entityIds = new Set(snapshot.entities.map(({ id }) => id));
-  const noteIds = new Set(snapshot.notes.map(({ id }) => id));
-  const geographicNameIds = new Set(snapshot.geographicNames.map(({ id }) => id));
-  const eventIds = new Set(snapshot.characterLocationEvents.map(({ id }) => id));
+function assertReferences(snapshot: PublicCatalogContentV2): void {
+  const categoryValues = snapshot.categories.map(({ id }) => id);
+  const tagValues = snapshot.tags.map(({ id }) => id);
+  const playerValues = snapshot.players.map(({ id }) => id);
+  const entityValues = snapshot.entities.map(({ id }) => id);
+  const noteValues = snapshot.notes.map(({ id }) => id);
+  const geographicNameValues = snapshot.geographicNames.map(({ id }) => id);
+  const eventValues = snapshot.characterLocationEvents.map(({ id }) => id);
 
-  assertUnique([...categoryIds], 'categories');
-  assertUnique([...tagIds], 'tags');
-  assertUnique([...playerIds], 'players');
-  assertUnique([...entityIds], 'entities');
-  assertUnique([...noteIds], 'notes');
-  assertUnique([...geographicNameIds], 'geographicNames');
-  assertUnique([...eventIds], 'characterLocationEvents');
+  assertUnique(categoryValues, 'categories');
+  assertUnique(tagValues, 'tags');
+  assertUnique(playerValues, 'players');
+  assertUnique(entityValues, 'entities');
+  assertUnique(noteValues, 'notes');
+  assertUnique(geographicNameValues, 'geographicNames');
+  assertUnique(eventValues, 'characterLocationEvents');
+  assertUnique(
+    snapshot.entities.flatMap(({ aliases }) => aliases.map(({ id }) => id)),
+    'entityAliases',
+  );
+  assertUnique(
+    snapshot.geographicNames.flatMap(({ aliases }) => aliases.map(({ id }) => id)),
+    'geographicNameAliases',
+  );
+  assertUnique(
+    snapshot.dispositions.map(({ entityId, playerId }) => `${entityId}\u0000${playerId}`),
+    'dispositions',
+  );
+
+  const categoryIds = new Set(categoryValues);
+  const tagIds = new Set(tagValues);
+  const playerIds = new Set(playerValues);
+  const entitiesById = new Map(snapshot.entities.map((entity) => [entity.id, entity] as const));
+  const geographicNamesById = new Map(
+    snapshot.geographicNames.map((name) => [name.id, name] as const),
+  );
+  const eventsById = new Map(
+    snapshot.characterLocationEvents.map((event) => [event.id, event] as const),
+  );
 
   snapshot.entities.forEach((entity) => {
     if (!categoryIds.has(entity.categoryId)) {
       invalidResponse(`La entidad “${entity.id}” referencia una categoría ausente.`);
     }
+
+    assertUnique(entity.tagIds, `entities.${entity.id}.tagIds`);
     entity.tagIds.forEach((tagId) => {
       if (!tagIds.has(tagId)) {
         invalidResponse(`La entidad “${entity.id}” referencia una etiqueta ausente.`);
@@ -100,15 +156,17 @@ function assertReferences(snapshot: PublicCatalogSnapshotV2): void {
   });
 
   snapshot.dispositions.forEach((disposition) => {
-    if (!entityIds.has(disposition.entityId) || !playerIds.has(disposition.playerId)) {
+    if (!entitiesById.has(disposition.entityId) || !playerIds.has(disposition.playerId)) {
       invalidResponse('Una disposición pública referencia un extremo ausente.');
     }
   });
 
   snapshot.notes.forEach((note) => {
-    if (!entityIds.has(note.entityId)) {
+    if (!entitiesById.has(note.entityId)) {
       invalidResponse(`La nota “${note.id}” referencia una entidad ausente.`);
     }
+
+    assertUnique(note.tagIds, `notes.${note.id}.tagIds`);
     note.tagIds.forEach((tagId) => {
       if (!tagIds.has(tagId)) {
         invalidResponse(`La nota “${note.id}” referencia una etiqueta ausente.`);
@@ -117,9 +175,18 @@ function assertReferences(snapshot: PublicCatalogSnapshotV2): void {
   });
 
   snapshot.geographicNames.forEach((name) => {
-    if (name.entityId !== null && !entityIds.has(name.entityId)) {
-      invalidResponse(`El nombre geográfico “${name.id}” referencia una entidad ausente.`);
+    if (name.entityId !== null) {
+      const entity = entitiesById.get(name.entityId);
+
+      if (!entity) {
+        invalidResponse(`El nombre geográfico “${name.id}” referencia una entidad ausente.`);
+      }
+
+      if (entity.entityType !== 'location') {
+        invalidResponse(`El nombre geográfico “${name.id}” debe referenciar una ubicación.`);
+      }
     }
+
     name.aliases.forEach((alias) => {
       if (alias.geographicNameId !== name.id) {
         invalidResponse(`El alias geográfico “${alias.id}” no coincide con su contenedor.`);
@@ -128,113 +195,82 @@ function assertReferences(snapshot: PublicCatalogSnapshotV2): void {
   });
 
   snapshot.characterLocationEvents.forEach((event) => {
-    if (!entityIds.has(event.characterId)) {
+    const character = entitiesById.get(event.characterId);
+
+    if (!character) {
       invalidResponse(`El acontecimiento “${event.id}” referencia un personaje ausente.`);
     }
-    if (
-      event.location.locationEntityId !== null &&
-      !entityIds.has(event.location.locationEntityId)
-    ) {
-      invalidResponse(`El acontecimiento “${event.id}” referencia una ubicación ausente.`);
+
+    if (character.entityType !== 'character') {
+      invalidResponse(`El acontecimiento “${event.id}” no referencia una entidad personaje.`);
     }
+
+    if (event.location.locationEntityId !== null) {
+      const location = entitiesById.get(event.location.locationEntityId);
+
+      if (!location) {
+        invalidResponse(`El acontecimiento “${event.id}” referencia una ubicación ausente.`);
+      }
+
+      if (location.entityType !== 'location') {
+        invalidResponse(`El acontecimiento “${event.id}” no referencia una entidad ubicación.`);
+      }
+    }
+
     if (
       event.location.geographicNameId !== null &&
-      !geographicNameIds.has(event.location.geographicNameId)
+      !geographicNamesById.has(event.location.geographicNameId)
     ) {
       invalidResponse(`El acontecimiento “${event.id}” referencia un nombre geográfico ausente.`);
     }
-    if (event.relatedSightingId !== null && !eventIds.has(event.relatedSightingId)) {
-      invalidResponse(`El acontecimiento “${event.id}” referencia un avistamiento ausente.`);
+
+    if (event.relatedSightingId !== null) {
+      const relatedEvent = eventsById.get(event.relatedSightingId);
+
+      if (!relatedEvent || relatedEvent.eventType !== 'sighting') {
+        invalidResponse(`El acontecimiento “${event.id}” referencia un avistamiento inválido.`);
+      }
     }
   });
 }
 
-function snapshotContent(
-  snapshot: PublicCatalogSnapshotV2,
-): Omit<PublicCatalogSnapshotV2, 'generatedAt' | 'sourceRevision' | 'checksum'> {
-  return {
-    schemaVersion: 2,
-    categories: snapshot.categories,
-    tags: snapshot.tags,
-    players: snapshot.players,
-    entities: snapshot.entities,
-    dispositions: snapshot.dispositions,
-    notes: snapshot.notes,
-    geographicNames: snapshot.geographicNames,
-    characterLocationEvents: snapshot.characterLocationEvents,
-  };
+function assertRelationRows(
+  content: PublicCatalogContentV2,
+  relations: {
+    readonly entityAliases: ReturnType<typeof parseEntityAlias>[];
+    readonly entityTags: ReturnType<typeof parseEntityTag>[];
+    readonly noteTags: ReturnType<typeof parseNoteTag>[];
+    readonly geographicAliases: ReturnType<typeof parseGeographicAlias>[];
+  },
+): void {
+  const entityIds = new Set(content.entities.map(({ id }) => id));
+  const tagIds = new Set(content.tags.map(({ id }) => id));
+  const noteIds = new Set(content.notes.map(({ id }) => id));
+  const geographicNameIds = new Set(content.geographicNames.map(({ id }) => id));
+
+  relations.entityAliases.forEach((alias) => {
+    if (!entityIds.has(alias.entityId)) {
+      invalidResponse(`El alias “${alias.id}” referencia una entidad ausente.`);
+    }
+  });
+  relations.entityTags.forEach(({ entityId, tagId }) => {
+    if (!entityIds.has(entityId) || !tagIds.has(tagId)) {
+      invalidResponse('Una relación entidad-etiqueta referencia un extremo ausente.');
+    }
+  });
+  relations.noteTags.forEach(({ noteId, tagId }) => {
+    if (!noteIds.has(noteId) || !tagIds.has(tagId)) {
+      invalidResponse('Una relación nota-etiqueta referencia un extremo ausente.');
+    }
+  });
+  relations.geographicAliases.forEach((alias) => {
+    if (!geographicNameIds.has(alias.geographicNameId)) {
+      invalidResponse(`El alias geográfico “${alias.id}” referencia un nombre ausente.`);
+    }
+  });
 }
 
-export async function parsePublicCatalogSnapshotV2(
-  value: unknown,
-  now: () => number = Date.now,
-): Promise<PublicCatalogEnvelope> {
-  const record = expectRecord(value, 'snapshot');
-  assertAllowedProperties(
-    record,
-    [
-      'schemaVersion',
-      'generatedAt',
-      'sourceRevision',
-      'checksum',
-      'categories',
-      'tags',
-      'players',
-      'entities',
-      'dispositions',
-      'notes',
-      'geographicNames',
-      'characterLocationEvents',
-    ],
-    'snapshot',
-  );
-
-  if (record.schemaVersion !== 2) {
-    throw new PublicDataRepositoryError(
-      'unsupported-schema',
-      'La caché pública no usa el contrato Beta 0.2.',
-      { source: 'cache', recoverable: false },
-    );
-  }
-
-  const generatedAt = expectString(record.generatedAt, 'snapshot.generatedAt');
-  const generatedAtMs = Date.parse(generatedAt);
-
-  if (!Number.isFinite(generatedAtMs)) {
-    invalidResponse('snapshot.generatedAt no contiene una fecha válida.');
-  }
-
-  const snapshot = record as unknown as PublicCatalogSnapshotV2;
-  assertReferences(snapshot);
-  const calculatedChecksum = await createSha256Checksum(snapshotContent(snapshot));
-
-  if (snapshot.checksum !== calculatedChecksum) {
-    throw new PublicDataRepositoryError(
-      'checksum-mismatch',
-      'La caché pública no coincide con su checksum.',
-      { source: 'cache' },
-    );
-  }
-
-  return {
-    data: { contract: 'beta02', catalog: snapshot },
-    source: 'session-cache',
-    metadata: {
-      contract: 'beta02',
-      schemaVersion: 2,
-      generatedAt,
-      loadedAt: new Date(now()).toISOString(),
-      sourceRevision: expectString(record.sourceRevision, 'snapshot.sourceRevision'),
-      checksum: expectString(record.checksum, 'snapshot.checksum'),
-      stale: false,
-    },
-  };
-}
-
-export async function buildPublicCatalogEnvelopeV2(
-  payloads: PublicCatalogTablePayloads,
-  now: () => number = Date.now,
-): Promise<PublicCatalogEnvelope> {
+function buildPublicCatalogContentV2(payloads: PublicCatalogTablePayloads): PublicCatalogContentV2 {
   const categories = payloads.categories.map(parseCategory);
   const tags = payloads.tags.map(parseTag);
   const players = payloads.players.map(parsePlayer);
@@ -255,9 +291,8 @@ export async function buildPublicCatalogEnvelopeV2(
     parseGeographicName(row, index, aliasesByName),
   );
   const characterLocationEvents = payloads.locationEvents.map(parseLocationEvent);
-  const generatedAt = new Date(now()).toISOString();
-  const content = {
-    schemaVersion: 2 as const,
+  const content: PublicCatalogContentV2 = {
+    schemaVersion: 2,
     categories,
     tags,
     players,
@@ -267,6 +302,354 @@ export async function buildPublicCatalogEnvelopeV2(
     geographicNames,
     characterLocationEvents,
   };
+
+  assertRelationRows(content, { entityAliases, entityTags, noteTags, geographicAliases });
+  assertReferences(content);
+
+  return content;
+}
+
+function snapshotPayloads(record: Record<string, unknown>): PublicCatalogTablePayloads {
+  const categories = expectRecords(record.categories, 'snapshot.categories').map(
+    (category, index) => {
+      const path = `snapshot.categories[${index}]`;
+      assertAllowedProperties(category, ['id', 'slug', 'name', 'description'], path);
+      return category;
+    },
+  );
+  const tags = expectRecords(record.tags, 'snapshot.tags').map((tag, index) => {
+    const path = `snapshot.tags[${index}]`;
+    assertAllowedProperties(tag, ['id', 'name', 'description'], path);
+    return tag;
+  });
+  const players = expectRecords(record.players, 'snapshot.players').map((player, index) => {
+    const path = `snapshot.players[${index}]`;
+    assertAllowedProperties(player, ['id', 'slug', 'displayName', 'nameLanguage'], path);
+    return {
+      id: player.id,
+      slug: player.slug,
+      display_name: player.displayName,
+      name_language: player.nameLanguage,
+    };
+  });
+  const entityAliases: Record<string, unknown>[] = [];
+  const entityTags: Record<string, unknown>[] = [];
+  const entities = expectRecords(record.entities, 'snapshot.entities').map((entity, index) => {
+    const path = `snapshot.entities[${index}]`;
+    assertAllowedProperties(
+      entity,
+      [
+        'id',
+        'slug',
+        'entityType',
+        'visibility',
+        'name',
+        'nameLanguage',
+        'aliases',
+        'summary',
+        'description',
+        'coordinates',
+        'categoryId',
+        'tagIds',
+      ],
+      path,
+    );
+    const coordinates = expectRecord(entity.coordinates, `${path}.coordinates`);
+    assertAllowedProperties(coordinates, ['x', 'y'], `${path}.coordinates`);
+    expectRecords(entity.aliases, `${path}.aliases`).forEach((alias, aliasIndex) => {
+      const aliasPath = `${path}.aliases[${aliasIndex}]`;
+      assertAllowedProperties(alias, ['id', 'entityId', 'language', 'value'], aliasPath);
+
+      if (alias.entityId !== entity.id) {
+        invalidResponse(`${aliasPath}.entityId no coincide con su entidad contenedora.`);
+      }
+
+      entityAliases.push({
+        id: alias.id,
+        entity_id: alias.entityId,
+        language: alias.language,
+        value: alias.value,
+      });
+    });
+    expectValues(entity.tagIds, `${path}.tagIds`).forEach((tagId) => {
+      entityTags.push({ entity_id: entity.id, tag_id: tagId });
+    });
+
+    return {
+      id: entity.id,
+      slug: entity.slug,
+      entity_type: entity.entityType,
+      visibility: entity.visibility,
+      name: entity.name,
+      name_language: entity.nameLanguage,
+      summary: entity.summary,
+      description: entity.description,
+      x: coordinates.x,
+      y: coordinates.y,
+      category_id: entity.categoryId,
+    };
+  });
+  const dispositions = expectRecords(record.dispositions, 'snapshot.dispositions').map(
+    (disposition, index) => {
+      const path = `snapshot.dispositions[${index}]`;
+      assertAllowedProperties(disposition, ['entityId', 'playerId', 'disposition'], path);
+      return {
+        entity_id: disposition.entityId,
+        player_id: disposition.playerId,
+        disposition: disposition.disposition,
+      };
+    },
+  );
+  const noteTags: Record<string, unknown>[] = [];
+  const notes = expectRecords(record.notes, 'snapshot.notes').map((note, index) => {
+    const path = `snapshot.notes[${index}]`;
+    assertAllowedProperties(
+      note,
+      ['id', 'slug', 'entityId', 'title', 'body', 'sortOrder', 'tagIds'],
+      path,
+    );
+    expectValues(note.tagIds, `${path}.tagIds`).forEach((tagId) => {
+      noteTags.push({ note_id: note.id, tag_id: tagId });
+    });
+
+    return {
+      id: note.id,
+      slug: note.slug,
+      entity_id: note.entityId,
+      title: note.title,
+      body: note.body,
+      sort_order: note.sortOrder,
+    };
+  });
+  const geographicAliases: Record<string, unknown>[] = [];
+  const geographicNames = expectRecords(record.geographicNames, 'snapshot.geographicNames').map(
+    (name, index) => {
+      const path = `snapshot.geographicNames[${index}]`;
+      assertAllowedProperties(
+        name,
+        [
+          'id',
+          'slug',
+          'name',
+          'language',
+          'aliases',
+          'coordinates',
+          'recommendedZoom',
+          'entityId',
+        ],
+        path,
+      );
+      const coordinates = expectRecord(name.coordinates, `${path}.coordinates`);
+      assertAllowedProperties(coordinates, ['x', 'y'], `${path}.coordinates`);
+      expectRecords(name.aliases, `${path}.aliases`).forEach((alias, aliasIndex) => {
+        const aliasPath = `${path}.aliases[${aliasIndex}]`;
+        assertAllowedProperties(alias, ['id', 'geographicNameId', 'language', 'value'], aliasPath);
+
+        if (alias.geographicNameId !== name.id) {
+          invalidResponse(`${aliasPath}.geographicNameId no coincide con su contenedor.`);
+        }
+
+        geographicAliases.push({
+          id: alias.id,
+          geographic_name_id: alias.geographicNameId,
+          language: alias.language,
+          value: alias.value,
+        });
+      });
+
+      return {
+        id: name.id,
+        slug: name.slug,
+        name: name.name,
+        language: name.language,
+        x: coordinates.x,
+        y: coordinates.y,
+        recommended_zoom: name.recommendedZoom,
+        entity_id: name.entityId,
+      };
+    },
+  );
+  const locationEvents = expectRecords(
+    record.characterLocationEvents,
+    'snapshot.characterLocationEvents',
+  ).map((event, index) => {
+    const path = `snapshot.characterLocationEvents[${index}]`;
+    assertAllowedProperties(
+      event,
+      [
+        'id',
+        'characterId',
+        'eventType',
+        'location',
+        'summary',
+        'language',
+        'observedAt',
+        'relatedSightingId',
+      ],
+      path,
+    );
+    const location = expectRecord(event.location, `${path}.location`);
+    assertAllowedProperties(
+      location,
+      ['locationEntityId', 'geographicNameId', 'coordinates', 'locationLabel'],
+      `${path}.location`,
+    );
+    const coordinates =
+      location.coordinates === null
+        ? null
+        : expectRecord(location.coordinates, `${path}.location.coordinates`);
+
+    if (coordinates) {
+      assertAllowedProperties(coordinates, ['x', 'y'], `${path}.location.coordinates`);
+    }
+
+    return {
+      id: event.id,
+      character_id: event.characterId,
+      event_type: event.eventType,
+      location_entity_id: location.locationEntityId,
+      geographic_name_id: location.geographicNameId,
+      x: coordinates?.x ?? null,
+      y: coordinates?.y ?? null,
+      location_label: location.locationLabel,
+      summary: event.summary,
+      language: event.language,
+      observed_at: event.observedAt,
+      related_sighting_id: event.relatedSightingId,
+    };
+  });
+
+  return {
+    categories,
+    tags,
+    players,
+    entities,
+    entityAliases,
+    entityTags,
+    dispositions,
+    notes,
+    noteTags,
+    geographicNames,
+    geographicAliases,
+    locationEvents,
+  };
+}
+
+function rethrowAsCacheError(error: unknown): never {
+  if (error instanceof PublicDataRepositoryError) {
+    throw new PublicDataRepositoryError(error.code, error.message, {
+      source: 'cache',
+      recoverable: error.recoverable,
+      status: error.status,
+      cause: error,
+    });
+  }
+
+  throw new PublicDataRepositoryError(
+    'invalid-response',
+    'La caché pública Beta 0.2 no supera la validación estructural.',
+    { source: 'cache', cause: error },
+  );
+}
+
+export async function parsePublicCatalogSnapshotV2(
+  value: unknown,
+  now: () => number = Date.now,
+): Promise<PublicCatalogEnvelope> {
+  let record: Record<string, unknown>;
+
+  try {
+    record = expectRecord(value, 'snapshot');
+    assertAllowedProperties(
+      record,
+      [
+        'schemaVersion',
+        'generatedAt',
+        'sourceRevision',
+        'checksum',
+        'categories',
+        'tags',
+        'players',
+        'entities',
+        'dispositions',
+        'notes',
+        'geographicNames',
+        'characterLocationEvents',
+      ],
+      'snapshot',
+    );
+  } catch (error) {
+    rethrowAsCacheError(error);
+  }
+
+  if (record.schemaVersion !== 2) {
+    throw new PublicDataRepositoryError(
+      'unsupported-schema',
+      'La caché pública no usa el contrato Beta 0.2.',
+      { source: 'cache', recoverable: false },
+    );
+  }
+
+  let generatedAt: string;
+  let sourceRevision: string;
+  let checksum: string;
+  let content: PublicCatalogContentV2;
+
+  try {
+    generatedAt = expectString(record.generatedAt, 'snapshot.generatedAt');
+    sourceRevision = expectChecksum(record.sourceRevision, 'snapshot.sourceRevision');
+    checksum = expectChecksum(record.checksum, 'snapshot.checksum');
+    content = buildPublicCatalogContentV2(snapshotPayloads(record));
+  } catch (error) {
+    rethrowAsCacheError(error);
+  }
+
+  if (!Number.isFinite(Date.parse(generatedAt))) {
+    throw new PublicDataRepositoryError(
+      'invalid-response',
+      'snapshot.generatedAt no contiene una fecha válida.',
+      { source: 'cache' },
+    );
+  }
+
+  const calculatedChecksum = await createSha256Checksum(content);
+
+  if (checksum !== calculatedChecksum) {
+    throw new PublicDataRepositoryError(
+      'checksum-mismatch',
+      'La caché pública no coincide con su checksum.',
+      { source: 'cache' },
+    );
+  }
+
+  const snapshot: PublicCatalogSnapshotV2 = {
+    ...content,
+    generatedAt,
+    sourceRevision,
+    checksum,
+  };
+
+  return {
+    data: { contract: 'beta02', catalog: snapshot },
+    source: 'session-cache',
+    metadata: {
+      contract: 'beta02',
+      schemaVersion: 2,
+      generatedAt,
+      loadedAt: new Date(now()).toISOString(),
+      sourceRevision,
+      checksum,
+      stale: false,
+    },
+  };
+}
+
+export async function buildPublicCatalogEnvelopeV2(
+  payloads: PublicCatalogTablePayloads,
+  now: () => number = Date.now,
+): Promise<PublicCatalogEnvelope> {
+  const content = buildPublicCatalogContentV2(payloads);
+  const generatedAt = new Date(now()).toISOString();
   const checksum = await createSha256Checksum(content);
   const snapshot: PublicCatalogSnapshotV2 = {
     ...content,
@@ -274,8 +657,6 @@ export async function buildPublicCatalogEnvelopeV2(
     sourceRevision: checksum,
     checksum,
   };
-
-  assertReferences(snapshot);
 
   return {
     data: { contract: 'beta02', catalog: snapshot },
