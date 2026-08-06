@@ -153,12 +153,11 @@ async function tamperedSnapshot(
 ): Promise<MutableSnapshotShape> {
   const snapshot = structuredClone(await validSnapshot()) as unknown as MutableSnapshotShape;
   mutate(snapshot);
-  const {
-    generatedAt: _generatedAt,
-    sourceRevision: _sourceRevision,
-    checksum: _checksum,
-    ...content
-  } = snapshot;
+  const content = Object.fromEntries(
+    Object.entries(snapshot).filter(
+      ([key]) => key !== 'generatedAt' && key !== 'sourceRevision' && key !== 'checksum',
+    ),
+  );
   const checksum = await createSha256Checksum(content);
   snapshot.sourceRevision = checksum;
   snapshot.checksum = checksum;
