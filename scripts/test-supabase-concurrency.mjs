@@ -422,11 +422,7 @@ async function verifyRelatedSightingScenario(containerName) {
     sightingUpdateSession.child.stdin.end();
 
     await waitForMarker(sightingUpdateSession, 'MAP015_SIGHTING_UPDATE_STARTED');
-    await waitForDatabaseLock(
-      containerName,
-      '/* map015-sighting-update */',
-      sightingUpdateSession,
-    );
+    await waitForDatabaseLock(containerName, '/* map015-sighting-update */', sightingUpdateSession);
     console.log('ok - sighting mutation waits while a related departure is being created');
 
     departureSession.child.stdin.end('commit;\n\\q\n');
