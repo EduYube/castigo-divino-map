@@ -6,7 +6,7 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: MAP-014 está completada e integrada mediante la PR #56. MAP-015 ha cerrado e implementado el contrato de entidades y relaciones, ha superado la validación local y las CI #146 y #147, y sus cuatro migraciones se han aplicado al proyecto Supabase alojado sin semillas. El historial local y remoto coincide en nueve versiones, el lint remoto está limpio y el smoke test transaccional de esquema, RLS, autorización e inmutabilidad terminó con rollback limpio. Quedan la revisión humana y la fusión autorizada de la PR #59.
+- Estado general: MAP-014 está completada e integrada mediante la PR #56. MAP-015 ha cerrado e implementado el contrato de entidades y relaciones, ha corregido los hallazgos bloqueantes de integridad y concurrencia de la revisión técnica y ha superado la CI #164. Sus cinco migraciones hacia delante se han aplicado al proyecto Supabase alojado sin semillas. El historial local y remoto coincide en diez versiones, el lint remoto está limpio y los smoke tests transaccionales de esquema, RLS, autorización, matriz entidad–jugador, protección inversa del rastro de personajes e inmutabilidad terminaron con rollback limpio. Quedan la revisión humana final y la fusión autorizada de la PR #59.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-06.
 
@@ -86,47 +86,56 @@ Una segunda prueba remota transaccional confirmó que no quedan privilegios comp
 La PR #59 contiene:
 
 - ADR 0006 y contrato TypeScript paralelo para el snapshot público de Beta 0.2;
-- cuatro migraciones nuevas de expansión, validación del backfill, contracción y refinamiento, sin modificar las cinco migraciones aplicadas por MAP-014;
+- cuatro migraciones de expansión, validación del backfill, contracción y refinamiento, más una quinta migración hacia delante de hardening, sin modificar las cinco migraciones aplicadas por MAP-014 ni las cuatro primeras de MAP-015 ya desplegadas;
 - entidades `character` y `location` con visibilidad cartográfica `pin` o `search_only`;
 - jugadores normalizados y una matriz completa `entity_player_dispositions` con una relación independiente por entidad y jugador;
+- serialización de los dos caminos de inserción de la matriz mediante un lock advisory común y backfill idempotente de parejas ausentes;
 - disposiciones cerradas `ally`, `enemy` y `neutral`, sin `unknown` ni disposición global en `map_entities`;
+- política explícita de upgrade que reinicia a `neutral` las nuevas perspectivas porque una disposición global legacy no puede atribuirse de forma inequívoca a un jugador;
 - soporte de disposición para personajes y localizaciones;
 - nombres y aliases de entidades en inglés y aliases geográficos normalizados en filas independientes;
 - enlace opcional de un nombre geográfico únicamente a una entidad de tipo `location`;
 - etiquetas normalizadas para notas públicas;
 - rastro cronológico `character_location_events` con avistamientos y salidas, ubicación mediante entidad, nombre geográfico o coordenadas libres y fechas observadas opcionales;
 - salidas que pueden referenciar un avistamiento anterior del mismo personaje, pero también existir sin destino o antecedente conocido;
+- bloqueo con `FOR SHARE` de los avistamientos relacionados, también en borrador, y validación inversa cuando cambia un avistamiento referenciado;
 - identidad histórica inmutable después de publicar relaciones y acontecimientos;
 - endurecimiento de conversión de solicitudes para exigir una entidad borrador, de tipo coincidente y visible como pin;
 - conservación de solicitudes moderadas y unicidad del destino convertido;
 - RLS y grants por columna para todas las tablas nuevas;
+- unión discriminada TypeScript para impedir que un `sighting` tenga `relatedSightingId`;
 - semillas deterministas y ficticias, sin nombres ni datos reales de campaña;
-- pruebas centradas en invariantes de matriz, visibilidad, aliases, tags, pistas, permisos, moderación e integridad histórica.
+- pruebas centradas en invariantes de matriz, visibilidad, aliases, tags, pistas, permisos, moderación, upgrade, concurrencia e integridad histórica.
 
 La validación local y CI superaron:
 
 - formato, auditoría de credenciales, lint y build;
 - 84 pruebas unitarias en 11 archivos;
 - 45 pruebas end-to-end y dos smoke tests del build de Pages;
-- 137 aserciones pgTAP en seis archivos;
-- seis comprobaciones concurrentes en dos escenarios;
 - auditoría del artefacto de producción sin copia del mapa ni patrones de credenciales;
-- CI #146 correcta en `Build, quality and tests` y `Supabase migrations, lint and RLS tests` sobre el head de implementación;
-- CI #147 correcta en los mismos dos jobs sobre el commit documental posterior al despliegue alojado.
+- prueba de upgrade MAP-014 → MAP-015 con datos legacy representativos;
+- lint SQL sin errores;
+- 147 aserciones pgTAP en siete archivos;
+- 13 comprobaciones concurrentes en cuatro escenarios;
+- CI #146 correcta sobre el head de implementación inicial;
+- CI #147 y #148 correctas tras registrar el primer despliegue alojado;
+- CI #164 correcta en `Build, quality and tests` y `Supabase migrations, lint and RLS tests` sobre el head corregido `f0c22c2ebddc302be86b03a1ebfa3845d6f0c067`.
 
 El despliegue alojado siguió el protocolo acordado:
 
-- checkout limpio y sincronizado con el head validado;
-- `migration list --linked` con las cinco migraciones históricas alineadas y únicamente las cuatro de MAP-015 pendientes;
-- dry run con exactamente las cuatro migraciones nuevas y sin `seed.sql`;
-- dump lógico previo de esquema y datos en una ubicación privada fuera del repositorio;
-- autorización humana explícita antes del push real;
-- aplicación en orden de las cuatro migraciones sin semillas;
-- coincidencia local y remota de las nueve versiones;
+- checkout limpio y sincronizado con cada head validado;
+- `migration list --linked` y dry run revisados antes de cada aplicación;
+- dump lógico previo de esquema y datos en una ubicación privada fuera del repositorio antes de la fase de contracción;
+- autorización humana explícita antes de cada push real;
+- aplicación en orden de las cuatro migraciones iniciales de MAP-015 sin semillas;
+- primer smoke test transaccional correcto para contrato de esquema, lectura anónima, bloqueo de escritura no administrativa, escritura administrativa, inmutabilidad de acontecimientos publicados y rollback sin filas residuales;
+- preflight posterior con las nueve versiones alineadas y únicamente `20260806085000_harden_entity_matrix_and_character_trail.sql` pendiente;
+- aplicación aislada y sin semillas de la décima migración global del proyecto;
+- coincidencia local y remota de las diez versiones;
 - lint remoto sin errores ni advertencias;
-- smoke test transaccional correcto para contrato de esquema, lectura anónima, bloqueo de escritura no administrativa, escritura administrativa, inmutabilidad de acontecimientos publicados y rollback sin filas residuales.
+- smoke test final correcto para funciones y triggers instalados, matriz existente completa, creación de intersecciones desde ambos caminos, bloqueo de cambios de personaje, tipo y cronología en avistamientos referenciados y rollback sin residuos.
 
-Las nueve migraciones aplicadas se consideran inmutables. Cualquier corrección futura deberá añadirse mediante una nueva migración hacia delante.
+Las diez migraciones aplicadas se consideran inmutables. Cualquier corrección futura deberá añadirse mediante una nueva migración hacia delante.
 
 ## Objetivo de Beta 0.2
 
@@ -160,7 +169,7 @@ Orden recomendado de ejecución:
 
 1. MAP-013 — Definir la arquitectura y seguridad de la Beta 0.2. **Completada.**
 2. MAP-014 — Preparar Supabase, migraciones y políticas RLS. **Completada.**
-3. MAP-015 — Evolucionar el modelo de entidades y relaciones. **En revisión.**
+3. MAP-015 — Evolucionar el modelo de entidades y relaciones. **En revisión final.**
 4. MAP-016 — Implementar acceso público resiliente y estado del backend. **Siguiente tras integrar MAP-015.**
 5. MAP-017 — Implementar login y autorización administrativa.
 6. MAP-018 — Crear el CRUD administrativo de categorías, etiquetas y nombres.
@@ -179,9 +188,10 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
+- Validar la nueva CI documental sobre el head posterior al despliegue final.
 - Revisar el diff definitivo de la PR #59 y confirmar que no existen conversaciones pendientes.
-- Marcar la PR como lista para revisión humana.
-- Mantener inmutables las nueve migraciones aplicadas.
+- Marcar la PR como lista para revisión humana cuando el head definitivo esté verde.
+- Mantener inmutables las diez migraciones aplicadas.
 - No ejecutar `seed.sql` contra producción.
 - Mantener la interfaz pública de Beta 0.1 sin cambios hasta la transición planificada en MAP-028.
 - No fusionar la PR sin un punto de control humano explícito.
@@ -217,17 +227,23 @@ Completadas:
 
 Completadas:
 
-- CI #146 correcta sobre el head de implementación.
-- CI #147 correcta sobre el commit documental posterior al despliegue alojado.
-- Checkout limpio y sincronizado antes del preflight alojado.
-- Historial local y remoto comparado antes del despliegue.
-- Dry run revisado con exactamente cuatro migraciones pendientes y sin semillas.
+- CI #146 correcta sobre el head de implementación inicial.
+- CI #147 y #148 correctas tras el primer despliegue alojado y su documentación.
+- Revisión técnica con REQUEST_CHANGES atendida mediante una migración nueva hacia delante, sin editar las nueve ya aplicadas.
+- CI #164 correcta sobre el hardening, el upgrade legacy, 147 aserciones pgTAP y 13 comprobaciones concurrentes.
+- Checkout limpio y sincronizado antes de cada preflight alojado.
+- Historial local y remoto comparado antes de cada despliegue.
+- Dry run inicial revisado con exactamente cuatro migraciones pendientes y sin semillas.
 - Dump lógico privado de esquema y datos creado antes de la fase de contracción.
-- Aplicación de las cuatro migraciones autorizada explícitamente por una persona.
+- Aplicación de las cuatro migraciones iniciales autorizada explícitamente por una persona.
 - Cuatro migraciones aplicadas en orden sin ejecutar `seed.sql`.
-- Nueve versiones locales y remotas alineadas.
+- Primer smoke test alojado correcto para esquema, lectura pública, RLS, autorización, inmutabilidad histórica y rollback limpio.
+- Segundo dry run revisado con únicamente `20260806085000_harden_entity_matrix_and_character_trail.sql` pendiente.
+- Aplicación de la migración de hardening autorizada explícitamente por una persona.
+- Migración de hardening aplicada de forma aislada sin ejecutar `seed.sql`.
+- Diez versiones locales y remotas alineadas.
 - Lint remoto correcto sin advertencias.
-- Smoke test alojado correcto para esquema, lectura pública, RLS, autorización, inmutabilidad histórica y rollback limpio.
+- Smoke test alojado final correcto para funciones, triggers, matriz, validación inversa de avistamientos y rollback limpio.
 
 Diferidas hasta que exista una operación que las requiera:
 
@@ -239,6 +255,7 @@ Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, reposi
 
 MAP-015 no tiene bloqueos técnicos conocidos. Permanecen pendientes únicamente:
 
+- CI verde sobre el commit documental final;
 - revisión humana del diff definitivo;
 - autorización explícita para fusionar la PR #59.
 
@@ -263,7 +280,7 @@ MAP-015 no tiene bloqueos técnicos conocidos. Permanecen pendientes únicamente
 
 ## Próximo paso
 
-Revisar el diff definitivo y las conversaciones de la PR #59, marcarla como lista para revisión y solicitar un punto de control humano explícito antes de fusionar. MAP-016 comenzará únicamente después de integrar MAP-015.
+Validar la CI sobre el commit documental final. Cuando esté verde, revisar el diff definitivo y las conversaciones de la PR #59, marcarla como lista para revisión y solicitar un punto de control humano explícito antes de fusionar. MAP-016 comenzará únicamente después de integrar MAP-015.
 
 ## Últimos cambios
 
@@ -287,5 +304,8 @@ Revisar el diff definitivo y las conversaciones de la PR #59, marcarla como list
 | 2026-08-06 | MAP-015 cerró el contrato de entidades, disposiciones por jugador, visibilidad, aliases, tags y rastro cronológico de personajes |
 | 2026-08-06 | Cuatro migraciones hacia delante, contratos TypeScript, semillas ficticias y pruebas de integridad quedaron validados localmente; CI #146 validó frontend y base de datos |
 | 2026-08-06 | Se creó un dump lógico privado, se aplicaron las cuatro migraciones sin semillas y las nueve versiones quedaron alineadas con lint remoto correcto |
-| 2026-08-06 | El smoke test alojado validó esquema, lectura anónima, RLS, autorización, inmutabilidad de acontecimientos publicados y rollback sin residuos |
-| 2026-08-06 | CI #147 validó correctamente el commit documental posterior al despliegue alojado |
+| 2026-08-06 | El primer smoke test alojado validó esquema, lectura anónima, RLS, autorización, inmutabilidad de acontecimientos publicados y rollback sin residuos |
+| 2026-08-06 | La revisión técnica identificó condiciones de carrera en la matriz y el rastro, una política legacy no documentada y un estado TypeScript inválido |
+| 2026-08-06 | Una quinta migración de MAP-015 añadió locks, backfill, validación inversa, prueba real de upgrade, unión discriminada y cobertura concurrente; CI #164 quedó verde |
+| 2026-08-06 | La migración `20260806085000_harden_entity_matrix_and_character_trail.sql` se aplicó sin semillas, las diez versiones quedaron alineadas y el lint remoto fue correcto |
+| 2026-08-06 | El smoke test alojado final validó funciones, triggers, matriz completa, bloqueo de cambios inválidos en avistamientos relacionados y rollback sin residuos |
