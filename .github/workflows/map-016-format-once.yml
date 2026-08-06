@@ -1,11 +1,13 @@
 name: MAP-016 format and validate once
 
 on:
-  push:
+  pull_request:
     branches:
       - agent/map-016-public-data-resilience
+    types:
+      - opened
     paths:
-      - .github/workflows/map-016-format-once.yml
+      - .github/map-016-format-trigger.txt
 
 permissions:
   contents: write
@@ -37,40 +39,40 @@ jobs:
       - name: Apply repository formatting
         run: npm run format
 
-      - name: Guard the formatting scope
+      - name: Guard and commit the formatting result
+        env:
+          FORMAT_BASE_SHA: 96fe09f7ea7c291e52c66509028cbc2984ce0186
         shell: bash
         run: |
-          allowed_files=(
-            ".github/workflows/map-016-format-once.yml"
+          set -euo pipefail
+          rm .github/workflows/map-016-format-once.yml
+
+          expected_files=(
             "src/infrastructure/supabase/publicCatalogCodec.test.ts"
             "src/infrastructure/supabase/publicCatalogCodec.ts"
             "src/infrastructure/supabase/publicCatalogRepository.test.ts"
             "src/infrastructure/supabase/publicCatalogRepository.ts"
           )
+          mapfile -t changed_files < <(git diff --name-only "$FORMAT_BASE_SHA")
 
-          while IFS= read -r changed_file; do
-            allowed=false
-            for allowed_file in "${allowed_files[@]}"; do
-              if [[ "$changed_file" == "$allowed_file" ]]; then
-                allowed=true
-                break
-              fi
-            done
+          if [[ "${#changed_files[@]}" -ne "${#expected_files[@]}" ]]; then
+            printf 'Unexpected formatting scope:\n' >&2
+            printf '  %s\n' "${changed_files[@]}" >&2
+            exit 1
+          fi
 
-            if [[ "$allowed" != true ]]; then
-              echo "Unexpected file changed by formatting: $changed_file" >&2
+          for expected_file in "${expected_files[@]}"; do
+            if ! printf '%s\n' "${changed_files[@]}" | grep -Fxq "$expected_file"; then
+              echo "Expected formatted file is missing: $expected_file" >&2
               exit 1
             fi
-          done < <(git diff --name-only)
+          done
 
-      - name: Replace helper commit with formatted source
-        shell: bash
-        run: |
-          rm .github/workflows/map-016-format-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git reset --soft "$FORMAT_BASE_SHA"
           git add -A
-          git commit --amend --no-edit
+          git commit -m "style: apply Prettier to MAP-016 hardening"
           git push --force-with-lease origin HEAD:agent/map-016-public-data-resilience
 
       - name: Launch definitive CI and publish its status
