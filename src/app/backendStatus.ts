@@ -43,7 +43,8 @@ function describeResult(result: PublicCatalogLoadResult): string {
     return 'Servicio de datos conectado.';
   }
 
-  const snapshotDate = formatSnapshotDate(result.metadata?.generatedAt);
+  const snapshotDate =
+    result.source === 'legacy-static' ? null : formatSnapshotDate(result.metadata?.generatedAt);
   const suffix = snapshotDate ? ` Se muestra contenido guardado del ${snapshotDate}.` : '';
 
   if (result.backend.state === 'offline') {
