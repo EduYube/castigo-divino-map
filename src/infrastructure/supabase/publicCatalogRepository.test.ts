@@ -50,9 +50,7 @@ describe('SupabasePublicCatalogRepository', () => {
 
     await repository.load({ signal: new AbortController().signal });
 
-    const dispositionUrl = urls.find((url) =>
-      url.pathname.endsWith('/entity_player_dispositions'),
-    );
+    const dispositionUrl = urls.find((url) => url.pathname.endsWith('/entity_player_dispositions'));
     expect(dispositionUrl?.searchParams.has('publication_status')).toBe(false);
     urls
       .filter((url) => url !== dispositionUrl)
@@ -66,9 +64,9 @@ describe('SupabasePublicCatalogRepository', () => {
       fetchImplementation: async () => new Response('sensitive body', { status: 503 }),
     });
 
-    await expect(
-      repository.load({ signal: new AbortController().signal }),
-    ).rejects.toMatchObject<Partial<PublicDataRepositoryError>>({
+    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject<
+      Partial<PublicDataRepositoryError>
+    >({
       code: 'http-error',
       status: 503,
     });
@@ -96,8 +94,8 @@ describe('SupabasePublicCatalogRepository', () => {
       },
     });
 
-    await expect(
-      repository.load({ signal: new AbortController().signal }),
-    ).rejects.toMatchObject<Partial<PublicDataRepositoryError>>({ code: 'invalid-response' });
+    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject<
+      Partial<PublicDataRepositoryError>
+    >({ code: 'invalid-response' });
   });
 });

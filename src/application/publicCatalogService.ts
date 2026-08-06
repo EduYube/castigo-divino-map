@@ -67,7 +67,9 @@ function isRetryable(error: unknown): boolean {
     return false;
   }
 
-  return error.status === null || error.status === 408 || error.status === 429 || error.status >= 500;
+  return (
+    error.status === null || error.status === 408 || error.status === 429 || error.status >= 500
+  );
 }
 
 export class ResilientPublicCatalogService {
@@ -147,7 +149,7 @@ export class ResilientPublicCatalogService {
 
     const backendState: BackendState = this.#isOnline() ? 'degraded' : 'offline';
     const reason = this.#isOnline()
-      ? this.#configurationIssue?.code ?? 'network-unavailable'
+      ? (this.#configurationIssue?.code ?? 'network-unavailable')
       : 'network-unavailable';
 
     return this.#publish(
@@ -422,10 +424,7 @@ export class ResilientPublicCatalogService {
     };
   }
 
-  #publishIfCurrent(
-    generation: number,
-    result: PublicCatalogLoadResult,
-  ): PublicCatalogLoadResult {
+  #publishIfCurrent(generation: number, result: PublicCatalogLoadResult): PublicCatalogLoadResult {
     if (generation !== this.#generation || this.#disposed) {
       return this.#result ?? result;
     }

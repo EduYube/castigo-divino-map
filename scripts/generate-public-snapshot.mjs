@@ -22,7 +22,9 @@ function canonicalize(value) {
 }
 
 function checksum(value) {
-  return `sha256:${createHash('sha256').update(JSON.stringify(canonicalize(value))).digest('hex')}`;
+  return `sha256:${createHash('sha256')
+    .update(JSON.stringify(canonicalize(value)))
+    .digest('hex')}`;
 }
 
 const catalog = JSON.parse(await readFile(SOURCE_PATH, 'utf8'));
@@ -32,7 +34,10 @@ let generatedAt = new Date().toISOString();
 try {
   const currentSnapshot = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'));
 
-  if (currentSnapshot.sourceRevision === sourceRevision && typeof currentSnapshot.generatedAt === 'string') {
+  if (
+    currentSnapshot.sourceRevision === sourceRevision &&
+    typeof currentSnapshot.generatedAt === 'string'
+  ) {
     generatedAt = currentSnapshot.generatedAt;
   }
 } catch {

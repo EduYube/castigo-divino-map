@@ -92,12 +92,7 @@ function expectNullableString(value: unknown, path: string): string | null {
 }
 
 function expectNumber(value: unknown, path: string, minimum: number, maximum: number): number {
-  if (
-    typeof value !== 'number' ||
-    !Number.isFinite(value) ||
-    value < minimum ||
-    value > maximum
-  ) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < minimum || value > maximum) {
     invalidResponse(`${path} debe ser un número entre ${minimum} y ${maximum}.`);
   }
 
@@ -281,7 +276,11 @@ export function parseNoteTag(row: Record<string, unknown>, index: number): NoteT
   assertAllowedProperties(row, ['note_id', 'tag_id'], path);
 
   return {
-    noteId: expectString(row.note_id, `${path}.note_id`, IDENTIFIER_PATTERNS.note) as PublicNote['id'],
+    noteId: expectString(
+      row.note_id,
+      `${path}.note_id`,
+      IDENTIFIER_PATTERNS.note,
+    ) as PublicNote['id'],
     tagId: expectString(row.tag_id, `${path}.tag_id`, IDENTIFIER_PATTERNS.slug),
   };
 }
@@ -329,7 +328,11 @@ export function parseEntity(
     ],
     path,
   );
-  const id = expectString(row.id, `${path}.id`, IDENTIFIER_PATTERNS.entity) as PublicMapEntity['id'];
+  const id = expectString(
+    row.id,
+    `${path}.id`,
+    IDENTIFIER_PATTERNS.entity,
+  ) as PublicMapEntity['id'];
 
   return {
     id,
@@ -342,7 +345,10 @@ export function parseEntity(
     name: expectString(row.name, `${path}.name`),
     nameLanguage: expectEnum(row.name_language, `${path}.name_language`, ['en'] as const),
     aliases: aliasesByEntity.get(id) ?? [],
-    summary: typeof row.summary === 'string' ? row.summary : invalidResponse(`${path}.summary debe ser texto.`),
+    summary:
+      typeof row.summary === 'string'
+        ? row.summary
+        : invalidResponse(`${path}.summary debe ser texto.`),
     description:
       typeof row.description === 'string'
         ? row.description
@@ -511,7 +517,10 @@ export function parseLocationEvent(
       IDENTIFIER_PATTERNS.entity,
     ) as PublicCharacterLocationEvent['characterId'],
     location,
-    summary: typeof row.summary === 'string' ? row.summary : invalidResponse(`${path}.summary debe ser texto.`),
+    summary:
+      typeof row.summary === 'string'
+        ? row.summary
+        : invalidResponse(`${path}.summary debe ser texto.`),
     language: expectEnum(row.language, `${path}.language`, ['en'] as const),
     observedAt: expectIsoDate(row.observed_at, `${path}.observed_at`),
   } as const;

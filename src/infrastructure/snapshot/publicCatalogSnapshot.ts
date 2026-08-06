@@ -47,9 +47,13 @@ export async function parsePublicCatalogSnapshotV1(
   now: () => number = Date.now,
 ): Promise<PublicCatalogEnvelope> {
   if (!isRecord(value)) {
-    throw new PublicDataRepositoryError('invalid-snapshot', 'El snapshot público no es un objeto.', {
-      source: 'snapshot',
-    });
+    throw new PublicDataRepositoryError(
+      'invalid-snapshot',
+      'El snapshot público no es un objeto.',
+      {
+        source: 'snapshot',
+      },
+    );
   }
 
   if (value.schemaVersion !== 1 || value.contract !== 'beta01') {

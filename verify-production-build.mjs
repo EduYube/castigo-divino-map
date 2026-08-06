@@ -54,7 +54,9 @@ function canonicalize(value) {
 }
 
 function checksum(value) {
-  return `sha256:${createHash('sha256').update(JSON.stringify(canonicalize(value))).digest('hex')}`;
+  return `sha256:${createHash('sha256')
+    .update(JSON.stringify(canonicalize(value)))
+    .digest('hex')}`;
 }
 
 function getRepositoryName() {

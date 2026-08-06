@@ -149,10 +149,9 @@ function assertReferences(snapshot: PublicCatalogSnapshotV2): void {
   });
 }
 
-function snapshotContent(snapshot: PublicCatalogSnapshotV2): Omit<
-  PublicCatalogSnapshotV2,
-  'generatedAt' | 'sourceRevision' | 'checksum'
-> {
+function snapshotContent(
+  snapshot: PublicCatalogSnapshotV2,
+): Omit<PublicCatalogSnapshotV2, 'generatedAt' | 'sourceRevision' | 'checksum'> {
   return {
     schemaVersion: 2,
     categories: snapshot.categories,

@@ -86,7 +86,10 @@ test('falls back and recovers without changing search, filters, selection or URL
   expect(page.url()).toBe(originalUrl);
 });
 
-test('announces offline mode textually and keeps the snapshot usable', async ({ page, context }) => {
+test('announces offline mode textually and keeps the snapshot usable', async ({
+  page,
+  context,
+}) => {
   await configurePublicDataTest(page);
   await page.goto('/');
 
