@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-create temporary table _map_014_constraint_helpers (id integer);
+create temporary table _map_015_constraint_helpers (id integer);
 
 create function pg_temp.statement_fails(statement text)
 returns boolean
@@ -43,9 +43,9 @@ set local role authenticated;
 select ok(
   pg_temp.statement_fails(
     $$insert into public.map_entities (
-      id, slug, entity_type, disposition, name, summary, description, x, y, category_id
+      id, slug, entity_type, name, summary, description, x, y, category_id
     ) values (
-      'entity-invalid-coordinate', 'invalid-coordinate', 'character', 'ally',
+      'entity-invalid-coordinate', 'invalid-coordinate', 'character',
       'Invalid Coordinate', '', '', -1, 10, 'category-people'
     )$$
   ),
@@ -54,10 +54,10 @@ select ok(
 
 select throws_ok(
   $$insert into public.map_entities (
-    id, slug, entity_type, disposition, name, summary, description, x, y, category_id,
+    id, slug, entity_type, name, summary, description, x, y, category_id,
     publication_status
   ) values (
-    'entity-draft-category-public', 'draft-category-public', 'character', 'ally',
+    'entity-draft-category-public', 'draft-category-public', 'character',
     'Draft Category Public', '', '', 10, 10, 'category-draft', 'published'
   )$$,
   '23514',
@@ -66,15 +66,15 @@ select throws_ok(
 );
 
 select ok(
-  pg_temp.statement_fails(
+  pg_temp.statement_succeeds(
     $$insert into public.map_entities (
-      id, slug, entity_type, disposition, name, summary, description, x, y, category_id
+      id, slug, entity_type, name, summary, description, x, y, category_id
     ) values (
-      'entity-invalid-location-disposition', 'invalid-location-disposition', 'location', 'enemy',
-      'Invalid Location Disposition', '', '', 10, 10, 'category-places'
+      'entity-location-dispositions', 'location-dispositions', 'location',
+      'Location Dispositions', '', '', 10, 10, 'category-places'
     )$$
   ),
-  'locations cannot acquire a character disposition'
+  'locations use the same entity contract and receive player dispositions separately'
 );
 
 select ok(
@@ -108,13 +108,13 @@ select throws_ok(
 
 select ok(
   pg_temp.statement_fails(
-    $$insert into public.character_locations (
-      id, character_id, location_id
+    $$insert into public.character_location_events (
+      id, character_id, event_type, x, y
     ) values (
-      'relation-invalid-types', 'entity-bramble-fort', 'entity-aster-guide'
+      'location-event-invalid-character', 'entity-bramble-fort', 'sighting', 10, 10
     )$$
   ),
-  'character-location relations enforce endpoint types'
+  'character location events require a character endpoint'
 );
 
 select throws_ok(
@@ -137,9 +137,9 @@ select throws_ok(
 
 select throws_ok(
   $$insert into public.map_entities (
-    id, slug, entity_type, disposition, name, summary, description, x, y, category_id
+    id, slug, entity_type, name, summary, description, x, y, category_id
   ) values (
-    'entity-reserved-test', 'reserved-test', 'character', 'unknown',
+    'entity-reserved-test', 'reserved-test', 'character',
     'Reserved Test', '', '', 10, 10, 'category-people'
   )$$,
   '23505',
@@ -150,9 +150,9 @@ select throws_ok(
 select ok(
   pg_temp.statement_succeeds(
     $$insert into public.map_entities (
-      id, slug, entity_type, disposition, name, summary, description, x, y, category_id
+      id, slug, entity_type, name, summary, description, x, y, category_id
     ) values (
-      'entity-boundary-test', 'boundary-test', 'character', 'unknown',
+      'entity-boundary-test', 'boundary-test', 'character',
       'Boundary Test', '', '', 3600, 2329, 'category-people'
     )$$
   ),
