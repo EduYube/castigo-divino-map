@@ -40,7 +40,12 @@ async function configurePublicDataTest(page: Page): Promise<PublicDataTestBacken
       return;
     }
 
-    await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Content-Range': '*/0' },
+      body: '[]',
+    });
   });
 
   return {
