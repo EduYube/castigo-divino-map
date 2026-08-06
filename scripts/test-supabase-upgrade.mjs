@@ -103,16 +103,7 @@ function runPsql(containerName, sql) {
 
 runCommand(
   NPX_COMMAND,
-  [
-    '--no-install',
-    'supabase',
-    'db',
-    'reset',
-    '--local',
-    '--version',
-    MAP014_VERSION,
-    '--no-seed',
-  ],
+  ['--no-install', 'supabase', 'db', 'reset', '--local', '--version', MAP014_VERSION, '--no-seed'],
   'resetting the local database to the MAP-014 schema',
 );
 
