@@ -43,6 +43,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git show "$FORMAT_BASE_SHA:.github/workflows/ci.yml" > .github/workflows/ci.yml
           rm .github/workflows/map-016-format-once.yml
 
           expected_files=(
