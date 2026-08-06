@@ -6,9 +6,9 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: MAP-014 está completada e integrada mediante la PR #56. La base Supabase es reproducible y está probada localmente, en CI y en el proyecto alojado; las cinco migraciones están desplegadas e inmutables, RLS y el hardening de escritura están validados, y el único administrador está autorizado mediante lista blanca. MAP-015 es el siguiente trabajo.
+- Estado general: MAP-014 está completada e integrada mediante la PR #56. MAP-015 ha cerrado el contrato de entidades y relaciones, lo ha implementado mediante migraciones hacia delante y lo ha validado localmente; queda pendiente la CI de la PR, la revisión humana y cualquier aplicación controlada al proyecto Supabase alojado.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
-- Última actualización: 2026-08-05.
+- Última actualización: 2026-08-06.
 
 ## Beta 0.1
 
@@ -81,6 +81,39 @@ Existe exactamente un usuario administrativo real, creado con contraseña y corr
 
 Una segunda prueba remota transaccional confirmó que no quedan privilegios completos de escritura sobre las tablas expuestas, que las columnas gestionadas por el sistema están protegidas, que PostgreSQL fuerza los timestamps editoriales y la identidad y fecha de moderación, que las escrituras administrativas permitidas siguen funcionando, que los bloqueos relacionales están instalados y que el rollback no dejó datos temporales.
 
+## Modelo de entidades preparado en MAP-015
+
+La rama `agent/map-015-entity-relations` contiene:
+
+- ADR 0006 y contrato TypeScript paralelo para el snapshot público de Beta 0.2;
+- cuatro migraciones nuevas de expansión, validación del backfill, contracción y refinamiento, sin modificar las cinco migraciones aplicadas por MAP-014;
+- entidades `character` y `location` con visibilidad cartográfica `pin` o `search_only`;
+- jugadores normalizados y una matriz completa `entity_player_dispositions` con una relación independiente por entidad y jugador;
+- disposiciones cerradas `ally`, `enemy` y `neutral`, sin `unknown` ni disposición global en `map_entities`;
+- soporte de disposición para personajes y localizaciones;
+- nombres y aliases de entidades en inglés y aliases geográficos normalizados en filas independientes;
+- enlace opcional de un nombre geográfico únicamente a una entidad de tipo `location`;
+- etiquetas normalizadas para notas públicas;
+- rastro cronológico `character_location_events` con avistamientos y salidas, ubicación mediante entidad, nombre geográfico o coordenadas libres y fechas observadas opcionales;
+- salidas que pueden referenciar un avistamiento anterior del mismo personaje, pero también existir sin destino o antecedente conocido;
+- identidad histórica inmutable después de publicar relaciones y acontecimientos;
+- endurecimiento de conversión de solicitudes para exigir una entidad borrador, de tipo coincidente y visible como pin;
+- conservación de solicitudes moderadas y unicidad del destino convertido;
+- RLS y grants por columna para todas las tablas nuevas;
+- semillas deterministas y ficticias, sin nombres ni datos reales de campaña;
+- pruebas centradas en invariantes de matriz, visibilidad, aliases, tags, pistas, permisos, moderación e integridad histórica.
+
+La validación local del head previo a abrir la PR superó:
+
+- formato, auditoría de credenciales, lint y build;
+- 84 pruebas unitarias en 11 archivos;
+- 45 pruebas end-to-end y dos smoke tests del build de Pages;
+- 137 aserciones pgTAP en seis archivos;
+- seis comprobaciones concurrentes en dos escenarios;
+- auditoría del artefacto de producción sin copia del mapa ni patrones de credenciales.
+
+Estas migraciones todavía no se han aplicado al proyecto Supabase alojado. Su aplicación requerirá CI verde, checkout limpio, comparación del historial enlazado, dry run, revisión explícita y autorización humana separada. `seed.sql` no se ejecutará en producción.
+
 ## Objetivo de Beta 0.2
 
 Añadir persistencia y administración segura sin perder ninguna funcionalidad pública de Beta 0.1.
@@ -91,11 +124,15 @@ Decisiones de producto vigentes:
 - Un único perfil administrativo con permisos de escritura.
 - Visitantes sin cuenta y con todas las funciones públicas actuales.
 - Entidades de tipo personaje y emplazamiento.
-- Disposición independiente: aliado, enemigo, neutral o desconocido.
+- Visibilidad cartográfica `pin` o `search_only` independiente del tipo de entidad.
+- Disposición independiente por jugador: aliado, enemigo o neutral.
+- Personajes y localizaciones pueden tener disposiciones distintas para cada jugador.
 - Estados de contenido: borrador, publicado y archivado.
 - Archivado como eliminación habitual.
 - Nombres geográficos únicamente en inglés durante Beta 0.2.
-- Traducciones y notas privadas del director de juego pospuestas.
+- Nombres geográficos ligeros y entidades completas son conceptos distintos, con enlace opcional cuando representan la misma localización.
+- Rastro cronológico público de avistamientos y salidas de personajes.
+- Traducciones, propietarios tipados y notas privadas del director de juego pospuestos.
 - Solicitudes públicas con lista cerrada de tipos, sin categorías, etiquetas ni código de campaña.
 - Indicador visible de estado de Supabase y snapshot público de respaldo.
 
@@ -109,8 +146,8 @@ Orden recomendado de ejecución:
 
 1. MAP-013 — Definir la arquitectura y seguridad de la Beta 0.2. **Completada.**
 2. MAP-014 — Preparar Supabase, migraciones y políticas RLS. **Completada.**
-3. MAP-015 — Evolucionar el modelo de entidades y relaciones. **Siguiente.**
-4. MAP-016 — Implementar acceso público resiliente y estado del backend.
+3. MAP-015 — Evolucionar el modelo de entidades y relaciones. **En revisión.**
+4. MAP-016 — Implementar acceso público resiliente y estado del backend. **Siguiente tras integrar MAP-015.**
 5. MAP-017 — Implementar login y autorización administrativa.
 6. MAP-018 — Crear el CRUD administrativo de categorías, etiquetas y nombres.
 7. MAP-019 — Crear el CRUD de pines con editor visual y previsualización.
@@ -128,11 +165,12 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- MAP-015 — Evolucionar el modelo de entidades y relaciones.
-- Abrir un chat independiente dedicado exclusivamente a MAP-015.
-- Revisar la Issue de MAP-015 y sus dependencias antes de modificar nuevas migraciones.
+- Revisar e integrar MAP-015 mediante una PR dedicada contra `master`.
+- Confirmar CI verde sobre el head definitivo.
 - Mantener inmutables las cinco migraciones aplicadas por MAP-014.
-- Añadir cualquier evolución del esquema mediante nuevas migraciones hacia delante.
+- No aplicar las migraciones de MAP-015 al proyecto alojado sin un punto de control humano separado.
+- No ejecutar `seed.sql` contra producción.
+- Mantener la interfaz pública de Beta 0.1 sin cambios hasta la transición planificada en MAP-028.
 
 ## Acciones manuales para MAP-014
 
@@ -170,7 +208,11 @@ Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, reposi
 
 ## Bloqueos
 
-No hay bloqueos técnicos conocidos para cerrar MAP-014. MAP-015 debe comenzar desde una rama independiente y con una revisión explícita de su alcance antes de cambiar el esquema.
+MAP-015 no tiene bloqueos locales conocidos. Permanecen pendientes:
+
+- CI de GitHub sobre la PR y el head definitivo;
+- revisión humana del diff y de las decisiones de dominio;
+- punto de control separado antes de cualquier migración del proyecto Supabase alojado.
 
 ## Riesgos aceptados
 
@@ -183,16 +225,17 @@ No hay bloqueos técnicos conocidos para cerrar MAP-014. MAP-015 debe comenzar d
 - La protección contra contraseñas filtradas no está disponible en el plan actual; se mantienen longitud 12 y requisitos fuertes de caracteres.
 - Docker Engine anterior a 28 puede permitir acceso desde el mismo segmento de red a puertos publicados en localhost; se recomienda Docker Engine 28 o posterior en redes no confiables.
 
-## Riesgos pendientes de MAP-015 a MAP-030
+## Riesgos pendientes de MAP-016 a MAP-030
 
 - Migrar el catálogo de Beta 0.1 sin romper IDs, slugs, coordenadas o URLs existentes.
+- Resolver en MAP-022 la representación visual cuando una entidad tenga disposiciones distintas para dos jugadores, sin colapsarlas en un único color ambiguo.
 - Automatizar y auditar la generación del snapshot público.
 - Validar abuso de solicitudes, accesibilidad administrativa, rendimiento y recuperación real.
 - Evitar filtraciones editoriales de secretos en contenido destinado a publicación.
 
 ## Próximo paso
 
-Sincronizar el checkout local con `master` y comenzar MAP-015 — Evolucionar el modelo de entidades y relaciones — en una rama y un chat independientes.
+Abrir la PR de MAP-015 contra `master`, esperar la CI del head definitivo y revisar el diff. Cualquier despliegue de las cuatro migraciones nuevas al proyecto Supabase alojado requerirá después un punto de control humano independiente con `migration list --linked`, dry run y autorización explícita.
 
 ## Últimos cambios
 
@@ -213,3 +256,5 @@ Sincronizar el checkout local con `master` y comenzar MAP-015 — Evolucionar el
 | 2026-08-05 | La quinta migración se desplegó sin semillas y el hardening remoto quedó validado con rollback limpio |
 | 2026-08-05 | CI #138 validó 172 aserciones pgTAP, seis comprobaciones concurrentes, errores críticos exactos y Actions de CI y Pages fijadas a SHA completo |
 | 2026-08-05 | PR #56 fusionada mediante merge commit, Issue #33 cerrada y MAP-015 establecida como siguiente trabajo |
+| 2026-08-06 | MAP-015 cerró el contrato de entidades, disposiciones por jugador, visibilidad, aliases, tags y rastro cronológico de personajes |
+| 2026-08-06 | Cuatro migraciones hacia delante, contratos TypeScript, semillas ficticias y pruebas de integridad quedaron validados localmente; CI, revisión y despliegue remoto siguen pendientes |
