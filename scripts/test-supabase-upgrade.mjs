@@ -47,7 +47,9 @@ function findDatabaseContainer() {
   const runningContainers = result.stdout.split(/\r?\n/u).filter(Boolean);
   if (!runningContainers.includes(DATABASE_CONTAINER)) {
     fail(
-      `Expected running local database container ${DATABASE_CONTAINER}; found ${runningContainers.join(', ') || 'none'}.`,
+      `Expected running local database container ${DATABASE_CONTAINER}; found ${
+        runningContainers.join(', ') || 'none'
+      }.`,
     );
   }
 
