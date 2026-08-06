@@ -22,12 +22,13 @@ import './styles/filters.css';
 import './styles/backend-status.css';
 import './styles/accessibility.css';
 
-const app = document.querySelector<HTMLDivElement>('#app');
+const appElement = document.querySelector<HTMLDivElement>('#app');
 
-if (!app) {
+if (!appElement) {
   throw new Error('No se encontró el elemento raíz de la aplicación.');
 }
 
+const app = appElement;
 app.innerHTML = renderApp();
 
 function mountPublicExperience(catalog: CampaignCatalog): void {
