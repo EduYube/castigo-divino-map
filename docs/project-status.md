@@ -6,7 +6,7 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: MAP-014 está completada e integrada mediante la PR #56. MAP-015 ha cerrado e implementado el contrato de entidades y relaciones, ha corregido los hallazgos bloqueantes de integridad y concurrencia de la revisión técnica y ha superado la CI #164. Sus cinco migraciones hacia delante se han aplicado al proyecto Supabase alojado sin semillas. El historial local y remoto coincide en diez versiones, el lint remoto está limpio y los smoke tests transaccionales de esquema, RLS, autorización, matriz entidad–jugador, protección inversa del rastro de personajes e inmutabilidad terminaron con rollback limpio. Quedan la revisión humana final y la fusión autorizada de la PR #59.
+- Estado general: MAP-013, MAP-014 y MAP-015 están completadas. MAP-015 se integró en `master` mediante la PR #59 y el merge commit `173400ec94d0077797b1138c461446a02bddda77` tras corregir los hallazgos bloqueantes de integridad y concurrencia. Sus cinco migraciones hacia delante están aplicadas al proyecto Supabase alojado sin semillas; el historial local y remoto coincide en diez versiones, el lint remoto está limpio y los smoke tests transaccionales finalizaron con rollback sin residuos. MAP-016 es el trabajo actual.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-06.
 
@@ -81,9 +81,9 @@ Existe exactamente un usuario administrativo real, creado con contraseña y corr
 
 Una segunda prueba remota transaccional confirmó que no quedan privilegios completos de escritura sobre las tablas expuestas, que las columnas gestionadas por el sistema están protegidas, que PostgreSQL fuerza los timestamps editoriales y la identidad y fecha de moderación, que las escrituras administrativas permitidas siguen funcionando, que los bloqueos relacionales están instalados y que el rollback no dejó datos temporales.
 
-## Modelo de entidades preparado en MAP-015
+## Modelo de entidades integrado en MAP-015
 
-La PR #59 contiene:
+MAP-015, integrado mediante la PR #59, contiene:
 
 - ADR 0006 y contrato TypeScript paralelo para el snapshot público de Beta 0.2;
 - cuatro migraciones de expansión, validación del backfill, contracción y refinamiento, más una quinta migración hacia delante de hardening, sin modificar las cinco migraciones aplicadas por MAP-014 ni las cuatro primeras de MAP-015 ya desplegadas;
@@ -119,7 +119,9 @@ La validación local y CI superaron:
 - 13 comprobaciones concurrentes en cuatro escenarios;
 - CI #146 correcta sobre el head de implementación inicial;
 - CI #147 y #148 correctas tras registrar el primer despliegue alojado;
-- CI #164 correcta en `Build, quality and tests` y `Supabase migrations, lint and RLS tests` sobre el head corregido `f0c22c2ebddc302be86b03a1ebfa3845d6f0c067`.
+- CI #164 correcta en `Build, quality and tests` y `Supabase migrations, lint and RLS tests` sobre el head corregido `f0c22c2ebddc302be86b03a1ebfa3845d6f0c067`;
+- CI #165 correcta en ambos jobs sobre el head documental definitivo `4f49994a39a88a164ad1915c32b2be4cdfa5df50`;
+- PR #59 fusionada mediante merge commit autorizado `173400ec94d0077797b1138c461446a02bddda77`.
 
 El despliegue alojado siguió el protocolo acordado:
 
@@ -169,8 +171,8 @@ Orden recomendado de ejecución:
 
 1. MAP-013 — Definir la arquitectura y seguridad de la Beta 0.2. **Completada.**
 2. MAP-014 — Preparar Supabase, migraciones y políticas RLS. **Completada.**
-3. MAP-015 — Evolucionar el modelo de entidades y relaciones. **En revisión final.**
-4. MAP-016 — Implementar acceso público resiliente y estado del backend. **Siguiente tras integrar MAP-015.**
+3. MAP-015 — Evolucionar el modelo de entidades y relaciones. **Completada.**
+4. MAP-016 — Implementar acceso público resiliente y estado del backend. **Trabajo actual.**
 5. MAP-017 — Implementar login y autorización administrativa.
 6. MAP-018 — Crear el CRUD administrativo de categorías, etiquetas y nombres.
 7. MAP-019 — Crear el CRUD de pines con editor visual y previsualización.
@@ -188,13 +190,11 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- Validar la nueva CI documental sobre el head posterior al despliegue final.
-- Revisar el diff definitivo de la PR #59 y confirmar que no existen conversaciones pendientes.
-- Marcar la PR como lista para revisión humana cuando el head definitivo esté verde.
+- Ejecutar MAP-016 — Implementar acceso público resiliente y estado del backend.
 - Mantener inmutables las diez migraciones aplicadas.
 - No ejecutar `seed.sql` contra producción.
 - Mantener la interfaz pública de Beta 0.1 sin cambios hasta la transición planificada en MAP-028.
-- No fusionar la PR sin un punto de control humano explícito.
+- Preservar los contratos de IDs, slugs, coordenadas, URLs, búsqueda, filtros, historial y accesibilidad de Beta 0.1.
 
 ## Acciones manuales para MAP-014
 
@@ -244,6 +244,9 @@ Completadas:
 - Diez versiones locales y remotas alineadas.
 - Lint remoto correcto sin advertencias.
 - Smoke test alojado final correcto para funciones, triggers, matriz, validación inversa de avistamientos y rollback limpio.
+- CI #165 correcta sobre el head documental definitivo.
+- PR #59 fusionada mediante merge commit tras autorización humana explícita.
+- Issue #34 cerrada como completada.
 
 Diferidas hasta que exista una operación que las requiera:
 
@@ -253,11 +256,7 @@ Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, reposi
 
 ## Bloqueos
 
-MAP-015 no tiene bloqueos técnicos conocidos. Permanecen pendientes únicamente:
-
-- CI verde sobre el commit documental final;
-- revisión humana del diff definitivo;
-- autorización explícita para fusionar la PR #59.
+MAP-015 está completada y no mantiene bloqueos abiertos. No hay bloqueos técnicos conocidos para iniciar MAP-016.
 
 ## Riesgos aceptados
 
@@ -280,7 +279,7 @@ MAP-015 no tiene bloqueos técnicos conocidos. Permanecen pendientes únicamente
 
 ## Próximo paso
 
-Validar la CI sobre el commit documental final. Cuando esté verde, revisar el diff definitivo y las conversaciones de la PR #59, marcarla como lista para revisión y solicitar un punto de control humano explícito antes de fusionar. MAP-016 comenzará únicamente después de integrar MAP-015.
+Iniciar MAP-016 — Implementar acceso público resiliente y estado del backend — tomando `master` y la Issue #35 como fuentes de verdad.
 
 ## Últimos cambios
 
@@ -309,3 +308,4 @@ Validar la CI sobre el commit documental final. Cuando esté verde, revisar el d
 | 2026-08-06 | Una quinta migración de MAP-015 añadió locks, backfill, validación inversa, prueba real de upgrade, unión discriminada y cobertura concurrente; CI #164 quedó verde |
 | 2026-08-06 | La migración `20260806085000_harden_entity_matrix_and_character_trail.sql` se aplicó sin semillas, las diez versiones quedaron alineadas y el lint remoto fue correcto |
 | 2026-08-06 | El smoke test alojado final validó funciones, triggers, matriz completa, bloqueo de cambios inválidos en avistamientos relacionados y rollback sin residuos |
+| 2026-08-06 | CI #165 quedó verde; la PR #59 se fusionó mediante merge commit autorizado, la Issue #34 se cerró y MAP-016 pasó a ser el trabajo actual |
