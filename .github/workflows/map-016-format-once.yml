@@ -1,0 +1,154 @@
+name: MAP-016 format and validate once
+
+on:
+  push:
+    branches:
+      - agent/map-016-public-data-resilience
+    paths:
+      - .github/workflows/map-016-format-once.yml
+
+permissions:
+  contents: write
+  actions: write
+  statuses: write
+
+jobs:
+  format-and-dispatch:
+    name: Format MAP-016 and launch definitive CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout MAP-016 branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: agent/map-016-public-data-resilience
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply repository formatting
+        run: npm run format
+
+      - name: Guard the formatting scope
+        shell: bash
+        run: |
+          allowed_files=(
+            ".github/workflows/map-016-format-once.yml"
+            "src/infrastructure/supabase/publicCatalogCodec.test.ts"
+            "src/infrastructure/supabase/publicCatalogCodec.ts"
+            "src/infrastructure/supabase/publicCatalogRepository.test.ts"
+            "src/infrastructure/supabase/publicCatalogRepository.ts"
+          )
+
+          while IFS= read -r changed_file; do
+            allowed=false
+            for allowed_file in "${allowed_files[@]}"; do
+              if [[ "$changed_file" == "$allowed_file" ]]; then
+                allowed=true
+                break
+              fi
+            done
+
+            if [[ "$allowed" != true ]]; then
+              echo "Unexpected file changed by formatting: $changed_file" >&2
+              exit 1
+            fi
+          done < <(git diff --name-only)
+
+      - name: Replace helper commit with formatted source
+        shell: bash
+        run: |
+          rm .github/workflows/map-016-format-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit --amend --no-edit
+          git push --force-with-lease origin HEAD:agent/map-016-public-data-resilience
+
+      - name: Launch definitive CI and publish its status
+        id: definitive-ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          BRANCH: agent/map-016-public-data-resilience
+        shell: bash
+        run: |
+          set -euo pipefail
+          new_sha=$(git rev-parse HEAD)
+          api="https://api.github.com/repos/$REPOSITORY"
+          headers=(
+            -H "Accept: application/vnd.github+json"
+            -H "Authorization: Bearer $GH_TOKEN"
+            -H "X-GitHub-Api-Version: 2022-11-28"
+          )
+
+          curl --fail-with-body --silent --show-error -X POST \
+            "${headers[@]}" \
+            "$api/actions/workflows/ci.yml/dispatches" \
+            -d "{\"ref\":\"$BRANCH\"}"
+
+          run_id=""
+          run_url=""
+          for _ in $(seq 1 60); do
+            response=$(curl --fail-with-body --silent --show-error \
+              "${headers[@]}" \
+              "$api/actions/workflows/ci.yml/runs?branch=$BRANCH&event=workflow_dispatch&per_page=20")
+            run_id=$(jq -r --arg sha "$new_sha" '.workflow_runs[] | select(.head_sha == $sha) | .id' <<<"$response" | head -n 1)
+            run_url=$(jq -r --arg sha "$new_sha" '.workflow_runs[] | select(.head_sha == $sha) | .html_url' <<<"$response" | head -n 1)
+
+            if [[ -n "$run_id" && "$run_id" != "null" ]]; then
+              break
+            fi
+            sleep 2
+          done
+
+          if [[ -z "$run_id" || "$run_id" == "null" ]]; then
+            echo "The definitive CI run could not be located." >&2
+            exit 1
+          fi
+
+          curl --fail-with-body --silent --show-error -X POST \
+            "${headers[@]}" \
+            "$api/statuses/$new_sha" \
+            -d "{\"state\":\"pending\",\"target_url\":\"$run_url\",\"description\":\"Definitive CI is running\",\"context\":\"map-016/definitive-ci\"}" >/dev/null
+
+          conclusion=""
+          for _ in $(seq 1 360); do
+            run=$(curl --fail-with-body --silent --show-error \
+              "${headers[@]}" \
+              "$api/actions/runs/$run_id")
+            status=$(jq -r '.status' <<<"$run")
+            conclusion=$(jq -r '.conclusion // empty' <<<"$run")
+
+            if [[ "$status" == "completed" ]]; then
+              break
+            fi
+            sleep 10
+          done
+
+          if [[ "$conclusion" == "success" ]]; then
+            state=success
+            description="Definitive CI passed"
+          else
+            state=failure
+            description="Definitive CI failed: ${conclusion:-unknown}"
+          fi
+
+          curl --fail-with-body --silent --show-error -X POST \
+            "${headers[@]}" \
+            "$api/statuses/$new_sha" \
+            -d "{\"state\":\"$state\",\"target_url\":\"$run_url\",\"description\":\"$description\",\"context\":\"map-016/definitive-ci\"}" >/dev/null
+
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "run_url=$run_url" >> "$GITHUB_OUTPUT"
+          echo "Definitive CI: $run_url"
+
+          [[ "$conclusion" == "success" ]]
