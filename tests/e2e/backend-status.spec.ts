@@ -8,6 +8,11 @@ const TEST_MAP = `
     <rect width="3600" height="2329" fill="#d9d5ca" />
   </svg>
 `;
+const SUPABASE_CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'apikey',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+} as const;
 
 type BackendMode = 'success' | 'failure';
 
@@ -26,12 +31,27 @@ async function configurePublicDataTest(page: Page): Promise<{ setMode(mode: Back
     await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: TEST_MAP });
   });
   await page.route(SUPABASE_PATTERN, async (route: Route) => {
-    if (mode === 'failure') {
-      await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: SUPABASE_CORS_HEADERS });
       return;
     }
 
-    await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    if (mode === 'failure') {
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        headers: SUPABASE_CORS_HEADERS,
+        body: '{}',
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: SUPABASE_CORS_HEADERS,
+      body: '[]',
+    });
   });
 
   return {
