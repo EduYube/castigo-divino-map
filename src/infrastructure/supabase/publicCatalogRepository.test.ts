@@ -6,8 +6,7 @@ const PROJECT_URL = 'https://map016-test.supabase.co';
 const LOCAL_PROJECT_URL = 'http://127.0.0.1:54321';
 const PUBLISHABLE_KEY = 'sb_publishable_map016_test_key';
 const LEGACY_ANON_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.signature';
-const LEGACY_SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.signature';
+const LEGACY_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.signature';
 
 function jsonResponse(
   value: unknown,
@@ -179,9 +178,9 @@ describe('SupabasePublicCatalogRepository', () => {
         new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } }),
     });
 
-    await expect(
-      repository.load({ signal: new AbortController().signal }),
-    ).rejects.toMatchObject({ code: 'partial-response' });
+    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject({
+      code: 'partial-response',
+    });
   });
 
   test('aborts the rest of the table batch when one table fails', async () => {
@@ -216,9 +215,10 @@ describe('SupabasePublicCatalogRepository', () => {
       },
     });
 
-    await expect(
-      repository.load({ signal: new AbortController().signal }),
-    ).rejects.toMatchObject({ code: 'http-error', status: 503 });
+    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject({
+      code: 'http-error',
+      status: 503,
+    });
     expect(pendingRequests).toBe(11);
     expect(abortedRequests).toBe(11);
   });
@@ -258,9 +258,9 @@ describe('SupabasePublicCatalogRepository', () => {
       },
     });
 
-    await expect(
-      repository.load({ signal: new AbortController().signal }),
-    ).rejects.toMatchObject({ code: 'invalid-response' });
+    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject({
+      code: 'invalid-response',
+    });
   });
 
   test('requires publishable keys for hosted projects but permits the local anon key', () => {
