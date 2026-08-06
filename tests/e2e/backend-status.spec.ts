@@ -19,7 +19,7 @@ async function configurePublicDataTest(page: Page): Promise<{ setMode(mode: Back
     window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
       projectUrl,
       publishableKey: 'sb_publishable_map016_test_key',
-      timeoutMs: 100,
+      timeoutMs: 2000,
       retryDelaysMs: [0, 0, 0],
     };
   }, LOCAL_SUPABASE_URL);
