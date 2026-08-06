@@ -1,14 +1,14 @@
 # Acceso público resiliente y estado del backend
 
 - Issue: MAP-016 / #35
-- Estado: implementado en rama; pendiente de CI, configuración pública y validación humana
+- Estado: implementado en rama; pendiente de CI definitiva, configuración pública y validación humana
 - Contratos relacionados: arquitectura Beta 0.2, modelo de datos Beta 0.2 y compatibilidad Beta 0.1
 
 ## Objetivo
 
 La aplicación carga y valida la proyección pública de Supabase sin depender de ella para arrancar. El atlas conserva un catálogo público compatible con Beta 0.1 cuando Supabase está lento, pausado, mal configurado, sin conexión o devuelve una respuesta inválida.
 
-PostgreSQL y RLS siguen siendo la frontera definitiva para decidir qué filas puede leer un visitante. El navegador aplica además una selección explícita de columnas, filtros `publication_status=eq.published` y validación estructural y relacional antes de aceptar una respuesta.
+PostgreSQL y RLS siguen siendo la frontera definitiva para decidir qué filas puede leer un visitante. El navegador aplica además una selección explícita de columnas, filtros `publication_status=eq.published`, lectura paginada verificable y validación estructural, semántica y relacional antes de aceptar una respuesta.
 
 ## Capas
 
@@ -20,7 +20,7 @@ src/infrastructure/snapshot/
   snapshot empaquetado, catálogo estático de último recurso y caché de sesión
 
 src/infrastructure/supabase/
-  consultas REST públicas, mapeo y validación del contrato Beta 0.2
+  consultas REST públicas, paginación, mapeo y validación del contrato Beta 0.2
 
 src/application/publicCatalogService.ts
   precedencia, timeout, reintentos, cancelación y máquina de estados
@@ -101,6 +101,8 @@ La caducidad es blanda y se fija en 30 días. Un snapshot antiguo continúa sien
 - el catálogo no supera la validación de Beta 0.1;
 - el checksum no coincide.
 
+El catálogo estático incluido en el JavaScript no tiene una fecha de generación demostrable. Cuando se utiliza como último respaldo se marca siempre como `stale` y el indicador no atribuye al contenido la fecha de carga del navegador.
+
 ### Precedencia durante MAP-016
 
 ```text
@@ -109,7 +111,9 @@ snapshot empaquetado válido
   -> shell recuperable sin datos, únicamente si ambos fallan
 ```
 
-La carga del snapshot empaquetado está limitada a dos segundos para que un recurso local bloqueado no retrase indefinidamente el arranque. La última proyección Beta 0.2 válida también se guarda de forma best-effort en `sessionStorage`, con la clave prefijada `castigo-divino-map:public-catalog:v2`. La caché se valida de nuevo al leerla y se elimina si está corrupta.
+La carga del snapshot empaquetado está limitada a dos segundos para que un recurso local bloqueado no retrase indefinidamente el arranque. La última proyección Beta 0.2 válida también se guarda de forma best-effort en `sessionStorage`, con la clave prefijada `castigo-divino-map:public-catalog:v2`.
+
+La caché Beta 0.2 no se acepta mediante una conversión de tipos. Al leerla se reconstruyen las mismas filas públicas y se ejecuta el mismo decodificador usado para Supabase: propiedades permitidas, tipos, formatos, enums, coordenadas, ubicaciones anidadas, unicidad, referencias, tipos de entidad y checksum. Una caché corrupta se elimina y no entra en el estado de la aplicación.
 
 ## Consulta pública de Supabase
 
@@ -121,7 +125,10 @@ Cada consulta:
 - usa `publication_status=eq.published` en las tablas editoriales;
 - aplica un orden determinista;
 - no solicita timestamps internos, estados editoriales, usuarios, solicitudes ni campos administrativos;
-- comparte un `AbortSignal` para cancelar el conjunto completo.
+- se carga por páginas de hasta 1.000 filas mediante `Range` y `Range-Unit: items`;
+- solicita `Prefer: count=exact` y comprueba `Content-Range` en cada página;
+- rechaza totales ausentes, cambiantes, desalineados o incompatibles con las filas recibidas;
+- comparte un `AbortSignal` interno para cancelar el conjunto completo.
 
 Se consultan:
 
@@ -136,13 +143,15 @@ Se consultan:
 - nombres geográficos y aliases;
 - acontecimientos de localización.
 
-La respuesta solo se acepta cuando todas las colecciones son válidas y sus referencias forman un catálogo completo. No se mezclan filas parciales con el snapshot.
+La respuesta solo se acepta cuando se ha confirmado el total de cada tabla, se han recibido todas sus páginas y todas las colecciones forman un catálogo válido. No se mezclan páginas, filas o tablas parciales con el snapshot.
+
+Si una de las doce consultas falla, el repositorio aborta inmediatamente las demás consultas pendientes del mismo intento antes de propagar el error. Un reintento no comienza con solicitudes huérfanas del intento anterior.
 
 ## Estados
 
 ### `connected`
 
-Supabase ha respondido dentro del límite y la proyección completa supera validación estructural, de tipos, coordenadas, referencias y checksum.
+Supabase ha respondido dentro del límite, se ha confirmado la completitud de todas las tablas y la proyección supera validación estructural, de tipos, coordenadas, unicidad, referencias semánticas y checksum.
 
 Durante la compatibilidad Beta 0.1, el origen visible sigue siendo el snapshot aunque el origen remoto figure como `supabase`.
 
@@ -156,6 +165,7 @@ El navegador parece conectado, pero ocurre alguno de estos casos:
 - HTTP no satisfactorio;
 - rate limiting;
 - JSON inválido;
+- paginación o recuento no verificable;
 - colección o relación inválida;
 - contrato no soportado.
 
@@ -173,6 +183,7 @@ El atlas continúa con el snapshot o el catálogo estático.
 - retrasos base: 0, 2 y 5 segundos;
 - jitter acotado: entre el 80 % y el 120 %;
 - una nueva actualización cancela la anterior;
+- un fallo de tabla cancela las demás peticiones del lote actual;
 - una respuesta obsoleta no puede publicar estado;
 - no se reintentan automáticamente errores permanentes de configuración o validación;
 - se reintentan fallos de red, timeout, 408, 429 y 5xx.
@@ -207,6 +218,8 @@ Textos públicos:
 - `Sin conexión. Se muestra contenido guardado del …`
 - `No se pudo cargar el contenido público. Reintenta la conexión.`
 
+Cuando el origen es el catálogo estático de último recurso se omite la fecha porque su antigüedad no puede deducirse del momento en que el navegador lo cargó.
+
 ## Observabilidad segura
 
 MAP-016 no incorpora telemetría externa.
@@ -233,6 +246,10 @@ VITE_SUPABASE_PUBLISHABLE_KEY
 
 El workflow de Pages debe recibirlas desde GitHub Actions Variables, no desde secrets privilegiados ni valores versionados. Una build sin variables sigue siendo válida y arranca en `degraded` con snapshot.
 
+Un proyecto alojado requiere una clave con prefijo `sb_publishable_`. El navegador no admite una clave `anon` JWT legacy para una URL `https://…supabase.co`, lo que mantiene coherencia con la auditoría del artefacto de producción.
+
+La CLI local de Supabase todavía entrega una clave `anon` legacy. Solo en desarrollo, con una URL `http://localhost` o `http://127.0.0.1`, se acepta ese formato después de decodificar el payload y comprobar que el rol sea exactamente `anon`. Una clave local con rol `service_role` se rechaza.
+
 Quedan prohibidos:
 
 - `sb_secret_...`;
@@ -246,10 +263,17 @@ Quedan prohibidos:
 
 La cobertura añadida incluye:
 
-- checksum, caducidad blanda y manipulación del snapshot;
+- checksum, caducidad blanda, manipulación del snapshot y frescura desconocida del respaldo estático;
 - carga remota completa con cabecera `apikey` y sin `Authorization`;
+- paginación de una tabla con más de 1.000 filas y comprobación de `Content-Range`;
+- rechazo de respuestas `200` cuya completitud no puede verificarse;
+- cancelación de las otras once consultas cuando una tabla falla;
 - filtros explícitos de publicación;
 - errores HTTP y filas inválidas;
+- decodificación común de respuestas remotas y caché Beta 0.2;
+- rechazo de ID duplicados, coordenadas fuera de rango, enums y campos anidados inválidos;
+- rechazo de acontecimientos cuyos personajes o ubicaciones apuntan al tipo de entidad incorrecto;
+- política diferenciada entre claves publishable alojadas y clave anon local;
 - estados conectado, degradado y offline;
 - timeout local y remoto y ausencia de reintentos para errores permanentes;
 - recuperación e indisponibilidad en Playwright;
@@ -264,7 +288,11 @@ Resultado esperado: `degraded`, snapshot visible y botón **Reintentar**. No es 
 
 ### Supabase pausado o inaccesible
 
-Resultado esperado: tres intentos acotados, `degraded` y snapshot visible.
+Resultado esperado: tres intentos acotados, cancelación de cada lote fallido, `degraded` y snapshot visible.
+
+### Respuesta truncada o sin recuento verificable
+
+Resultado esperado: rechazo como `partial-response`, estado `degraded` y snapshot visible. Nunca se publica `connected` a partir de una colección cuya completitud no se haya confirmado.
 
 ### Navegador offline
 
@@ -272,7 +300,7 @@ Resultado esperado: `offline`, sin consulta remota nueva y snapshot visible.
 
 ### Snapshot inválido
 
-Resultado esperado: rechazo del snapshot, uso del catálogo estático validado y error recuperable registrado en el resultado.
+Resultado esperado: rechazo del snapshot, uso del catálogo estático validado y error recuperable registrado en el resultado. El respaldo estático se marca como antiguo y no muestra una fecha de contenido inventada.
 
 ### Supabase recuperado
 
