@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest';
 
-import { PublicDataRepositoryError } from '../../data-access/publicCatalog';
 import { SupabasePublicCatalogRepository } from './publicCatalogRepository';
 
 const PROJECT_URL = 'https://map016-test.supabase.co';
@@ -64,9 +63,7 @@ describe('SupabasePublicCatalogRepository', () => {
       fetchImplementation: async () => new Response('sensitive body', { status: 503 }),
     });
 
-    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject<
-      Partial<PublicDataRepositoryError>
-    >({
+    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject({
       code: 'http-error',
       status: 503,
     });
@@ -94,8 +91,8 @@ describe('SupabasePublicCatalogRepository', () => {
       },
     });
 
-    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject<
-      Partial<PublicDataRepositoryError>
-    >({ code: 'invalid-response' });
+    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject({
+      code: 'invalid-response',
+    });
   });
 });
