@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
@@ -12,8 +12,14 @@ const TEST_MAP = `
 
 type BackendMode = 'success' | 'failure';
 
-async function configurePublicDataTest(page: Page): Promise<{ setMode(mode: BackendMode): void }> {
+interface PublicDataTestBackend {
+  setMode(mode: BackendMode): void;
+  getRequestCount(): number;
+}
+
+async function configurePublicDataTest(page: Page): Promise<PublicDataTestBackend> {
   let mode: BackendMode = 'success';
+  let requestCount = 0;
 
   await page.addInitScript((projectUrl) => {
     window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
@@ -27,6 +33,8 @@ async function configurePublicDataTest(page: Page): Promise<{ setMode(mode: Back
     await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: TEST_MAP });
   });
   await page.route(SUPABASE_PATTERN, async (route: Route) => {
+    requestCount += 1;
+
     if (mode === 'failure') {
       await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
       return;
@@ -39,7 +47,26 @@ async function configurePublicDataTest(page: Page): Promise<{ setMode(mode: Back
     setMode(nextMode: BackendMode): void {
       mode = nextMode;
     },
+    getRequestCount(): number {
+      return requestCount;
+    },
   };
+}
+
+async function expectConnected(status: Locator, backend: PublicDataTestBackend): Promise<void> {
+  await expect
+    .poll(async () => ({
+      state: await status.getAttribute('data-backend-state'),
+      reason: await status.getAttribute('data-backend-reason'),
+      attempt: await status.getAttribute('data-backend-attempt'),
+      requests: backend.getRequestCount(),
+    }))
+    .toEqual({
+      state: 'connected',
+      reason: 'none',
+      attempt: '1',
+      requests: 12,
+    });
 }
 
 test('falls back and recovers without changing search, filters, selection or URL', async ({
@@ -57,7 +84,7 @@ test('falls back and recovers without changing search, filters, selection or URL
   const tag = page.getByRole('checkbox', { name: /Paso de montaña/ });
   const originalUrl = page.url();
 
-  await expect(status).toHaveAttribute('data-backend-state', 'connected');
+  await expectConnected(status, backend);
   await expect(status).toContainText('Servicio de datos conectado');
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
   await expect(details).toHaveAttribute('data-active-place-id', 'place-demo-pass');
@@ -82,6 +109,7 @@ test('falls back and recovers without changing search, filters, selection or URL
   await status.getByRole('button', { name: 'Reintentar' }).click();
 
   await expect(status).toHaveAttribute('data-backend-state', 'connected');
+  await expect(status).toHaveAttribute('data-backend-reason', 'none');
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
   await expect(details).toHaveAttribute('data-active-place-id', 'place-demo-pass');
   expect(page.url()).toBe(originalUrl);
@@ -91,16 +119,17 @@ test('announces offline mode textually and keeps the snapshot usable', async ({
   page,
   context,
 }) => {
-  await configurePublicDataTest(page);
+  const backend = await configurePublicDataTest(page);
   await page.goto('/');
 
   const status = page.locator('[data-backend-status]');
-  await expect(status).toHaveAttribute('data-backend-state', 'connected');
+  await expectConnected(status, backend);
 
   await context.setOffline(true);
   await page.evaluate(() => window.dispatchEvent(new Event('offline')));
 
   await expect(status).toHaveAttribute('data-backend-state', 'offline');
+  await expect(status).toHaveAttribute('data-backend-reason', 'network-unavailable');
   await expect(status).toContainText('Sin conexión');
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
   await expect(status.getByRole('button', { name: 'Reintentar' })).toBeVisible();
