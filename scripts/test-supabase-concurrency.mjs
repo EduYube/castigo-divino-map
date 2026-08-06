@@ -159,14 +159,14 @@ function runPsql(containerName, sql) {
   return result.stdout.trim();
 }
 
-async function waitForDatabaseLock(containerName, queryMarker, withdrawalSession) {
+async function waitForDatabaseLock(containerName, queryMarker, blockedSession) {
   const escapedMarker = queryMarker.replaceAll("'", "''");
   const deadline = Date.now() + LOCK_TIMEOUT_MS;
 
   while (Date.now() < deadline) {
-    if (withdrawalSession.exited) {
+    if (blockedSession.exited) {
       fail(
-        `Withdrawal session exited before waiting on a lock: ${withdrawalSession.output || 'no output'}`,
+        `Blocked session exited before waiting on a lock: ${blockedSession.output || 'no output'}`,
       );
     }
 
@@ -187,7 +187,7 @@ async function waitForDatabaseLock(containerName, queryMarker, withdrawalSession
     await delay(25);
   }
 
-  fail(`Timed out waiting for the withdrawal query ${queryMarker} to block.`);
+  fail(`Timed out waiting for query ${queryMarker} to block.`);
 }
 
 function stopSession(session) {
@@ -196,7 +196,7 @@ function stopSession(session) {
   }
 }
 
-async function verifyScenario(containerName, scenario) {
+async function verifyWithdrawalScenario(containerName, scenario) {
   let publisher;
   let withdrawer;
 
@@ -253,9 +253,240 @@ async function verifyScenario(containerName, scenario) {
   }
 }
 
+async function verifyEntityPlayerMatrixScenario(containerName) {
+  const entityId = 'entity-concurrency-matrix-location';
+  const playerId = 'player-concurrency-matrix';
+  let entitySession;
+  let playerSession;
+
+  runPsql(
+    containerName,
+    `delete from public.players where id = '${playerId}';
+     delete from public.map_entities where id = '${entityId}';`,
+  );
+
+  try {
+    entitySession = startPsqlSession(containerName);
+    entitySession.child.stdin.write(
+      `begin;
+       insert into public.map_entities (
+         id, slug, entity_type, name, x, y, category_id
+       ) values (
+         '${entityId}',
+         'concurrency-matrix-location',
+         'location',
+         'Concurrency Matrix Location',
+         2100,
+         1300,
+         'category-places'
+       );
+       \\echo MAP015_MATRIX_ENTITY_LOCKED
+`,
+    );
+    await waitForMarker(entitySession, 'MAP015_MATRIX_ENTITY_LOCKED');
+
+    playerSession = startPsqlSession(containerName);
+    playerSession.child.stdin.write(
+      `begin;
+       \\echo MAP015_MATRIX_PLAYER_STARTED
+       insert into public.players /* map015-matrix-player */ (
+         id, slug, display_name
+       ) values (
+         '${playerId}',
+         'concurrency-matrix',
+         'Concurrency Matrix Player'
+       );
+       commit;
+       \\q
+`,
+    );
+    playerSession.child.stdin.end();
+
+    await waitForMarker(playerSession, 'MAP015_MATRIX_PLAYER_STARTED');
+    await waitForDatabaseLock(containerName, '/* map015-matrix-player */', playerSession);
+    console.log('ok - concurrent player insertion waits for the shared matrix lock');
+
+    entitySession.child.stdin.end('commit;\n\\q\n');
+    const entityExit = await waitForExit(entitySession, 'matrix entity commit');
+    if (entityExit.code !== 0) {
+      fail(`Matrix entity insertion failed: ${entitySession.output || 'no output'}`);
+    }
+
+    const playerExit = await waitForExit(playerSession, 'matrix player commit');
+    if (playerExit.code !== 0) {
+      fail(`Matrix player insertion failed: ${playerSession.output || 'no output'}`);
+    }
+    console.log('ok - both concurrent matrix endpoints commit successfully');
+
+    const pairCount = runPsql(
+      containerName,
+      `select count(*)
+       from public.entity_player_dispositions
+       where entity_id = '${entityId}'
+         and player_id = '${playerId}';`,
+    );
+
+    if (pairCount !== '1') {
+      fail(`Concurrent matrix intersection count is ${pairCount || 'empty'}, expected 1.`);
+    }
+    console.log('ok - concurrent entity and player inserts create their matrix intersection');
+  } finally {
+    stopSession(playerSession);
+    if (entitySession && !entitySession.exited) {
+      entitySession.child.stdin.end('rollback;\n\\q\n');
+      await Promise.race([entitySession.exit, delay(1_000)]);
+      stopSession(entitySession);
+    }
+
+    runPsql(
+      containerName,
+      `delete from public.players where id = '${playerId}';
+       delete from public.map_entities where id = '${entityId}';`,
+    );
+  }
+}
+
+async function verifyRelatedSightingScenario(containerName) {
+  const sightingId = 'location-event-concurrency-sighting';
+  const departureId = 'location-event-concurrency-departure';
+  let departureSession;
+  let sightingUpdateSession;
+
+  runPsql(
+    containerName,
+    `delete from public.character_location_events
+     where id in ('${departureId}', '${sightingId}');
+
+     insert into public.character_location_events (
+       id,
+       character_id,
+       event_type,
+       x,
+       y,
+       location_label,
+       observed_at
+     ) values (
+       '${sightingId}',
+       'entity-aster-guide',
+       'sighting',
+       1800,
+       1100,
+       'Concurrency sighting',
+       '2026-02-10T10:00:00Z'
+     );`,
+  );
+
+  try {
+    departureSession = startPsqlSession(containerName);
+    departureSession.child.stdin.write(
+      `begin;
+       insert into public.character_location_events (
+         id,
+         character_id,
+         event_type,
+         x,
+         y,
+         location_label,
+         observed_at,
+         related_sighting_id
+       ) values (
+         '${departureId}',
+         'entity-aster-guide',
+         'departure',
+         1800,
+         1100,
+         'Concurrency departure',
+         '2026-02-11T10:00:00Z',
+         '${sightingId}'
+       );
+       \\echo MAP015_SIGHTING_LOCKED
+`,
+    );
+    await waitForMarker(departureSession, 'MAP015_SIGHTING_LOCKED');
+
+    sightingUpdateSession = startPsqlSession(containerName);
+    sightingUpdateSession.child.stdin.write(
+      `\\echo MAP015_SIGHTING_UPDATE_STARTED
+       update public.character_location_events /* map015-sighting-update */
+       set observed_at = '2026-02-12T10:00:00Z'
+       where id = '${sightingId}';
+       \\q
+`,
+    );
+    sightingUpdateSession.child.stdin.end();
+
+    await waitForMarker(sightingUpdateSession, 'MAP015_SIGHTING_UPDATE_STARTED');
+    await waitForDatabaseLock(
+      containerName,
+      '/* map015-sighting-update */',
+      sightingUpdateSession,
+    );
+    console.log('ok - sighting mutation waits while a related departure is being created');
+
+    departureSession.child.stdin.end('commit;\n\\q\n');
+    const departureExit = await waitForExit(departureSession, 'related departure commit');
+    if (departureExit.code !== 0) {
+      fail(`Related departure insertion failed: ${departureSession.output || 'no output'}`);
+    }
+
+    const updateExit = await waitForExit(sightingUpdateSession, 'rejected sighting mutation');
+    if (updateExit.code === 0) {
+      fail('Concurrent sighting mutation unexpectedly succeeded.');
+    }
+
+    if (!sightingUpdateSession.output.includes('a departure cannot precede its related sighting')) {
+      fail(
+        `Concurrent sighting mutation failed for an unexpected reason: ${sightingUpdateSession.output || 'no output'}`,
+      );
+    }
+    console.log('ok - sighting mutation rechecks dependent departures after waiting');
+
+    const observedAt = runPsql(
+      containerName,
+      `select to_char(
+         observed_at at time zone 'UTC',
+         'YYYY-MM-DD"T"HH24:MI:SS"Z"'
+       )
+       from public.character_location_events
+       where id = '${sightingId}';`,
+    );
+
+    if (observedAt !== '2026-02-10T10:00:00Z') {
+      fail(`Referenced sighting moved to ${observedAt || 'empty'} after the rejected update.`);
+    }
+    console.log('ok - referenced sighting chronology remains unchanged');
+
+    const departureCount = runPsql(
+      containerName,
+      `select count(*)
+       from public.character_location_events
+       where id = '${departureId}'
+         and related_sighting_id = '${sightingId}';`,
+    );
+
+    if (departureCount !== '1') {
+      fail(`Committed related departure count is ${departureCount || 'empty'}, expected 1.`);
+    }
+    console.log('ok - the committed departure retains its valid sighting relation');
+  } finally {
+    stopSession(sightingUpdateSession);
+    if (departureSession && !departureSession.exited) {
+      departureSession.child.stdin.end('rollback;\n\\q\n');
+      await Promise.race([departureSession.exit, delay(1_000)]);
+      stopSession(departureSession);
+    }
+
+    runPsql(
+      containerName,
+      `delete from public.character_location_events
+       where id in ('${departureId}', '${sightingId}');`,
+    );
+  }
+}
+
 const containerName = findDatabaseContainer();
 
-await verifyScenario(containerName, {
+await verifyWithdrawalScenario(containerName, {
   subject: 'category',
   lockMarker: 'MAP014_CATEGORY_LOCKED',
   withdrawalMarker: 'MAP014_CATEGORY_WITHDRAWAL_STARTED',
@@ -272,7 +503,7 @@ await verifyScenario(containerName, {
     where id = 'category-people';`,
 });
 
-await verifyScenario(containerName, {
+await verifyWithdrawalScenario(containerName, {
   subject: 'tag',
   lockMarker: 'MAP014_TAG_LOCKED',
   withdrawalMarker: 'MAP014_TAG_WITHDRAWAL_STARTED',
@@ -289,4 +520,7 @@ await verifyScenario(containerName, {
     where id = 'notable';`,
 });
 
-console.log('Supabase concurrency verification passed: 6 checks across 2 scenarios.');
+await verifyEntityPlayerMatrixScenario(containerName);
+await verifyRelatedSightingScenario(containerName);
+
+console.log('Supabase concurrency verification passed: 13 checks across 4 scenarios.');
