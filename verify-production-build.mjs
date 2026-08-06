@@ -1,7 +1,9 @@
+import { createHash } from 'node:crypto';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { extname, join, relative, sep } from 'node:path';
 
 const DIST_DIRECTORY = 'dist';
+const PUBLIC_SNAPSHOT_PATH = 'data/public-catalog.snapshot.json';
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const TEXT_EXTENSIONS = new Set(['.css', '.html', '.js', '.json', '.map', '.svg', '.txt', '.xml']);
@@ -33,6 +35,26 @@ const SECRET_PATTERNS = [
 
 function fail(message) {
   throw new Error(`Production build verification failed: ${message}`);
+}
+
+function canonicalize(value) {
+  if (Array.isArray(value)) {
+    return value.map(canonicalize);
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entryValue]) => [key, canonicalize(entryValue)]),
+    );
+  }
+
+  return value;
+}
+
+function checksum(value) {
+  return `sha256:${createHash('sha256').update(JSON.stringify(canonicalize(value))).digest('hex')}`;
 }
 
 function getRepositoryName() {
@@ -91,6 +113,10 @@ if (stylesheetFiles.length === 0) {
   fail('no generated CSS asset was found');
 }
 
+if (!publicPaths.includes(PUBLIC_SNAPSHOT_PATH)) {
+  fail(`the bundled public snapshot is missing: ${PUBLIC_SNAPSHOT_PATH}`);
+}
+
 for (const publicPath of publicPaths) {
   const extension = extname(publicPath).toLowerCase();
 
@@ -124,6 +150,39 @@ for (const reference of generatedReferences) {
   }
 }
 
+const snapshotFilePath = join(DIST_DIRECTORY, PUBLIC_SNAPSHOT_PATH);
+let snapshot;
+
+try {
+  snapshot = JSON.parse(await readFile(snapshotFilePath, 'utf8'));
+} catch {
+  fail('the bundled public snapshot does not contain valid JSON');
+}
+
+if (snapshot.schemaVersion !== 1 || snapshot.contract !== 'beta01') {
+  fail('the bundled public snapshot uses an unsupported compatibility contract');
+}
+
+if (!snapshot.generatedAt || !Number.isFinite(Date.parse(snapshot.generatedAt))) {
+  fail('the bundled public snapshot has an invalid generatedAt value');
+}
+
+if (typeof snapshot.sourceRevision !== 'string' || !snapshot.sourceRevision.startsWith('sha256:')) {
+  fail('the bundled public snapshot has an invalid sourceRevision');
+}
+
+const expectedSnapshotChecksum = checksum({
+  schemaVersion: snapshot.schemaVersion,
+  contract: snapshot.contract,
+  generatedAt: snapshot.generatedAt,
+  sourceRevision: snapshot.sourceRevision,
+  catalog: snapshot.catalog,
+});
+
+if (snapshot.checksum !== expectedSnapshotChecksum) {
+  fail('the bundled public snapshot checksum does not match its content');
+}
+
 let textualBundle = '';
 
 for (const filePath of files) {
@@ -145,5 +204,5 @@ for (const pattern of SECRET_PATTERNS) {
 }
 
 console.log(
-  `Verified ${publicPaths.length} production files for ${expectedBase}: index, JavaScript, CSS, remote map reference, no raster map copy and no known or privileged Supabase credential patterns.`,
+  `Verified ${publicPaths.length} production files for ${expectedBase}: index, JavaScript, CSS, public snapshot, remote map reference, no raster map copy and no known or privileged Supabase credential patterns.`,
 );
