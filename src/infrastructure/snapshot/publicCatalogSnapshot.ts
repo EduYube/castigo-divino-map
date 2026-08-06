@@ -132,7 +132,7 @@ export class BundledPublicCatalogRepository implements PublicCatalogRepository {
 
   constructor(options: SnapshotRepositoryOptions) {
     this.#url = options.url;
-    this.#fetchImplementation = options.fetchImplementation ?? fetch;
+    this.#fetchImplementation = options.fetchImplementation ?? globalThis.fetch.bind(globalThis);
     this.#now = options.now ?? Date.now;
   }
 
