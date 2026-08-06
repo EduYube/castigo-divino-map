@@ -37,8 +37,8 @@ describe('campaign data validation', () => {
           campaignCatalog.places[0],
           {
             ...campaignCatalog.places[1],
-            id: campaignCatalog.places[0].id,
-            slug: campaignCatalog.places[0].slug,
+            id: campaignCatalog.places[0]!.id,
+            slug: campaignCatalog.places[0]!.slug,
           },
         ],
       },
@@ -51,7 +51,7 @@ describe('campaign data validation', () => {
           campaignCatalog.places[0],
           {
             ...campaignCatalog.places[1],
-            slug: campaignCatalog.places[0].slug,
+            slug: campaignCatalog.places[0]!.slug,
           },
         ],
       },
