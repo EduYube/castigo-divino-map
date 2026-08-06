@@ -68,6 +68,8 @@ export function mountBackendStatus(root: ParentNode = document): BackendStatusCo
 
   container.dataset.backendStatus = 'checking';
   container.dataset.backendState = 'checking';
+  container.dataset.backendReason = 'none';
+  container.dataset.backendAttempt = '0';
   container.setAttribute('role', 'status');
   container.setAttribute('aria-live', 'polite');
   container.setAttribute('aria-atomic', 'true');
@@ -86,6 +88,8 @@ export function mountBackendStatus(root: ParentNode = document): BackendStatusCo
   return {
     setChecking(): void {
       container.dataset.backendState = 'checking';
+      container.dataset.backendReason = 'none';
+      container.dataset.backendAttempt = '0';
       container.setAttribute('role', 'status');
       container.setAttribute('aria-busy', 'true');
       symbol.textContent = '◌';
@@ -95,6 +99,8 @@ export function mountBackendStatus(root: ParentNode = document): BackendStatusCo
     update(result: PublicCatalogLoadResult): void {
       const isUnavailable = result.availability === 'unavailable';
       container.dataset.backendState = result.backend.state;
+      container.dataset.backendReason = result.backend.reason ?? 'none';
+      container.dataset.backendAttempt = String(result.backend.attempt);
       container.dataset.dataSource = result.source ?? 'none';
       container.dataset.remoteSource = result.remoteSource ?? 'none';
       container.setAttribute('role', isUnavailable ? 'alert' : 'status');
