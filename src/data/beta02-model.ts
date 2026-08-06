@@ -115,16 +115,24 @@ export type CharacterEventLocation =
       readonly coordinates: PublicCoordinate;
     });
 
-export interface PublicCharacterLocationEvent {
+interface PublicCharacterLocationEventBase {
   readonly id: CharacterLocationEventId;
   readonly characterId: EntityId;
-  readonly eventType: CharacterLocationEventType;
   readonly location: CharacterEventLocation;
   readonly summary: string;
   readonly language: LanguageCode;
   readonly observedAt: string | null;
-  readonly relatedSightingId: CharacterLocationEventId | null;
 }
+
+export type PublicCharacterLocationEvent =
+  | (PublicCharacterLocationEventBase & {
+      readonly eventType: 'sighting';
+      readonly relatedSightingId: null;
+    })
+  | (PublicCharacterLocationEventBase & {
+      readonly eventType: 'departure';
+      readonly relatedSightingId: CharacterLocationEventId | null;
+    });
 
 export interface PublicCatalogSnapshotV2 {
   readonly schemaVersion: 2;
