@@ -2,7 +2,6 @@ import { readFile } from 'node:fs/promises';
 
 import { describe, expect, test } from 'vitest';
 
-import { PublicDataRepositoryError } from '../../data-access/publicCatalog';
 import { parsePublicCatalogSnapshotV1, PUBLIC_SNAPSHOT_MAX_AGE_MS } from './publicCatalogSnapshot';
 
 const SNAPSHOT_URL = new URL('../../../public/data/public-catalog.snapshot.json', import.meta.url);
@@ -29,9 +28,9 @@ describe('public catalog snapshot', () => {
     const catalog = snapshot.catalog as { places: { name: string }[] };
     catalog.places[0]!.name = 'Contenido manipulado';
 
-    await expect(parsePublicCatalogSnapshotV1(snapshot)).rejects.toMatchObject<
-      Partial<PublicDataRepositoryError>
-    >({ code: 'checksum-mismatch' });
+    await expect(parsePublicCatalogSnapshotV1(snapshot)).rejects.toMatchObject({
+      code: 'checksum-mismatch',
+    });
   });
 
   test('keeps an old valid snapshot usable and marks it stale', async () => {
