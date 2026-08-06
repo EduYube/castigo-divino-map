@@ -1,13 +1,11 @@
 name: MAP-016 format and validate once
 
 on:
-  pull_request:
+  push:
     branches:
       - agent/map-016-public-data-resilience
-    types:
-      - opened
     paths:
-      - .github/map-016-format-trigger.txt
+      - .github/workflows/map-016-format-once.yml
 
 permissions:
   contents: write
@@ -76,7 +74,6 @@ jobs:
           git push --force-with-lease origin HEAD:agent/map-016-public-data-resilience
 
       - name: Launch definitive CI and publish its status
-        id: definitive-ci
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
@@ -149,8 +146,5 @@ jobs:
             "$api/statuses/$new_sha" \
             -d "{\"state\":\"$state\",\"target_url\":\"$run_url\",\"description\":\"$description\",\"context\":\"map-016/definitive-ci\"}" >/dev/null
 
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "run_url=$run_url" >> "$GITHUB_OUTPUT"
           echo "Definitive CI: $run_url"
-
           [[ "$conclusion" == "success" ]]
