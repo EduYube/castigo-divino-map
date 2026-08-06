@@ -126,6 +126,7 @@ test('announces offline mode textually and keeps the snapshot usable', async ({
   await expect(status.getByRole('button', { name: 'Reintentar' })).toBeVisible();
 
   await context.setOffline(false);
-  await status.getByRole('button', { name: 'Reintentar' }).click();
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(status).toHaveAttribute('data-backend-state', 'connected');
+  await expect(status).toHaveAttribute('data-backend-reason', 'none');
 });
