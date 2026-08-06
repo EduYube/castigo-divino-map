@@ -190,7 +190,8 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
     const publishableKey = options.publishableKey.trim();
     const isLocalProject = LOCAL_PROJECT_URL_PATTERN.test(projectUrl);
     const validProjectUrl =
-      PROJECT_URL_PATTERN.test(projectUrl) || (options.allowLocalProject === true && isLocalProject);
+      PROJECT_URL_PATTERN.test(projectUrl) ||
+      (options.allowLocalProject === true && isLocalProject);
     const validPublishableKey = PUBLISHABLE_KEY_PATTERN.test(publishableKey);
     const validLocalAnonKey =
       options.allowLocalProject === true && isLocalProject && isLegacyAnonKey(publishableKey);
@@ -318,7 +319,9 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
         contentRange.start !== offset ||
         contentRange.end !== offset + pageRows.length - 1
       ) {
-        partialResponse(`Supabase devolvió una página incompleta o desalineada para ${query.name}.`);
+        partialResponse(
+          `Supabase devolvió una página incompleta o desalineada para ${query.name}.`,
+        );
       }
 
       rows.push(...pageRows);
