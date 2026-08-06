@@ -2,10 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import type { PublicCatalogSnapshotV2 } from '../../data/beta02-model';
 import { createSha256Checksum } from '../../data-access/publicCatalog';
-import {
-  buildPublicCatalogEnvelopeV2,
-  parsePublicCatalogSnapshotV2,
-} from './publicCatalogCodec';
+import { buildPublicCatalogEnvelopeV2, parsePublicCatalogSnapshotV2 } from './publicCatalogCodec';
 import type { PublicCatalogTablePayloads } from './publicCatalogRows';
 
 interface MutableSnapshotShape extends Record<string, unknown> {
@@ -140,9 +137,8 @@ function validPayloads(): PublicCatalogTablePayloads {
 }
 
 async function validSnapshot(): Promise<PublicCatalogSnapshotV2> {
-  const envelope = await buildPublicCatalogEnvelopeV2(
-    validPayloads(),
-    () => Date.parse('2026-08-06T00:00:00.000Z'),
+  const envelope = await buildPublicCatalogEnvelopeV2(validPayloads(), () =>
+    Date.parse('2026-08-06T00:00:00.000Z'),
   );
 
   if (envelope.data.contract !== 'beta02') {
