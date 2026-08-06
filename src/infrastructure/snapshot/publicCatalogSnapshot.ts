@@ -223,7 +223,7 @@ export class StaticPublicCatalogRepository implements PublicCatalogRepository {
         loadedAt,
         sourceRevision: this.#sourceRevision,
         checksum,
-        stale: false,
+        stale: true,
       },
     };
   }
