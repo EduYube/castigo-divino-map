@@ -6,9 +6,9 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: MAP-013, MAP-014 y MAP-015 están completadas. MAP-015 se integró en `master` mediante la PR #59 y el merge commit `173400ec94d0077797b1138c461446a02bddda77` tras corregir los hallazgos bloqueantes de integridad y concurrencia. Sus cinco migraciones hacia delante están aplicadas al proyecto Supabase alojado sin semillas; el historial local y remoto coincide en diez versiones, el lint remoto está limpio y los smoke tests transaccionales finalizaron con rollback sin residuos. MAP-016 es el trabajo actual.
+- Estado general: MAP-013 a MAP-016 están completadas. MAP-016 se integró en `master` mediante la PR #60 y el merge commit `a72a89c1a18f1dff9acabe7a5806dffda58d4703`. La CI definitiva `31128893212` validó formato, seguridad, lint, unitarias, build, artefacto de Pages, Playwright, smoke test, migraciones, lint SQL y RLS. No se aplicaron migraciones, semillas ni cambios de configuración al Supabase alojado durante MAP-016. MAP-017 es el trabajo actual.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
-- Última actualización: 2026-08-06.
+- Última actualización: 2026-08-07.
 
 ## Beta 0.1
 
@@ -139,6 +139,35 @@ El despliegue alojado siguió el protocolo acordado:
 
 Las diez migraciones aplicadas se consideran inmutables. Cualquier corrección futura deberá añadirse mediante una nueva migración hacia delante.
 
+## Acceso público resiliente integrado en MAP-016
+
+MAP-016, integrada mediante la PR #60, contiene:
+
+- un puerto de acceso a datos público independiente de Leaflet y de la presentación;
+- un repositorio Supabase que usa exclusivamente la URL y la clave publicable permitida;
+- lectura explícita de contenido publicado y proyección pública sin borradores, archivados ni datos administrativos;
+- paginación estable de todas las tablas mediante `Range`, `Prefer: count=exact` y verificación estricta de `Content-Range`;
+- rechazo de respuestas parciales o no verificables antes de declarar el backend conectado;
+- cancelación del resto de peticiones del lote cuando una tabla falla;
+- timeout, reintentos acotados y normalización de errores sin exponer cuerpos de respuesta;
+- caché de sesión Beta 0.2 validada estructural, semántica y relacionalmente, con comprobación de unicidad y checksum;
+- snapshot público Beta 0.1 versionado, validado y auditado como respaldo;
+- estados accesibles `connected`, `degraded` y `offline`, sin depender únicamente del color;
+- continuidad del mapa, búsqueda, filtros, selección, fichas, URLs e historial cuando Supabase está lento, pausado o no disponible;
+- respaldo estático marcado como antiguo y sin fecha de frescura inventada;
+- claves `sb_publishable_...` obligatorias para proyectos alojados y compatibilidad con clave `anon` legacy solo en Supabase local con rol `anon` verificado;
+- pruebas unitarias y e2e de carga correcta, caché, timeout, reintentos, paginación por encima de mil filas, respuestas parciales, cancelación, errores de red y estados visibles.
+
+La CI definitiva `31128893212` quedó verde sobre el head `31d7b0277d2136b2b1a5332db32f4c21a265f916` y validó:
+
+- formato y auditoría de credenciales;
+- lint y pruebas unitarias;
+- build de Pages y auditoría del artefacto;
+- Playwright y smoke test del build;
+- reconstrucción, migraciones, lint SQL y pruebas RLS de Supabase local.
+
+La PR #60 se fusionó mediante el merge commit autorizado `a72a89c1a18f1dff9acabe7a5806dffda58d4703`. La Issue #35 se cerró como completada. MAP-016 no añadió migraciones ni ejecutó semillas o cambios de configuración contra el proyecto Supabase alojado.
+
 ## Objetivo de Beta 0.2
 
 Añadir persistencia y administración segura sin perder ninguna funcionalidad pública de Beta 0.1.
@@ -172,8 +201,8 @@ Orden recomendado de ejecución:
 1. MAP-013 — Definir la arquitectura y seguridad de la Beta 0.2. **Completada.**
 2. MAP-014 — Preparar Supabase, migraciones y políticas RLS. **Completada.**
 3. MAP-015 — Evolucionar el modelo de entidades y relaciones. **Completada.**
-4. MAP-016 — Implementar acceso público resiliente y estado del backend. **Trabajo actual.**
-5. MAP-017 — Implementar login y autorización administrativa.
+4. MAP-016 — Implementar acceso público resiliente y estado del backend. **Completada.**
+5. MAP-017 — Implementar login y autorización administrativa. **Trabajo actual.**
 6. MAP-018 — Crear el CRUD administrativo de categorías, etiquetas y nombres.
 7. MAP-019 — Crear el CRUD de pines con editor visual y previsualización.
 8. MAP-020 — Relacionar personajes importantes con emplazamientos.
@@ -190,11 +219,37 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- Ejecutar MAP-016 — Implementar acceso público resiliente y estado del backend.
-- Mantener inmutables las diez migraciones aplicadas.
+- Ejecutar MAP-017 — Implementar login y autorización administrativa.
+- Integrar Supabase Auth sin mezclar el estado público de MAP-016 con el estado de sesión administrativa.
+- Mantener PostgreSQL y RLS como frontera autoritativa: ocultar controles no sustituye la autorización de base de datos.
+- Autorizar únicamente usuarios presentes en `private.admin_users`; no usar metadatos editables del usuario como fuente de permisos.
+- Mantener el registro público deshabilitado y no crear cuentas de jugadores en Beta 0.2.
+- Usar en el navegador únicamente la URL y la clave publicable de Supabase; no exponer `service_role`, claves secretas, tokens de gestión ni contraseñas de base de datos.
+- Mantener inmutables las diez migraciones aplicadas; cualquier ajuste requiere una migración nueva hacia delante.
 - No ejecutar `seed.sql` contra producción.
-- Mantener la interfaz pública de Beta 0.1 sin cambios hasta la transición planificada en MAP-028.
-- Preservar los contratos de IDs, slugs, coordenadas, URLs, búsqueda, filtros, historial y accesibilidad de Beta 0.1.
+- Preservar el funcionamiento público, degradado y offline de MAP-016 durante login, logout, renovación, expiración y fallos de red.
+- Mantener la interfaz pública de Beta 0.1 sin cambios funcionales hasta la transición planificada en MAP-028.
+- Preservar IDs, slugs, coordenadas, URLs, búsqueda, filtros, selección, historial y accesibilidad.
+
+## Preflight obligatorio antes de lanzar CI
+
+Antes de crear una PR, relanzar un workflow o pedir revisión, trabajar sobre un checkout limpio y ejecutar este control local en orden:
+
+1. Confirmar la rama y registrar el SHA que se pretende validar.
+2. Ejecutar `npm ci` cuando las dependencias no estén instaladas exactamente desde `package-lock.json`.
+3. Ejecutar `npm run format` para aplicar Prettier, revisar los cambios producidos y mantenerlos en el commit.
+4. Ejecutar `git diff --check` y revisar `git status --short` para detectar espacios, archivos inesperados o cambios sin registrar.
+5. Ejecutar `npm run format:check` y no lanzar CI mientras falle.
+6. Ejecutar `npm run verify:security`.
+7. Ejecutar `npm run lint`.
+8. Ejecutar `npm run test`.
+9. Ejecutar `npm run build:pages` y después `npm run verify:build`.
+10. Ejecutar las pruebas Playwright relevantes; usar `npm run test:e2e` y `npm run test:e2e:pages` cuando cambie interfaz, navegación, estado o despliegue.
+11. Si cambia SQL, migraciones, grants, RLS, Auth o el contrato de base de datos, ejecutar además `npm run supabase:db:validate` desde Supabase local limpio.
+12. Confirmar que el árbol queda limpio después del preflight y que el head de la rama no ha cambiado.
+13. Solo entonces lanzar CI sobre esa rama y comprobar en los logs que Actions hizo checkout del SHA esperado.
+
+No usar una ejecución antigua mediante `Re-run jobs` después de mover el head. Lanzar una ejecución nueva para el SHA definitivo. No crear ramas o PR técnicas auxiliares salvo que la ejecución normal esté bloqueada y exista una razón documentada; cualquier auxiliar debe cerrarse y eliminarse al terminar.
 
 ## Acciones manuales para MAP-014
 
@@ -248,6 +303,26 @@ Completadas:
 - PR #59 fusionada mediante merge commit tras autorización humana explícita.
 - Issue #34 cerrada como completada.
 
+## Acciones manuales para MAP-016
+
+Completadas:
+
+- Acceso público Supabase separado de Leaflet y de la presentación.
+- Snapshot Beta 0.1 validado y empaquetado como respaldo.
+- Proyección Beta 0.2 cargada en segundo plano sin adelantar la transición de MAP-028.
+- Estados `connected`, `degraded` y `offline` visibles y accesibles.
+- Paginación y verificación estricta de colecciones completas.
+- Cancelación del lote al fallar una tabla.
+- Caché de sesión revalidada estructural, semántica y relacionalmente.
+- Respaldo estático marcado como antiguo sin inventar frescura.
+- Proyectos alojados limitados a claves publicables; compatibilidad legacy restringida a Supabase local.
+- Formato, auditoría de credenciales, lint, unitarias, build, artefacto, Playwright y smoke test correctos.
+- Migraciones, lint SQL y pruebas RLS de Supabase local correctos.
+- CI definitiva `31128893212` verde sobre el head `31d7b0277d2136b2b1a5332db32f4c21a265f916`.
+- PR #60 fusionada mediante merge commit autorizado `a72a89c1a18f1dff9acabe7a5806dffda58d4703`.
+- Issue #35 cerrada como completada.
+- Ninguna migración, semilla o configuración aplicada al proyecto Supabase alojado.
+
 Diferidas hasta que exista una operación que las requiera:
 
 - Crear un GitHub Environment protegido `supabase-production` y guardar allí `SUPABASE_ACCESS_TOKEN` y `SUPABASE_DB_PASSWORD` cuando exista un workflow de migración remota.
@@ -256,7 +331,7 @@ Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, reposi
 
 ## Bloqueos
 
-MAP-015 está completada y no mantiene bloqueos abiertos. No hay bloqueos técnicos conocidos para iniciar MAP-016.
+MAP-016 está completada y no mantiene bloqueos abiertos. No hay bloqueos técnicos conocidos para iniciar MAP-017.
 
 ## Riesgos aceptados
 
@@ -269,17 +344,18 @@ MAP-015 está completada y no mantiene bloqueos abiertos. No hay bloqueos técni
 - La protección contra contraseñas filtradas no está disponible en el plan actual; se mantienen longitud 12 y requisitos fuertes de caracteres.
 - Docker Engine anterior a 28 puede permitir acceso desde el mismo segmento de red a puertos publicados en localhost; se recomienda Docker Engine 28 o posterior en redes no confiables.
 
-## Riesgos pendientes de MAP-016 a MAP-030
+## Riesgos pendientes de MAP-017 a MAP-030
 
+- Implementar login, renovación y expiración sin permitir que la sesión administrativa rompa la experiencia pública degradable.
 - Migrar el catálogo de Beta 0.1 sin romper IDs, slugs, coordenadas o URLs existentes.
 - Resolver en MAP-022 la representación visual cuando una entidad tenga disposiciones distintas para dos jugadores, sin colapsarlas en un único color ambiguo.
-- Automatizar y auditar la generación del snapshot público.
+- Mantener automatizada y auditable la generación del snapshot público.
 - Validar abuso de solicitudes, accesibilidad administrativa, rendimiento y recuperación real.
 - Evitar filtraciones editoriales de secretos en contenido destinado a publicación.
 
 ## Próximo paso
 
-Iniciar MAP-016 — Implementar acceso público resiliente y estado del backend — tomando `master` y la Issue #35 como fuentes de verdad.
+Iniciar MAP-017 — Implementar login y autorización administrativa — tomando `master` y la Issue #36 como fuentes de verdad.
 
 ## Últimos cambios
 
@@ -309,3 +385,6 @@ Iniciar MAP-016 — Implementar acceso público resiliente y estado del backend 
 | 2026-08-06 | La migración `20260806085000_harden_entity_matrix_and_character_trail.sql` se aplicó sin semillas, las diez versiones quedaron alineadas y el lint remoto fue correcto |
 | 2026-08-06 | El smoke test alojado final validó funciones, triggers, matriz completa, bloqueo de cambios inválidos en avistamientos relacionados y rollback sin residuos |
 | 2026-08-06 | CI #165 quedó verde; la PR #59 se fusionó mediante merge commit autorizado, la Issue #34 se cerró y MAP-016 pasó a ser el trabajo actual |
+| 2026-08-07 | MAP-016 integró acceso público resiliente, caché validada, snapshot de respaldo y estados accesibles del backend sin modificar el Supabase alojado |
+| 2026-08-07 | CI `31128893212` quedó verde; la PR #60 se fusionó mediante merge commit autorizado y la Issue #35 se cerró como completada |
+| 2026-08-07 | MAP-017 pasó a ser el trabajo actual y se estableció un preflight local obligatorio antes de lanzar CI |
