@@ -6,7 +6,7 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: MAP-014 está completada e integrada mediante la PR #56. MAP-015 ha cerrado el contrato de entidades y relaciones, lo ha implementado mediante migraciones hacia delante y lo ha validado localmente; queda pendiente la CI de la PR, la revisión humana y cualquier aplicación controlada al proyecto Supabase alojado.
+- Estado general: MAP-014 está completada e integrada mediante la PR #56. MAP-015 ha cerrado e implementado el contrato de entidades y relaciones, ha superado la validación local y la CI #146, y sus cuatro migraciones se han aplicado al proyecto Supabase alojado sin semillas. El historial local y remoto coincide en nueve versiones, el lint remoto está limpio y el smoke test transaccional de esquema, RLS, autorización e inmutabilidad terminó con rollback limpio. Quedan la CI del commit documental final, la revisión humana y la fusión de la PR #59.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-06.
 
@@ -75,7 +75,7 @@ El historial integrado en `master` contiene:
 
 CI #138 validó correctamente los trabajos de frontend y base de datos sobre el head definitivo previo a la integración. El proyecto alojado usa PostgreSQL 17.6 y tiene verificados el registro cerrado, la confirmación de correo, los requisitos fuertes de contraseña, las URLs permitidas, la URL de proyecto y una clave publicable.
 
-El checkout se enlazó de forma controlada sin registrar credenciales. Las cuatro migraciones iniciales se aplicaron en orden sin incluir `seed.sql`. Después de la revisión de seguridad, una quinta migración hacia delante se revisó mediante dry run y se aplicó de forma aislada. El historial local y remoto coincide en las cinco versiones y `supabase db lint --linked --fail-on warning` no encuentra errores.
+El checkout se enlazó de forma controlada sin registrar credenciales. Las cuatro migraciones iniciales se aplicaron en orden sin incluir `seed.sql`. Después de la revisión de seguridad, una quinta migración hacia delante se revisó mediante dry run y se aplicó de forma aislada. El historial local y remoto coincidió en las cinco versiones y `supabase db lint --linked --fail-on warning` no encontró errores.
 
 Existe exactamente un usuario administrativo real, creado con contraseña y correo confirmado. Su UUID está incluido en `private.admin_users`; `private.is_admin()` reconoce al usuario autorizado y rechaza un UUID autenticado no incluido en la lista blanca. Una prueba remota transaccional confirmó que los visitantes solo leen contenido publicado, que visitantes y usuarios autenticados no autorizados no pueden escribir ni leer borradores, que el administrador puede escribir y leer contenido editorial, y que el rollback no dejó datos de prueba.
 
@@ -83,7 +83,7 @@ Una segunda prueba remota transaccional confirmó que no quedan privilegios comp
 
 ## Modelo de entidades preparado en MAP-015
 
-La rama `agent/map-015-entity-relations` contiene:
+La PR #59 contiene:
 
 - ADR 0006 y contrato TypeScript paralelo para el snapshot público de Beta 0.2;
 - cuatro migraciones nuevas de expansión, validación del backfill, contracción y refinamiento, sin modificar las cinco migraciones aplicadas por MAP-014;
@@ -103,16 +103,29 @@ La rama `agent/map-015-entity-relations` contiene:
 - semillas deterministas y ficticias, sin nombres ni datos reales de campaña;
 - pruebas centradas en invariantes de matriz, visibilidad, aliases, tags, pistas, permisos, moderación e integridad histórica.
 
-La validación local del head previo a abrir la PR superó:
+La validación local y CI superaron:
 
 - formato, auditoría de credenciales, lint y build;
 - 84 pruebas unitarias en 11 archivos;
 - 45 pruebas end-to-end y dos smoke tests del build de Pages;
 - 137 aserciones pgTAP en seis archivos;
 - seis comprobaciones concurrentes en dos escenarios;
-- auditoría del artefacto de producción sin copia del mapa ni patrones de credenciales.
+- auditoría del artefacto de producción sin copia del mapa ni patrones de credenciales;
+- CI #146 correcta en `Build, quality and tests` y `Supabase migrations, lint and RLS tests` sobre el head de implementación.
 
-Estas migraciones todavía no se han aplicado al proyecto Supabase alojado. Su aplicación requerirá CI verde, checkout limpio, comparación del historial enlazado, dry run, revisión explícita y autorización humana separada. `seed.sql` no se ejecutará en producción.
+El despliegue alojado siguió el protocolo acordado:
+
+- checkout limpio y sincronizado con el head validado;
+- `migration list --linked` con las cinco migraciones históricas alineadas y únicamente las cuatro de MAP-015 pendientes;
+- dry run con exactamente las cuatro migraciones nuevas y sin `seed.sql`;
+- dump lógico previo de esquema y datos en una ubicación privada fuera del repositorio;
+- autorización humana explícita antes del push real;
+- aplicación en orden de las cuatro migraciones sin semillas;
+- coincidencia local y remota de las nueve versiones;
+- lint remoto sin errores ni advertencias;
+- smoke test transaccional correcto para contrato de esquema, lectura anónima, bloqueo de escritura no administrativa, escritura administrativa, inmutabilidad de acontecimientos publicados y rollback sin filas residuales.
+
+Las nueve migraciones aplicadas se consideran inmutables. Cualquier corrección futura deberá añadirse mediante una nueva migración hacia delante.
 
 ## Objetivo de Beta 0.2
 
@@ -165,12 +178,12 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- Revisar e integrar MAP-015 mediante una PR dedicada contra `master`.
-- Confirmar CI verde sobre el head definitivo.
-- Mantener inmutables las cinco migraciones aplicadas por MAP-014.
-- No aplicar las migraciones de MAP-015 al proyecto alojado sin un punto de control humano separado.
+- Completar la CI del commit documental final de MAP-015.
+- Revisar el diff definitivo de la PR #59 y confirmar que no existen conversaciones pendientes.
+- Mantener inmutables las nueve migraciones aplicadas.
 - No ejecutar `seed.sql` contra producción.
 - Mantener la interfaz pública de Beta 0.1 sin cambios hasta la transición planificada en MAP-028.
+- No fusionar la PR sin un punto de control humano explícito.
 
 ## Acciones manuales para MAP-014
 
@@ -199,20 +212,34 @@ Completadas:
 - PR #56 fusionada mediante merge commit tras revisión y autorización humanas.
 - Issue #33 cerrada como completada.
 
+## Acciones manuales para MAP-015
+
+Completadas:
+
+- CI #146 correcta sobre el head de implementación.
+- Checkout limpio y sincronizado antes del preflight alojado.
+- Historial local y remoto comparado antes del despliegue.
+- Dry run revisado con exactamente cuatro migraciones pendientes y sin semillas.
+- Dump lógico privado de esquema y datos creado antes de la fase de contracción.
+- Aplicación de las cuatro migraciones autorizada explícitamente por una persona.
+- Cuatro migraciones aplicadas en orden sin ejecutar `seed.sql`.
+- Nueve versiones locales y remotas alineadas.
+- Lint remoto correcto sin advertencias.
+- Smoke test alojado correcto para esquema, lectura pública, RLS, autorización, inmutabilidad histórica y rollback limpio.
+
 Diferidas hasta que exista una operación que las requiera:
 
 - Crear un GitHub Environment protegido `supabase-production` y guardar allí `SUPABASE_ACCESS_TOKEN` y `SUPABASE_DB_PASSWORD` cuando exista un workflow de migración remota.
-- Ejecutar y custodiar fuera del repositorio un dump lógico antes del primer cambio destructivo real.
 
-Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, repositorio, Issues, PRs, logs o artefactos.
+Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, repositorio, Issues, PRs, logs o artefactos. Los dumps privados no deben adjuntarse ni copiarse a GitHub.
 
 ## Bloqueos
 
-MAP-015 no tiene bloqueos locales conocidos. Permanecen pendientes:
+MAP-015 no tiene bloqueos técnicos conocidos. Permanecen pendientes únicamente:
 
-- CI de GitHub sobre la PR y el head definitivo;
-- revisión humana del diff y de las decisiones de dominio;
-- punto de control separado antes de cualquier migración del proyecto Supabase alojado.
+- CI de GitHub sobre el commit documental final;
+- revisión humana del diff definitivo;
+- autorización explícita para fusionar la PR #59.
 
 ## Riesgos aceptados
 
@@ -235,7 +262,7 @@ MAP-015 no tiene bloqueos locales conocidos. Permanecen pendientes:
 
 ## Próximo paso
 
-Abrir la PR de MAP-015 contra `master`, esperar la CI del head definitivo y revisar el diff. Cualquier despliegue de las cuatro migraciones nuevas al proyecto Supabase alojado requerirá después un punto de control humano independiente con `migration list --linked`, dry run y autorización explícita.
+Esperar la CI del commit documental final, revisar el diff definitivo y las conversaciones de la PR #59, marcarla como lista para revisión y solicitar un punto de control humano explícito antes de fusionar. MAP-016 comenzará únicamente después de integrar MAP-015.
 
 ## Últimos cambios
 
@@ -257,4 +284,6 @@ Abrir la PR de MAP-015 contra `master`, esperar la CI del head definitivo y revi
 | 2026-08-05 | CI #138 validó 172 aserciones pgTAP, seis comprobaciones concurrentes, errores críticos exactos y Actions de CI y Pages fijadas a SHA completo |
 | 2026-08-05 | PR #56 fusionada mediante merge commit, Issue #33 cerrada y MAP-015 establecida como siguiente trabajo |
 | 2026-08-06 | MAP-015 cerró el contrato de entidades, disposiciones por jugador, visibilidad, aliases, tags y rastro cronológico de personajes |
-| 2026-08-06 | Cuatro migraciones hacia delante, contratos TypeScript, semillas ficticias y pruebas de integridad quedaron validados localmente; CI, revisión y despliegue remoto siguen pendientes |
+| 2026-08-06 | Cuatro migraciones hacia delante, contratos TypeScript, semillas ficticias y pruebas de integridad quedaron validados localmente; CI #146 validó frontend y base de datos |
+| 2026-08-06 | Se creó un dump lógico privado, se aplicaron las cuatro migraciones sin semillas y las nueve versiones quedaron alineadas con lint remoto correcto |
+| 2026-08-06 | El smoke test alojado validó esquema, lectura anónima, RLS, autorización, inmutabilidad de acontecimientos publicados y rollback sin residuos |
