@@ -427,16 +427,7 @@ function snapshotPayloads(record: Record<string, unknown>): PublicCatalogTablePa
       const path = `snapshot.geographicNames[${index}]`;
       assertAllowedProperties(
         name,
-        [
-          'id',
-          'slug',
-          'name',
-          'language',
-          'aliases',
-          'coordinates',
-          'recommendedZoom',
-          'entityId',
-        ],
+        ['id', 'slug', 'name', 'language', 'aliases', 'coordinates', 'recommendedZoom', 'entityId'],
         path,
       );
       const coordinates = expectRecord(name.coordinates, `${path}.coordinates`);
