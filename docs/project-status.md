@@ -6,7 +6,7 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- Estado general: MAP-014 está completada e integrada mediante la PR #56. MAP-015 ha cerrado e implementado el contrato de entidades y relaciones, ha superado la validación local y la CI #146, y sus cuatro migraciones se han aplicado al proyecto Supabase alojado sin semillas. El historial local y remoto coincide en nueve versiones, el lint remoto está limpio y el smoke test transaccional de esquema, RLS, autorización e inmutabilidad terminó con rollback limpio. Quedan la CI del commit documental final, la revisión humana y la fusión de la PR #59.
+- Estado general: MAP-014 está completada e integrada mediante la PR #56. MAP-015 ha cerrado e implementado el contrato de entidades y relaciones, ha superado la validación local y las CI #146 y #147, y sus cuatro migraciones se han aplicado al proyecto Supabase alojado sin semillas. El historial local y remoto coincide en nueve versiones, el lint remoto está limpio y el smoke test transaccional de esquema, RLS, autorización e inmutabilidad terminó con rollback limpio. Quedan la revisión humana y la fusión autorizada de la PR #59.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-06.
 
@@ -111,7 +111,8 @@ La validación local y CI superaron:
 - 137 aserciones pgTAP en seis archivos;
 - seis comprobaciones concurrentes en dos escenarios;
 - auditoría del artefacto de producción sin copia del mapa ni patrones de credenciales;
-- CI #146 correcta en `Build, quality and tests` y `Supabase migrations, lint and RLS tests` sobre el head de implementación.
+- CI #146 correcta en `Build, quality and tests` y `Supabase migrations, lint and RLS tests` sobre el head de implementación;
+- CI #147 correcta en los mismos dos jobs sobre el commit documental posterior al despliegue alojado.
 
 El despliegue alojado siguió el protocolo acordado:
 
@@ -178,8 +179,8 @@ Orden recomendado de ejecución:
 
 ## Trabajo actual
 
-- Completar la CI del commit documental final de MAP-015.
 - Revisar el diff definitivo de la PR #59 y confirmar que no existen conversaciones pendientes.
+- Marcar la PR como lista para revisión humana.
 - Mantener inmutables las nueve migraciones aplicadas.
 - No ejecutar `seed.sql` contra producción.
 - Mantener la interfaz pública de Beta 0.1 sin cambios hasta la transición planificada en MAP-028.
@@ -217,6 +218,7 @@ Completadas:
 Completadas:
 
 - CI #146 correcta sobre el head de implementación.
+- CI #147 correcta sobre el commit documental posterior al despliegue alojado.
 - Checkout limpio y sincronizado antes del preflight alojado.
 - Historial local y remoto comparado antes del despliegue.
 - Dry run revisado con exactamente cuatro migraciones pendientes y sin semillas.
@@ -237,7 +239,6 @@ Ninguna clave privilegiada debe copiarse al frontend, variables `VITE_*`, reposi
 
 MAP-015 no tiene bloqueos técnicos conocidos. Permanecen pendientes únicamente:
 
-- CI de GitHub sobre el commit documental final;
 - revisión humana del diff definitivo;
 - autorización explícita para fusionar la PR #59.
 
@@ -262,7 +263,7 @@ MAP-015 no tiene bloqueos técnicos conocidos. Permanecen pendientes únicamente
 
 ## Próximo paso
 
-Esperar la CI del commit documental final, revisar el diff definitivo y las conversaciones de la PR #59, marcarla como lista para revisión y solicitar un punto de control humano explícito antes de fusionar. MAP-016 comenzará únicamente después de integrar MAP-015.
+Revisar el diff definitivo y las conversaciones de la PR #59, marcarla como lista para revisión y solicitar un punto de control humano explícito antes de fusionar. MAP-016 comenzará únicamente después de integrar MAP-015.
 
 ## Últimos cambios
 
@@ -287,3 +288,4 @@ Esperar la CI del commit documental final, revisar el diff definitivo y las conv
 | 2026-08-06 | Cuatro migraciones hacia delante, contratos TypeScript, semillas ficticias y pruebas de integridad quedaron validados localmente; CI #146 validó frontend y base de datos |
 | 2026-08-06 | Se creó un dump lógico privado, se aplicaron las cuatro migraciones sin semillas y las nueve versiones quedaron alineadas con lint remoto correcto |
 | 2026-08-06 | El smoke test alojado validó esquema, lectura anónima, RLS, autorización, inmutabilidad de acontecimientos publicados y rollback sin residuos |
+| 2026-08-06 | CI #147 validó correctamente el commit documental posterior al despliegue alojado |
