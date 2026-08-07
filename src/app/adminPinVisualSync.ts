@@ -5,6 +5,7 @@ import {
   getPinTypeVisual,
   type PinPlayerDispositionInput,
 } from '../domain/pinVisualSystem';
+import '../styles/admin-pin-visual-system.css';
 
 export interface AdminPinVisualSyncController {
   destroy(): void;
