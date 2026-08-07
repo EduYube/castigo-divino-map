@@ -5,11 +5,7 @@ import {
   type AuthGatewayEvent,
   type AuthIdentity,
 } from './authGateway';
-import {
-  INITIAL_ADMIN_AUTH_STATE,
-  toPublicAuthIssue,
-  type AdminAuthState,
-} from './authState';
+import { INITIAL_ADMIN_AUTH_STATE, toPublicAuthIssue, type AdminAuthState } from './authState';
 
 export type AdminAuthStateListener = (state: AdminAuthState) => void;
 
