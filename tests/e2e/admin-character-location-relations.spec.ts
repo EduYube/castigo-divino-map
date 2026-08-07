@@ -1,6 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import type { Request as PlaywrightRequest } from '@playwright/test';
-import type { Request as PlaywrightRequest } from '@playwright/test';
 
 const PROJECT_URL = 'http://127.0.0.1:4173';
 const ACCESS_TOKEN = 'map020_e2e_access_token';
