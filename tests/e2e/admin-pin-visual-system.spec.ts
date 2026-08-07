@@ -198,7 +198,9 @@ test('admin coordinate editor and preview reuse the public type/disposition visu
   await expect(preview).toHaveAttribute('title', /Personaje\. Disposición por jugador:/i);
 });
 
-test('admin preview shows location shape for a new location without altering persistence', async ({ page }) => {
+test('admin preview shows location shape for a new location without altering persistence', async ({
+  page,
+}) => {
   await configureAdminBackend(page);
   await page.goto('/');
   await login(page);
