@@ -7,6 +7,7 @@ import {
   describePlayerDispositions,
   getPinTypeVisual,
   groupPinsByCoordinate,
+  type CoordinatePinGroup,
 } from '../domain/pinVisualSystem';
 import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './config';
 
@@ -383,7 +384,7 @@ export function mountFaerunMap(
 
   const decorateGroupMarker = (
     leafletMarker: Marker,
-    pins: readonly AtlasPinMarkerModel[],
+    pins: CoordinatePinGroup<AtlasPinMarkerModel>,
     openCoincidentList: () => void,
   ): void => {
     const element = leafletMarker.getElement();
