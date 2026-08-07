@@ -62,7 +62,10 @@ export function validateAdminMapEntityDraft(
   const category = references.categories.find((candidate) => candidate.id === draft.categoryId);
   if (!category || category.publicationStatus === 'archived') {
     setError(errors, 'categoryId', 'Selecciona una categoría disponible.');
-  } else if (draft.publicationStatus === 'published' && category.publicationStatus !== 'published') {
+  } else if (
+    draft.publicationStatus === 'published' &&
+    category.publicationStatus !== 'published'
+  ) {
     setError(errors, 'categoryId', 'Una entidad publicada requiere una categoría publicada.');
   }
 
