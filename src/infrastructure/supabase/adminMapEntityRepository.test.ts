@@ -183,7 +183,7 @@ describe('SupabaseAdminMapEntityRepository', () => {
   it('sends entity and relation locks through the atomic save RPC', async () => {
     const original = detail();
     const fetchImplementation = vi.fn<typeof fetch>(async (input, init) => {
-      expect(new URL(String(input)).pathname).toEndWith('/rpc/admin_save_map_entity');
+      expect(new URL(String(input)).pathname).toMatch(/\/rpc\/admin_save_map_entity$/);
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
       expect(body).toMatchObject({
         p_id: 'entity-map019',
