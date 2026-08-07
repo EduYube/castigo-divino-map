@@ -442,7 +442,7 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   expect(backend.getEntity('entity-map019-character')?.publication_status).toBe('draft');
 
   await page.reload();
-  await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Administración' })).toBeVisible();
   await page.evaluate(() => {
     window.dispatchEvent(
       new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
