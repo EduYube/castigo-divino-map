@@ -134,9 +134,10 @@ export function createEmptyMapEntityDraft(
     name: '',
     summary: '',
     description: '',
-    x: 0,
-    y: 0,
-    categoryId: references.categories.find((category) => category.publicationStatus !== 'archived')?.id ?? '',
+    x: Number.NaN,
+    y: Number.NaN,
+    categoryId:
+      references.categories.find((category) => category.publicationStatus !== 'archived')?.id ?? '',
     tagIds: [],
     dispositions: references.players.map((player) => ({
       playerId: player.id,
