@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import type { Request as PlaywrightRequest } from '@playwright/test';
 
 const PROJECT_URL = 'http://127.0.0.1:4173';
 const ACCESS_TOKEN = 'map020_e2e_access_token';
@@ -29,11 +30,11 @@ function rangeResponse(rows: readonly Record<string, unknown>[]): {
 }
 
 async function configureBackend(page: Page): Promise<{
-  readonly publicRelationRequests: Request[];
+  readonly publicRelationRequests: PlaywrightRequest[];
   relation(): RelationRow | undefined;
 }> {
   let counter = 1;
-  const publicRelationRequests: Request[] = [];
+  const publicRelationRequests: PlaywrightRequest[] = [];
   const entities: Record<string, unknown>[] = [
     {
       id: 'entity-aster-guide',

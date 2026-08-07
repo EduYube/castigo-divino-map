@@ -359,10 +359,12 @@ export function mountAdminCharacterLocationRelations(
     populateLocations(previous);
     showValidation(readDraft(editing?.publicationStatus ?? 'draft'));
   };
-  const handleLocationChange = (): void =>
+  const handleLocationChange = (): void => {
     showValidation(readDraft(editing?.publicationStatus ?? 'draft'));
-  const handleRelationChange = (): void =>
+  };
+  const handleRelationChange = (): void => {
     showValidation(readDraft(editing?.publicationStatus ?? 'draft'));
+  };
   const handleSaveDraft = (): void => void saveAs('draft');
   const handlePublish = (): void => void saveAs('published');
   const handleRetire = (): void => {
