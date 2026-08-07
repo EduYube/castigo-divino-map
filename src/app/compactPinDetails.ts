@@ -1,8 +1,5 @@
 import type { CompactPinDetailModel } from '../data/compactPinDetails';
-import {
-  createPlayerDispositionVisuals,
-  getPinTypeVisual,
-} from '../domain/pinVisualSystem';
+import { createPlayerDispositionVisuals, getPinTypeVisual } from '../domain/pinVisualSystem';
 
 export interface CompactPinDetailsController {
   show(details: CompactPinDetailModel, options?: CompactPinDetailsShowOptions): void;
@@ -201,7 +198,12 @@ function renderDetails(content: HTMLElement, details: CompactPinDetailModel): HT
   content.replaceChildren();
   appendType(content, details);
 
-  const title = appendTextElement(content, 'h3', 'place-details__title compact-details__title', details.name);
+  const title = appendTextElement(
+    content,
+    'h3',
+    'place-details__title compact-details__title',
+    details.name,
+  );
   title.id = 'place-details-title';
   title.tabIndex = -1;
 
