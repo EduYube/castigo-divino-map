@@ -1,3 +1,4 @@
+import { AdminCatalogController } from '../application/adminCatalogController';
 import { AdminAuthController } from '../auth/adminAuthController';
 import {
   AuthGatewayError,
@@ -6,8 +7,23 @@ import {
   type AuthGatewayListener,
   type AuthIdentity,
 } from '../auth/authGateway';
+import {
+  AdminCatalogRepositoryError,
+  type AdminCatalogRepository,
+} from '../data-access/adminCatalog';
+import type {
+  AdminCatalogDraft,
+  AdminCatalogRecord,
+  AdminCatalogResourceKind,
+  AdminEntityReference,
+  AdminGeographicNameReference,
+} from '../domain/adminCatalog';
 import { SupabaseAdminAuthAdapter } from '../infrastructure/supabase/adminAuthAdapter';
+import { SupabaseAdminCatalogRepository } from '../infrastructure/supabase/adminCatalogRepository';
+import './adminCatalog';
+import { mountAdminCatalog } from './adminCatalog';
 import { mountAdminAuth } from './adminAuth';
+import '../styles/admin-catalog.css';
 
 interface AdminAuthTestConfig {
   readonly projectUrl?: string;
@@ -62,21 +78,72 @@ class UnavailableAdminAuthAdapter implements AuthGateway, AdminAuthorizationGate
   }
 }
 
+class UnavailableAdminCatalogRepository implements AdminCatalogRepository {
+  readonly #error: AdminCatalogRepositoryError;
+
+  constructor(error: AdminCatalogRepositoryError) {
+    this.#error = error;
+  }
+
+  list(_kind: AdminCatalogResourceKind, _options: { readonly signal: AbortSignal }): Promise<readonly AdminCatalogRecord[]> {
+    return Promise.reject(this.#error);
+  }
+
+  create(_draft: AdminCatalogDraft, _options: { readonly signal: AbortSignal }): Promise<AdminCatalogRecord> {
+    return Promise.reject(this.#error);
+  }
+
+  update(
+    _original: AdminCatalogRecord,
+    _draft: AdminCatalogDraft,
+    _options: { readonly signal: AbortSignal },
+  ): Promise<AdminCatalogRecord> {
+    return Promise.reject(this.#error);
+  }
+
+  archive(_record: AdminCatalogRecord, _options: { readonly signal: AbortSignal }): Promise<AdminCatalogRecord> {
+    return Promise.reject(this.#error);
+  }
+
+  delete(_record: AdminCatalogRecord, _options: { readonly signal: AbortSignal }): Promise<void> {
+    return Promise.reject(this.#error);
+  }
+
+  listEntityReferences(_options: { readonly signal: AbortSignal }): Promise<readonly AdminEntityReference[]> {
+    return Promise.reject(this.#error);
+  }
+
+  listGeographicNameReferences(
+    _options: { readonly signal: AbortSignal },
+  ): Promise<readonly AdminGeographicNameReference[]> {
+    return Promise.reject(this.#error);
+  }
+}
+
 function resolveTestConfig(): AdminAuthTestConfig | undefined {
   return import.meta.env.DEV ? window.__MAP017_AUTH_TEST_CONFIG__ : undefined;
 }
 
-function createAdapter(): SupabaseAdminAuthAdapter | UnavailableAdminAuthAdapter {
+function resolveConfiguration(): {
+  readonly projectUrl: string;
+  readonly publishableKey: string;
+  readonly timeoutMs: number | undefined;
+} {
   const testConfig = resolveTestConfig();
-  const projectUrl = testConfig?.projectUrl ?? import.meta.env.VITE_SUPABASE_URL ?? '';
-  const publishableKey =
-    testConfig?.publishableKey ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '';
+  return {
+    projectUrl: testConfig?.projectUrl ?? import.meta.env.VITE_SUPABASE_URL ?? '',
+    publishableKey:
+      testConfig?.publishableKey ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
+    timeoutMs: testConfig?.timeoutMs,
+  };
+}
+
+function createAuthAdapter(): SupabaseAdminAuthAdapter | UnavailableAdminAuthAdapter {
+  const configuration = resolveConfiguration();
 
   try {
     return new SupabaseAdminAuthAdapter({
-      projectUrl,
-      publishableKey,
-      timeoutMs: testConfig?.timeoutMs,
+      ...configuration,
       allowLocalProject: import.meta.env.DEV,
     });
   } catch (error) {
@@ -91,16 +158,45 @@ function createAdapter(): SupabaseAdminAuthAdapter | UnavailableAdminAuthAdapter
   }
 }
 
+function createCatalogRepository(): AdminCatalogRepository {
+  const configuration = resolveConfiguration();
+
+  try {
+    return new SupabaseAdminCatalogRepository({
+      ...configuration,
+      allowLocalProject: import.meta.env.DEV,
+    });
+  } catch (error) {
+    const normalized =
+      error instanceof AdminCatalogRepositoryError
+        ? error
+        : new AdminCatalogRepositoryError(
+            'backend-unavailable',
+            'El catálogo administrativo no pudo inicializarse.',
+            { cause: error },
+          );
+    return new UnavailableAdminCatalogRepository(normalized);
+  }
+}
+
 export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
-  const adapter = createAdapter();
-  const controller = new AdminAuthController(adapter, adapter);
-  const ui = mountAdminAuth(root, controller);
-  void controller.start();
+  const adapter = createAuthAdapter();
+  const authController = new AdminAuthController(adapter, adapter);
+  const authUi = mountAdminAuth(root, authController);
+  const catalogController = new AdminCatalogController(createCatalogRepository(), {
+    onAuthorizationRejected(status): void {
+      authController.invalidateFromAdministrativeResponse(status);
+    },
+  });
+  const catalogUi = mountAdminCatalog(root, catalogController, authController);
+  void authController.start();
 
   return {
     destroy(): void {
-      ui.destroy();
-      controller.destroy();
+      catalogUi.destroy();
+      catalogController.destroy();
+      authUi.destroy();
+      authController.destroy();
     },
   };
 }
