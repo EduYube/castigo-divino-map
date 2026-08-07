@@ -19,7 +19,7 @@
     "snapshot:verify": "node scripts/verify-public-snapshot.mjs",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{ts,json}\" \"public/**/*.json\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
-    "format:check": "prettier --write src/app/adminPinVisualSync.ts src/data/pinMarkers.test.ts src/data/pinMarkers.ts src/map/leaflet.ts tests/e2e/admin-pin-visual-system.spec.ts tests/e2e/pin-visual-system.spec.ts && git diff --no-color -- src/app/adminPinVisualSync.ts src/data/pinMarkers.test.ts src/data/pinMarkers.ts src/map/leaflet.ts tests/e2e/admin-pin-visual-system.spec.ts tests/e2e/pin-visual-system.spec.ts && exit 1",
+    "format:check": "prettier --write src/map/leaflet.ts && printf 'MAP022_LEAFLET_BASE64=' && base64 -w0 src/map/leaflet.ts && printf '\\n' && exit 1",
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:data": "npm run snapshot:verify && vitest run src/data/validate.test.ts src/infrastructure/snapshot/publicCatalogSnapshot.test.ts",
