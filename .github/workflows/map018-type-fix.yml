@@ -36,26 +36,22 @@ jobs:
 
           ui = Path('src/app/adminCatalog.ts')
           text = ui.read_text()
-          old = """      const first = Array.from(controls.values()).find(
-                (control) => !control.input.disabled && !control.input.readOnly,
-              );"""
-          new = """      const first = Array.from(controls.values()).find((control) => {
-                const input = control.input;
-                const editable = input instanceof HTMLSelectElement || !input.readOnly;
-                return !input.disabled && editable;
-              });"""
+          old = "(control) => !control.input.disabled && !control.input.readOnly,"
+          new = """(control) =>
+                    !control.input.disabled &&
+                    (control.input instanceof HTMLSelectElement || !control.input.readOnly),"""
           if old not in text:
-              raise SystemExit('Expected admin focus expression was not found')
+              raise SystemExit('Expected admin focus predicate was not found')
           ui.write_text(text.replace(old, new, 1))
 
           test = Path('src/application/adminCatalogController.test.ts')
           text = test.read_text()
-          text = text.replace(
-              "    let resolveFirst: ((records: readonly AdminCatalogRecord[]) => void) | null = null;",
-              "    let resolveFirst: (records: readonly AdminCatalogRecord[]) => void = () => undefined;",
-              1,
-          )
-          text = text.replace("    resolveFirst?.([category]);", "    resolveFirst([category]);", 1)
+          old_resolver = "let resolveFirst: ((records: readonly AdminCatalogRecord[]) => void) | null = null;"
+          new_resolver = "let resolveFirst: (records: readonly AdminCatalogRecord[]) => void = () => undefined;"
+          if old_resolver not in text or "resolveFirst?.([category]);" not in text:
+              raise SystemExit('Expected concurrent-load test expressions were not found')
+          text = text.replace(old_resolver, new_resolver, 1)
+          text = text.replace("resolveFirst?.([category]);", "resolveFirst([category]);", 1)
           test.write_text(text)
           PY
 
