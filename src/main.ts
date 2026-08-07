@@ -2,7 +2,7 @@ import 'leaflet/dist/leaflet.css';
 
 import { bootstrapAdminAuthRuntime } from './app/adminAuthRuntime';
 import { mountAdminPinVisualSync } from './app/adminPinVisualSync';
-import { mountPlaceDetails } from './app/placeDetails';
+import { mountCompactPinDetails } from './app/compactPinDetails';
 import { mountPlaceFilters } from './app/placeFilters';
 import { bootstrapPublicDataRuntime, type PublicDataRuntime } from './app/publicDataRuntime';
 import { mountPlaceSearch } from './app/placeSearch';
@@ -13,15 +13,18 @@ import {
   parsePublicAppUrlState,
   type PublicAppUrlState,
 } from './app/urlState';
+import type { PublicCatalogSnapshotV2 } from './data/beta02-model';
 import { campaignCatalog } from './data/catalog';
+import { buildCompactPinDetailModel } from './data/compactPinDetails';
 import { deriveMatchingPublicPlaceIds } from './data/filters';
 import type { CampaignCatalog, PlaceId } from './data/model';
-import { createAtlasPinMarkerModels } from './data/pinMarkers';
-import { buildPlaceDetailModel } from './data/placeDetails';
+import { createAtlasPinMarkerModels, type AtlasPinMarkerModel } from './data/pinMarkers';
 import type { AtlasSearchResult } from './data/search';
+import { getPinTypeVisual } from './domain/pinVisualSystem';
 import { mountFaerunMap } from './map/leaflet';
 import './styles/main.css';
 import './styles/pin-visual-system.css';
+import './styles/compact-pin-details.css';
 import './styles/search.css';
 import './styles/filters.css';
 import './styles/backend-status.css';
@@ -55,39 +58,92 @@ function mountPublicExperience(
   publicDataRuntime?: PublicDataRuntime,
 ): void {
   let isRestoringFromHistory = false;
+  let beta02Catalog: PublicCatalogSnapshotV2 | null = null;
+  let renderedMarkers = createAtlasPinMarkerModels(catalog, null);
+  let activeSupplementalPin: AtlasPinMarkerModel | null = null;
   const selection = createPlaceSelectionController();
+  const mapSearchStatus = app.querySelector<HTMLElement>('[data-map-search-status]');
+
+  const focusPinControl = (pin: AtlasPinMarkerModel): void => {
+    const [lat, lng] = pin.coordinate;
+    const element = Array.from(
+      app.querySelectorAll<HTMLElement>('.campaign-marker-icon[data-marker-lat][data-marker-lng]'),
+    ).find(
+      (candidate) =>
+        Number(candidate.dataset.markerLat) === lat && Number(candidate.dataset.markerLng) === lng,
+    );
+
+    element?.focus({ preventScroll: true });
+  };
+
   const mapController = mountFaerunMap(app, {
-    markers: createAtlasPinMarkerModels(catalog, null),
+    markers: renderedMarkers,
     onPinActivate(pin): void {
       if (pin.legacyPlaceId) {
+        activeSupplementalPin = null;
         selection.select(pin.legacyPlaceId);
-      } else {
-        selection.clear();
+        return;
       }
+
+      activeSupplementalPin = pin;
+      selection.clear();
+
+      if (!showCompactDetails(pin, true)) {
+        activeSupplementalPin = null;
+        return;
+      }
+
+      window.requestAnimationFrame(() => {
+        if (!mapSearchStatus) return;
+        const type = getPinTypeVisual(pin.entityType).label.toLocaleLowerCase('es');
+        mapSearchStatus.textContent = `${pin.name}, ${type}, seleccionado en el mapa. Ficha compacta abierta.`;
+      });
     },
   });
 
-  const placeDetailsController = mountPlaceDetails(app, {
+  const clearSupplementalMapSelection = (pin: AtlasPinMarkerModel): void => {
+    mapController.setMarkers(renderedMarkers.filter(({ id }) => id !== pin.id));
+    mapController.setMarkers(renderedMarkers);
+  };
+
+  const compactDetailsController = mountCompactPinDetails(app, {
     onClose(): void {
       const previouslyActivePlaceId = selection.getActivePlaceId();
 
-      selection.clear();
-
       if (previouslyActivePlaceId) {
+        selection.clear();
         window.requestAnimationFrame(() => mapController.focusMarker(previouslyActivePlaceId));
+        return;
       }
+
+      const supplementalPin = activeSupplementalPin;
+      compactDetailsController.hide();
+
+      if (!supplementalPin) {
+        return;
+      }
+
+      activeSupplementalPin = null;
+      clearSupplementalMapSelection(supplementalPin);
+      window.requestAnimationFrame(() => focusPinControl(supplementalPin));
     },
   });
 
-  const showPlaceDetails = (placeId: PlaceId, focus: boolean): boolean => {
-    const details = buildPlaceDetailModel(catalog, placeId);
+  function showCompactDetails(pin: AtlasPinMarkerModel, focus: boolean): boolean {
+    const details = buildCompactPinDetailModel(catalog, beta02Catalog, pin);
 
     if (!details) {
       return false;
     }
 
-    placeDetailsController.show(details, { focus });
+    compactDetailsController.show(details, { focus });
     return true;
+  }
+
+  const showLegacyPlaceDetails = (placeId: PlaceId, focus: boolean): boolean => {
+    const marker = renderedMarkers.find(({ legacyPlaceId }) => legacyPlaceId === placeId);
+
+    return marker ? showCompactDetails(marker, focus) : false;
   };
 
   const placeFiltersController = mountPlaceFilters(app, {
@@ -101,10 +157,11 @@ function mountPublicExperience(
   const openLegacyPlace = (placeId: PlaceId): void => {
     const wasAlreadyActive = selection.getActivePlaceId() === placeId;
 
+    activeSupplementalPin = null;
     mapController.locatePlace(placeId);
     selection.select(placeId);
 
-    if (wasAlreadyActive && !showPlaceDetails(placeId, true)) {
+    if (wasAlreadyActive && !showLegacyPlaceDetails(placeId, true)) {
       selection.clear();
     }
   };
@@ -121,6 +178,12 @@ function mountPublicExperience(
         return;
       }
 
+      if (activeSupplementalPin) {
+        const supplementalPin = activeSupplementalPin;
+        activeSupplementalPin = null;
+        compactDetailsController.hide();
+        clearSupplementalMapSelection(supplementalPin);
+      }
       selection.clear();
       mapController.locateSearchTarget({
         coordinates: result.coordinates,
@@ -133,10 +196,28 @@ function mountPublicExperience(
     },
   });
 
-  publicDataRuntime?.subscribeBeta02Catalog((beta02Catalog) => {
-    mapController.setMarkers(createAtlasPinMarkerModels(catalog, beta02Catalog));
+  publicDataRuntime?.subscribeBeta02Catalog((nextBeta02Catalog) => {
+    beta02Catalog = nextBeta02Catalog;
+    renderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
+    mapController.setMarkers(renderedMarkers);
     placeSearchController.setBeta02Catalog(beta02Catalog);
     updateMatchingPlaces();
+
+    const activePlaceId = selection.getActivePlaceId();
+    if (activePlaceId) {
+      showLegacyPlaceDetails(activePlaceId, false);
+      return;
+    }
+
+    if (activeSupplementalPin) {
+      const updatedPin = renderedMarkers.find(({ id }) => id === activeSupplementalPin?.id);
+      if (updatedPin && showCompactDetails(updatedPin, false)) {
+        activeSupplementalPin = updatedPin;
+      } else {
+        activeSupplementalPin = null;
+        compactDetailsController.hide();
+      }
+    }
   });
 
   function getCurrentPublicState(): PublicAppUrlState {
@@ -193,15 +274,19 @@ function mountPublicExperience(
     updateMatchingPlaces();
 
     if (!activePlaceId) {
-      placeDetailsController.hide();
+      if (!activeSupplementalPin) {
+        compactDetailsController.hide();
+      }
       return;
     }
+
+    activeSupplementalPin = null;
 
     if (options.locate) {
       mapController.locatePlace(activePlaceId);
     }
 
-    if (!showPlaceDetails(activePlaceId, options.focusDetails)) {
+    if (!showLegacyPlaceDetails(activePlaceId, options.focusDetails)) {
       selection.clear();
     }
   }
@@ -212,6 +297,13 @@ function mountPublicExperience(
     isRestoringFromHistory = true;
 
     try {
+      if (activeSupplementalPin) {
+        const supplementalPin = activeSupplementalPin;
+        activeSupplementalPin = null;
+        compactDetailsController.hide();
+        clearSupplementalMapSelection(supplementalPin);
+      }
+
       placeSearchController.setQuery(parsed.state.query, { notify: false });
       placeFiltersController.setState(
         {
