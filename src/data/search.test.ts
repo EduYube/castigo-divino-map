@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import type { PublicCatalogSnapshotV2 } from './beta02-model';
 import { campaignCatalog } from './catalog';
 import type { CampaignCatalog } from './model';
-import { normalizePlaceSearchQuery, searchPublicAtlas, searchPublicPlaces } from './search';
+import {
+  normalizePlaceSearchQuery,
+  searchPublicAtlas,
+  searchPublicPlaces,
+} from './search';
 
 const rankingCatalog = {
   categories: [],
@@ -180,17 +184,23 @@ describe('place search normalization', () => {
   });
 
   it('removes accents and other diacritics', () => {
-    expect(normalizePlaceSearchQuery('Información pública')).toBe('informacion publica');
+    expect(normalizePlaceSearchQuery('Información pública')).toBe(
+      'informacion publica',
+    );
   });
 
   it('trims outer whitespace and collapses whitespace sequences', () => {
-    expect(normalizePlaceSearchQuery('  Puerto   de\n ejemplo  ')).toBe('puerto de ejemplo');
+    expect(normalizePlaceSearchQuery('  Puerto   de\n ejemplo  ')).toBe(
+      'puerto de ejemplo',
+    );
   });
 });
 
 describe('public place search', () => {
   it('matches a primary place name without accents or matching case', () => {
-    expect(searchPublicPlaces(campaignCatalog, 'PUERTO DE DEMOSTRACION')).toEqual([
+    expect(
+      searchPublicPlaces(campaignCatalog, 'PUERTO DE DEMOSTRACION'),
+    ).toEqual([
       {
         placeId: 'place-demo-harbor',
         placeName: 'Puerto de demostración',
@@ -214,7 +224,9 @@ describe('public place search', () => {
   });
 
   it('matches a public note title and keeps the associated place identity', () => {
-    expect(searchPublicPlaces(campaignCatalog, 'referencia publica de viaje')).toEqual([
+    expect(
+      searchPublicPlaces(campaignCatalog, 'referencia publica de viaje'),
+    ).toEqual([
       {
         placeId: 'place-demo-pass',
         placeName: 'Paso de demostración',
@@ -230,18 +242,17 @@ describe('public place search', () => {
   });
 
   it('orders exact matches before prefix and partial matches', () => {
-    expect(searchPublicPlaces(rankingCatalog, 'alpha').map(({ placeId }) => placeId)).toEqual([
-      'place-exact',
-      'place-prefix',
-      'place-partial',
-    ]);
+    expect(
+      searchPublicPlaces(rankingCatalog, 'alpha').map(
+        ({ placeId }) => placeId,
+      ),
+    ).toEqual(['place-exact', 'place-prefix', 'place-partial']);
   });
 
   it('uses stable catalog order to resolve matches with the same rank', () => {
-    expect(searchPublicPlaces(rankingCatalog, 'del').map(({ placeId }) => placeId)).toEqual([
-      'place-partial',
-      'place-prefix',
-    ]);
+    expect(
+      searchPublicPlaces(rankingCatalog, 'del').map(({ placeId }) => placeId),
+    ).toEqual(['place-partial', 'place-prefix']);
   });
 
   it('returns no results for an empty normalized query', () => {
@@ -282,7 +293,9 @@ describe('public atlas search', () => {
   });
 
   it('matches English geographic aliases without creating campaign entities', () => {
-    expect(searchPublicAtlas(campaignCatalog, beta02Catalog, 'City of Splendors')).toEqual([
+    expect(
+      searchPublicAtlas(campaignCatalog, beta02Catalog, 'City of Splendors'),
+    ).toEqual([
       expect.objectContaining({
         id: 'geo-waterdeep',
         type: 'geographic',
@@ -293,7 +306,9 @@ describe('public atlas search', () => {
   });
 
   it('returns an unlinked geographic name with its own coordinates and zoom', () => {
-    expect(searchPublicAtlas(campaignCatalog, beta02Catalog, 'Sword Mountains')).toEqual([
+    expect(
+      searchPublicAtlas(campaignCatalog, beta02Catalog, 'Sword Mountains'),
+    ).toEqual([
       expect.objectContaining({
         id: 'geo-sword-mountains',
         type: 'geographic',
@@ -309,7 +324,9 @@ describe('public atlas search', () => {
     expect(searchPublicAtlas(campaignCatalog, beta02Catalog, 'Durnan')).toEqual([
       expect.objectContaining({ id: 'entity-durnan', type: 'character' }),
     ]);
-    expect(searchPublicAtlas(campaignCatalog, beta02Catalog, 'The Portal')).toEqual([
+    expect(
+      searchPublicAtlas(campaignCatalog, beta02Catalog, 'The Portal'),
+    ).toEqual([
       expect.objectContaining({
         id: 'entity-yawning-portal',
         type: 'location',
@@ -319,7 +336,9 @@ describe('public atlas search', () => {
   });
 
   it('allows a geographic result linked to an existing Beta 0.1 place to expose that card separately', () => {
-    expect(searchPublicAtlas(campaignCatalog, beta02Catalog, 'Harbor District')).toEqual([
+    expect(
+      searchPublicAtlas(campaignCatalog, beta02Catalog, 'Harbor District'),
+    ).toEqual([
       expect.objectContaining({
         id: 'geo-harbor-district',
         type: 'geographic',
@@ -330,7 +349,11 @@ describe('public atlas search', () => {
   });
 
   it('does not duplicate a legacy location when the Beta 0.2 entity preserves its identity', () => {
-    const results = searchPublicAtlas(campaignCatalog, beta02Catalog, 'puerto de ejemplo');
+    const results = searchPublicAtlas(
+      campaignCatalog,
+      beta02Catalog,
+      'puerto de ejemplo',
+    );
 
     expect(results).toHaveLength(1);
     expect(results[0]).toEqual(
@@ -343,14 +366,17 @@ describe('public atlas search', () => {
   });
 
   it('keeps deterministic type ordering for equally strong matches', () => {
-    expect(searchPublicAtlas(campaignCatalog, beta02Catalog, 'Waterdeep').map(({ type }) => type)).toEqual([
-      'geographic',
-      'location',
-    ]);
+    expect(
+      searchPublicAtlas(campaignCatalog, beta02Catalog, 'Waterdeep').map(
+        ({ type }) => type,
+      ),
+    ).toEqual(['geographic', 'location']);
   });
 
   it('preserves the legacy search surface while Beta 0.2 data is unavailable', () => {
-    expect(searchPublicAtlas(campaignCatalog, null, 'Referencia pública de viaje')).toEqual([
+    expect(
+      searchPublicAtlas(campaignCatalog, null, 'Referencia pública de viaje'),
+    ).toEqual([
       expect.objectContaining({
         id: 'place-demo-pass',
         type: 'location',
