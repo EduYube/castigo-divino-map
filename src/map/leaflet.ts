@@ -348,15 +348,16 @@ export function mountFaerunMap(
     pins: readonly AtlasPinMarkerModel[],
   ): void => {
     const element = leafletMarker.getElement();
-    if (!element) return;
+    const firstPin = pins[0];
+    if (!element || !firstPin) return;
 
     const isActive = pins.some(isPinActive);
     const filterState = getGroupFilterState(pins);
     const inner = element.querySelector<HTMLElement>('.pin-visual');
-    const isLegacySingle = pins.length === 1 && pins[0]?.legacyPlaceId !== null;
+    const isLegacySingle = pins.length === 1 && firstPin.legacyPlaceId !== null;
     const semanticDescription =
       pins.length === 1
-        ? `${describePinSemantics(pins[0])} `
+        ? `${describePinSemantics(firstPin)} `
         : `${pins.length} entidades comparten esta coordenada. `;
     const activeDescription = isActive
       ? isLegacySingle
