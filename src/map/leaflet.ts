@@ -6,11 +6,21 @@ import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './
 
 export type MapLoadState = 'loading' | 'ready' | 'error';
 
+export interface MapSearchTarget {
+  readonly coordinates: {
+    readonly x: number;
+    readonly y: number;
+  };
+  readonly recommendedZoom: number | null;
+  readonly label: string;
+}
+
 export interface FaerunMapController {
   readonly map: LeafletMap;
   setActivePlace(placeId: PlaceId | null): void;
   setMatchingPlaces(placeIds: ReadonlySet<PlaceId>): void;
   locatePlace(placeId: PlaceId): void;
+  locateSearchTarget(target: MapSearchTarget): void;
   focusMarker(placeId: PlaceId): void;
   destroy(): void;
 }
@@ -24,6 +34,7 @@ interface MapElements {
   readonly shell: HTMLElement;
   readonly canvas: HTMLElement;
   readonly status: HTMLElement;
+  readonly searchStatus: HTMLElement;
 }
 
 interface MarkerDomListener {
@@ -38,6 +49,7 @@ const stateMessages: Record<Exclude<MapLoadState, 'ready'>, string> = {
 };
 
 const markerSymbols = ['◆', '▲', '●', '✦'] as const;
+const SEARCH_HIGHLIGHT_DURATION_MS = 3000;
 
 function getRequiredElement<T extends HTMLElement>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector);
@@ -54,6 +66,7 @@ function resolveMapElements(root: ParentNode): MapElements {
     shell: getRequiredElement(root, '[data-map-shell]'),
     canvas: getRequiredElement(root, '[data-map-canvas]'),
     status: getRequiredElement(root, '[data-map-status]'),
+    searchStatus: getRequiredElement(root, '[data-map-search-status]'),
   };
 }
 
@@ -110,6 +123,15 @@ function createMarkerIcon(marker: PlaceMarkerModel): L.DivIcon {
     html: `<span class="campaign-marker-icon__symbol" aria-hidden="true">${symbol}</span>`,
     iconSize: [44, 44],
     iconAnchor: [22, 22],
+  });
+}
+
+function createSearchHighlightIcon(): L.DivIcon {
+  return L.divIcon({
+    className: 'geographic-search-highlight',
+    html: '<span class="geographic-search-highlight__symbol" aria-hidden="true">◎</span>',
+    iconSize: [56, 56],
+    iconAnchor: [28, 28],
   });
 }
 
@@ -211,6 +233,36 @@ export function mountFaerunMap(
   const markerDomListeners: MarkerDomListener[] = [];
   let activePlaceId: PlaceId | null = null;
   let matchingPlaceIds = new Set<PlaceId>((options.markers ?? []).map(({ id }) => id));
+  let searchHighlight: Marker | null = null;
+  let searchHighlightTimeout: number | undefined;
+
+  const clearSearchHighlight = (): void => {
+    if (searchHighlightTimeout !== undefined) {
+      window.clearTimeout(searchHighlightTimeout);
+      searchHighlightTimeout = undefined;
+    }
+
+    searchHighlight?.removeFrom(map);
+    searchHighlight = null;
+    delete elements.shell.dataset.searchHighlight;
+    delete elements.shell.dataset.searchHighlightLabel;
+  };
+
+  const showSearchHighlight = (target: MapSearchTarget): void => {
+    clearSearchHighlight();
+    const coordinate = L.latLng(target.coordinates.y, target.coordinates.x);
+
+    searchHighlight = L.marker(coordinate, {
+      icon: createSearchHighlightIcon(),
+      interactive: false,
+      keyboard: false,
+      zIndexOffset: 2000,
+    }).addTo(map);
+    elements.shell.dataset.searchHighlight = 'true';
+    elements.shell.dataset.searchHighlightLabel = target.label;
+    elements.searchStatus.textContent = `Mapa centrado en ${target.label}. La posición está resaltada temporalmente con un símbolo circular.`;
+    searchHighlightTimeout = window.setTimeout(clearSearchHighlight, SEARCH_HIGHLIGHT_DURATION_MS);
+  };
 
   const updateMarkerPresentation = (placeId: PlaceId): void => {
     const marker = markerByPlaceId.get(placeId);
@@ -342,6 +394,7 @@ export function mountFaerunMap(
         return;
       }
 
+      clearSearchHighlight();
       const targetZoom = Math.min(
         FAERUN_MAP_CONFIG.maxZoom,
         Math.max(map.getZoom(), map.getMinZoom() + 1),
@@ -351,11 +404,31 @@ export function mountFaerunMap(
       map.panInsideBounds(bounds, { animate: false });
       synchronizeView();
     },
+    locateSearchTarget(target: MapSearchTarget): void {
+      const coordinate = L.latLng(target.coordinates.y, target.coordinates.x);
+      const fallbackZoom = Math.min(
+        FAERUN_MAP_CONFIG.maxZoom,
+        Math.max(map.getZoom(), map.getMinZoom() + 1),
+      );
+      const targetZoom =
+        target.recommendedZoom === null
+          ? fallbackZoom
+          : Math.min(
+              FAERUN_MAP_CONFIG.maxZoom,
+              Math.max(map.getMinZoom(), target.recommendedZoom),
+            );
+
+      map.setView(coordinate, targetZoom, { animate: false });
+      map.panInsideBounds(bounds, { animate: false });
+      synchronizeView();
+      showSearchHighlight(target);
+    },
     focusMarker(placeId: PlaceId): void {
       markerByPlaceId.get(placeId)?.getElement()?.focus({ preventScroll: true });
     },
     destroy(): void {
       destroyed = true;
+      clearSearchHighlight();
       imageOverlay.off('load', handleImageLoad);
       imageOverlay.off('error', handleImageError);
       map.off('zoomend', synchronizeView);
