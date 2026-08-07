@@ -36,7 +36,7 @@ begin
       'archived_at', entity.archived_at,
       'updated_at', entity.updated_at
     ),
-    'tag_links', pg_catalog.coalesce((
+    'tag_links', coalesce((
       select pg_catalog.jsonb_agg(
         pg_catalog.jsonb_build_object(
           'id', link.id,
@@ -49,7 +49,7 @@ begin
       from public.entity_tags as link
       where link.entity_id = entity.id
     ), '[]'::jsonb),
-    'dispositions', pg_catalog.coalesce((
+    'dispositions', coalesce((
       select pg_catalog.jsonb_agg(
         pg_catalog.jsonb_build_object(
           'player_id', relation.player_id,
@@ -84,14 +84,14 @@ begin
   end if;
 
   select pg_catalog.md5(
-    pg_catalog.coalesce((
+    coalesce((
       select pg_catalog.string_agg(
         link.id || ':' || link.tag_id || ':' || link.publication_status::text || ':' || link.updated_at::text,
         '|' order by link.id
       )
       from public.entity_tags as link
       where link.entity_id = p_entity_id
-    ), '') || '#' || pg_catalog.coalesce((
+    ), '') || '#' || coalesce((
       select pg_catalog.string_agg(
         relation.player_id || ':' || relation.disposition::text || ':' || relation.updated_at::text,
         '|' order by relation.player_id
@@ -131,7 +131,7 @@ as $$
 declare
   existing public.map_entities%rowtype;
   relation_revision text;
-  selected_tag_ids text[] := pg_catalog.coalesce(p_tag_ids, '{}'::text[]);
+  selected_tag_ids text[] := coalesce(p_tag_ids, '{}'::text[]);
   disposition_count integer;
 begin
   if not public.current_user_is_admin() then
@@ -174,14 +174,14 @@ begin
     for update;
 
     select pg_catalog.md5(
-      pg_catalog.coalesce((
+      coalesce((
         select pg_catalog.string_agg(
           link.id || ':' || link.tag_id || ':' || link.publication_status::text || ':' || link.updated_at::text,
           '|' order by link.id
         )
         from public.entity_tags as link
         where link.entity_id = p_id
-      ), '') || '#' || pg_catalog.coalesce((
+      ), '') || '#' || coalesce((
         select pg_catalog.string_agg(
           relation.player_id || ':' || relation.disposition::text || ':' || relation.updated_at::text,
           '|' order by relation.player_id
