@@ -4,7 +4,6 @@ import { AdminAuthController } from './adminAuthController';
 import {
   AuthGatewayError,
   type AdminAuthorizationGateway,
-  type AuthCredentials,
   type AuthGateway,
   type AuthGatewayEvent,
   type AuthGatewayListener,
@@ -22,7 +21,7 @@ class EventAuthGateway implements AuthGateway {
   restoreError: unknown = null;
   signOutCount = 0;
 
-  signIn(_credentials: AuthCredentials): Promise<AuthIdentity> {
+  signIn(): Promise<AuthIdentity> {
     return Promise.resolve(IDENTITY);
   }
 
