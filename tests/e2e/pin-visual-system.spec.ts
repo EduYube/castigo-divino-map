@@ -196,7 +196,9 @@ test('distinguishes character and location pins by shape and exposes per-player 
   await expect(legend).toContainText('Neutral');
 });
 
-test('keeps selection and keyboard focus independent from type and disposition styling', async ({ page }) => {
+test('keeps selection and keyboard focus independent from type and disposition styling', async ({
+  page,
+}) => {
   await openPinVisualMap(page);
 
   const character = page.locator('[data-testid="entity-pin"][data-pin-id="entity-scout"]');
@@ -248,7 +250,9 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-center', '820.00,1080.50');
 });
 
-test('preserves legacy filter dimming while keeping type semantics and pins operable', async ({ page }) => {
+test('preserves legacy filter dimming while keeping type semantics and pins operable', async ({
+  page,
+}) => {
   await openPinVisualMap(page);
 
   await page.getByLabel('Asentamiento').check();
