@@ -5,9 +5,7 @@ import { createAtlasPinMarkerModels } from './pinMarkers';
 import type { CampaignCatalog } from './model';
 
 const legacyCatalog: CampaignCatalog = {
-  categories: [
-    { id: 'category-demo', slug: 'demo', name: 'Demo', description: '' },
-  ],
+  categories: [{ id: 'category-demo', slug: 'demo', name: 'Demo', description: '' }],
   tags: [],
   places: [
     {
