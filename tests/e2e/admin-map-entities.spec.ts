@@ -446,7 +446,6 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await expect(adminEntry).toBeVisible();
   await adminEntry.click();
   await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
-  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
   await page.evaluate(() => {
     window.dispatchEvent(
       new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
