@@ -1,0 +1,42 @@
+name: MAP-017 refresh emission fix helper
+
+on:
+  push:
+    branches:
+      - agent/map-017-admin-auth
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-017-admin-auth
+
+      - name: Remove duplicate automatic refresh event
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/infrastructure/supabase/adminAuthAdapter.ts')
+          text = path.read_text()
+          old = "      const identity = await this.#refreshSession(true);\n      this.#emit({ type: 'token-refreshed', identity });"
+          new = "      await this.#refreshSession(true);"
+          if old not in text:
+              raise SystemExit('Expected duplicate refresh emission was not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          rm .github/workflows/map017-refresh-fix-helper.yml
+          git diff --check
+
+      - name: Commit scoped fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/infrastructure/supabase/adminAuthAdapter.ts .github/workflows/map017-refresh-fix-helper.yml
+          git commit -m "MAP-017 — Evitar evento de refresh duplicado"
+          git push origin HEAD:agent/map-017-admin-auth
