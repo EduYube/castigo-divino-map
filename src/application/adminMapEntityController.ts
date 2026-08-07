@@ -13,12 +13,7 @@ import {
 import { validateAdminMapEntityDraft } from '../domain/adminMapEntityValidation';
 
 export type AdminMapEntityPhase =
-  | 'blocked'
-  | 'loading'
-  | 'ready'
-  | 'loading-editor'
-  | 'mutating'
-  | 'error';
+  'blocked' | 'loading' | 'ready' | 'loading-editor' | 'mutating' | 'error';
 
 export interface AdminMapEntityState {
   readonly records: readonly AdminMapEntityRecord[];
@@ -234,7 +229,9 @@ export class AdminMapEntityController {
           candidate.id === saved.record.id ? saved.record : candidate,
         ),
         editorDetail:
-          this.#state.editorDetail?.record.id === saved.record.id ? saved : this.#state.editorDetail,
+          this.#state.editorDetail?.record.id === saved.record.id
+            ? saved
+            : this.#state.editorDetail,
         phase: 'ready',
         issue: null,
       });
