@@ -175,6 +175,11 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
+    if (url.pathname.endsWith('/rpc/current_user_is_admin')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
+      return;
+    }
+
     if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor')) {
       const body = request.postDataJSON() as { p_entity_id?: string };
       await route.fulfill({
