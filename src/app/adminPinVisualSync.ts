@@ -103,7 +103,7 @@ function synchronize(root: ParentNode): void {
   }
 }
 
-export function mountAdminPinVisualSync(root: ParentNode): AdminPinVisualSyncController {
+export function mountAdminPinVisualSync(root: HTMLElement): AdminPinVisualSyncController {
   let scheduled = false;
   const scheduleSync = (): void => {
     if (scheduled) return;
@@ -114,7 +114,12 @@ export function mountAdminPinVisualSync(root: ParentNode): AdminPinVisualSyncCon
     });
   };
   const observer = new MutationObserver(scheduleSync);
-  observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  observer.observe(root, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['hidden'],
+  });
   root.addEventListener('input', scheduleSync);
   root.addEventListener('change', scheduleSync);
   scheduleSync();
