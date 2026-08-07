@@ -1,7 +1,10 @@
 # Sistema visual de pines
 
-- Issue: MAP-022.
-- Estado: contrato de Beta 0.2 implementado en la rama funcional; la evidencia definitiva corresponde al head final validado por GitHub Actions.
+- Issue: MAP-022 (#41), cerrada como completada tras el merge funcional.
+- PR funcional: #71.
+- Head funcional final: `45dfa13ca616ef5f3e4e31fa95fbe76040d4dfaf`.
+- CI pre-merge: #393, run `31224128324`, completamente verde.
+- Merge funcional: `ccd8d5c372307b1d5ec02539fae8a4d5df8b4f51`.
 - Alcance: mapa público y previsualización/editor administrativo.
 
 ## Propósito y frontera
@@ -30,7 +33,7 @@ El tipo se expresa principalmente mediante forma y símbolo, no mediante color:
 | `character` | círculo | `●` | Personaje |
 | `location` | rombo/cuadrado girado | `◆` | Emplazamiento |
 
-La forma se mantiene en modo `forced-colors`. El nombre del tipo forma parte del `aria-label` del control y de la leyenda.
+La forma se mantiene en modo `forced-colors`. El tipo forma parte de la descripción accesible del pin y de la leyenda; para los pines Beta 0.1 se preserva además el `aria-label` histórico exacto para no romper el contrato de accesibilidad consolidado.
 
 ### Disposición por jugador
 
@@ -43,7 +46,7 @@ No existe una disposición global. Cada pin puede mostrar varios tokens compacto
 | `neutral` | `•` | punteado | Neutral |
 | fallback ausente | `?` | discontinuo | Sin disposición disponible |
 
-El color es complementario. Símbolo, estilo de borde y texto transmiten el mismo significado cuando el color desaparece. Los nombres accesibles enumeran la perspectiva explícitamente, por ejemplo `Alicia: aliado; Borin: enemigo`.
+El color es complementario. Símbolo, estilo de borde y texto transmiten el mismo significado cuando el color desaparece. La descripción accesible enumera la perspectiva explícitamente, por ejemplo `Alicia: aliado; Borin: enemigo`.
 
 ## Selección, foco, hover y filtros
 
@@ -97,6 +100,7 @@ Cuando el backend Beta 0.2 no está disponible, los pines Beta 0.1 continúan fu
 - `L.CRS.Simple` y las coordenadas existentes;
 - zoom y centrado sin animación obligatoria;
 - selección de fichas Beta 0.1;
+- `aria-label` histórico y estado `Lugar activo` de los pines Beta 0.1;
 - resaltado geográfico temporal separado de MAP-021;
 - foco de retorno al cerrar una ficha;
 - atenuación por filtros;
@@ -131,9 +135,10 @@ La alternativa accesible de editar X/Y directamente permanece intacta.
 
 ## Accesibilidad y móvil
 
-El contrato exige y las pruebas cubren:
+El contrato y las pruebas cubren:
 
-- nombre accesible con nombre, tipo, disposiciones por jugador y categoría;
+- semántica accesible equivalente para nombre, tipo, disposiciones por jugador y categoría;
+- compatibilidad de los nombres accesibles históricos Beta 0.1;
 - Enter/Espacio en pines y grupos coincidentes;
 - foco visible independiente del color;
 - opciones coincidentes como botones nativos;
@@ -143,7 +148,7 @@ El contrato exige y las pruebas cubren:
 - `prefers-reduced-motion` sin transiciones necesarias;
 - ninguna dependencia de hover para descubrir entidades.
 
-## Pruebas
+## Pruebas y evidencia funcional
 
 Cobertura específica añadida:
 
@@ -152,7 +157,18 @@ Cobertura específica añadida:
 - `tests/e2e/pin-visual-system.spec.ts`: vista pública, formas, disposiciones no cromáticas, selección, foco, filtros, coincidencias, teclado, 320 px, targets táctiles, forced colors y reduced motion;
 - `tests/e2e/admin-pin-visual-system.spec.ts`: marcador y preview administrativos con el mismo contrato visual.
 
-Las suites previas siguen siendo obligatorias. La evidencia definitiva debe proceder de GitHub Actions sobre el SHA final de la PR.
+El head funcional final `45dfa13ca616ef5f3e4e31fa95fbe76040d4dfaf` fue validado por CI #393 / run `31224128324` con:
+
+- 198 unitarios verdes;
+- 81 E2E verdes;
+- 2 smoke del build Pages verdes;
+- 222 pgTAP verdes;
+- 13 comprobaciones de concurrencia Supabase verdes;
+- formatting, auditoría de credenciales, lint, build y controles RLS/migraciones verdes.
+
+La PR #71 se marcó Ready solo después de esa ejecución y se fusionó mediante el merge commit `ccd8d5c372307b1d5ec02539fae8a4d5df8b4f51`. La Issue #41 quedó cerrada automáticamente.
+
+La verificación post-merge de los workflows `push` de `master` y de Pages se registra en `docs/project-status.md`; no se inventan run IDs cuando el conector no puede enumerarlos.
 
 ## Archivos principales
 
