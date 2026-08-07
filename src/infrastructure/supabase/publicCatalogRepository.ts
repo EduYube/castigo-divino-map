@@ -83,7 +83,7 @@ const TABLE_QUERIES = {
     name: 'character_location_relations',
     select: 'character_id,location_id,relation_status',
     order: 'location_id.asc,character_id.asc',
-    published: true,
+    published: false,
   },
   notes: {
     name: 'public_notes',
