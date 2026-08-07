@@ -68,20 +68,12 @@ export function toAdminMapEntityIssue(error: unknown): AdminMapEntityIssue {
 
 export interface AdminMapEntityRepository {
   list(options: { readonly signal: AbortSignal }): Promise<readonly AdminMapEntityRecord[]>;
-  loadReferences(options: {
-    readonly signal: AbortSignal;
-  }): Promise<AdminMapEntityReferences>;
-  load(
-    entityId: string,
-    options: { readonly signal: AbortSignal },
-  ): Promise<AdminMapEntityDetail>;
+  loadReferences(options: { readonly signal: AbortSignal }): Promise<AdminMapEntityReferences>;
+  load(entityId: string, options: { readonly signal: AbortSignal }): Promise<AdminMapEntityDetail>;
   save(
     original: AdminMapEntityDetail | null,
     draft: AdminMapEntityDraft,
     options: { readonly signal: AbortSignal },
   ): Promise<AdminMapEntityDetail>;
-  delete(
-    detail: AdminMapEntityDetail,
-    options: { readonly signal: AbortSignal },
-  ): Promise<void>;
+  delete(detail: AdminMapEntityDetail, options: { readonly signal: AbortSignal }): Promise<void>;
 }
