@@ -1,0 +1,107 @@
+.admin-character-location-relation {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--border-subtle, #c9c6bf);
+  border-radius: 0.75rem;
+}
+
+.admin-character-location-relation__heading,
+.admin-character-location-relation__editor-heading {
+  margin: 0;
+}
+
+.admin-character-location-relation__intro,
+.admin-character-location-relation__status,
+.admin-character-location-relation__publication,
+.admin-character-location-relation__error {
+  margin: 0;
+}
+
+.admin-character-location-relation__toolbar,
+.admin-character-location-relation__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.admin-character-location-relation__list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-character-location-relation__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.7rem;
+  border: 1px solid currentColor;
+  border-radius: 0.55rem;
+}
+
+.admin-character-location-relation__item-content {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.admin-character-location-relation__item-meta {
+  font-size: 0.9rem;
+}
+
+.admin-character-location-relation__editor,
+.admin-character-location-relation__form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-character-location-relation__label {
+  font-weight: 650;
+}
+
+.admin-character-location-relation__control {
+  min-height: 2.75rem;
+  width: 100%;
+  padding: 0.5rem;
+  font: inherit;
+}
+
+.admin-character-location-relation__button,
+.admin-character-location-relation__primary,
+.admin-character-location-relation__danger {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+}
+
+.admin-character-location-relation__error {
+  min-height: 1.2em;
+  font-size: 0.9rem;
+}
+
+.admin-character-location-relation__control[aria-invalid='true'] {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .admin-character-location-relation__item {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-character-location-relation__toolbar,
+  .admin-character-location-relation__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-character-location-relation__button,
+  .admin-character-location-relation__primary,
+  .admin-character-location-relation__danger {
+    width: 100%;
+  }
+}
