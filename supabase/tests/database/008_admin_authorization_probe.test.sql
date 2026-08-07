@@ -17,8 +17,8 @@ select is(
     from pg_proc
     where oid = to_regprocedure('public.current_user_is_admin()')
   ),
-  true,
-  'administrative authorization probe is SECURITY DEFINER'
+  false,
+  'administrative authorization probe is SECURITY INVOKER'
 );
 
 select ok(
@@ -31,13 +31,14 @@ select ok(
 );
 
 select ok(
-  has_function_privilege('anon', 'public.current_user_is_admin()', 'execute'),
-  'anon may invoke the minimal probe without gaining private schema access'
+  not has_function_privilege('anon', 'public.current_user_is_admin()', 'execute'),
+  'anon cannot invoke the administrative authorization probe'
 );
 
-set local role anon;
-select is(public.current_user_is_admin(), false, 'anonymous callers are not administrators');
-reset role;
+select ok(
+  has_function_privilege('authenticated', 'public.current_user_is_admin()', 'execute'),
+  'authenticated callers may invoke the minimal authorization probe'
+);
 
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000002","role":"authenticated"}';
