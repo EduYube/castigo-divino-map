@@ -2,7 +2,6 @@ import { AdminAuthController } from '../auth/adminAuthController';
 import {
   AuthGatewayError,
   type AdminAuthorizationGateway,
-  type AuthCredentials,
   type AuthGateway,
   type AuthGatewayListener,
   type AuthIdentity,
@@ -33,7 +32,7 @@ class UnavailableAdminAuthAdapter implements AuthGateway, AdminAuthorizationGate
     this.#error = error;
   }
 
-  signIn(_credentials: AuthCredentials): Promise<AuthIdentity> {
+  signIn(): Promise<AuthIdentity> {
     return Promise.reject(this.#error);
   }
 
