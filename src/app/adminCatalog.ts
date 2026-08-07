@@ -424,6 +424,7 @@ export function mountAdminCatalog(
   editor.setAttribute('aria-labelledby', editorHeading.id);
   editorStatus.setAttribute('role', 'alert');
   editorStatus.setAttribute('aria-live', 'assertive');
+  editorStatus.tabIndex = -1;
   form.noValidate = true;
   form.append(fields);
   previewHeading.textContent = 'Previsualización';

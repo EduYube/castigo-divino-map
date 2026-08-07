@@ -398,7 +398,7 @@ test('admin CRUD remains keyboard-usable at 320px and never exposes tokens', asy
   await create.focus();
   await page.keyboard.press('Enter');
   await expect(page.getByLabel('ID estable')).toBeVisible();
-  await expect(page.getByLabel('Slug')).toBeFocused();
+  await expect(page.getByLabel('ID estable')).toBeFocused();
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );

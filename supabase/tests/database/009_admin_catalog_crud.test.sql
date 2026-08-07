@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(18);
+select plan(19);
 
 set local role anon;
 select is(

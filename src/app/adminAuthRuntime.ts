@@ -20,7 +20,6 @@ import type {
 } from '../domain/adminCatalog';
 import { SupabaseAdminAuthAdapter } from '../infrastructure/supabase/adminAuthAdapter';
 import { SupabaseAdminCatalogRepository } from '../infrastructure/supabase/adminCatalogRepository';
-import './adminCatalog';
 import { mountAdminCatalog } from './adminCatalog';
 import { mountAdminAuth } from './adminAuth';
 import '../styles/admin-catalog.css';
@@ -89,6 +88,8 @@ class UnavailableAdminCatalogRepository implements AdminCatalogRepository {
     _kind: AdminCatalogResourceKind,
     _options: { readonly signal: AbortSignal },
   ): Promise<readonly AdminCatalogRecord[]> {
+    void _kind;
+    void _options;
     return Promise.reject(this.#error);
   }
 
@@ -96,6 +97,8 @@ class UnavailableAdminCatalogRepository implements AdminCatalogRepository {
     _draft: AdminCatalogDraft,
     _options: { readonly signal: AbortSignal },
   ): Promise<AdminCatalogRecord> {
+    void _draft;
+    void _options;
     return Promise.reject(this.#error);
   }
 
@@ -104,6 +107,9 @@ class UnavailableAdminCatalogRepository implements AdminCatalogRepository {
     _draft: AdminCatalogDraft,
     _options: { readonly signal: AbortSignal },
   ): Promise<AdminCatalogRecord> {
+    void _original;
+    void _draft;
+    void _options;
     return Promise.reject(this.#error);
   }
 
@@ -111,22 +117,28 @@ class UnavailableAdminCatalogRepository implements AdminCatalogRepository {
     _record: AdminCatalogRecord,
     _options: { readonly signal: AbortSignal },
   ): Promise<AdminCatalogRecord> {
+    void _record;
+    void _options;
     return Promise.reject(this.#error);
   }
 
   delete(_record: AdminCatalogRecord, _options: { readonly signal: AbortSignal }): Promise<void> {
+    void _record;
+    void _options;
     return Promise.reject(this.#error);
   }
 
   listEntityReferences(_options: {
     readonly signal: AbortSignal;
   }): Promise<readonly AdminEntityReference[]> {
+    void _options;
     return Promise.reject(this.#error);
   }
 
   listGeographicNameReferences(_options: {
     readonly signal: AbortSignal;
   }): Promise<readonly AdminGeographicNameReference[]> {
+    void _options;
     return Promise.reject(this.#error);
   }
 }
