@@ -175,10 +175,14 @@ function assertReferences(snapshot: PublicCatalogContentV2): void {
     const character = entitiesById.get(relation.characterId);
     const location = entitiesById.get(relation.locationId);
     if (!character || character.entityType !== 'character') {
-      invalidResponse('Una relación personaje–emplazamiento referencia un personaje ausente o incompatible.');
+      invalidResponse(
+        'Una relación personaje–emplazamiento referencia un personaje ausente o incompatible.',
+      );
     }
     if (!location || location.entityType !== 'location') {
-      invalidResponse('Una relación personaje–emplazamiento referencia un emplazamiento ausente o incompatible.');
+      invalidResponse(
+        'Una relación personaje–emplazamiento referencia un emplazamiento ausente o incompatible.',
+      );
     }
   });
 

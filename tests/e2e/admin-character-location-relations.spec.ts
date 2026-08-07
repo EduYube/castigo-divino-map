@@ -136,7 +136,12 @@ async function configureBackend(page: Page): Promise<{
     }
 
     if (request.method() === 'GET') {
-      const rows = table === 'map_entities' ? entities : table === 'character_location_relations' ? relations : [];
+      const rows =
+        table === 'map_entities'
+          ? entities
+          : table === 'character_location_relations'
+            ? relations
+            : [];
       const response = rangeResponse(rows);
       await route.fulfill({ status: 200, headers: response.headers, body: response.body });
       return;
@@ -168,7 +173,11 @@ async function configureBackend(page: Page): Promise<{
         updated_at: updatedAt,
       };
       relations.push(row);
-      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify([row]) });
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify([row]),
+      });
       return;
     }
 
@@ -176,8 +185,10 @@ async function configureBackend(page: Page): Promise<{
       const expected = (url.searchParams.get('updated_at') ?? '').replace(/^eq\./, '');
       const row = relations.find(
         (candidate) =>
-          candidate.character_id === (url.searchParams.get('character_id') ?? '').replace(/^eq\./, '') &&
-          candidate.location_id === (url.searchParams.get('location_id') ?? '').replace(/^eq\./, ''),
+          candidate.character_id ===
+            (url.searchParams.get('character_id') ?? '').replace(/^eq\./, '') &&
+          candidate.location_id ===
+            (url.searchParams.get('location_id') ?? '').replace(/^eq\./, ''),
       );
       if (!row || row.updated_at !== expected) {
         await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
@@ -190,7 +201,11 @@ async function configureBackend(page: Page): Promise<{
       row.published_at ??= row.publication_status === 'published' ? updatedAt : null;
       row.archived_at = row.publication_status === 'archived' ? updatedAt : null;
       row.updated_at = updatedAt;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([row]) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([row]),
+      });
       return;
     }
 

@@ -20,10 +20,18 @@ export function validateCharacterLocationRelationDraft(
   const character = references.characters.find(({ id }) => id === draft.characterId);
   const location = references.locations.find(({ id }) => id === draft.locationId);
 
-  if (!character || character.entityType !== 'character' || character.publicationStatus === 'archived') {
+  if (
+    !character ||
+    character.entityType !== 'character' ||
+    character.publicationStatus === 'archived'
+  ) {
     errors.characterId = 'Selecciona un personaje disponible y no archivado.';
   }
-  if (!location || location.entityType !== 'location' || location.publicationStatus === 'archived') {
+  if (
+    !location ||
+    location.entityType !== 'location' ||
+    location.publicationStatus === 'archived'
+  ) {
     errors.locationId = 'Selecciona un emplazamiento disponible y no archivado.';
   }
 
@@ -44,11 +52,16 @@ export function validateCharacterLocationRelationDraft(
       errors.locationId = 'El emplazamiento de una relación existente no puede cambiar.';
     }
     if (original.publicationStatus === 'archived' && draft.publicationStatus === 'published') {
-      errors.publicationStatus = 'Una relación archivada debe volver a borrador antes de publicarse.';
+      errors.publicationStatus =
+        'Una relación archivada debe volver a borrador antes de publicarse.';
     }
   } else {
     const key = characterLocationRelationKey(draft.characterId, draft.locationId);
-    if (records.some((record) => characterLocationRelationKey(record.characterId, record.locationId) === key)) {
+    if (
+      records.some(
+        (record) => characterLocationRelationKey(record.characterId, record.locationId) === key,
+      )
+    ) {
       errors.locationId = 'Ese personaje ya tiene una relación con el emplazamiento seleccionado.';
     }
   }

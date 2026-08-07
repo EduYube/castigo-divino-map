@@ -121,10 +121,12 @@ export function mountAdminCharacterLocationRelations(
   relationSelect.id = 'admin-character-location-relation-status';
   relationSelect.name = 'relationStatus';
   relationSelect.setAttribute('data-testid', 'relation-status');
-  (Object.entries(CHARACTER_LOCATION_RELATION_STATUS_LABELS) as [
-    CharacterLocationRelationStatus,
-    string,
-  ][]).forEach(([value, label]) => {
+  (
+    Object.entries(CHARACTER_LOCATION_RELATION_STATUS_LABELS) as [
+      CharacterLocationRelationStatus,
+      string,
+    ][]
+  ).forEach(([value, label]) => {
     const option = document.createElement('option');
     option.value = value;
     option.textContent = label;
@@ -159,8 +161,9 @@ export function mountAdminCharacterLocationRelations(
 
   function nameForEntity(id: string): string {
     return (
-      [...state.references.characters, ...state.references.locations].find((entity) => entity.id === id)
-        ?.name ?? id
+      [...state.references.characters, ...state.references.locations].find(
+        (entity) => entity.id === id,
+      )?.name ?? id
     );
   }
 
@@ -224,7 +227,10 @@ export function mountAdminCharacterLocationRelations(
     return result.valid;
   }
 
-  function openEditor(record: AdminCharacterLocationRelationRecord | null, trigger: HTMLElement): void {
+  function openEditor(
+    record: AdminCharacterLocationRelationRecord | null,
+    trigger: HTMLElement,
+  ): void {
     editing = record;
     creating = record === null;
     restoreFocus = trigger;
@@ -238,7 +244,8 @@ export function mountAdminCharacterLocationRelations(
     locationSelect.disabled = record !== null;
     relationSelect.value = draft.relationStatus;
     publication.textContent = `Estado editorial actual: ${record?.publicationStatus ?? 'nuevo borrador'}.`;
-    saveDraftButton.textContent = record?.publicationStatus === 'archived' ? 'Volver a borrador' : 'Guardar borrador';
+    saveDraftButton.textContent =
+      record?.publicationStatus === 'archived' ? 'Volver a borrador' : 'Guardar borrador';
     publishButton.disabled = record?.publicationStatus === 'archived';
     retireButton.hidden = !record || record.publicationStatus === 'archived';
     editorStatus.textContent = '';
@@ -262,8 +269,12 @@ export function mountAdminCharacterLocationRelations(
   function renderList(): void {
     list.replaceChildren();
     const records = [...state.records].sort((left, right) => {
-      const location = nameForEntity(left.locationId).localeCompare(nameForEntity(right.locationId));
-      return location || nameForEntity(left.characterId).localeCompare(nameForEntity(right.characterId));
+      const location = nameForEntity(left.locationId).localeCompare(
+        nameForEntity(right.locationId),
+      );
+      return (
+        location || nameForEntity(left.characterId).localeCompare(nameForEntity(right.characterId))
+      );
     });
     for (const record of records) {
       const item = createElement('li', 'admin-character-location-relation__item');
@@ -276,7 +287,10 @@ export function mountAdminCharacterLocationRelations(
       meta.textContent = `${CHARACTER_LOCATION_RELATION_STATUS_LABELS[record.relationStatus]} · ${record.publicationStatus}`;
       editButton.type = 'button';
       editButton.textContent = 'Editar';
-      editButton.setAttribute('aria-label', `Editar relación de ${nameForEntity(record.characterId)} con ${nameForEntity(record.locationId)}`);
+      editButton.setAttribute(
+        'aria-label',
+        `Editar relación de ${nameForEntity(record.characterId)} con ${nameForEntity(record.locationId)}`,
+      );
       editButton.addEventListener('click', () => openEditor(record, editButton));
       retire.type = 'button';
       retire.textContent = 'Retirar';
@@ -302,9 +316,11 @@ export function mountAdminCharacterLocationRelations(
     saveDraftButton.disabled = busy;
     publishButton.disabled = busy || editing?.publicationStatus === 'archived';
     retireButton.disabled = busy;
-    if (!state.authorized) status.textContent = 'La edición de relaciones requiere una sesión autorizada.';
+    if (!state.authorized)
+      status.textContent = 'La edición de relaciones requiere una sesión autorizada.';
     else if (!state.backendConnected)
-      status.textContent = 'La edición de relaciones está bloqueada mientras el backend público no esté conectado.';
+      status.textContent =
+        'La edición de relaciones está bloqueada mientras el backend público no esté conectado.';
     else if (state.phase === 'loading') status.textContent = 'Cargando relaciones…';
     else if (state.phase === 'mutating') status.textContent = 'Guardando relación…';
     else if (state.issue) status.textContent = state.issue.message;
@@ -317,11 +333,16 @@ export function mountAdminCharacterLocationRelations(
     if (editing || creating) list.hidden = true;
   }
 
-  async function saveAs(publicationStatus: CharacterLocationRelationPublicationStatus): Promise<void> {
+  async function saveAs(
+    publicationStatus: CharacterLocationRelationPublicationStatus,
+  ): Promise<void> {
     const draft = readDraft(publicationStatus);
     if (!showValidation(draft)) {
       editorStatus.textContent = 'Revisa los campos indicados antes de guardar.';
-      (characterSelect.getAttribute('aria-invalid') === 'true' ? characterSelect : locationSelect).focus();
+      (characterSelect.getAttribute('aria-invalid') === 'true'
+        ? characterSelect
+        : locationSelect
+      ).focus();
       return;
     }
     const saved = await controller.save(draft, editing);
@@ -338,8 +359,10 @@ export function mountAdminCharacterLocationRelations(
     populateLocations(previous);
     showValidation(readDraft(editing?.publicationStatus ?? 'draft'));
   };
-  const handleLocationChange = (): void => showValidation(readDraft(editing?.publicationStatus ?? 'draft'));
-  const handleRelationChange = (): void => showValidation(readDraft(editing?.publicationStatus ?? 'draft'));
+  const handleLocationChange = (): void =>
+    showValidation(readDraft(editing?.publicationStatus ?? 'draft'));
+  const handleRelationChange = (): void =>
+    showValidation(readDraft(editing?.publicationStatus ?? 'draft'));
   const handleSaveDraft = (): void => void saveAs('draft');
   const handlePublish = (): void => void saveAs('published');
   const handleRetire = (): void => {

@@ -55,10 +55,9 @@ const catalog: PublicCatalogSnapshotV2 = {
 describe('character-location public projections', () => {
   test('location cards get important characters in stable semantic/name order', () => {
     expect(
-      getImportantCharactersForLocation(catalog, 'entity-bramble').map(({ character, relation }) => [
-        character.name,
-        relation.relationStatus,
-      ]),
+      getImportantCharactersForLocation(catalog, 'entity-bramble').map(
+        ({ character, relation }) => [character.name, relation.relationStatus],
+      ),
     ).toEqual([
       ['Aster', 'present'],
       ['Zara', 'associated'],

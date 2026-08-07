@@ -133,9 +133,7 @@ function responseCode(payload: unknown): string | null {
 const RELATION_SELECT =
   'character_id,location_id,relation_status,publication_status,published_at,archived_at,updated_at';
 
-export class SupabaseAdminCharacterLocationRelationRepository
-  implements AdminCharacterLocationRelationRepository
-{
+export class SupabaseAdminCharacterLocationRelationRepository implements AdminCharacterLocationRelationRepository {
   readonly #projectUrl: string;
   readonly #publishableKey: string;
   readonly #storage: BrowserAuthSessionStorage;

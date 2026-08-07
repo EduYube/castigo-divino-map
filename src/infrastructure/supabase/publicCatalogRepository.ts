@@ -368,7 +368,9 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
       );
 
       return await buildPublicCatalogEnvelopeV2(
-        Object.fromEntries(responses) as unknown as PublicCatalogTablePayloadsWithCharacterLocations,
+        Object.fromEntries(
+          responses,
+        ) as unknown as PublicCatalogTablePayloadsWithCharacterLocations,
         this.#now,
       );
     } catch (error) {

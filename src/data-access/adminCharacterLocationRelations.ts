@@ -66,7 +66,9 @@ export function toAdminCharacterLocationRelationIssue(
 }
 
 export interface AdminCharacterLocationRelationRepository {
-  list(options: { readonly signal: AbortSignal }): Promise<readonly AdminCharacterLocationRelationRecord[]>;
+  list(options: {
+    readonly signal: AbortSignal;
+  }): Promise<readonly AdminCharacterLocationRelationRecord[]>;
   loadReferences(options: {
     readonly signal: AbortSignal;
   }): Promise<AdminCharacterLocationRelationReferences>;

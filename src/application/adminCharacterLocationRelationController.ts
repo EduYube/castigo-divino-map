@@ -10,7 +10,8 @@ import type {
 } from '../domain/characterLocationRelations';
 import { validateCharacterLocationRelationDraft } from '../domain/characterLocationRelationValidation';
 
-export type AdminCharacterLocationRelationPhase = 'blocked' | 'loading' | 'ready' | 'mutating' | 'error';
+export type AdminCharacterLocationRelationPhase =
+  'blocked' | 'loading' | 'ready' | 'mutating' | 'error';
 
 export interface AdminCharacterLocationRelationState {
   readonly records: readonly AdminCharacterLocationRelationRecord[];
@@ -25,7 +26,10 @@ interface AdminCharacterLocationRelationControllerOptions {
   readonly onAuthorizationRejected?: (status: 401 | 403) => void;
 }
 
-const EMPTY_REFERENCES: AdminCharacterLocationRelationReferences = { characters: [], locations: [] };
+const EMPTY_REFERENCES: AdminCharacterLocationRelationReferences = {
+  characters: [],
+  locations: [],
+};
 const INITIAL_STATE: AdminCharacterLocationRelationState = {
   records: [],
   references: EMPTY_REFERENCES,

@@ -9,10 +9,20 @@ import { AdminCharacterLocationRelationController } from './adminCharacterLocati
 
 const references: AdminCharacterLocationRelationReferences = {
   characters: [
-    { id: 'entity-character', name: 'Character', entityType: 'character', publicationStatus: 'published' },
+    {
+      id: 'entity-character',
+      name: 'Character',
+      entityType: 'character',
+      publicationStatus: 'published',
+    },
   ],
   locations: [
-    { id: 'entity-location', name: 'Location', entityType: 'location', publicationStatus: 'published' },
+    {
+      id: 'entity-location',
+      name: 'Location',
+      entityType: 'location',
+      publicationStatus: 'published',
+    },
   ],
 };
 
@@ -26,7 +36,9 @@ const record: AdminCharacterLocationRelationRecord = {
   updatedAt: '2026-08-07T00:00:00Z',
 };
 
-function repository(overrides: Partial<AdminCharacterLocationRelationRepository> = {}): AdminCharacterLocationRelationRepository {
+function repository(
+  overrides: Partial<AdminCharacterLocationRelationRepository> = {},
+): AdminCharacterLocationRelationRepository {
   return {
     list: vi.fn(async () => []),
     loadReferences: vi.fn(async () => references),

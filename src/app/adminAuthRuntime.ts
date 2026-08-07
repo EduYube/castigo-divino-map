@@ -212,18 +212,16 @@ class UnavailableAdminMapEntityRepository implements AdminMapEntityRepository {
   }
 }
 
-class UnavailableAdminCharacterLocationRelationRepository
-  implements AdminCharacterLocationRelationRepository
-{
+class UnavailableAdminCharacterLocationRelationRepository implements AdminCharacterLocationRelationRepository {
   readonly #error: AdminCharacterLocationRelationRepositoryError;
 
   constructor(error: AdminCharacterLocationRelationRepositoryError) {
     this.#error = error;
   }
 
-  list(
-    _options: { readonly signal: AbortSignal },
-  ): Promise<readonly AdminCharacterLocationRelationRecord[]> {
+  list(_options: {
+    readonly signal: AbortSignal;
+  }): Promise<readonly AdminCharacterLocationRelationRecord[]> {
     void _options;
     return Promise.reject(this.#error);
   }

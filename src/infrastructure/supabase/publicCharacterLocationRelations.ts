@@ -1,7 +1,4 @@
-import type {
-  PublicCharacterLocationRelation,
-  PublicMapEntity,
-} from '../../data/beta02-model';
+import type { PublicCharacterLocationRelation, PublicMapEntity } from '../../data/beta02-model';
 import { PublicDataRepositoryError } from '../../data-access/publicCatalog';
 import type { PublicCatalogTablePayloads } from './publicCatalogRows';
 
@@ -33,7 +30,11 @@ export function parseCharacterLocationRelation(
     invalidResponse(`${path}.${unexpected} no forma parte de la proyección pública.`);
   }
   const relationStatus = row.relation_status;
-  if (relationStatus !== 'present' && relationStatus !== 'associated' && relationStatus !== 'last-seen') {
+  if (
+    relationStatus !== 'present' &&
+    relationStatus !== 'associated' &&
+    relationStatus !== 'last-seen'
+  ) {
     invalidResponse(`${path}.relation_status no contiene un estado público permitido.`);
   }
   return {

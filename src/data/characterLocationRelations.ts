@@ -36,7 +36,11 @@ export function getImportantCharactersForLocation(
       const status =
         (STATUS_ORDER.get(left.relation.relationStatus) ?? Number.MAX_SAFE_INTEGER) -
         (STATUS_ORDER.get(right.relation.relationStatus) ?? Number.MAX_SAFE_INTEGER);
-      return status || left.character.name.localeCompare(right.character.name) || left.character.id.localeCompare(right.character.id);
+      return (
+        status ||
+        left.character.name.localeCompare(right.character.name) ||
+        left.character.id.localeCompare(right.character.id)
+      );
     });
 }
 
@@ -52,7 +56,9 @@ export function getRelatedLocationsForCharacter(
       (entry): entry is { relation: PublicCharacterLocationRelation; location: PublicMapEntity } =>
         entry.location?.entityType === 'location',
     )
-    .sort((left, right) =>
-      left.location.name.localeCompare(right.location.name) || left.location.id.localeCompare(right.location.id),
+    .sort(
+      (left, right) =>
+        left.location.name.localeCompare(right.location.name) ||
+        left.location.id.localeCompare(right.location.id),
     );
 }

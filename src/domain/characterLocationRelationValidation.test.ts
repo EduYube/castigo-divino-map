@@ -8,13 +8,38 @@ import { validateCharacterLocationRelationDraft } from './characterLocationRelat
 
 const references: AdminCharacterLocationRelationReferences = {
   characters: [
-    { id: 'entity-character', name: 'Character', entityType: 'character', publicationStatus: 'published' },
-    { id: 'entity-character-draft', name: 'Draft', entityType: 'character', publicationStatus: 'draft' },
-    { id: 'entity-character-archived', name: 'Archived', entityType: 'character', publicationStatus: 'archived' },
+    {
+      id: 'entity-character',
+      name: 'Character',
+      entityType: 'character',
+      publicationStatus: 'published',
+    },
+    {
+      id: 'entity-character-draft',
+      name: 'Draft',
+      entityType: 'character',
+      publicationStatus: 'draft',
+    },
+    {
+      id: 'entity-character-archived',
+      name: 'Archived',
+      entityType: 'character',
+      publicationStatus: 'archived',
+    },
   ],
   locations: [
-    { id: 'entity-location', name: 'Location', entityType: 'location', publicationStatus: 'published' },
-    { id: 'entity-location-draft', name: 'Draft location', entityType: 'location', publicationStatus: 'draft' },
+    {
+      id: 'entity-location',
+      name: 'Location',
+      entityType: 'location',
+      publicationStatus: 'published',
+    },
+    {
+      id: 'entity-location-draft',
+      name: 'Draft location',
+      entityType: 'location',
+      publicationStatus: 'draft',
+    },
   ],
 };
 

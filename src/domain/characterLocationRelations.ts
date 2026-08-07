@@ -38,16 +38,10 @@ export const CHARACTER_LOCATION_RELATION_STATUS_LABELS: Readonly<
   'last-seen': 'Visto por última vez',
 };
 
-export const CHARACTER_LOCATION_RELATION_STATUS_ORDER: readonly CharacterLocationRelationStatus[] = [
-  'present',
-  'associated',
-  'last-seen',
-];
+export const CHARACTER_LOCATION_RELATION_STATUS_ORDER: readonly CharacterLocationRelationStatus[] =
+  ['present', 'associated', 'last-seen'];
 
-export function characterLocationRelationKey(
-  characterId: string,
-  locationId: string,
-): string {
+export function characterLocationRelationKey(characterId: string, locationId: string): string {
   return `${characterId}\u0000${locationId}`;
 }
 
@@ -67,9 +61,11 @@ export function createEmptyCharacterLocationRelationDraft(
 ): AdminCharacterLocationRelationDraft {
   return {
     characterId:
-      references.characters.find(({ publicationStatus }) => publicationStatus !== 'archived')?.id ?? '',
+      references.characters.find(({ publicationStatus }) => publicationStatus !== 'archived')?.id ??
+      '',
     locationId:
-      references.locations.find(({ publicationStatus }) => publicationStatus !== 'archived')?.id ?? '',
+      references.locations.find(({ publicationStatus }) => publicationStatus !== 'archived')?.id ??
+      '',
     relationStatus: 'associated',
     publicationStatus: 'draft',
   };
