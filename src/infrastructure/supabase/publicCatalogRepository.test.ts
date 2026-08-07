@@ -71,7 +71,7 @@ describe('SupabasePublicCatalogRepository', () => {
     );
   });
 
-  test('uses an explicit published filter for every editorial table', async () => {
+  test('uses explicit publication filters except where the minimal public grant delegates them to RLS', async () => {
     const urls: URL[] = [];
     const repository = new SupabasePublicCatalogRepository({
       projectUrl: PROJECT_URL,
@@ -85,9 +85,11 @@ describe('SupabasePublicCatalogRepository', () => {
     await repository.load({ signal: new AbortController().signal });
 
     const dispositionUrl = urls.find((url) => url.pathname.endsWith('/entity_player_dispositions'));
+    const relationUrl = urls.find((url) => url.pathname.endsWith('/character_location_relations'));
     expect(dispositionUrl?.searchParams.has('publication_status')).toBe(false);
+    expect(relationUrl?.searchParams.has('publication_status')).toBe(false);
     urls
-      .filter((url) => url !== dispositionUrl)
+      .filter((url) => url !== dispositionUrl && url !== relationUrl)
       .forEach((url) => expect(url.searchParams.get('publication_status')).toBe('eq.published'));
   });
 
