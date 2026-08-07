@@ -1,5 +1,6 @@
 name: MAP-021 temporary formatter
 
+# Temporary branch-only formatter; remove before merge.
 on:
   push:
     branches:
