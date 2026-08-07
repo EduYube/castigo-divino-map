@@ -16,11 +16,11 @@ export function renderApp(): string {
     <main id="main-content" class="atlas-main">
       <section class="map-introduction" aria-labelledby="atlas-title">
         <div>
-          <p class="eyebrow">Cartografía interactiva · MAP-010</p>
+          <p class="eyebrow">Cartografía interactiva · MAP-021</p>
           <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
           <p class="map-introduction__lead">
-            Explora lugares públicos de la campaña sobre la Costa de la Espada, búscalos por su
-            nombre, alias o notas públicas y filtra sus categorías y etiquetas.
+            Explora lugares públicos de la campaña sobre la Costa de la Espada, busca nombres
+            geográficos impresos en el mapa y localiza personajes o emplazamientos por su nombre.
           </p>
         </div>
         <p class="map-introduction__source">
@@ -53,7 +53,8 @@ export function renderApp(): string {
                 Buscar lugares
               </label>
               <p id="place-search-hint" class="place-search__hint">
-                Nombre principal, alias público o título de una nota pública.
+                Nombre geográfico en inglés, personaje, emplazamiento, alias público o título de una
+                nota pública. El tipo de cada resultado se indica por texto.
               </p>
             </div>
             <div class="place-search__controls">
@@ -164,11 +165,19 @@ export function renderApp(): string {
               data-map-canvas
               role="region"
               aria-label="Mapa navegable de la Costa de la Espada y el noroeste de Faerûn"
-              aria-describedby="map-instructions place-filters-status"
+              aria-describedby="map-instructions place-filters-status map-search-status"
             ></div>
             <p class="map-status" data-map-status role="status" aria-atomic="true">
               Cargando la cartografía oficial de Faerûn…
             </p>
+            <p
+              id="map-search-status"
+              class="visually-hidden"
+              data-map-search-status
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            ></p>
           </div>
 
           <aside

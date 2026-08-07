@@ -3,7 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import { bootstrapAdminAuthRuntime } from './app/adminAuthRuntime';
 import { mountPlaceDetails } from './app/placeDetails';
 import { mountPlaceFilters } from './app/placeFilters';
-import { bootstrapPublicDataRuntime } from './app/publicDataRuntime';
+import { bootstrapPublicDataRuntime, type PublicDataRuntime } from './app/publicDataRuntime';
 import { mountPlaceSearch } from './app/placeSearch';
 import { createPlaceSelectionController } from './app/placeSelection';
 import { renderApp } from './app/renderApp';
@@ -16,6 +16,7 @@ import { campaignCatalog } from './data/catalog';
 import { deriveMatchingPublicPlaceIds } from './data/filters';
 import type { CampaignCatalog, PlaceId } from './data/model';
 import { buildPlaceDetailModel, createPlaceMarkerModels } from './data/placeDetails';
+import type { AtlasSearchResult } from './data/search';
 import { mountFaerunMap } from './map/leaflet';
 import './styles/main.css';
 import './styles/search.css';
@@ -34,7 +35,21 @@ const app = appElement;
 app.innerHTML = renderApp();
 bootstrapAdminAuthRuntime(app);
 
-function mountPublicExperience(catalog: CampaignCatalog): void {
+function describeSearchTarget(result: AtlasSearchResult): string {
+  switch (result.type) {
+    case 'geographic':
+      return `${result.name}, lugar geográfico`;
+    case 'character':
+      return `${result.name}, personaje`;
+    case 'location':
+      return `${result.name}, emplazamiento de campaña`;
+  }
+}
+
+function mountPublicExperience(
+  catalog: CampaignCatalog,
+  publicDataRuntime?: PublicDataRuntime,
+): void {
   let isRestoringFromHistory = false;
   const selection = createPlaceSelectionController();
   const mapController = mountFaerunMap(app, {
@@ -75,22 +90,43 @@ function mountPublicExperience(catalog: CampaignCatalog): void {
     },
   });
 
+  const openLegacyPlace = (placeId: PlaceId): void => {
+    const wasAlreadyActive = selection.getActivePlaceId() === placeId;
+
+    mapController.locatePlace(placeId);
+    selection.select(placeId);
+
+    if (wasAlreadyActive && !showPlaceDetails(placeId, true)) {
+      selection.clear();
+    }
+  };
+
   const placeSearchController = mountPlaceSearch(app, {
     catalog,
     onQueryChange(): void {
       updateMatchingPlaces();
       writePublicStateToHistory('replace');
     },
-    onSelect(placeId): void {
-      const wasAlreadyActive = selection.getActivePlaceId() === placeId;
-
-      mapController.locatePlace(placeId);
-      selection.select(placeId);
-
-      if (wasAlreadyActive && !showPlaceDetails(placeId, true)) {
-        selection.clear();
+    onSelect(result): void {
+      if (result.type === 'location' && result.legacyPlaceId) {
+        openLegacyPlace(result.legacyPlaceId);
+        return;
       }
+
+      selection.clear();
+      mapController.locateSearchTarget({
+        coordinates: result.coordinates,
+        recommendedZoom: result.recommendedZoom,
+        label: describeSearchTarget(result),
+      });
     },
+    onOpenPlace(placeId): void {
+      openLegacyPlace(placeId);
+    },
+  });
+
+  publicDataRuntime?.subscribeBeta02Catalog((beta02Catalog) => {
+    placeSearchController.setBeta02Catalog(beta02Catalog);
   });
 
   function getCurrentPublicState(): PublicAppUrlState {
@@ -199,7 +235,10 @@ function mountPublicExperience(catalog: CampaignCatalog): void {
       return;
     }
 
-    renderActivePlace(activePlaceId, { focusDetails: true, locate: false });
+    renderActivePlace(activePlaceId, {
+      focusDetails: true,
+      locate: false,
+    });
     writePublicStateToHistory('push');
   });
 
@@ -211,5 +250,5 @@ function mountPublicExperience(catalog: CampaignCatalog): void {
 }
 
 void bootstrapPublicDataRuntime(app, campaignCatalog)
-  .then(({ catalog }) => mountPublicExperience(catalog))
+  .then((publicDataRuntime) => mountPublicExperience(publicDataRuntime.catalog, publicDataRuntime))
   .catch(() => mountPublicExperience(campaignCatalog));

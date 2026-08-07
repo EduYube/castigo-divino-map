@@ -1,4 +1,5 @@
 import { ResilientPublicCatalogService } from '../application/publicCatalogService';
+import type { PublicCatalogSnapshotV2 } from '../data/beta02-model';
 import type { CampaignCatalog } from '../data/model';
 import {
   PublicDataRepositoryError,
@@ -30,8 +31,11 @@ declare global {
   }
 }
 
+export type Beta02CatalogListener = (catalog: PublicCatalogSnapshotV2 | null) => void;
+
 export interface PublicDataRuntime {
   readonly catalog: CampaignCatalog;
+  subscribeBeta02Catalog(listener: Beta02CatalogListener): () => void;
   destroy(): void;
 }
 
@@ -52,6 +56,14 @@ function dispatchSafeStatusEvent(result: PublicCatalogLoadResult): void {
       },
     }),
   );
+}
+
+function getValidatedBeta02Catalog(
+  service: ResilientPublicCatalogService,
+): PublicCatalogSnapshotV2 | null {
+  const envelope = service.getLastRemoteEnvelope();
+
+  return envelope?.data.contract === 'beta02' ? envelope.data.catalog : null;
 }
 
 export async function bootstrapPublicDataRuntime(
@@ -101,11 +113,28 @@ export async function bootstrapPublicDataRuntime(
   const initialResult = await service.initialize();
   const initialCatalog =
     initialResult.data?.contract === 'beta01' ? initialResult.data.catalog : legacyCatalog;
+  const beta02Listeners = new Set<Beta02CatalogListener>();
+  let beta02Catalog = getValidatedBeta02Catalog(service);
+  let beta02Checksum = beta02Catalog?.checksum ?? null;
   let hasCompletedRemoteCheck = false;
   let lastRefreshAt = 0;
 
+  const publishBeta02Catalog = (): void => {
+    const nextCatalog = getValidatedBeta02Catalog(service);
+    const nextChecksum = nextCatalog?.checksum ?? null;
+
+    if (nextChecksum === beta02Checksum) {
+      return;
+    }
+
+    beta02Catalog = nextCatalog;
+    beta02Checksum = nextChecksum;
+    beta02Listeners.forEach((listener) => listener(beta02Catalog));
+  };
+
   const unsubscribe = service.subscribe((result) => {
     dispatchSafeStatusEvent(result);
+    publishBeta02Catalog();
 
     if (hasCompletedRemoteCheck) {
       status.update(result);
@@ -161,11 +190,20 @@ export async function bootstrapPublicDataRuntime(
 
   return {
     catalog: initialCatalog,
+    subscribeBeta02Catalog(listener: Beta02CatalogListener): () => void {
+      beta02Listeners.add(listener);
+      listener(beta02Catalog);
+
+      return (): void => {
+        beta02Listeners.delete(listener);
+      };
+    },
     destroy(): void {
       window.clearInterval(refreshInterval);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      beta02Listeners.clear();
       unsubscribe();
       service.dispose();
       status.destroy();

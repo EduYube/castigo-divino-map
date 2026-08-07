@@ -123,6 +123,10 @@ export class ResilientPublicCatalogService {
     return this.#result;
   }
 
+  getLastRemoteEnvelope(): PublicCatalogEnvelope | null {
+    return this.#lastRemoteEnvelope;
+  }
+
   async initialize(): Promise<PublicCatalogLoadResult> {
     if (this.#disposed) {
       throw new Error('The public catalog service has already been disposed.');
