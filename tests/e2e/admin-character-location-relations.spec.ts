@@ -82,7 +82,7 @@ async function configureBackend(page: Page): Promise<{
       projectUrl,
       publishableKey: 'sb_publishable_map020_e2e_key',
       timeoutMs: 2_000,
-      retryDelaysMs: [],
+      retryDelaysMs: [0],
     };
   }, PROJECT_URL);
 
