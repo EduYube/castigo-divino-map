@@ -413,10 +413,7 @@ export function mountFaerunMap(
       const targetZoom =
         target.recommendedZoom === null
           ? fallbackZoom
-          : Math.min(
-              FAERUN_MAP_CONFIG.maxZoom,
-              Math.max(map.getMinZoom(), target.recommendedZoom),
-            );
+          : Math.min(FAERUN_MAP_CONFIG.maxZoom, Math.max(map.getMinZoom(), target.recommendedZoom));
 
       map.setView(coordinate, targetZoom, { animate: false });
       map.panInsideBounds(bounds, { animate: false });
