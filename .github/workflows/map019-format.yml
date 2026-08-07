@@ -29,13 +29,12 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import re
 
           ui_path = Path('src/app/adminMapEntities.ts')
           ui = ui_path.read_text()
-          ui = ui.replace(
-              """const first = Array.from(controls.values()).find(
-                ({ input }) => !input.readOnly && !input.disabled,
-              );""",
+          ui, first_count = re.subn(
+              r"const first = Array\.from\(controls\.values\(\)\)\.find\(\s*\(\{ input \}\) => !input\.readOnly && !input\.disabled,\s*\);",
               """const first = Array.from(controls.values()).find(
                 ({ input }) =>
                   !input.disabled &&
@@ -44,30 +43,30 @@ jobs:
                   ) ||
                     !input.readOnly),
               );""",
+              ui,
+              count=1,
           )
-          ui = ui.replace(
-              """const desiredEditorKey = state.creating
-              ? `new:${requestedEntityType}`
-              : state.editorDetail
-                ? state.editorDetail.record.id
-                : null;""",
+          ui, key_count = re.subn(
+              r"const desiredEditorKey = state\.creating\s*\? `new:\$\{requestedEntityType\}`\s*: state\.editorDetail\s*\? state\.editorDetail\.record\.id\s*: null;",
               """const desiredEditorKey = state.creating
               ? `new:${requestedEntityType}`
               : state.editorDetail
                 ? `${state.editorDetail.record.id}:${state.editorDetail.record.updatedAt}`
                 : null;""",
+              ui,
+              count=1,
           )
+          if first_count != 1 or key_count != 1:
+              raise SystemExit(f'expected one replacement each, got first={first_count}, key={key_count}')
           ui_path.write_text(ui)
       - name: Format tracked sources
         run: npm run format
-      - name: Commit cleanup only when needed
+      - name: Commit cleanup
         shell: bash
         run: |
-          if git diff --quiet; then
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- src/app/adminMapEntities.ts
+          git diff --cached --exit-code && exit 1 || true
           git commit -m "MAP-019 harden editor refresh after save"
           git push origin HEAD:${{ github.head_ref }}
