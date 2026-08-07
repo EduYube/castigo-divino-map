@@ -1,0 +1,281 @@
+.admin-map-entity {
+  display: grid;
+  gap: 0.9rem;
+  width: min(100%, 76rem);
+  margin-block: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-subtle, #c9c4b8);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, Canvas 96%, transparent);
+  color: CanvasText;
+}
+
+.admin-map-entity__heading,
+.admin-map-entity__editor-heading,
+.admin-map-entity__subheading,
+.admin-map-entity__intro,
+.admin-map-entity__status,
+.admin-map-entity__help,
+.admin-map-entity__empty,
+.admin-map-entity__field-error,
+.admin-map-entity__preview-meta,
+.admin-map-entity__preview-description {
+  margin: 0;
+}
+
+.admin-map-entity__toolbar,
+.admin-map-entity__actions,
+.admin-map-entity__item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.6rem;
+}
+
+.admin-map-entity__toolbar .admin-map-entity__control {
+  flex: 1 1 16rem;
+}
+
+.admin-map-entity__label,
+.admin-map-entity__legend {
+  font-weight: 650;
+}
+
+.admin-map-entity__control {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid currentColor;
+  border-radius: 0.45rem;
+  background: Canvas;
+  color: CanvasText;
+  font: inherit;
+}
+
+textarea.admin-map-entity__control {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.admin-map-entity__control[aria-invalid='true'] {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+.admin-map-entity__button,
+.admin-map-entity__primary,
+.admin-map-entity__danger {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid currentColor;
+  border-radius: 0.45rem;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.admin-map-entity__button {
+  background: Canvas;
+  color: CanvasText;
+}
+
+.admin-map-entity__primary {
+  background: CanvasText;
+  color: Canvas;
+}
+
+.admin-map-entity__danger {
+  background: CanvasText;
+  color: Canvas;
+  text-decoration: underline;
+}
+
+.admin-map-entity__button:disabled,
+.admin-map-entity__primary:disabled,
+.admin-map-entity__danger:disabled,
+.admin-map-entity__control:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.admin-map-entity__list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-map-entity__item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: 0.55rem;
+}
+
+.admin-map-entity__item-content {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.admin-map-entity__item-meta {
+  overflow-wrap: anywhere;
+  opacity: 0.78;
+}
+
+.admin-map-entity__editor,
+.admin-map-entity__confirmation,
+.admin-map-entity__preview,
+.admin-map-entity__map-region {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-radius: 0.65rem;
+}
+
+.admin-map-entity__confirmation {
+  border-width: 2px;
+}
+
+.admin-map-entity__form,
+.admin-map-entity__fields {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.admin-map-entity__fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-map-entity__field,
+.admin-map-entity__fieldset {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.admin-map-entity__fieldset {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: 0.5rem;
+}
+
+.admin-map-entity__check {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  min-height: 2rem;
+}
+
+.admin-map-entity__check input {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: 0.1rem;
+}
+
+.admin-map-entity__field-error {
+  min-height: 1.15em;
+  font-size: 0.9rem;
+}
+
+.admin-map-entity__map {
+  width: 100%;
+  min-height: 22rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-radius: 0.5rem;
+  background: #d8d2c5;
+}
+
+.admin-map-entity__map-status {
+  min-height: 1.25em;
+  margin: 0;
+}
+
+.admin-map-entity__marker {
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: Canvas;
+  color: CanvasText;
+  box-shadow: 0 0 0 3px CanvasText;
+}
+
+.admin-map-entity__marker:focus {
+  outline: 4px solid Highlight;
+  outline-offset: 4px;
+}
+
+.admin-map-entity__marker-symbol,
+.admin-map-entity__preview-marker {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.admin-map-entity__image {
+  image-rendering: auto;
+}
+
+.admin-map-entity__preview {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.admin-map-entity__preview .admin-map-entity__subheading,
+.admin-map-entity__preview-meta,
+.admin-map-entity__preview-description {
+  grid-column: 1 / -1;
+}
+
+.admin-map-entity__preview-marker {
+  width: 2rem;
+  text-align: center;
+}
+
+@media (max-width: 48rem) {
+  .admin-map-entity {
+    padding: 0.8rem;
+  }
+
+  .admin-map-entity__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-map-entity__fieldset {
+    grid-column: 1;
+  }
+
+  .admin-map-entity__item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-map-entity__toolbar,
+  .admin-map-entity__actions,
+  .admin-map-entity__item-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-map-entity__toolbar .admin-map-entity__control {
+    flex-basis: auto;
+  }
+
+  .admin-map-entity__button,
+  .admin-map-entity__primary,
+  .admin-map-entity__danger {
+    width: 100%;
+  }
+
+  .admin-map-entity__map {
+    min-height: 17rem;
+  }
+}
