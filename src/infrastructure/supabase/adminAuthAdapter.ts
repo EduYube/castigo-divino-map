@@ -500,8 +500,7 @@ export class SupabaseAdminAuthAdapter implements AuthGateway, AdminAuthorization
     }
 
     try {
-      const identity = await this.#refreshSession(true);
-      this.#emit({ type: 'token-refreshed', identity });
+      await this.#refreshSession(true);
     } catch {
       try {
         this.#clearLocalSession();
