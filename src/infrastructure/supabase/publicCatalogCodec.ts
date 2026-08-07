@@ -5,6 +5,11 @@ import {
   type PublicCatalogEnvelope,
 } from '../../data-access/publicCatalog';
 import {
+  parseCharacterLocationRelation,
+  relationSnapshotRows,
+  type PublicCatalogTablePayloadsWithCharacterLocations,
+} from './publicCharacterLocationRelations';
+import {
   groupValues,
   parseCategory,
   parseDisposition,
@@ -18,7 +23,6 @@ import {
   parseNoteTag,
   parsePlayer,
   parseTag,
-  type PublicCatalogTablePayloads,
 } from './publicCatalogRows';
 
 type PublicCatalogContentV2 = Omit<
@@ -125,6 +129,12 @@ function assertReferences(snapshot: PublicCatalogContentV2): void {
     snapshot.dispositions.map(({ entityId, playerId }) => `${entityId}\u0000${playerId}`),
     'dispositions',
   );
+  assertUnique(
+    snapshot.characterLocationRelations.map(
+      ({ characterId, locationId }) => `${characterId}\u0000${locationId}`,
+    ),
+    'characterLocationRelations',
+  );
 
   const categoryIds = new Set(categoryValues);
   const tagIds = new Set(tagValues);
@@ -158,6 +168,17 @@ function assertReferences(snapshot: PublicCatalogContentV2): void {
   snapshot.dispositions.forEach((disposition) => {
     if (!entitiesById.has(disposition.entityId) || !playerIds.has(disposition.playerId)) {
       invalidResponse('Una disposición pública referencia un extremo ausente.');
+    }
+  });
+
+  snapshot.characterLocationRelations.forEach((relation) => {
+    const character = entitiesById.get(relation.characterId);
+    const location = entitiesById.get(relation.locationId);
+    if (!character || character.entityType !== 'character') {
+      invalidResponse('Una relación personaje–emplazamiento referencia un personaje ausente o incompatible.');
+    }
+    if (!location || location.entityType !== 'location') {
+      invalidResponse('Una relación personaje–emplazamiento referencia un emplazamiento ausente o incompatible.');
     }
   });
 
@@ -270,13 +291,18 @@ function assertRelationRows(
   });
 }
 
-function buildPublicCatalogContentV2(payloads: PublicCatalogTablePayloads): PublicCatalogContentV2 {
+function buildPublicCatalogContentV2(
+  payloads: PublicCatalogTablePayloadsWithCharacterLocations,
+): PublicCatalogContentV2 {
   const categories = payloads.categories.map(parseCategory);
   const tags = payloads.tags.map(parseTag);
   const players = payloads.players.map(parsePlayer);
   const entityAliases = payloads.entityAliases.map(parseEntityAlias);
   const entityTags = payloads.entityTags.map(parseEntityTag);
   const dispositions = payloads.dispositions.map(parseDisposition);
+  const characterLocationRelations = payloads.characterLocationRelations.map(
+    parseCharacterLocationRelation,
+  );
   const noteTags = payloads.noteTags.map(parseNoteTag);
   const geographicAliases = payloads.geographicAliases.map(parseGeographicAlias);
   const aliasesByEntity = groupValues(entityAliases, ({ entityId }) => entityId);
@@ -298,6 +324,7 @@ function buildPublicCatalogContentV2(payloads: PublicCatalogTablePayloads): Publ
     players,
     entities,
     dispositions,
+    characterLocationRelations,
     notes,
     geographicNames,
     characterLocationEvents,
@@ -309,7 +336,9 @@ function buildPublicCatalogContentV2(payloads: PublicCatalogTablePayloads): Publ
   return content;
 }
 
-function snapshotPayloads(record: Record<string, unknown>): PublicCatalogTablePayloads {
+function snapshotPayloads(
+  record: Record<string, unknown>,
+): PublicCatalogTablePayloadsWithCharacterLocations {
   const categories = expectRecords(record.categories, 'snapshot.categories').map(
     (category, index) => {
       const path = `snapshot.categories[${index}]`;
@@ -400,6 +429,7 @@ function snapshotPayloads(record: Record<string, unknown>): PublicCatalogTablePa
       };
     },
   );
+  const characterLocationRelations = relationSnapshotRows(record.characterLocationRelations);
   const noteTags: Record<string, unknown>[] = [];
   const notes = expectRecords(record.notes, 'snapshot.notes').map((note, index) => {
     const path = `snapshot.notes[${index}]`;
@@ -518,6 +548,7 @@ function snapshotPayloads(record: Record<string, unknown>): PublicCatalogTablePa
     entityAliases,
     entityTags,
     dispositions,
+    characterLocationRelations,
     notes,
     noteTags,
     geographicNames,
@@ -563,6 +594,7 @@ export async function parsePublicCatalogSnapshotV2(
         'players',
         'entities',
         'dispositions',
+        'characterLocationRelations',
         'notes',
         'geographicNames',
         'characterLocationEvents',
@@ -636,7 +668,7 @@ export async function parsePublicCatalogSnapshotV2(
 }
 
 export async function buildPublicCatalogEnvelopeV2(
-  payloads: PublicCatalogTablePayloads,
+  payloads: PublicCatalogTablePayloadsWithCharacterLocations,
   now: () => number = Date.now,
 ): Promise<PublicCatalogEnvelope> {
   const content = buildPublicCatalogContentV2(payloads);
