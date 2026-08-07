@@ -87,9 +87,7 @@ const beta02Catalog = {
 describe('compact pin detail model', () => {
   it('builds a Beta 0.1 fallback with only compact classification data', () => {
     const marker = createAtlasPinMarkerModels(campaignCatalog, null)[0];
-    const details = marker
-      ? buildCompactPinDetailModel(campaignCatalog, null, marker)
-      : undefined;
+    const details = marker ? buildCompactPinDetailModel(campaignCatalog, null, marker) : undefined;
 
     expect(details).toMatchObject({
       id: 'place-demo-harbor',
