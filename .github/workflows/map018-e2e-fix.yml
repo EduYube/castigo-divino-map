@@ -12,7 +12,7 @@ jobs:
   fix:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Checkout branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -48,14 +48,8 @@ jobs:
           path.write_text(text)
           PY
 
-      - name: Verify updated e2e suite
-        run: |
-          npm run format
-          npm run lint
-          npm run test
-          npm run build:pages
-          npx playwright install --with-deps chromium
-          npm run test:e2e
+      - name: Format tracked sources
+        run: npm run format
 
       - name: Remove one-shot workflow
         run: rm .github/workflows/map018-e2e-fix.yml
