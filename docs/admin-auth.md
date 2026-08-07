@@ -6,6 +6,8 @@ Diseño e implementación de la Beta 0.2 en la rama `agent/map-017-admin-auth`.
 
 Este documento describe la frontera de autenticación administrativa. No habilita CRUD de categorías, etiquetas, nombres, pines ni otras operaciones reservadas a MAP-018 y posteriores.
 
+El 7 de agosto de 2026 se aplicaron y verificaron en `atlas-nuevos-dioses-prod` las dos migraciones de MAP-017 registradas como `20260807111646_expose_admin_authorization_probe` y `20260807111841_harden_admin_authorization_probe`. El historial remoto previo contenía exactamente las diez migraciones de MAP-014/MAP-015 y no presentaba deriva.
+
 ## Fuentes y decisión de cliente
 
 El 7 de agosto de 2026 se revisó la documentación oficial vigente de Supabase Auth y la versión publicada de `@supabase/supabase-js` 2.111.0. La SDK documenta `signInWithPassword`, persistencia personalizable, renovación de sesión, `onAuthStateChange` y `signOut({ scope: 'local' })`.
@@ -107,23 +109,39 @@ Solo `authorized` habilita el modo administrativo.
 
 Las diez migraciones integradas antes de MAP-017 permanecen inmutables.
 
-MAP-017 añade una migración hacia delante que crea:
+MAP-017 añade dos migraciones hacia delante que reflejan exactamente el historial registrado en el proyecto alojado:
 
-`public.current_user_is_admin() -> boolean`
+1. `20260807111646_expose_admin_authorization_probe.sql` crea `public.current_user_is_admin() -> boolean` con `search_path` vacío y una primera ACL explícita.
+2. `20260807111841_harden_admin_authorization_probe.sql` convierte el wrapper público a `SECURITY INVOKER` y retira `EXECUTE` a `anon`, manteniéndolo únicamente para `authenticated`.
 
-La función:
+El estado final de la función:
 
-- es `SECURITY DEFINER`;
+- es `SECURITY INVOKER`;
 - fija `search_path` vacío;
 - no acepta parámetros;
 - devuelve exclusivamente el resultado de `private.is_admin()` para `auth.uid()`;
 - no expone `private.admin_users`;
 - no devuelve UUIDs, correos ni metadata;
-- concede únicamente `EXECUTE` a `anon` y `authenticated`.
+- solo permite `EXECUTE` a `authenticated`;
+- mantiene la elevación necesaria confinada en `private.is_admin()`, que vive fuera del esquema expuesto por Data API.
 
 Las políticas RLS existentes siguen siendo la frontera autoritativa para cualquier escritura. Manipular botones, estado JavaScript o el DOM no convierte a un usuario en administrador.
 
-La migración debe validarse localmente y no se aplicará al proyecto alojado sin autorización humana explícita.
+### Validación alojada
+
+Antes de aplicar MAP-017 se verificó que el historial remoto contenía exactamente las diez migraciones previas y que `current_user_is_admin()` no existía. El proyecto tenía un único usuario confirmado, una única entrada en `private.admin_users` y ambas correspondían entre sí; no se creó ni modificó ningún usuario ni la allowlist.
+
+Después del despliegue se verificó:
+
+- historial remoto con las doce migraciones esperadas;
+- `SECURITY INVOKER` y `search_path` vacío en el wrapper público;
+- ausencia de `EXECUTE` para `anon` y presencia para `authenticated`;
+- `42501` al intentar invocar la RPC como `anon`;
+- resultado `false` para un UUID autenticado no allowlisted;
+- resultado `true` para el usuario autenticado allowlisted;
+- ausencia de findings de seguridad nuevos para `current_user_is_admin()` en Database Advisors.
+
+Los advisors conservan findings preexistentes ajenos a MAP-017, entre ellos la RPC pública `submit_public_request` y la protección de contraseñas filtradas desactivada. Se documentan como trabajo de seguridad separado y no se resuelven alterando el contrato de esta Issue.
 
 ## Concurrencia y resultados obsoletos
 
@@ -191,7 +209,7 @@ MAP-017 añade cobertura para:
 - almacenamiento no disponible;
 - normalización de errores sin secretos;
 - adaptador HTTP y RPC administrativa;
-- pgTAP para visitante, autenticado no admin y admin;
+- pgTAP para permisos del probe, autenticado no admin y admin;
 - login e2e, teclado, foco, recarga de la misma pestaña, logout, 401, red caída y viewport de 320 px;
 - ausencia de tokens en URL, texto del DOM y consola de las pruebas e2e.
 
@@ -199,13 +217,12 @@ El flujo ordinario del proyecto exige el preflight definido en `docs/project-sta
 
 ## Puntos de control humanos
 
-No se realizará sin autorización explícita:
+La aplicación de las migraciones MAP-017 al Supabase alojado fue autorizada explícitamente y quedó completada el 7 de agosto de 2026. No se modificaron usuarios reales, `private.admin_users` ni credenciales.
 
-- aplicar la nueva migración al Supabase alojado;
-- modificar configuración Auth alojada;
-- crear, eliminar o cambiar usuarios reales;
-- cambiar `private.admin_users` alojado;
-- probar con credenciales reales;
+Siguen requiriendo una acción deliberada separada:
+
+- probar el password login real con las credenciales del administrador, que no se almacenan ni se solicitan a automatizaciones;
 - marcar la PR como lista;
 - fusionar;
+- comprobar el despliegue de Pages posterior al merge;
 - cerrar la Issue #36.
