@@ -1,0 +1,45 @@
+name: MAP-018 branch formatter
+
+on:
+  push:
+    branches:
+      - agent/map-018-admin-taxonomy
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: agent/map-018-admin-taxonomy
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format tracked sources
+        run: npm run format
+
+      - name: Commit formatter output
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No formatting changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src tests scripts '*.js' '*.mjs' '*.ts' '*.json' '*.html' .github/workflows
+          git commit -m "MAP-018 — Aplicar formato automático"
+          git push origin HEAD:agent/map-018-admin-taxonomy
