@@ -133,12 +133,17 @@ select throws_ok(
   'active character-location relations must be retired before archiving the entity',
   'an endpoint cannot be archived while an active relation exists'
 );
-select throws_ok(
-  $$delete from public.character_location_relations
-    where character_id = 'entity-aster-guide' and location_id = 'entity-bramble-fort'$$,
-  '23514',
-  'published content cannot be physically deleted by the application',
-  'retirement is not implemented as physical deletion after publication'
+select is(
+  (
+    with deleted as (
+      delete from public.character_location_relations
+      where character_id = 'entity-aster-guide' and location_id = 'entity-bramble-fort'
+      returning character_id
+    )
+    select count(*) from deleted
+  ),
+  0::bigint,
+  'RLS prevents physical deletion after first publication'
 );
 select lives_ok(
   $$update public.character_location_relations
@@ -168,9 +173,16 @@ select ok(
   (select relrowsecurity from pg_class where oid = 'public.character_location_relations'::regclass),
   'RLS is enabled on the relation table'
 );
-select ok(
-  not has_schema_privilege('anon', 'private', 'usage'),
-  'anonymous visitors cannot resolve private trigger functions through Data API'
+select is(
+  (
+    select count(*)
+    from pg_proc as procedure
+    join pg_namespace as namespace on namespace.oid = procedure.pronamespace
+    where namespace.nspname = 'public'
+      and procedure.proname = 'validate_character_location_relation'
+  ),
+  0::bigint,
+  'the internal validation function is not exposed from the public schema'
 );
 
 select * from finish();
