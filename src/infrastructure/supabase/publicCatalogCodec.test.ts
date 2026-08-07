@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import type { PublicCatalogSnapshotV2 } from '../../data/beta02-model';
 import { createSha256Checksum } from '../../data-access/publicCatalog';
 import { buildPublicCatalogEnvelopeV2, parsePublicCatalogSnapshotV2 } from './publicCatalogCodec';
-import type { PublicCatalogTablePayloads } from './publicCatalogRows';
+import type { PublicCatalogTablePayloadsWithCharacterLocations } from './publicCharacterLocationRelations';
 
 interface MutableSnapshotShape extends Record<string, unknown> {
   generatedAt: string;
@@ -11,10 +11,11 @@ interface MutableSnapshotShape extends Record<string, unknown> {
   checksum: string;
   categories: Record<string, unknown>[];
   entities: Array<Record<string, unknown> & { coordinates: Record<string, unknown> }>;
+  characterLocationRelations: Record<string, unknown>[];
   characterLocationEvents: Array<Record<string, unknown> & { location: Record<string, unknown> }>;
 }
 
-function validPayloads(): PublicCatalogTablePayloads {
+function validPayloads(): PublicCatalogTablePayloadsWithCharacterLocations {
   return {
     categories: [
       {
@@ -84,6 +85,13 @@ function validPayloads(): PublicCatalogTablePayloads {
         entity_id: 'entity-hero',
         player_id: 'player-one',
         disposition: 'ally',
+      },
+    ],
+    characterLocationRelations: [
+      {
+        character_id: 'entity-hero',
+        location_id: 'entity-city',
+        relation_status: 'present',
       },
     ],
     notes: [
@@ -243,6 +251,18 @@ describe('parsePublicCatalogSnapshotV2', () => {
 
       if (event) {
         event.location.locationEntityId = 'entity-hero';
+      }
+    });
+
+    await expectInvalidCache(snapshot);
+  });
+
+  test('rejects a relation whose location endpoint points to a character', async () => {
+    const snapshot = await tamperedSnapshot((value) => {
+      const relation = value.characterLocationRelations[0];
+
+      if (relation) {
+        relation.locationId = 'entity-hero';
       }
     });
 

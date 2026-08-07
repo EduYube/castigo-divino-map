@@ -42,6 +42,7 @@ const REMOTE_ENVELOPE: PublicCatalogEnvelope = {
       players: [],
       entities: [],
       dispositions: [],
+      characterLocationRelations: [],
       notes: [],
       geographicNames: [],
       characterLocationEvents: [],

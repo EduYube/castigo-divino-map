@@ -55,7 +55,7 @@ describe('SupabasePublicCatalogRepository', () => {
 
     expect(result.source).toBe('supabase');
     expect(result.data.contract).toBe('beta02');
-    expect(requests).toHaveLength(12);
+    expect(requests).toHaveLength(13);
     requests.forEach((request) => {
       expect(request.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
       expect(request.headers.get('prefer')).toBe('count=exact');
@@ -63,9 +63,15 @@ describe('SupabasePublicCatalogRepository', () => {
       expect(request.headers.get('range')).toBe('0-999');
       expect(request.headers.has('authorization')).toBe(false);
     });
+    const relationRequest = requests.find((request) =>
+      new URL(request.url).pathname.endsWith('/character_location_relations'),
+    );
+    expect(new URL(relationRequest?.url ?? '').searchParams.get('select')).toBe(
+      'character_id,location_id,relation_status',
+    );
   });
 
-  test('uses an explicit published filter for every editorial table', async () => {
+  test('uses explicit publication filters except where the minimal public grant delegates them to RLS', async () => {
     const urls: URL[] = [];
     const repository = new SupabasePublicCatalogRepository({
       projectUrl: PROJECT_URL,
@@ -79,10 +85,84 @@ describe('SupabasePublicCatalogRepository', () => {
     await repository.load({ signal: new AbortController().signal });
 
     const dispositionUrl = urls.find((url) => url.pathname.endsWith('/entity_player_dispositions'));
+    const relationUrl = urls.find((url) => url.pathname.endsWith('/character_location_relations'));
     expect(dispositionUrl?.searchParams.has('publication_status')).toBe(false);
+    expect(relationUrl?.searchParams.has('publication_status')).toBe(false);
     urls
-      .filter((url) => url !== dispositionUrl)
+      .filter((url) => url !== dispositionUrl && url !== relationUrl)
       .forEach((url) => expect(url.searchParams.get('publication_status')).toBe('eq.published'));
+  });
+
+  test('parses a safe character-location relation and validates both public endpoints', async () => {
+    const rowsByTable: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
+      categories: [
+        { id: 'category-people', slug: 'people', name: 'People', description: '' },
+        { id: 'category-places', slug: 'places', name: 'Places', description: '' },
+      ],
+      tags: [],
+      players: [],
+      map_entities: [
+        {
+          id: 'entity-character',
+          slug: 'character',
+          entity_type: 'character',
+          visibility: 'pin',
+          name: 'Character',
+          name_language: 'en',
+          summary: '',
+          description: '',
+          x: 10,
+          y: 20,
+          category_id: 'category-people',
+        },
+        {
+          id: 'entity-location',
+          slug: 'location',
+          entity_type: 'location',
+          visibility: 'pin',
+          name: 'Location',
+          name_language: 'en',
+          summary: '',
+          description: '',
+          x: 30,
+          y: 40,
+          category_id: 'category-places',
+        },
+      ],
+      entity_aliases: [],
+      entity_tags: [],
+      entity_player_dispositions: [],
+      character_location_relations: [
+        {
+          character_id: 'entity-character',
+          location_id: 'entity-location',
+          relation_status: 'present',
+        },
+      ],
+      public_notes: [],
+      public_note_tags: [],
+      geographic_names: [],
+      geographic_name_aliases: [],
+      character_location_events: [],
+    };
+    const repository = new SupabasePublicCatalogRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      fetchImplementation: async (input) => {
+        const table = new URL(String(input)).pathname.split('/').at(-1) ?? '';
+        return jsonResponse(rowsByTable[table] ?? []);
+      },
+    });
+
+    const result = await repository.load({ signal: new AbortController().signal });
+    if (result.data.contract !== 'beta02') throw new Error('Expected Beta 0.2 projection.');
+    expect(result.data.catalog.characterLocationRelations).toEqual([
+      {
+        characterId: 'entity-character',
+        locationId: 'entity-location',
+        relationStatus: 'present',
+      },
+    ]);
   });
 
   test('paginates and verifies a projection with more than one thousand dispositions', async () => {
@@ -132,6 +212,7 @@ describe('SupabasePublicCatalogRepository', () => {
       entity_aliases: [],
       entity_tags: [],
       entity_player_dispositions: dispositionRows,
+      character_location_relations: [],
       public_notes: [],
       public_note_tags: [],
       geographic_names: [],
@@ -219,8 +300,8 @@ describe('SupabasePublicCatalogRepository', () => {
       code: 'http-error',
       status: 503,
     });
-    expect(pendingRequests).toBe(11);
-    expect(abortedRequests).toBe(11);
+    expect(pendingRequests).toBe(12);
+    expect(abortedRequests).toBe(12);
   });
 
   test('normalizes an HTTP failure without exposing the response body', async () => {
