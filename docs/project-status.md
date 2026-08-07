@@ -11,7 +11,7 @@
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-07.
 
-MAP-021 se integró en `master` mediante la PR #69 con merge commit `fb3e50b07cdfe40f83d4edf0336e1eae825aff72`. La Issue #40 quedó cerrada automáticamente como completada. La evidencia de CI pre-merge está cerrada; los identificadores de las ejecuciones `push` de CI/Pages posteriores al merge deben registrarse cuando puedan verificarse desde GitHub Actions, ya que el conector disponible en esta sesión solo enumera runs asociados a `pull_request`.
+MAP-021 se integró en `master` mediante la PR #69 con merge commit `fb3e50b07cdfe40f83d4edf0336e1eae825aff72`. La Issue #40 quedó cerrada automáticamente como completada. La evidencia de CI pre-merge está cerrada y el checkpoint humano posterior al merge confirmó en verde las tres ejecuciones relevantes: CI de `master`, despliegue de GitHub Pages y CI documental #375. El conector disponible en esta sesión no enumera los run IDs disparados por `push`, por lo que no se inventan identificadores ausentes.
 
 ## Beta 0.1 y frontera de Beta 0.2
 
@@ -119,7 +119,7 @@ MAP-020 añadió `character_location_relations`, lectura pública mínima bajo R
 - pgTAP: 222/222 en 12 archivos, además de migraciones, lint, RLS y prueba de concurrencia Supabase.
 - Migración de MAP-021: ninguna.
 - Producción: no se sembró ni se modificaron Auth, usuarios, allowlist administrativa o credenciales.
-- CI/Pages post-merge: pendiente de registrar los run IDs verificables de las ejecuciones `push` sobre el merge commit.
+- CI/Pages post-merge: checkpoint humano del 2026-08-07 confirmó en verde CI de `master` y GitHub Pages sobre la integración; los run IDs `push` no son enumerables por el conector disponible.
 
 Diseño integrado:
 
@@ -191,4 +191,4 @@ Los cambios de producción de Supabase conservan sus controles adicionales: comp
 | 2026-08-07 | MAP-018 cerró el CRUD administrativo de categorías, etiquetas y nombres; PR #66. |
 | 2026-08-07 | MAP-019 cerró el CRUD de entidades; PR #67, merge `5fdb6d2…`, migración alojada `20260807154307_add_admin_map_entity_editor_rpc`. |
 | 2026-08-07 | MAP-020 cerró relaciones personaje–emplazamiento; PR #68, merge `d9a1f53…`, Pages `31212733439`, migración alojada `20260807180851_add_character_location_relations`. |
-| 2026-08-07 | MAP-021 cerró búsqueda geográfica pública; PR #69, head verde `7cd6643…`, merge `fb3e50b…`, sin DDL. |
+| 2026-08-07 | MAP-021 cerró búsqueda geográfica pública; PR #69, head verde `7cd6643…`, merge `fb3e50b…`, checkpoint post-merge CI/Pages verde y sin DDL. |
