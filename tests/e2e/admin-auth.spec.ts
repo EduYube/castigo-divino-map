@@ -240,7 +240,9 @@ test('Auth network failure does not change the public atlas availability', async
   const mapShell = page.getByTestId('map-shell');
   await expect(mapShell).toBeVisible();
   await expect(mapShell).toHaveAttribute('data-map-state', 'ready');
+  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await expect(searchbox).toBeEnabled();
   await searchbox.fill('paso');
   await expect(searchbox).toHaveValue('paso');
 });
