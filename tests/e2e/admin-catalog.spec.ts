@@ -23,9 +23,15 @@ interface Row extends Record<string, unknown> {
   updated_at: string;
 }
 
-function withRange(rows: readonly Row[]): { readonly headers: Record<string, string>; readonly body: string } {
+function withRange(rows: readonly Row[]): {
+  readonly headers: Record<string, string>;
+  readonly body: string;
+} {
   return {
-    headers: { 'Content-Type': 'application/json', 'Content-Range': rows.length ? `0-${rows.length - 1}/${rows.length}` : '*/0' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Range': rows.length ? `0-${rows.length - 1}/${rows.length}` : '*/0',
+    },
     body: JSON.stringify(rows),
   };
 }
@@ -206,7 +212,11 @@ async function configureAdminBackend(page: Page): Promise<AdminBackend> {
         updated_at: `2026-08-07T11:00:${String(updatedCounter++).padStart(2, '0')}.000Z`,
       } as Row;
       rows.push(created);
-      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify([created]) });
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify([created]),
+      });
       return;
     }
 
@@ -225,13 +235,21 @@ async function configureAdminBackend(page: Page): Promise<AdminBackend> {
         updated_at: `2026-08-07T11:01:${String(updatedCounter++).padStart(2, '0')}.000Z`,
       } as Row;
       rows[index] = next;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([next]) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([next]),
+      });
       return;
     }
 
     if (request.method() === 'DELETE') {
       const [removed] = rows.splice(index, 1);
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ id: removed?.id }]) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([{ id: removed?.id }]),
+      });
       return;
     }
 
@@ -262,7 +280,9 @@ async function loginAndConnect(page: Page): Promise<void> {
   await expect(page.getByText(/2 de 2 registros/)).toBeVisible();
 }
 
-test('anonymous visitor has no CRUD controls and the public map remains available', async ({ page }) => {
+test('anonymous visitor has no CRUD controls and the public map remains available', async ({
+  page,
+}) => {
   await configureAdminBackend(page);
   await page.goto('/');
 
@@ -271,7 +291,9 @@ test('anonymous visitor has no CRUD controls and the public map remains availabl
   await expect(page.getByRole('button', { name: 'Crear' })).toBeHidden();
 });
 
-test('authorized admin can list, search, sort, create, edit, archive and delete never-published content', async ({ page }) => {
+test('authorized admin can list, search, sort, create, edit, archive and delete never-published content', async ({
+  page,
+}) => {
   await configureAdminBackend(page);
   await page.goto('/');
   await loginAndConnect(page);
@@ -338,7 +360,9 @@ test('names reuse existing concepts and conflicts stay safe for the UI', async (
   await expect(page.getByRole('alert')).not.toContainText('secret_internal_constraint');
 });
 
-test('network failure and session expiry fail safely without breaking the public map', async ({ page }) => {
+test('network failure and session expiry fail safely without breaking the public map', async ({
+  page,
+}) => {
   const backend = await configureAdminBackend(page);
   await page.goto('/');
   await loginAndConnect(page);

@@ -50,7 +50,11 @@ describe('validateAdminCatalogDraft', () => {
       publicationStatus: 'draft',
     });
     expect(invalidCategory.valid).toBe(false);
-    expect(invalidCategory.fieldErrors).toMatchObject({ id: expect.any(String), slug: expect.any(String), name: expect.any(String) });
+    expect(invalidCategory.fieldErrors).toMatchObject({
+      id: expect.any(String),
+      slug: expect.any(String),
+      name: expect.any(String),
+    });
 
     const invalidAlias = validateAdminCatalogDraft({
       kind: 'entity-alias',

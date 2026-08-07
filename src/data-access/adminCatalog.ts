@@ -34,7 +34,11 @@ export class AdminCatalogRepositoryError extends Error {
   constructor(
     code: AdminCatalogErrorCode,
     message: string,
-    options: { readonly field?: string | null; readonly status?: number | null; readonly cause?: unknown } = {},
+    options: {
+      readonly field?: string | null;
+      readonly status?: number | null;
+      readonly cause?: unknown;
+    } = {},
   ) {
     super(message, { cause: options.cause });
     this.name = 'AdminCatalogRepositoryError';
@@ -63,17 +67,28 @@ export function toAdminCatalogIssue(error: unknown): AdminCatalogIssue {
 }
 
 export interface AdminCatalogRepository {
-  list(kind: AdminCatalogResourceKind, options: { readonly signal: AbortSignal }): Promise<readonly AdminCatalogRecord[]>;
-  create(draft: AdminCatalogDraft, options: { readonly signal: AbortSignal }): Promise<AdminCatalogRecord>;
+  list(
+    kind: AdminCatalogResourceKind,
+    options: { readonly signal: AbortSignal },
+  ): Promise<readonly AdminCatalogRecord[]>;
+  create(
+    draft: AdminCatalogDraft,
+    options: { readonly signal: AbortSignal },
+  ): Promise<AdminCatalogRecord>;
   update(
     original: AdminCatalogRecord,
     draft: AdminCatalogDraft,
     options: { readonly signal: AbortSignal },
   ): Promise<AdminCatalogRecord>;
-  archive(record: AdminCatalogRecord, options: { readonly signal: AbortSignal }): Promise<AdminCatalogRecord>;
-  delete(record: AdminCatalogRecord, options: { readonly signal: AbortSignal }): Promise<void>;
-  listEntityReferences(options: { readonly signal: AbortSignal }): Promise<readonly AdminEntityReference[]>;
-  listGeographicNameReferences(
+  archive(
+    record: AdminCatalogRecord,
     options: { readonly signal: AbortSignal },
-  ): Promise<readonly AdminGeographicNameReference[]>;
+  ): Promise<AdminCatalogRecord>;
+  delete(record: AdminCatalogRecord, options: { readonly signal: AbortSignal }): Promise<void>;
+  listEntityReferences(options: {
+    readonly signal: AbortSignal;
+  }): Promise<readonly AdminEntityReference[]>;
+  listGeographicNameReferences(options: {
+    readonly signal: AbortSignal;
+  }): Promise<readonly AdminGeographicNameReference[]>;
 }

@@ -60,8 +60,7 @@ const RESOURCE_TABLES: Readonly<Record<AdminCatalogResourceKind, AdminTableDefin
   },
   'geographic-alias': {
     table: 'geographic_name_aliases',
-    select:
-      'id,geographic_name_id,language,value,publication_status,published_at,updated_at',
+    select: 'id,geographic_name_id,language,value,publication_status,published_at,updated_at',
     order: 'value.asc,id.asc',
   },
 };
@@ -142,7 +141,10 @@ function recordBase(kind: AdminCatalogResourceKind, row: Record<string, unknown>
   } as const;
 }
 
-function mapRecord(kind: AdminCatalogResourceKind, row: Record<string, unknown>): AdminCatalogRecord {
+function mapRecord(
+  kind: AdminCatalogResourceKind,
+  row: Record<string, unknown>,
+): AdminCatalogRecord {
   const base = recordBase(kind, row);
 
   switch (kind) {
@@ -325,7 +327,12 @@ export class SupabaseAdminCatalogRepository implements AdminCatalogRepository {
     options: { readonly signal: AbortSignal },
   ): Promise<readonly AdminCatalogRecord[]> {
     const definition = RESOURCE_TABLES[kind];
-    const rows = await this.#listRows(definition.table, definition.select, definition.order, options.signal);
+    const rows = await this.#listRows(
+      definition.table,
+      definition.select,
+      definition.order,
+      options.signal,
+    );
     return rows.map((row) => mapRecord(kind, row));
   }
 
@@ -559,11 +566,7 @@ export class SupabaseAdminCatalogRepository implements AdminCatalogRepository {
     return rows;
   }
 
-  async #request(
-    url: URL,
-    init: RequestInit,
-    parentSignal: AbortSignal,
-  ): Promise<Response> {
+  async #request(url: URL, init: RequestInit, parentSignal: AbortSignal): Promise<Response> {
     const accessToken = this.#readAccessToken();
     const controller = new AbortController();
     const handleAbort = (): void => controller.abort();

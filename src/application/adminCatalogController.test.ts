@@ -26,26 +26,38 @@ const category: AdminCatalogRecord = {
 
 class FakeRepository implements AdminCatalogRepository {
   list = vi.fn<
-    (kind: AdminCatalogResourceKind, options: { readonly signal: AbortSignal }) => Promise<readonly AdminCatalogRecord[]>
+    (
+      kind: AdminCatalogResourceKind,
+      options: { readonly signal: AbortSignal },
+    ) => Promise<readonly AdminCatalogRecord[]>
   >(async () => [category]);
   create = vi.fn<
-    (draft: AdminCatalogDraft, options: { readonly signal: AbortSignal }) => Promise<AdminCatalogRecord>
-  >(async (draft) => ({
-    ...category,
-    ...draft,
-    kind: 'category',
-    updatedAt: '2026-08-07T10:01:00.000Z',
-    publishedAt: null,
-  } as AdminCatalogRecord));
+    (
+      draft: AdminCatalogDraft,
+      options: { readonly signal: AbortSignal },
+    ) => Promise<AdminCatalogRecord>
+  >(
+    async (draft) =>
+      ({
+        ...category,
+        ...draft,
+        kind: 'category',
+        updatedAt: '2026-08-07T10:01:00.000Z',
+        publishedAt: null,
+      }) as AdminCatalogRecord,
+  );
   update = vi.fn<
     (
       original: AdminCatalogRecord,
       draft: AdminCatalogDraft,
       options: { readonly signal: AbortSignal },
     ) => Promise<AdminCatalogRecord>
-  >(async (original, draft) => ({ ...original, ...draft } as AdminCatalogRecord));
+  >(async (original, draft) => ({ ...original, ...draft }) as AdminCatalogRecord);
   archive = vi.fn<
-    (record: AdminCatalogRecord, options: { readonly signal: AbortSignal }) => Promise<AdminCatalogRecord>
+    (
+      record: AdminCatalogRecord,
+      options: { readonly signal: AbortSignal },
+    ) => Promise<AdminCatalogRecord>
   >(async (record) => ({ ...record, publicationStatus: 'archived' }));
   delete = vi.fn<
     (record: AdminCatalogRecord, options: { readonly signal: AbortSignal }) => Promise<void>
@@ -108,11 +120,7 @@ describe('AdminCatalogController', () => {
     const repository = new FakeRepository();
     const onAuthorizationRejected = vi.fn();
     repository.list.mockRejectedValue(
-      new AdminCatalogRepositoryError(
-        'session-expired',
-        'expired',
-        { status: 401 },
-      ),
+      new AdminCatalogRepositoryError('session-expired', 'expired', { status: 401 }),
     );
     const controller = new AdminCatalogController(repository, { onAuthorizationRejected });
 
@@ -159,9 +167,7 @@ describe('AdminCatalogController', () => {
 
   it('does not retry a failed mutation and exposes normalized conflict errors', async () => {
     const repository = new FakeRepository();
-    repository.create.mockRejectedValue(
-      new AdminCatalogRepositoryError('conflict', 'conflict'),
-    );
+    repository.create.mockRejectedValue(new AdminCatalogRepositoryError('conflict', 'conflict'));
     const controller = new AdminCatalogController(repository);
     controller.setAccess(true, true);
     await flush();

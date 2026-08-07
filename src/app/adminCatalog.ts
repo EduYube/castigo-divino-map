@@ -269,11 +269,25 @@ function recordToDraft(record: AdminCatalogRecord): AdminCatalogDraft {
 function emptyDraft(kind: AdminCatalogResourceKind): AdminCatalogDraft {
   switch (kind) {
     case 'category':
-      return { kind, id: 'category-', slug: '', name: '', description: '', publicationStatus: 'draft' };
+      return {
+        kind,
+        id: 'category-',
+        slug: '',
+        name: '',
+        description: '',
+        publicationStatus: 'draft',
+      };
     case 'tag':
       return { kind, id: '', name: '', description: '', publicationStatus: 'draft' };
     case 'entity-alias':
-      return { kind, id: 'alias-', entityId: '', language: 'en', value: '', publicationStatus: 'draft' };
+      return {
+        kind,
+        id: 'alias-',
+        entityId: '',
+        language: 'en',
+        value: '',
+        publicationStatus: 'draft',
+      };
     case 'geographic-name':
       return {
         kind,
@@ -350,7 +364,10 @@ export function mountAdminCatalog(
   let backendConnected = false;
   let original: AdminCatalogRecord | null = null;
   let restoreFocus: HTMLElement | null = null;
-  let pendingConfirmation: { readonly action: 'archive' | 'delete'; readonly record: AdminCatalogRecord } | null = null;
+  let pendingConfirmation: {
+    readonly action: 'archive' | 'delete';
+    readonly record: AdminCatalogRecord;
+  } | null = null;
 
   heading.textContent = 'Contenido administrativo';
   heading.id = 'admin-catalog-heading';
@@ -461,8 +478,7 @@ export function mountAdminCatalog(
         : draft.kind === 'category' || draft.kind === 'tag' || draft.kind === 'geographic-name'
           ? draft.name.trim() || 'Sin nombre'
           : 'Sin nombre';
-    const coordinates =
-      draft.kind === 'geographic-name' ? ` · (${draft.x}, ${draft.y})` : '';
+    const coordinates = draft.kind === 'geographic-name' ? ` · (${draft.x}, ${draft.y})` : '';
     previewText.textContent = `${displayName} · ${draft.id} · ${draft.publicationStatus}${coordinates}`;
     return validation.valid;
   }
@@ -474,7 +490,9 @@ export function mountAdminCatalog(
     fields.replaceChildren();
     editorStatus.textContent = '';
     const draft = record ? recordToDraft(record) : emptyDraft(state.resourceKind);
-    editorHeading.textContent = record ? `Editar ${getAdminRecordDisplayName(record)}` : 'Crear registro';
+    editorHeading.textContent = record
+      ? `Editar ${getAdminRecordDisplayName(record)}`
+      : 'Crear registro';
 
     addField(form, controls, {
       name: 'id',
@@ -612,7 +630,11 @@ export function mountAdminCatalog(
       value: 'English (en)',
       disabled: true,
     });
-    if (draft.kind === 'entity-alias' || draft.kind === 'geographic-name' || draft.kind === 'geographic-alias') {
+    if (
+      draft.kind === 'entity-alias' ||
+      draft.kind === 'geographic-name' ||
+      draft.kind === 'geographic-alias'
+    ) {
       fields.append(language.closest('.admin-catalog__field') as HTMLElement);
     } else {
       language.closest('.admin-catalog__field')?.remove();
@@ -636,15 +658,22 @@ export function mountAdminCatalog(
     }
     renderFieldErrors();
     window.requestAnimationFrame(() => {
-      const first = Array.from(controls.values()).find((control) => !control.input.disabled && !control.input.readOnly);
+      const first = Array.from(controls.values()).find(
+        (control) => !control.input.disabled && !control.input.readOnly,
+      );
       first?.input.focus();
     });
   }
 
-  function openConfirmation(action: 'archive' | 'delete', record: AdminCatalogRecord, trigger: HTMLElement): void {
+  function openConfirmation(
+    action: 'archive' | 'delete',
+    record: AdminCatalogRecord,
+    trigger: HTMLElement,
+  ): void {
     pendingConfirmation = { action, record };
     restoreFocus = trigger;
-    confirmationHeading.textContent = action === 'archive' ? 'Confirmar archivado' : 'Confirmar eliminación física';
+    confirmationHeading.textContent =
+      action === 'archive' ? 'Confirmar archivado' : 'Confirmar eliminación física';
     confirmationText.textContent =
       action === 'archive'
         ? `Se archivará “${getAdminRecordDisplayName(record)}”. Si está en uso, PostgreSQL rechazará la operación.`
@@ -694,15 +723,22 @@ export function mountAdminCatalog(
       archiveButton.textContent = 'Archivar';
       archiveButton.disabled = record.publicationStatus === 'archived';
       archiveButton.setAttribute('aria-label', `Archivar ${getAdminRecordDisplayName(record)}`);
-      archiveButton.addEventListener('click', () => openConfirmation('archive', record, archiveButton));
+      archiveButton.addEventListener('click', () =>
+        openConfirmation('archive', record, archiveButton),
+      );
       actions.append(editButton, archiveButton);
 
       if (resourceAllowsPhysicalDelete(record)) {
         const deleteButton = createElement('button', 'admin-catalog__danger-link');
         deleteButton.type = 'button';
         deleteButton.textContent = 'Eliminar';
-        deleteButton.setAttribute('aria-label', `Eliminar definitivamente ${getAdminRecordDisplayName(record)}`);
-        deleteButton.addEventListener('click', () => openConfirmation('delete', record, deleteButton));
+        deleteButton.setAttribute(
+          'aria-label',
+          `Eliminar definitivamente ${getAdminRecordDisplayName(record)}`,
+        );
+        deleteButton.addEventListener('click', () =>
+          openConfirmation('delete', record, deleteButton),
+        );
         actions.append(deleteButton);
       }
 
@@ -734,7 +770,8 @@ export function mountAdminCatalog(
     if (!state.authorized) {
       status.textContent = 'El CRUD permanece cerrado hasta autorizar la sesión.';
     } else if (!state.backendConnected) {
-      status.textContent = 'El CRUD permanece bloqueado mientras el backend público no esté conectado.';
+      status.textContent =
+        'El CRUD permanece bloqueado mientras el backend público no esté conectado.';
     } else if (state.phase === 'loading') {
       status.textContent = 'Cargando contenido administrativo…';
     } else if (state.phase === 'mutating') {
@@ -751,7 +788,10 @@ export function mountAdminCatalog(
 
   const handleSearch = (): void => catalogController.setQuery(search.value);
   const handleSort = (): void => {
-    const [sortKey, direction] = sort.value.split(':') as [AdminCatalogSort, AdminCatalogSortDirection];
+    const [sortKey, direction] = sort.value.split(':') as [
+      AdminCatalogSort,
+      AdminCatalogSortDirection,
+    ];
     catalogController.setSort(sortKey, direction);
   };
   const handleNew = (): void => renderEditor(null, newButton);
@@ -803,7 +843,10 @@ export function mountAdminCatalog(
     const next = event.detail.backendState;
     if (next === 'connected' || next === 'degraded' || next === 'offline') {
       backendConnected = next === 'connected';
-      catalogController.setAccess(authController.getState().phase === 'authorized', backendConnected);
+      catalogController.setAccess(
+        authController.getState().phase === 'authorized',
+        backendConnected,
+      );
     }
   };
 

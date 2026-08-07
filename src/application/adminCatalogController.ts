@@ -12,7 +12,10 @@ import {
   type AdminEntityReference,
   type AdminGeographicNameReference,
 } from '../domain/adminCatalog';
-import { normalizeAdminSearchText, validateAdminCatalogDraft } from '../domain/adminCatalogValidation';
+import {
+  normalizeAdminSearchText,
+  validateAdminCatalogDraft,
+} from '../domain/adminCatalogValidation';
 
 export type AdminCatalogSort = 'name' | 'id' | 'status';
 export type AdminCatalogSortDirection = 'asc' | 'desc';
@@ -177,7 +180,8 @@ export class AdminCatalogController {
     try {
       const [records, entityReferences, geographicNameReferences] = await Promise.all([
         this.#repository.list(this.#state.resourceKind, { signal: operation.signal }),
-        this.#state.resourceKind === 'entity-alias' || this.#state.resourceKind === 'geographic-name'
+        this.#state.resourceKind === 'entity-alias' ||
+        this.#state.resourceKind === 'geographic-name'
           ? this.#repository.listEntityReferences({ signal: operation.signal })
           : Promise.resolve([] as readonly AdminEntityReference[]),
         this.#state.resourceKind === 'geographic-alias'
@@ -215,10 +219,13 @@ export class AdminCatalogController {
       });
       return false;
     }
-    return this.#mutate(async (signal) => this.#repository.create(draft, { signal }), (created) => {
-      const records = [...this.#state.records, created];
-      return { records };
-    });
+    return this.#mutate(
+      async (signal) => this.#repository.create(draft, { signal }),
+      (created) => {
+        const records = [...this.#state.records, created];
+        return { records };
+      },
+    );
   }
 
   async update(original: AdminCatalogRecord, draft: AdminCatalogDraft): Promise<boolean> {
@@ -297,7 +304,9 @@ export class AdminCatalogController {
 
   async #mutate(
     operation: (signal: AbortSignal) => Promise<AdminCatalogRecord>,
-    applyResult: (record: AdminCatalogRecord) => { readonly records: readonly AdminCatalogRecord[] },
+    applyResult: (record: AdminCatalogRecord) => {
+      readonly records: readonly AdminCatalogRecord[];
+    },
   ): Promise<boolean> {
     if (!this.#canMutate() || this.#state.phase === 'mutating') {
       this.#publishBlocked();

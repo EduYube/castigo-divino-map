@@ -99,7 +99,9 @@ describe('SupabaseAdminCatalogRepository', () => {
       expect(init?.method).toBe('PATCH');
       expect(url.searchParams.get('id')).toBe('eq.category-cities');
       expect(url.searchParams.get('updated_at')).toBe('eq.2026-08-07T10:00:00.000Z');
-      return jsonResponse([{ ...categoryRow, name: 'Great Cities', updated_at: '2026-08-07T10:01:00.000Z' }]);
+      return jsonResponse([
+        { ...categoryRow, name: 'Great Cities', updated_at: '2026-08-07T10:01:00.000Z' },
+      ]);
     });
     const repository = new SupabaseAdminCatalogRepository({
       projectUrl: PROJECT_URL,
@@ -228,7 +230,10 @@ describe('SupabaseAdminCatalogRepository', () => {
           },
           { signal: new AbortController().signal },
         ),
-      ).rejects.toMatchObject({ code: expected, message: expect.not.stringContaining('raw database') });
+      ).rejects.toMatchObject({
+        code: expected,
+        message: expect.not.stringContaining('raw database'),
+      });
     }
   });
 });

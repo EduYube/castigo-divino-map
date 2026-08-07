@@ -58,10 +58,7 @@ function validateStatusTransition(
   draft: AdminCatalogDraft,
   original: AdminCatalogRecord | null,
 ): void {
-  if (
-    original?.publicationStatus === 'archived' &&
-    draft.publicationStatus === 'published'
-  ) {
+  if (original?.publicationStatus === 'archived' && draft.publicationStatus === 'published') {
     errors.publicationStatus = 'Un registro archivado debe volver primero a borrador.';
   }
 }
@@ -109,7 +106,8 @@ function validateLocalNameCollision(
   });
 
   if (collides) {
-    const field = draft.kind === 'entity-alias' || draft.kind === 'geographic-alias' ? 'value' : 'name';
+    const field =
+      draft.kind === 'entity-alias' || draft.kind === 'geographic-alias' ? 'value' : 'name';
     errors[field] = 'Ya existe un nombre publicado equivalente.';
   }
 }
@@ -134,7 +132,13 @@ export function validateAdminCatalogDraft(
         CATEGORY_ID,
         'Usa un ID category-... en minúsculas y kebab-case.',
       );
-      safeIdentifier(errors, 'slug', draft.slug, SAFE_SLUG, 'Usa un slug en minúsculas y kebab-case.');
+      safeIdentifier(
+        errors,
+        'slug',
+        draft.slug,
+        SAFE_SLUG,
+        'Usa un slug en minúsculas y kebab-case.',
+      );
       requiredText(errors, 'name', draft.name, 120);
       if (draft.description.length > 1000) {
         errors.description = 'Debe tener como máximo 1000 caracteres.';
@@ -169,7 +173,13 @@ export function validateAdminCatalogDraft(
         GEOGRAPHIC_NAME_ID,
         'Usa un ID geo-... en minúsculas y kebab-case.',
       );
-      safeIdentifier(errors, 'slug', draft.slug, SAFE_SLUG, 'Usa un slug en minúsculas y kebab-case.');
+      safeIdentifier(
+        errors,
+        'slug',
+        draft.slug,
+        SAFE_SLUG,
+        'Usa un slug en minúsculas y kebab-case.',
+      );
       requiredText(errors, 'name', draft.name, 160);
       if (draft.language !== 'en') {
         errors.language = 'Beta 0.2 solo admite nombres en inglés.';

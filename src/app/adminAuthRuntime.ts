@@ -85,11 +85,17 @@ class UnavailableAdminCatalogRepository implements AdminCatalogRepository {
     this.#error = error;
   }
 
-  list(_kind: AdminCatalogResourceKind, _options: { readonly signal: AbortSignal }): Promise<readonly AdminCatalogRecord[]> {
+  list(
+    _kind: AdminCatalogResourceKind,
+    _options: { readonly signal: AbortSignal },
+  ): Promise<readonly AdminCatalogRecord[]> {
     return Promise.reject(this.#error);
   }
 
-  create(_draft: AdminCatalogDraft, _options: { readonly signal: AbortSignal }): Promise<AdminCatalogRecord> {
+  create(
+    _draft: AdminCatalogDraft,
+    _options: { readonly signal: AbortSignal },
+  ): Promise<AdminCatalogRecord> {
     return Promise.reject(this.#error);
   }
 
@@ -101,7 +107,10 @@ class UnavailableAdminCatalogRepository implements AdminCatalogRepository {
     return Promise.reject(this.#error);
   }
 
-  archive(_record: AdminCatalogRecord, _options: { readonly signal: AbortSignal }): Promise<AdminCatalogRecord> {
+  archive(
+    _record: AdminCatalogRecord,
+    _options: { readonly signal: AbortSignal },
+  ): Promise<AdminCatalogRecord> {
     return Promise.reject(this.#error);
   }
 
@@ -109,13 +118,15 @@ class UnavailableAdminCatalogRepository implements AdminCatalogRepository {
     return Promise.reject(this.#error);
   }
 
-  listEntityReferences(_options: { readonly signal: AbortSignal }): Promise<readonly AdminEntityReference[]> {
+  listEntityReferences(_options: {
+    readonly signal: AbortSignal;
+  }): Promise<readonly AdminEntityReference[]> {
     return Promise.reject(this.#error);
   }
 
-  listGeographicNameReferences(
-    _options: { readonly signal: AbortSignal },
-  ): Promise<readonly AdminGeographicNameReference[]> {
+  listGeographicNameReferences(_options: {
+    readonly signal: AbortSignal;
+  }): Promise<readonly AdminGeographicNameReference[]> {
     return Promise.reject(this.#error);
   }
 }

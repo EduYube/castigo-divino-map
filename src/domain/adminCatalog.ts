@@ -1,10 +1,6 @@
 export type PublicationStatus = 'draft' | 'published' | 'archived';
 export type AdminCatalogResourceKind =
-  | 'category'
-  | 'tag'
-  | 'entity-alias'
-  | 'geographic-name'
-  | 'geographic-alias';
+  'category' | 'tag' | 'entity-alias' | 'geographic-name' | 'geographic-alias';
 
 export interface AdminCatalogRecordBase {
   readonly kind: AdminCatalogResourceKind;
@@ -53,11 +49,7 @@ export interface AdminGeographicAlias extends AdminCatalogRecordBase {
 }
 
 export type AdminCatalogRecord =
-  | AdminCategory
-  | AdminTag
-  | AdminEntityAlias
-  | AdminGeographicName
-  | AdminGeographicAlias;
+  AdminCategory | AdminTag | AdminEntityAlias | AdminGeographicName | AdminGeographicAlias;
 
 export interface AdminEntityReference {
   readonly id: string;
