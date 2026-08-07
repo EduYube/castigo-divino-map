@@ -58,6 +58,6 @@ describe('pin visual system', () => {
     const groups = groupPinsByCoordinate(pins);
 
     expect(groups.map((group) => group.map(({ id }) => id))).toEqual([['a', 'b'], ['c']]);
-    expect(pins[0].coordinate).toEqual([100, 200]);
+    expect(pins[0]?.coordinate).toEqual([100, 200]);
   });
 });
