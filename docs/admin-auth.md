@@ -74,7 +74,7 @@ Si `sessionStorage` no está disponible o lanza una excepción, Auth falla de fo
 
 ## Renovación y eventos
 
-La sesión se renueva antes de la caducidad. Un refresh automático fallido elimina la sesión local y emite `refresh-failed`.
+La sesión se renueva antes de la caducidad. Un refresh automático correcto emite un único `token-refreshed`; un refresh automático fallido elimina la sesión local y emite `refresh-failed`.
 
 `AdminAuthController` escucha eventos mediante su puerto `onAuthStateChange`. Los eventos relevantes son:
 
@@ -195,7 +195,7 @@ MAP-017 añade cobertura para:
 - login e2e, teclado, foco, recarga de la misma pestaña, logout, 401, red caída y viewport de 320 px;
 - ausencia de tokens en URL, texto del DOM y consola de las pruebas e2e.
 
-El preflight completo definido en `docs/project-status.md` sigue siendo obligatorio antes de abrir la PR y lanzar CI.
+El flujo ordinario del proyecto exige el preflight definido en `docs/project-status.md`. Para esta iteración de MAP-017, el mantenedor autorizó expresamente omitir el preflight local y usar GitHub Actions como bucle de validación antes de considerar la Issue completada.
 
 ## Puntos de control humanos
 
