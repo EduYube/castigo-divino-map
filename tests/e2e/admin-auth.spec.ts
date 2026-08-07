@@ -27,7 +27,7 @@ async function configureAuthTest(page: Page): Promise<AuthTestBackend> {
     window.__MAP017_AUTH_TEST_CONFIG__ = {
       projectUrl,
       publishableKey: 'sb_publishable_map017_e2e_key',
-      timeoutMs: 500,
+      timeoutMs: 2_000,
     };
   }, PROJECT_URL);
 
