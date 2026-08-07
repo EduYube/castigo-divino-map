@@ -263,7 +263,9 @@ test('keeps the geographic highlight static when reduced motion is requested', a
   expect(animationName).toBe('none');
 });
 
-test('remains usable at 320 px and restores the geographic query after reload', async ({ page }) => {
+test('remains usable at 320 px and restores the geographic query after reload', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 320, height: 700 });
   await openGeographicSearch(page, '/?q=Waterdeep');
 
