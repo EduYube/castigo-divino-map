@@ -1,0 +1,229 @@
+.place-details__content {
+  gap: 1rem;
+}
+
+.compact-details__type,
+.compact-details__category {
+  margin: 0;
+}
+
+.compact-details__type {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--accent-strong);
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.compact-details__type-shape {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1;
+  border: 2px solid currentColor;
+}
+
+.compact-details__type-shape--character {
+  border-radius: 50%;
+}
+
+.compact-details__type-shape--location {
+  border-radius: 0.25rem;
+}
+
+.compact-details__title {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+}
+
+.compact-details__category {
+  display: grid;
+  gap: 0.2rem;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.compact-details__meta-label,
+.compact-details__section-title {
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.compact-details__meta-label {
+  display: block;
+}
+
+.compact-details__section-title {
+  margin-bottom: 0.55rem;
+}
+
+.compact-details__dispositions,
+.compact-details__tags,
+.compact-details__important-characters {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.compact-details__dispositions {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.compact-details__disposition {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.6rem;
+  background: rgba(8, 13, 10, 0.22);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+}
+
+.compact-details__disposition-player {
+  min-width: 0;
+  font-weight: 750;
+}
+
+.compact-details__disposition-state {
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+.compact-details__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.compact-details__tag {
+  max-width: 100%;
+  padding: 0.35rem 0.6rem;
+  color: #172018;
+  font-size: 0.8rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+  background: var(--accent);
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+.compact-details__empty,
+.compact-details__future-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.compact-details__important-characters {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.compact-details__important-characters li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.compact-details__important-characters li:last-child {
+  border-bottom: 0;
+}
+
+.compact-details__character-name {
+  min-width: 0;
+  font-weight: 750;
+}
+
+.compact-details__relation-status {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: right;
+}
+
+.compact-details__full-boundary {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.compact-details__full-action {
+  min-height: 2.75rem;
+  padding: 0.65rem 0.9rem;
+  color: var(--muted);
+  font-weight: 800;
+  text-align: center;
+  background: rgba(247, 241, 227, 0.05);
+  border: 1px dashed var(--line);
+  border-radius: 0.75rem;
+}
+
+.compact-details__full-action:disabled {
+  cursor: not-allowed;
+}
+
+@media (max-width: 24rem) {
+  .compact-details__disposition {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .compact-details__disposition-state {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .compact-details__important-characters li {
+    display: grid;
+    gap: 0.2rem;
+  }
+
+  .compact-details__relation-status {
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .compact-details__full-action,
+  .compact-details__type-shape {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .compact-details__type-shape,
+  .compact-details__disposition,
+  .compact-details__tag,
+  .compact-details__full-action {
+    color: CanvasText;
+    background: Canvas;
+    border-color: CanvasText;
+    forced-color-adjust: auto;
+  }
+
+  .compact-details__type-shape--character {
+    border-radius: 50%;
+  }
+
+  .compact-details__type-shape--location {
+    border-radius: 0.25rem;
+  }
+}
