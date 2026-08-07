@@ -457,6 +457,13 @@ export function mountAdminCatalog(
 
   function closeEditor(): void {
     editor.hidden = true;
+    list.hidden = false;
+    if (state.visibleRecords.length === 0 && state.phase === 'ready') {
+      empty.textContent = state.query ? 'No hay coincidencias.' : 'No hay registros de este tipo.';
+      empty.hidden = false;
+    } else {
+      empty.hidden = true;
+    }
     original = null;
     controls.clear();
     fields.replaceChildren();
