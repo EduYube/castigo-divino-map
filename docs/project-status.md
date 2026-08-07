@@ -7,11 +7,11 @@
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
 - MAP-001 a MAP-021: completadas funcionalmente e integradas.
-- Siguiente trabajo del backlog: MAP-022 — Diferenciar visualmente tipos y disposiciones.
+- Trabajo actual: MAP-022 — Diferenciar visualmente tipos y disposiciones.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-07.
 
-MAP-021 se integró en `master` mediante la PR #69 con merge commit `fb3e50b07cdfe40f83d4edf0336e1eae825aff72`. La Issue #40 quedó cerrada automáticamente como completada. La evidencia de CI pre-merge está cerrada y el checkpoint humano posterior al merge confirmó en verde las tres ejecuciones relevantes: CI de `master`, despliegue de GitHub Pages y CI documental #375. El conector disponible en esta sesión no enumera los run IDs disparados por `push`, por lo que no se inventan identificadores ausentes.
+MAP-022 se desarrolla desde el `master` que ya contiene el cierre documental de MAP-021 (`f33e7d0cac87a30076995a7cee335c12d8b08597`). La implementación mantiene el catálogo visible Beta 0.1 como compatibilidad, consume la proyección Beta 0.2 solo para enriquecer/añadir pines `visibility = pin`, introduce un contrato visual compartido para tipo y disposición por jugador y resuelve coordenadas coincidentes mediante un marcador compuesto con lista accesible. No requiere DDL ni migración de Supabase. La evidencia definitiva de CI, PR, merge y Pages se registrará únicamente después de comprobarla sobre los SHA reales correspondientes.
 
 ## Beta 0.1 y frontera de Beta 0.2
 
@@ -19,7 +19,7 @@ MAP-001 a MAP-011 entregaron la Beta 0.1 publicada con Vite, TypeScript, Leaflet
 
 Beta 0.2 mantiene como contratos de compatibilidad el pathname de Pages, query string, IDs, slugs, coordenadas, búsqueda, filtros, historial, accesibilidad y tratamiento del mapa remoto hasta que MAP-028 demuestre equivalencia y haga la transición completa del catálogo visible.
 
-MAP-013 a MAP-021 ya han cerrado arquitectura, seguridad, Supabase/RLS, modelo de entidades, acceso público resiliente, autenticación administrativa, CRUD de catálogo, CRUD de entidades, relaciones personaje–emplazamiento y búsqueda geográfica pública.
+MAP-013 a MAP-021 ya han cerrado arquitectura, seguridad, Supabase/RLS, modelo de entidades, acceso público resiliente, autenticación administrativa, CRUD de catálogo, CRUD de entidades, relaciones personaje–emplazamiento y búsqueda geográfica pública. MAP-022 amplía únicamente la representación y operabilidad de pines, sin adelantar fichas, filtros colapsables, solicitudes ni la migración completa de catálogo.
 
 ## Arquitectura y seguridad vigentes
 
@@ -34,7 +34,7 @@ MAP-013 a MAP-021 ya han cerrado arquitectura, seguridad, Supabase/RLS, modelo d
 - Migraciones SQL hacia delante, versionadas y auditables.
 - GitHub Actions es el bucle principal de validación de cada head de PR; un SHA nuevo exige una ejecución nueva y limpia.
 
-Las decisiones completas viven en `docs/architecture.md`, `docs/data-model.md`, `docs/security.md`, ADR 0002 a 0005, `docs/admin-auth.md`, `docs/admin-catalog.md`, `docs/admin-map-entities.md` y `docs/geographic-search.md`.
+Las decisiones completas viven en `docs/architecture.md`, `docs/data-model.md`, `docs/security.md`, ADR 0002 a 0005, `docs/admin-auth.md`, `docs/admin-catalog.md`, `docs/admin-map-entities.md`, `docs/geographic-search.md` y `docs/pin-visual-system.md`.
 
 ## Supabase alojado y migraciones
 
@@ -61,6 +61,8 @@ Las versiones alojadas 13 y 14 corresponden respectivamente al SQL versionado de
 
 MAP-021 verificó que `geographic_names`, `geographic_name_aliases`, `map_entities` y `entity_aliases` tienen RLS activa. `geographic_names` ya contiene `x`, `y`, `recommended_zoom` y `entity_id` opcional; las policies públicas filtran contenido publicado y las lecturas anónimas no incluyen permisos de escritura. MAP-021 no añadió DDL ni migración.
 
+MAP-022 reutiliza `entity_type`, `visibility`, `players` y `entity_player_dispositions`; no añade columnas, enums, tablas, RPC, grants, policies ni migraciones. `unknown` no se añade al modelo: el signo `?` se usa solo como fallback de presentación cuando una proyección no contiene una disposición disponible.
+
 ## Modelo funcional relevante
 
 Beta 0.2 mantiene:
@@ -78,6 +80,8 @@ Beta 0.2 mantiene:
 - snapshot público versionado y fallback de MAP-016.
 
 Un nombre impreso en el mapa no necesita ser un pin. Un `map_entity` con `visibility = search_only` sí es una entidad completa; un `geographic_name` sigue siendo una identidad geográfica ligera para centrar, aplicar zoom recomendado y resaltar una posición.
+
+La disposición no es una propiedad global de la entidad: cada pin puede representar varias perspectivas de jugador. MAP-022 expresa esa matriz con tokens compactos y texto accesible sin introducir una taxonomía paralela.
 
 ## MAP-019 — completada
 
@@ -133,6 +137,30 @@ Diseño integrado:
 - no se añade parámetro de URL: `q`, `place`, `category` y `tag` siguen siendo el contrato reproducible;
 - no se crean nuevos pines para nombres geográficos.
 
+## MAP-022 — en implementación
+
+- Issue: #41, abierta durante la implementación.
+- Rama: `agent/map-022-pin-visual-system`.
+- Base: `f33e7d0cac87a30076995a7cee335c12d8b08597`.
+- Migración: ninguna.
+- PR, head final, CI y merge: pendientes de validación real; no se registran IDs anticipados.
+
+Contrato implementado en la rama:
+
+- personajes: círculo con `●`;
+- emplazamientos: rombo con `◆`;
+- disposiciones por jugador: `+` aliado, `−` enemigo, `•` neutral y `?` únicamente como fallback visual de ausencia;
+- estilos de borde sólidos/dobles/punteados/discontinuos para no depender del color;
+- selección mediante anillo exterior independiente, foco visible y atenuación compatible con filtros;
+- grupos de coordenadas idénticas mediante marcador compuesto `≡` + contador y popup de botones accesibles;
+- leyenda pública compacta y responsive;
+- `forced-colors` y `prefers-reduced-motion` explícitos;
+- vista administrativa sincronizada con el mismo contrato sin cambiar CRUD, RPC ni persistencia;
+- `search_only` y `geographic_names` no crean pines;
+- la transición completa del catálogo permanece en MAP-028.
+
+La cobertura específica está documentada en `docs/pin-visual-system.md`. GitHub Actions continúa siendo el gate principal y debe validar el SHA final antes de marcar la PR Ready.
+
 ## Backlog Beta 0.2
 
 1. MAP-013 — Definir arquitectura y seguridad. **Completada.**
@@ -144,7 +172,7 @@ Diseño integrado:
 7. MAP-019 — CRUD de pines con editor visual y previsualización. **Completada.**
 8. MAP-020 — Relacionar personajes importantes con emplazamientos. **Completada.**
 9. MAP-021 — Búsqueda geográfica por nombres del mapa. **Completada.**
-10. MAP-022 — Diferenciar visualmente tipos y disposiciones. **Siguiente.**
+10. MAP-022 — Diferenciar visualmente tipos y disposiciones. **En implementación.**
 11. MAP-023 — Rediseñar ficha compacta.
 12. MAP-024 — Ficha completa en pestaña nueva.
 13. MAP-025 — Búsqueda y filtros colapsables.
@@ -168,11 +196,13 @@ Diseño integrado:
 10. fusionar con el método habitual del repositorio;
 11. verificar Issue, `master`, GitHub Pages y smoke publicado.
 
+No existe un preflight local obligatorio ni un checkpoint humano antes de CI. Las herramientas locales son auxiliares cuando están disponibles; GitHub Actions valida cada head real de la PR.
+
 Los cambios de producción de Supabase conservan sus controles adicionales: comparación de historial, revisión exacta de SQL, validación local cuando hay DDL, aplicación hacia delante, verificación posterior de esquema/grants/RLS/advisors, no semillas y parada ante deriva inesperada.
 
 ## Riesgos y fronteras pendientes
 
-- MAP-022 mantiene el rediseño visual de tipos y disposiciones.
+- MAP-022 está cambiando la representación visual de tipos/disposiciones sin sustituir todavía las fichas ni los filtros de compatibilidad Beta 0.1.
 - MAP-023/MAP-024 mantienen los rediseños de ficha compacta/completa.
 - MAP-028 mantiene la transición completa del catálogo Beta 0.1 a Supabase.
 - GitHub Pages, Supabase y la imagen cartográfica remota no tienen SLA propio del proyecto.
@@ -192,3 +222,4 @@ Los cambios de producción de Supabase conservan sus controles adicionales: comp
 | 2026-08-07 | MAP-019 cerró el CRUD de entidades; PR #67, merge `5fdb6d2…`, migración alojada `20260807154307_add_admin_map_entity_editor_rpc`. |
 | 2026-08-07 | MAP-020 cerró relaciones personaje–emplazamiento; PR #68, merge `d9a1f53…`, Pages `31212733439`, migración alojada `20260807180851_add_character_location_relations`. |
 | 2026-08-07 | MAP-021 cerró búsqueda geográfica pública; PR #69, head verde `7cd6643…`, merge `fb3e50b…`, checkpoint post-merge CI/Pages verde y sin DDL. |
+| 2026-08-07 | MAP-022 inició el sistema visual accesible de pines en `agent/map-022-pin-visual-system`; sin DDL y con GitHub Actions como gate pendiente. |
