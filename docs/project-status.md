@@ -9,11 +9,11 @@
 - MAP-001 a MAP-022: implementadas e integradas funcionalmente.
 - Siguiente trabajo de backlog: MAP-023 — Rediseñar ficha compacta.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
-- Última actualización: 2026-08-07.
+- Última actualización: 2026-08-08.
 
 MAP-022 se integró mediante PR #71 sobre el `master` que contenía el cierre documental de MAP-021. La solución mantiene el catálogo visible Beta 0.1 como compatibilidad, consume la proyección Beta 0.2 solo para enriquecer o añadir pines `visibility = pin`, introduce un contrato visual compartido para tipo y disposición por jugador y resuelve coordenadas coincidentes mediante un marcador compuesto con lista accesible. No requirió DDL ni migración de Supabase.
 
-El head funcional final `45dfa13ca616ef5f3e4e31fa95fbe76040d4dfaf` quedó completamente verde en CI #393 / run `31224128324`; la PR #71 se fusionó con merge commit `ccd8d5c372307b1d5ec02539fae8a4d5df8b4f51` y la Issue #41 quedó cerrada automáticamente. La evidencia post-merge de los workflows `push` de `master` y Pages debe registrarse únicamente cuando sea verificable: el conector disponible no enumera esos runs mediante `fetch_commit_workflow_runs`, que filtra ejecuciones de pull request.
+El head funcional final `45dfa13ca616ef5f3e4e31fa95fbe76040d4dfaf` quedó completamente verde en CI #393 / run `31224128324`; la PR #71 se fusionó con merge commit `ccd8d5c372307b1d5ec02539fae8a4d5df8b4f51` y la Issue #41 quedó cerrada automáticamente. El CI post-merge de `master`, run `31224454225`, sufrió inicialmente un fallo transitorio de infraestructura al arrancar Supabase (`Rate exceeded` y puerto local `54322` ocupado); se relanzó solo ese job y el intento final quedó completamente verde sin cambios de código. Ese cierre exitoso disparó Pages run `31225809275`, con build, despliegue, smoke publicado y estado `github-pages/deployment` verdes. El primer Pages run `31224603340` se omitió correctamente porque correspondía a la conclusión fallida del intento inicial de CI.
 
 ## Beta 0.1 y frontera de Beta 0.2
 
@@ -129,7 +129,7 @@ MAP-020 añadió `character_location_relations`, lectura pública mínima bajo R
 
 MAP-021 mantuvo el catálogo visible Beta 0.1, añadió identidades separadas para lugar geográfico, personaje y emplazamiento, centrado/zoom/resaltado temporal para nombres geográficos y conservó el contrato de URL `q`, `place`, `category` y `tag` sin crear pines para `geographic_names`.
 
-## MAP-022 — integrada; cierre post-merge pendiente de evidencia automática o humana
+## MAP-022 — completada e integrada
 
 - Issue: #41, cerrada como completada.
 - PR funcional: #71, fusionada.
@@ -138,9 +138,11 @@ MAP-021 mantuvo el catálogo visible Beta 0.1, añadió identidades separadas pa
 - Head funcional final: `45dfa13ca616ef5f3e4e31fa95fbe76040d4dfaf`.
 - CI pre-merge: #393, run `31224128324`, completamente verde.
 - Merge funcional: `ccd8d5c372307b1d5ec02539fae8a4d5df8b4f51`.
+- CI post-merge de `master`: run `31224454225`; el primer intento falló por infraestructura al arrancar Supabase y el reintento del único job afectado dejó el run completamente verde sin cambios de código.
+- Primer Pages post-merge: run `31224603340`, omitido correctamente porque se disparó desde la conclusión fallida del intento inicial de CI.
+- Pages post-merge validado: run `31225809275`, con build, deploy, smoke publicado y estado `github-pages/deployment` completamente verdes.
 - Migración: ninguna.
 - Supabase/RLS: sin cambios; la suite existente quedó verde.
-- Post-merge de `master` y Pages: pendiente de registrar únicamente con evidencia verificable; no se inventan IDs de runs.
 
 Contrato integrado:
 
@@ -179,7 +181,7 @@ El contrato completo está documentado en `docs/pin-visual-system.md`.
 7. MAP-019 — CRUD de pines con editor visual y previsualización. **Completada.**
 8. MAP-020 — Relacionar personajes importantes con emplazamientos. **Completada.**
 9. MAP-021 — Búsqueda geográfica por nombres del mapa. **Completada.**
-10. MAP-022 — Diferenciar visualmente tipos y disposiciones. **Integrada; verificación post-merge pendiente de evidencia.**
+10. MAP-022 — Diferenciar visualmente tipos y disposiciones. **Completada.**
 11. MAP-023 — Rediseñar ficha compacta. **Siguiente.**
 12. MAP-024 — Ficha completa en pestaña nueva.
 13. MAP-025 — Búsqueda y filtros colapsables.
@@ -229,4 +231,4 @@ Los cambios de producción de Supabase conservan sus controles adicionales: comp
 | 2026-08-07 | MAP-019 cerró el CRUD de entidades; PR #67, merge `5fdb6d2…`, migración alojada `20260807154307_add_admin_map_entity_editor_rpc`. |
 | 2026-08-07 | MAP-020 cerró relaciones personaje–emplazamiento; PR #68, merge `d9a1f53…`, Pages `31212733439`, migración alojada `20260807180851_add_character_location_relations`. |
 | 2026-08-07 | MAP-021 cerró búsqueda geográfica pública; PR #69, head verde `7cd6643…`, merge `fb3e50b…`, checkpoint post-merge CI/Pages verde y sin DDL. |
-| 2026-08-07 | MAP-022 integró el sistema visual accesible de pines; PR #71, head `45dfa13…`, CI #393/run `31224128324`, merge `ccd8d5c…`, sin DDL. |
+| 2026-08-08 | MAP-022 quedó cerrada de extremo a extremo; PR #71, head `45dfa13…`, CI #393/run `31224128324`, merge `ccd8d5c…`, CI post-merge `31224454225` verde tras reintento transitorio y Pages `31225809275` con deploy/smoke verdes; sin DDL. |
