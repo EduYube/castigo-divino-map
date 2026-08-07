@@ -175,17 +175,20 @@ async function openMap(page: Page, available = true): Promise<void> {
   );
 }
 
-test('shows only compact location data, dispositions and important characters', async ({ page }) => {
+test('renders compact location data and important characters', async ({ page }) => {
   await openMap(page);
 
   await page.getByTestId('coincident-pin').click();
   await page.getByTestId('coincident-pin-option').first().click();
 
   const panel = page.getByTestId('place-details');
+  const title = panel.getByRole('heading', { level: 3, name: 'Demonstration Harbor' });
+  const important = panel.getByRole('heading', { level: 4, name: 'Personajes importantes aquí' });
+
   await expect(panel).toBeVisible();
   await expect(panel).toHaveAttribute('data-entity-type', 'location');
   await expect(panel).toHaveAttribute('data-detail-source', 'beta02');
-  await expect(panel.getByRole('heading', { level: 3, name: 'Demonstration Harbor' })).toBeFocused();
+  await expect(title).toBeFocused();
   await expect(panel).toContainText('Emplazamiento');
   await expect(panel).toContainText('Asentamiento');
   await expect(panel).toContainText('Costero');
@@ -194,8 +197,6 @@ test('shows only compact location data, dispositions and important characters', 
   await expect(panel).toContainText('Aliado');
   await expect(panel).toContainText('Borin');
   await expect(panel).toContainText('Neutral');
-
-  const important = panel.getByRole('heading', { level: 4, name: 'Personajes importantes aquí' });
   await expect(important).toBeVisible();
   await expect(panel).toContainText('Harbor Guard');
   await expect(panel).toContainText('Presente');
@@ -212,7 +213,7 @@ test('shows only compact location data, dispositions and important characters', 
   await expect(panel).toContainText('La ficha completa se incorporará en MAP-024');
 });
 
-test('opens a supplemental character compact card and returns focus on close', async ({ page }) => {
+test('opens a character card and returns focus on close', async ({ page }) => {
   await openMap(page);
 
   const character = page.locator('[data-testid="entity-pin"][data-pin-id="entity-scout"]');
@@ -220,9 +221,12 @@ test('opens a supplemental character compact card and returns focus on close', a
   await page.keyboard.press('Space');
 
   const panel = page.getByTestId('place-details');
+  const title = panel.getByRole('heading', { level: 3, name: 'Scout' });
+  const important = panel.getByRole('heading', { level: 4, name: 'Personajes importantes aquí' });
+
   await expect(panel).toHaveAttribute('data-entity-id', 'entity-scout');
   await expect(panel).toHaveAttribute('data-entity-type', 'character');
-  await expect(panel.getByRole('heading', { level: 3, name: 'Scout' })).toBeFocused();
+  await expect(title).toBeFocused();
   await expect(panel).toContainText('Personaje');
   await expect(panel).toContainText('Lugar destacado');
   await expect(panel).toContainText('Vigilancia');
@@ -230,9 +234,7 @@ test('opens a supplemental character compact card and returns focus on close', a
   await expect(panel).toContainText('Enemigo');
   await expect(panel).toContainText('Borin');
   await expect(panel).toContainText('Aliado');
-  await expect(
-    panel.getByRole('heading', { level: 4, name: 'Personajes importantes aquí' }),
-  ).toHaveCount(0);
+  await expect(important).toHaveCount(0);
 
   await panel.getByRole('button', { name: 'Cerrar la ficha de Scout' }).click();
   await expect(panel).toBeHidden();
@@ -240,7 +242,7 @@ test('opens a supplemental character compact card and returns focus on close', a
   await expect(character).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('degrades to a compact Beta 0.1 card when the backend is unavailable', async ({ page }) => {
+test('falls back to a compact Beta 0.1 card offline', async ({ page }) => {
   await openMap(page, false);
 
   const marker = page.locator('[data-testid="place-marker"][data-place-id="place-demo-harbor"]');
@@ -262,7 +264,7 @@ test('degrades to a compact Beta 0.1 card when the backend is unavailable', asyn
   await expect(panel).not.toContainText('Este puerto ficticio');
 });
 
-test('keeps the compact card usable at 320 px with forced colors and reduced motion', async ({ page }) => {
+test('stays usable at 320 px in forced colors and reduced motion', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
   await openMap(page);
@@ -281,7 +283,8 @@ test('keeps the compact card usable at 320 px with forced colors and reduced mot
   const actionBox = await fullAction.boundingBox();
   expect(actionBox?.height ?? 0).toBeGreaterThanOrEqual(44);
 
-  const typeStyle = await panel.locator('.compact-details__type-shape').evaluate((element) => {
+  const shape = panel.locator('.compact-details__type-shape');
+  const typeStyle = await shape.evaluate((element) => {
     const style = getComputedStyle(element);
     return { borderStyle: style.borderStyle, transitionDuration: style.transitionDuration };
   });
