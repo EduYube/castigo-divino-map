@@ -7,10 +7,7 @@ import {
   type AuthGatewayListener,
   type AuthIdentity,
 } from '../../auth/authGateway';
-import {
-  AUTH_SESSION_STORAGE_KEY,
-  BrowserAuthSessionStorage,
-} from './authSessionStorage';
+import { AUTH_SESSION_STORAGE_KEY, BrowserAuthSessionStorage } from './authSessionStorage';
 
 const HOSTED_PROJECT_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
 const LOCAL_PROJECT_URL_PATTERN = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?\/?$/i;
@@ -79,10 +76,7 @@ function normalizeProjectConfiguration(
     );
   }
 
-  if (
-    !HOSTED_PROJECT_URL_PATTERN.test(projectUrl) &&
-    !(allowLocalProject && isLocalProject)
-  ) {
+  if (!HOSTED_PROJECT_URL_PATTERN.test(projectUrl) && !(allowLocalProject && isLocalProject)) {
     throw new AuthGatewayError(
       'configuration-invalid',
       'Supabase administrative authentication URL is not allowed.',
@@ -90,8 +84,7 @@ function normalizeProjectConfiguration(
   }
 
   const validPublishableKey = PUBLISHABLE_KEY_PATTERN.test(publishableKey);
-  const validLocalAnonKey =
-    allowLocalProject && isLocalProject && isLegacyAnonKey(publishableKey);
+  const validLocalAnonKey = allowLocalProject && isLocalProject && isLegacyAnonKey(publishableKey);
 
   if (!validPublishableKey && !validLocalAnonKey) {
     throw new AuthGatewayError(
@@ -376,11 +369,7 @@ export class SupabaseAdminAuthAdapter implements AuthGateway, AdminAuthorization
     }
 
     if (response.status === 403) {
-      throw new AuthGatewayError(
-        'forbidden',
-        'Administrative authorization was forbidden.',
-        403,
-      );
+      throw new AuthGatewayError('forbidden', 'Administrative authorization was forbidden.', 403);
     }
 
     if (!response.ok) {
@@ -571,10 +560,7 @@ export class SupabaseAdminAuthAdapter implements AuthGateway, AdminAuthorization
       return await this.#fetchImplementation(input, { ...init, signal: controller.signal });
     } catch {
       if (timedOut) {
-        throw new AuthGatewayError(
-          'request-timeout',
-          `Supabase ${operation} request timed out.`,
-        );
+        throw new AuthGatewayError('request-timeout', `Supabase ${operation} request timed out.`);
       }
 
       throw new AuthGatewayError(
@@ -614,7 +600,11 @@ export class SupabaseAdminAuthAdapter implements AuthGateway, AdminAuthorization
         code === 'user_not_found' ||
         status === 400
       ) {
-        return new AuthGatewayError('invalid-credentials', 'Password sign-in was rejected.', status);
+        return new AuthGatewayError(
+          'invalid-credentials',
+          'Password sign-in was rejected.',
+          status,
+        );
       }
     } else if (
       code === 'refresh_token_already_used' ||

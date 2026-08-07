@@ -182,7 +182,8 @@ export function mountAdminAuth(
     passwordInput.disabled = isPending;
     submitButton.disabled = isPending;
     logoutButton.disabled = isPending;
-    submitButton.textContent = state.phase === 'authenticating' ? 'Iniciando sesión…' : 'Iniciar sesión';
+    submitButton.textContent =
+      state.phase === 'authenticating' ? 'Iniciando sesión…' : 'Iniciar sesión';
 
     if (isAuthorized) {
       adminIdentity.textContent = state.identity?.email

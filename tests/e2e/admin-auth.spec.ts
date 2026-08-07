@@ -89,8 +89,7 @@ async function configureAuthTest(page: Page): Promise<AuthTestBackend> {
             loginMode === 'admin'
               ? '00000000-0000-4000-8000-000000000001'
               : '00000000-0000-4000-8000-000000000002',
-          email:
-            loginMode === 'admin' ? 'admin@example.invalid' : 'other@example.invalid',
+          email: loginMode === 'admin' ? 'admin@example.invalid' : 'other@example.invalid',
         },
       }),
     });

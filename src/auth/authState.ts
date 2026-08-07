@@ -31,7 +31,8 @@ export const INITIAL_ADMIN_AUTH_STATE: AdminAuthState = {
 
 const PUBLIC_MESSAGES: Record<AuthFailureCode, string> = {
   'configuration-missing': 'El acceso administrativo no está configurado en este entorno.',
-  'configuration-invalid': 'El acceso administrativo no está disponible por una configuración no válida.',
+  'configuration-invalid':
+    'El acceso administrativo no está disponible por una configuración no válida.',
   'session-absent': 'No hay una sesión administrativa activa.',
   'invalid-credentials': 'No se pudo iniciar sesión. Revisa las credenciales e inténtalo de nuevo.',
   'session-expired': 'La sesión administrativa ha caducado. Inicia sesión de nuevo.',

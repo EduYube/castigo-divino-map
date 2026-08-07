@@ -2,10 +2,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { AuthGatewayError, type AuthGatewayEvent } from '../../auth/authGateway';
 import { SupabaseAdminAuthAdapter } from './adminAuthAdapter';
-import {
-  AUTH_SESSION_STORAGE_KEY,
-  BrowserAuthSessionStorage,
-} from './authSessionStorage';
+import { AUTH_SESSION_STORAGE_KEY, BrowserAuthSessionStorage } from './authSessionStorage';
 
 const PROJECT_URL = 'http://127.0.0.1:54321';
 const PUBLISHABLE_KEY = 'sb_publishable_map017_test_key';
@@ -234,9 +231,7 @@ describe('SupabaseAdminAuthAdapter', () => {
     await expect(adapter.isCurrentUserAdmin()).resolves.toBe(true);
 
     const authorizationRequest = requests.at(-1);
-    expect(authorizationRequest?.url).toBe(
-      `${PROJECT_URL}/rest/v1/rpc/current_user_is_admin`,
-    );
+    expect(authorizationRequest?.url).toBe(`${PROJECT_URL}/rest/v1/rpc/current_user_is_admin`);
     expect(authorizationRequest?.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
     expect(authorizationRequest?.headers.get('authorization')).toBe(`Bearer ${ACCESS_TOKEN}`);
     adapter.dispose();
