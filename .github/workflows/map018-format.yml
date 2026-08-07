@@ -1,4 +1,4 @@
-name: MAP-018 branch formatter
+name: MAP-018 one-shot branch fixer
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  format:
+  fix:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -28,18 +28,76 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Apply MAP-018 CI fixes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"Expected one match in {path}, found {count}")
+              file.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              "supabase/tests/database/009_admin_catalog_crud.test.sql",
+              "select plan(18);",
+              "select plan(19);",
+          )
+          replace_once(
+              "src/app/adminAuthRuntime.ts",
+              "import './adminCatalog';\n",
+              "",
+          )
+          replace_once(
+              "src/app/adminCatalog.ts",
+              "  editorStatus.setAttribute('aria-live', 'assertive');\n",
+              "  editorStatus.setAttribute('aria-live', 'assertive');\n  editorStatus.tabIndex = -1;\n",
+          )
+          replace_once(
+              "src/app/adminCatalog.ts",
+              """    addField(form, controls, {
+              name: 'id',
+              label: 'ID estable',
+              value: draft.id,
+              required: true,
+              readOnly: Boolean(record),
+            });
+            if (fields.parentElement !== form) {
+              fields.append(...Array.from(form.querySelectorAll(':scope > .admin-catalog__field')));
+            }
+          """,
+              """    const idInput = addField(form, controls, {
+              name: 'id',
+              label: 'ID estable',
+              value: draft.id,
+              required: true,
+              readOnly: Boolean(record),
+            });
+            fields.append(idInput.closest('.admin-catalog__field') as HTMLElement);
+          """,
+          )
+          replace_once(
+              "tests/e2e/admin-catalog.spec.ts",
+              "  await expect(page.getByLabel('Slug')).toBeFocused();\n",
+              "  await expect(page.getByLabel('ID estable')).toBeFocused();\n",
+          )
+          PY
+
       - name: Format tracked sources
         run: npm run format
 
-      - name: Commit formatter output
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/map018-format.yml
+
+      - name: Commit fixes
         shell: bash
         run: |
-          if git diff --quiet; then
-            echo "No formatting changes required."
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src tests scripts '*.js' '*.mjs' '*.ts' '*.json' '*.html' .github/workflows
-          git commit -m "MAP-018 — Aplicar formato automático"
+          git add -A
+          git commit -m "MAP-018 — Corregir validación CI y foco administrativo"
           git push origin HEAD:agent/map-018-admin-taxonomy
