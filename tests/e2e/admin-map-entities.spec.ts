@@ -390,7 +390,7 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
     slug: 'map019-character',
     name: 'MAP-019 Character',
   });
-  await page.getByLabel('Categoría').selectOption('category-people');
+  await page.getByLabel('Categoría', { exact: true }).selectOption('category-people');
   await page.getByLabel(/Notable · published/).check();
   await page.getByLabel('Demo Player One · published').selectOption('ally');
 
@@ -454,7 +454,7 @@ test('keyboard coordinate editing can create, publish and archive an emplacement
     slug: 'map019-harbor',
     name: 'MAP-019 Harbor',
   });
-  await page.getByLabel('Categoría').selectOption('category-places');
+  await page.getByLabel('Categoría', { exact: true }).selectOption('category-places');
   await page.getByLabel('Visibilidad cartográfica').selectOption('search_only');
   await page.getByLabel('Coordenada X').fill('1200');
   await page.getByLabel('Coordenada Y').fill('900');
@@ -523,7 +523,7 @@ test('physical deletion requires confirmation, restores focus on Escape and rema
     slug: 'map019-disposable',
     name: 'Disposable Place',
   });
-  await page.getByLabel('Categoría').selectOption('category-places');
+  await page.getByLabel('Categoría', { exact: true }).selectOption('category-places');
   await page.getByLabel('Coordenada X').fill('300');
   await page.getByLabel('Coordenada Y').fill('300');
   await page.getByRole('button', { name: 'Guardar borrador' }).click();
