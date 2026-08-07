@@ -1,4 +1,5 @@
 import { AdminCatalogController } from '../application/adminCatalogController';
+import { AdminMapEntityController } from '../application/adminMapEntityController';
 import { AdminAuthController } from '../auth/adminAuthController';
 import {
   AuthGatewayError,
@@ -11,6 +12,10 @@ import {
   AdminCatalogRepositoryError,
   type AdminCatalogRepository,
 } from '../data-access/adminCatalog';
+import {
+  AdminMapEntityRepositoryError,
+  type AdminMapEntityRepository,
+} from '../data-access/adminMapEntities';
 import type {
   AdminCatalogDraft,
   AdminCatalogRecord,
@@ -18,9 +23,17 @@ import type {
   AdminEntityReference,
   AdminGeographicNameReference,
 } from '../domain/adminCatalog';
+import type {
+  AdminMapEntityDetail,
+  AdminMapEntityDraft,
+  AdminMapEntityRecord,
+  AdminMapEntityReferences,
+} from '../domain/adminMapEntities';
 import { SupabaseAdminAuthAdapter } from '../infrastructure/supabase/adminAuthAdapter';
 import { SupabaseAdminCatalogRepository } from '../infrastructure/supabase/adminCatalogRepository';
+import { SupabaseAdminMapEntityRepository } from '../infrastructure/supabase/adminMapEntityRepository';
 import { mountAdminCatalog } from './adminCatalog';
+import { mountAdminMapEntities } from './adminMapEntities';
 import { mountAdminAuth } from './adminAuth';
 import '../styles/admin-catalog.css';
 
@@ -143,6 +156,50 @@ class UnavailableAdminCatalogRepository implements AdminCatalogRepository {
   }
 }
 
+class UnavailableAdminMapEntityRepository implements AdminMapEntityRepository {
+  readonly #error: AdminMapEntityRepositoryError;
+
+  constructor(error: AdminMapEntityRepositoryError) {
+    this.#error = error;
+  }
+
+  list(_options: { readonly signal: AbortSignal }): Promise<readonly AdminMapEntityRecord[]> {
+    void _options;
+    return Promise.reject(this.#error);
+  }
+
+  loadReferences(_options: { readonly signal: AbortSignal }): Promise<AdminMapEntityReferences> {
+    void _options;
+    return Promise.reject(this.#error);
+  }
+
+  load(
+    _entityId: string,
+    _options: { readonly signal: AbortSignal },
+  ): Promise<AdminMapEntityDetail> {
+    void _entityId;
+    void _options;
+    return Promise.reject(this.#error);
+  }
+
+  save(
+    _original: AdminMapEntityDetail | null,
+    _draft: AdminMapEntityDraft,
+    _options: { readonly signal: AbortSignal },
+  ): Promise<AdminMapEntityDetail> {
+    void _original;
+    void _draft;
+    void _options;
+    return Promise.reject(this.#error);
+  }
+
+  delete(_detail: AdminMapEntityDetail, _options: { readonly signal: AbortSignal }): Promise<void> {
+    void _detail;
+    void _options;
+    return Promise.reject(this.#error);
+  }
+}
+
 function resolveTestConfig(): AdminAuthTestConfig | undefined {
   return import.meta.env.DEV ? window.__MAP017_AUTH_TEST_CONFIG__ : undefined;
 }
@@ -202,20 +259,47 @@ function createCatalogRepository(): AdminCatalogRepository {
   }
 }
 
+function createMapEntityRepository(): AdminMapEntityRepository {
+  const configuration = resolveConfiguration();
+  try {
+    return new SupabaseAdminMapEntityRepository({
+      ...configuration,
+      allowLocalProject: import.meta.env.DEV,
+    });
+  } catch (error) {
+    const normalized =
+      error instanceof AdminMapEntityRepositoryError
+        ? error
+        : new AdminMapEntityRepositoryError(
+            'backend-unavailable',
+            'El editor administrativo de entidades no pudo inicializarse.',
+            { cause: error },
+          );
+    return new UnavailableAdminMapEntityRepository(normalized);
+  }
+}
+
 export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
   const adapter = createAuthAdapter();
   const authController = new AdminAuthController(adapter, adapter);
   const authUi = mountAdminAuth(root, authController);
+  const rejectAuthorization = (status: 401 | 403): void => {
+    authController.invalidateFromAdministrativeResponse(status);
+  };
   const catalogController = new AdminCatalogController(createCatalogRepository(), {
-    onAuthorizationRejected(status): void {
-      authController.invalidateFromAdministrativeResponse(status);
-    },
+    onAuthorizationRejected: rejectAuthorization,
+  });
+  const mapEntityController = new AdminMapEntityController(createMapEntityRepository(), {
+    onAuthorizationRejected: rejectAuthorization,
   });
   const catalogUi = mountAdminCatalog(root, catalogController, authController);
+  const mapEntityUi = mountAdminMapEntities(root, mapEntityController, authController);
   void authController.start();
 
   return {
     destroy(): void {
+      mapEntityUi.destroy();
+      mapEntityController.destroy();
       catalogUi.destroy();
       catalogController.destroy();
       authUi.destroy();

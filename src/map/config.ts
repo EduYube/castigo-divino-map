@@ -1,3 +1,5 @@
+import { FAERUN_COORDINATE_BOUNDS } from '../domain/mapCoordinates';
+
 export interface PixelSize {
   readonly width: number;
   readonly height: number;
@@ -10,8 +12,8 @@ export const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 
 export const FAERUN_MAP_SIZE: PixelSize = Object.freeze({
-  width: 3600,
-  height: 2329,
+  width: FAERUN_COORDINATE_BOUNDS.maxX - FAERUN_COORDINATE_BOUNDS.minX,
+  height: FAERUN_COORDINATE_BOUNDS.maxY - FAERUN_COORDINATE_BOUNDS.minY,
 });
 
 export const FAERUN_MAP_CONFIG = Object.freeze({
