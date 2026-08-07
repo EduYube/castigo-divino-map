@@ -2,17 +2,27 @@ import L, { type LatLngBounds, type Map as LeafletMap, type Marker } from 'leafl
 
 import { fromLeafletSimpleCoordinate, toLeafletSimpleCoordinate } from '../data/coordinates';
 import type { CampaignCoordinate } from '../data/model';
+import type { MapEntityType } from '../domain/adminMapEntities';
 import { isMapCoordinateWithinBounds } from '../domain/mapCoordinates';
+import {
+  createPlayerDispositionVisuals,
+  describePlayerDispositions,
+  getPinTypeVisual,
+  type PinPlayerDispositionInput,
+} from '../domain/pinVisualSystem';
 import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './config';
 
 export interface AdminEntityEditorMapController {
   setCoordinate(coordinate: CampaignCoordinate): void;
+  setVisual(entityType: MapEntityType, dispositions: readonly PinPlayerDispositionInput[]): void;
   focusMarker(): void;
   destroy(): void;
 }
 
 export interface AdminEntityEditorMapOptions {
   readonly coordinate: CampaignCoordinate | null;
+  readonly entityType?: MapEntityType;
+  readonly dispositions?: readonly PinPlayerDispositionInput[];
   readonly onCoordinateChange: (coordinate: CampaignCoordinate) => void;
   readonly onImageStateChange?: (state: 'loading' | 'ready' | 'error') => void;
 }
@@ -22,12 +32,23 @@ function createBounds(): LatLngBounds {
   return L.latLngBounds([south, west], [north, east]);
 }
 
-function createEditorIcon(): L.DivIcon {
+function createEditorIcon(
+  entityType: MapEntityType,
+  dispositions: readonly PinPlayerDispositionInput[],
+): L.DivIcon {
+  const type = getPinTypeVisual(entityType);
+  const dispositionMarkup = createPlayerDispositionVisuals(dispositions)
+    .map(
+      ({ symbol, className }) =>
+        `<span class="pin-disposition ${className}" aria-hidden="true">${symbol}</span>`,
+    )
+    .join('');
+
   return L.divIcon({
-    className: 'admin-map-entity__marker',
-    html: '<span class="admin-map-entity__marker-symbol" aria-hidden="true">◆</span>',
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
+    className: 'admin-map-entity__marker campaign-marker-icon',
+    html: `<span class="pin-visual ${type.className}"><span class="pin-visual__type-symbol" aria-hidden="true">${type.symbol}</span><span class="pin-visual__dispositions" aria-hidden="true">${dispositionMarkup}</span></span>`,
+    iconSize: [52, 52],
+    iconAnchor: [26, 26],
   });
 }
 
@@ -76,24 +97,33 @@ export function mountAdminEntityEditorMap(
 
   let destroyed = false;
   let marker: Marker | null = null;
+  let currentEntityType = options.entityType ?? 'location';
+  let currentDispositions = options.dispositions ?? [];
 
   const applyMarkerAccessibility = (): void => {
     const element = marker?.getElement();
     if (!element) return;
+    const type = getPinTypeVisual(currentEntityType);
     element.tabIndex = 0;
     element.setAttribute('role', 'button');
     element.setAttribute(
       'aria-label',
-      'Coordenada seleccionada. Puedes arrastrarla con un puntero o editar X e Y en el formulario.',
+      `Coordenada seleccionada. ${type.label}. Disposición por jugador: ${describePlayerDispositions(currentDispositions)}. Puedes arrastrarla con un puntero o editar X e Y en el formulario.`,
     );
     element.setAttribute('data-testid', 'admin-coordinate-marker');
+    element.dataset.entityType = currentEntityType;
+  };
+
+  const applyMarkerVisual = (): void => {
+    marker?.setIcon(createEditorIcon(currentEntityType, currentDispositions));
+    applyMarkerAccessibility();
   };
 
   const ensureMarker = (coordinate: CampaignCoordinate): Marker => {
     const simple = toLeafletSimpleCoordinate(coordinate);
     if (!marker) {
       marker = L.marker(L.latLng(simple[0], simple[1]), {
-        icon: createEditorIcon(),
+        icon: createEditorIcon(currentEntityType, currentDispositions),
         draggable: true,
         keyboard: true,
         riseOnHover: true,
@@ -164,6 +194,11 @@ export function mountAdminEntityEditorMap(
     setCoordinate(coordinate): void {
       if (!isMapCoordinateWithinBounds(coordinate)) return;
       ensureMarker(coordinate);
+    },
+    setVisual(entityType, dispositions): void {
+      currentEntityType = entityType;
+      currentDispositions = dispositions;
+      applyMarkerVisual();
     },
     focusMarker(): void {
       marker?.getElement()?.focus({ preventScroll: true });

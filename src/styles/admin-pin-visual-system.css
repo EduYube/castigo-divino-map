@@ -1,0 +1,27 @@
+.admin-map-entity__marker.campaign-marker-icon {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.admin-map-entity__preview-marker[data-testid='admin-pin-preview'] {
+  display: grid;
+  width: 3.25rem;
+  min-width: 3.25rem;
+  min-height: 3.25rem;
+  place-items: center;
+  font-size: inherit;
+}
+
+.admin-map-entity__preview-marker[data-testid='admin-pin-preview'] .pin-visual {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+@media (forced-colors: active) {
+  .admin-map-entity__marker.campaign-marker-icon:focus-visible .pin-visual {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
+  }
+}
