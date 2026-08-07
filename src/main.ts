@@ -18,7 +18,10 @@ import {
 import { campaignCatalog } from './data/catalog';
 import { deriveMatchingPublicPlaceIds } from './data/filters';
 import type { CampaignCatalog, PlaceId } from './data/model';
-import { buildPlaceDetailModel, createPlaceMarkerModels } from './data/placeDetails';
+import {
+  buildPlaceDetailModel,
+  createPlaceMarkerModels,
+} from './data/placeDetails';
 import type { AtlasSearchResult } from './data/search';
 import { mountFaerunMap } from './map/leaflet';
 import './styles/main.css';
@@ -49,7 +52,10 @@ function describeSearchTarget(result: AtlasSearchResult): string {
   }
 }
 
-function mountPublicExperience(catalog: CampaignCatalog, publicDataRuntime?: PublicDataRuntime): void {
+function mountPublicExperience(
+  catalog: CampaignCatalog,
+  publicDataRuntime?: PublicDataRuntime,
+): void {
   let isRestoringFromHistory = false;
   const selection = createPlaceSelectionController();
   const mapController = mountFaerunMap(app, {
@@ -66,7 +72,9 @@ function mountPublicExperience(catalog: CampaignCatalog, publicDataRuntime?: Pub
       selection.clear();
 
       if (previouslyActivePlaceId) {
-        window.requestAnimationFrame(() => mapController.focusMarker(previouslyActivePlaceId));
+        window.requestAnimationFrame(() =>
+          mapController.focusMarker(previouslyActivePlaceId),
+        );
       }
     },
   });
@@ -146,7 +154,11 @@ function mountPublicExperience(catalog: CampaignCatalog, publicDataRuntime?: Pub
     }
 
     const currentUrl = new URL(window.location.href);
-    const nextUrl = createCanonicalPublicAppUrl(catalog, currentUrl, getCurrentPublicState());
+    const nextUrl = createCanonicalPublicAppUrl(
+      catalog,
+      currentUrl,
+      getCurrentPublicState(),
+    );
 
     if (nextUrl.href === currentUrl.href) {
       return;
@@ -226,7 +238,11 @@ function mountPublicExperience(catalog: CampaignCatalog, publicDataRuntime?: Pub
     }
 
     if (!parsed.isCanonical) {
-      window.history.replaceState(window.history.state, '', parsed.canonicalUrl);
+      window.history.replaceState(
+        window.history.state,
+        '',
+        parsed.canonicalUrl,
+      );
     }
   }
 
@@ -235,7 +251,10 @@ function mountPublicExperience(catalog: CampaignCatalog, publicDataRuntime?: Pub
       return;
     }
 
-    renderActivePlace(activePlaceId, { focusDetails: true, locate: false });
+    renderActivePlace(activePlaceId, {
+      focusDetails: true,
+      locate: false,
+    });
     writePublicStateToHistory('push');
   });
 
@@ -247,5 +266,7 @@ function mountPublicExperience(catalog: CampaignCatalog, publicDataRuntime?: Pub
 }
 
 void bootstrapPublicDataRuntime(app, campaignCatalog)
-  .then((publicDataRuntime) => mountPublicExperience(publicDataRuntime.catalog, publicDataRuntime))
+  .then((publicDataRuntime) =>
+    mountPublicExperience(publicDataRuntime.catalog, publicDataRuntime),
+  )
   .catch(() => mountPublicExperience(campaignCatalog));
