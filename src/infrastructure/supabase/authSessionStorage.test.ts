@@ -10,19 +10,19 @@ class ThrowingStorage implements Storage {
     throw new Error('storage unavailable');
   }
 
-  getItem(_key: string): string | null {
+  getItem(): string | null {
     throw new Error('storage unavailable');
   }
 
-  key(_index: number): string | null {
+  key(): string | null {
     return null;
   }
 
-  removeItem(_key: string): void {
+  removeItem(): void {
     throw new Error('storage unavailable');
   }
 
-  setItem(_key: string, _value: string): void {
+  setItem(): void {
     throw new Error('storage unavailable');
   }
 }
