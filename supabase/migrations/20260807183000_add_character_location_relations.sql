@@ -146,7 +146,7 @@ alter table public.character_location_relations enable row level security;
 create policy character_location_relations_public_select
 on public.character_location_relations
 for select
-to anon, authenticated
+to anon
 using (
   publication_status = 'published'
   and exists (
