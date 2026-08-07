@@ -4,12 +4,13 @@ import {
   type PublicCatalogRepository,
 } from '../../data-access/publicCatalog';
 import { buildPublicCatalogEnvelopeV2 } from './publicCatalogCodec';
-import { expectRows, type PublicCatalogTablePayloads } from './publicCatalogRows';
+import type { PublicCatalogTablePayloadsWithCharacterLocations } from './publicCharacterLocationRelations';
+import { expectRows } from './publicCatalogRows';
 
 export { parsePublicCatalogSnapshotV2 } from './publicCatalogCodec';
 
 const PROJECT_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
-const LOCAL_PROJECT_URL_PATTERN = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?\/?$/i;
+const LOCAL_PROJECT_URL_PATTERN = /^http:\/(?:127\.0\.0\.1|localhost)(?::\d+)?\/?$/i;
 const PUBLISHABLE_KEY_PATTERN = /^sb_publishable_[A-Za-z0-9_-]{10,}$/;
 const LEGACY_ANON_KEY_PATTERN = /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 const PAGE_SIZE = 1000;
@@ -78,6 +79,12 @@ const TABLE_QUERIES = {
     order: 'entity_id.asc,player_id.asc',
     published: false,
   },
+  characterLocationRelations: {
+    name: 'character_location_relations',
+    select: 'character_id,location_id,relation_status',
+    order: 'location_id.asc,character_id.asc',
+    published: true,
+  },
   notes: {
     name: 'public_notes',
     select: 'id,slug,entity_id,title,body,sort_order',
@@ -109,7 +116,7 @@ const TABLE_QUERIES = {
     order: 'id.asc',
     published: true,
   },
-} as const satisfies Record<keyof PublicCatalogTablePayloads, TableQuery>;
+} as const satisfies Record<keyof PublicCatalogTablePayloadsWithCharacterLocations, TableQuery>;
 
 function decodeBase64Url(value: string): string {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
@@ -351,7 +358,7 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
 
     try {
       const entries = Object.entries(TABLE_QUERIES) as [
-        keyof PublicCatalogTablePayloads,
+        keyof PublicCatalogTablePayloadsWithCharacterLocations,
         TableQuery,
       ][];
       const responses = await Promise.all(
@@ -361,7 +368,7 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
       );
 
       return await buildPublicCatalogEnvelopeV2(
-        Object.fromEntries(responses) as unknown as PublicCatalogTablePayloads,
+        Object.fromEntries(responses) as unknown as PublicCatalogTablePayloadsWithCharacterLocations,
         this.#now,
       );
     } catch (error) {
