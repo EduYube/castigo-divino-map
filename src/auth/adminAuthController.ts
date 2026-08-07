@@ -72,6 +72,16 @@ export class AdminAuthController {
       await this.#authorize(identity, operationId);
     } catch (error) {
       this.#publishFailure(error, operationId);
+
+      if (!this.#isCurrent(operationId)) {
+        return;
+      }
+
+      const issue = toPublicAuthIssue(error);
+
+      if (issue.code === 'session-expired' || issue.code === 'refresh-failed') {
+        this.#bestEffortSignOut();
+      }
     }
   }
 
@@ -304,6 +314,15 @@ export class AdminAuthController {
         const operationId = this.#beginOperation();
         this.#publish({ phase: 'anonymous', identity: null, issue: null, operationId });
       }
+      return;
+    }
+
+    if (
+      event.type === 'token-refreshed' &&
+      this.#state.phase === 'authorizing' &&
+      this.#state.identity?.userId === event.identity.userId &&
+      this.#state.identity.expiresAt === event.identity.expiresAt
+    ) {
       return;
     }
 
