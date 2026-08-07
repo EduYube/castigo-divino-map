@@ -299,17 +299,17 @@ test('authorized admin can list, search, sort, create, edit, archive and delete 
   await loginAndConnect(page);
 
   await expect(page.getByText('Cities', { exact: true })).toBeVisible();
-  await page.getByLabel('Buscar').fill('villages');
+  await page.getByRole('searchbox', { name: 'Buscar', exact: true }).fill('villages');
   await expect(page.getByText('Villages', { exact: true })).toBeVisible();
   await expect(page.getByText('Cities', { exact: true })).toBeHidden();
-  await page.getByLabel('Buscar').fill('');
+  await page.getByRole('searchbox', { name: 'Buscar', exact: true }).fill('');
   await page.getByLabel('Ordenar').selectOption('name:desc');
 
   await page.getByRole('button', { name: 'Crear' }).click();
   await page.getByLabel('ID estable').fill('bad id');
   await expect(page.getByText(/Usa un ID category/)).toBeVisible();
   await page.getByLabel('ID estable').fill('category-hamlets');
-  await page.getByLabel('Slug').fill('hamlets');
+  await page.getByRole('textbox', { name: 'Slug', exact: true }).fill('hamlets');
   await page.getByLabel('Nombre').fill('Hamlets');
   await expect(page.getByText(/Hamlets · category-hamlets · draft/)).toBeVisible();
   await page.getByRole('button', { name: 'Guardar' }).click();
@@ -343,7 +343,7 @@ test('names reuse existing concepts and conflicts stay safe for the UI', async (
   await expect(page.getByLabel('Idioma')).toHaveValue('English (en)');
   await page.getByRole('button', { name: 'Cancelar' }).click();
 
-  await page.getByRole('button', { name: 'Nombres geográficos' }).click();
+  await page.getByRole('button', { name: 'Nombres geográficos', exact: true }).click();
   await expect(page.getByText('Waterdeep', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Editar Waterdeep' }).click();
   await expect(page.getByLabel('Nombre principal (inglés)')).toHaveValue('Waterdeep');
@@ -353,7 +353,7 @@ test('names reuse existing concepts and conflicts stay safe for the UI', async (
   await page.getByRole('button', { name: 'Categorías' }).click();
   await page.getByRole('button', { name: 'Crear' }).click();
   await page.getByLabel('ID estable').fill('category-conflict');
-  await page.getByLabel('Slug').fill('conflict');
+  await page.getByRole('textbox', { name: 'Slug', exact: true }).fill('conflict');
   await page.getByLabel('Nombre').fill('Conflict');
   await page.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByRole('alert')).toContainText('entra en conflicto');
@@ -369,7 +369,7 @@ test('network failure and session expiry fail safely without breaking the public
 
   await page.getByRole('button', { name: 'Crear' }).click();
   await page.getByLabel('ID estable').fill('category-network');
-  await page.getByLabel('Slug').fill('network');
+  await page.getByRole('textbox', { name: 'Slug', exact: true }).fill('network');
   await page.getByLabel('Nombre').fill('Network');
   backend.failNextMutation();
   await page.getByRole('button', { name: 'Guardar' }).click();
