@@ -148,9 +148,7 @@ test('selects an alias result, locates the map and opens the existing active pla
   await expect(marker).toBeFocused();
 });
 
-test('selects a note title result and opens the associated compact place card without note content', async ({
-  page,
-}) => {
+test('selects a note-title result without rendering note content', async ({ page }) => {
   await openReadyMap(page);
 
   await page.getByRole('searchbox', { name: 'Buscar lugares' }).fill('referencia publica de viaje');
@@ -214,7 +212,9 @@ test('operates search results with the keyboard and preserves close focus behavi
 
   const panel = page.getByTestId('place-details');
   const title = panel.getByRole('heading', { level: 3, name: 'Paso de demostración' });
-  const closeButton = panel.getByRole('button', { name: 'Cerrar la ficha de Paso de demostración' });
+  const closeButton = panel.getByRole('button', {
+    name: 'Cerrar la ficha de Paso de demostración',
+  });
   const marker = page.getByRole('button', {
     name: 'Paso de demostración. Categoría: Lugar destacado.',
   });
@@ -227,7 +227,7 @@ test('operates search results with the keyboard and preserves close focus behavi
   await expect(marker).toBeFocused();
 });
 
-test('opens the correct compact public place details and closes back to its marker', async ({ page }) => {
+test('opens compact public details and closes back to its marker', async ({ page }) => {
   await openReadyMap(page);
 
   const marker = page.getByRole('button', {
@@ -280,7 +280,9 @@ test('supports keyboard marker activation and keyboard close without a focus tra
 
   const panel = page.getByTestId('place-details');
   const title = panel.getByRole('heading', { level: 3, name: 'Paso de demostración' });
-  const closeButton = panel.getByRole('button', { name: 'Cerrar la ficha de Paso de demostración' });
+  const closeButton = panel.getByRole('button', {
+    name: 'Cerrar la ficha de Paso de demostración',
+  });
 
   await expect(panel).toBeVisible();
   await expect(title).toBeFocused();
@@ -356,6 +358,9 @@ test('keeps search, map and compact details useful in a mobile viewport', async 
   await results.getByRole('button', { name: /Puerto de demostración.*nombre principal/i }).click();
 
   const panel = page.getByTestId('place-details');
+  const closeButton = panel.getByRole('button', {
+    name: 'Cerrar la ficha de Puerto de demostración',
+  });
 
   await panel.scrollIntoViewIfNeeded();
   const panelBox = await panel.boundingBox();
@@ -363,9 +368,7 @@ test('keeps search, map and compact details useful in a mobile viewport', async 
   expect(panelBox).not.toBeNull();
   expect(panelBox?.x).toBeGreaterThanOrEqual(0);
   expect((panelBox?.x ?? 0) + (panelBox?.width ?? 0)).toBeLessThanOrEqual(390);
-  await expect(
-    panel.getByRole('button', { name: 'Cerrar la ficha de Puerto de demostración' }),
-  ).toBeVisible();
+  await expect(closeButton).toBeVisible();
   await expect(panel).toContainText('Costero');
   await expect(panel).not.toContainText('Información pública de demostración');
   await expect(panel.getByRole('button', { name: 'Abrir ficha completa' })).toBeVisible();
@@ -391,8 +394,9 @@ test('keeps search, markers and compact details available when the remote image 
   await searchbox.press('ArrowDown');
   await page.keyboard.press('Enter');
 
-  await expect(page.getByTestId('place-details')).toContainText('Paso de demostración');
-  await expect(page.getByTestId('place-details')).not.toContainText('Referencia pública de viaje');
+  const panel = page.getByTestId('place-details');
+  await expect(panel).toContainText('Paso de demostración');
+  await expect(panel).not.toContainText('Referencia pública de viaje');
   await expect(
     page.getByRole('button', {
       name: 'Paso de demostración. Categoría: Lugar destacado.',
