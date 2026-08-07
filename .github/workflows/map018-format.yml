@@ -34,30 +34,28 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          def replace_once(path: str, old: str, new: str) -> None:
+          def replace_if_present(path: str, old: str, new: str) -> None:
               file = Path(path)
               text = file.read_text()
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f"Expected one match in {path}, found {count}")
-              file.write_text(text.replace(old, new, 1))
+              if old in text:
+                  file.write_text(text.replace(old, new, 1))
 
-          replace_once(
+          replace_if_present(
               "supabase/tests/database/009_admin_catalog_crud.test.sql",
               "select plan(18);",
               "select plan(19);",
           )
-          replace_once(
+          replace_if_present(
               "src/app/adminAuthRuntime.ts",
               "import './adminCatalog';\n",
               "",
           )
-          replace_once(
+          replace_if_present(
               "src/app/adminCatalog.ts",
               "  editorStatus.setAttribute('aria-live', 'assertive');\n",
               "  editorStatus.setAttribute('aria-live', 'assertive');\n  editorStatus.tabIndex = -1;\n",
           )
-          replace_once(
+          replace_if_present(
               "src/app/adminCatalog.ts",
               """    addField(form, controls, {
               name: 'id',
@@ -80,10 +78,141 @@ jobs:
             fields.append(idInput.closest('.admin-catalog__field') as HTMLElement);
           """,
           )
-          replace_once(
+          replace_if_present(
               "tests/e2e/admin-catalog.spec.ts",
               "  await expect(page.getByLabel('Slug')).toBeFocused();\n",
               "  await expect(page.getByLabel('ID estable')).toBeFocused();\n",
+          )
+
+          runtime_path = Path("src/app/adminAuthRuntime.ts")
+          runtime = runtime_path.read_text()
+          method_uses = [
+              (
+                  """  list(
+              _kind: AdminCatalogResourceKind,
+              _options: { readonly signal: AbortSignal },
+            ): Promise<readonly AdminCatalogRecord[]> {
+              return Promise.reject(this.#error);
+            }
+          """,
+                  """  list(
+              _kind: AdminCatalogResourceKind,
+              _options: { readonly signal: AbortSignal },
+            ): Promise<readonly AdminCatalogRecord[]> {
+              void _kind;
+              void _options;
+              return Promise.reject(this.#error);
+            }
+          """,
+              ),
+              (
+                  """  create(
+              _draft: AdminCatalogDraft,
+              _options: { readonly signal: AbortSignal },
+            ): Promise<AdminCatalogRecord> {
+              return Promise.reject(this.#error);
+            }
+          """,
+                  """  create(
+              _draft: AdminCatalogDraft,
+              _options: { readonly signal: AbortSignal },
+            ): Promise<AdminCatalogRecord> {
+              void _draft;
+              void _options;
+              return Promise.reject(this.#error);
+            }
+          """,
+              ),
+              (
+                  """  update(
+              _original: AdminCatalogRecord,
+              _draft: AdminCatalogDraft,
+              _options: { readonly signal: AbortSignal },
+            ): Promise<AdminCatalogRecord> {
+              return Promise.reject(this.#error);
+            }
+          """,
+                  """  update(
+              _original: AdminCatalogRecord,
+              _draft: AdminCatalogDraft,
+              _options: { readonly signal: AbortSignal },
+            ): Promise<AdminCatalogRecord> {
+              void _original;
+              void _draft;
+              void _options;
+              return Promise.reject(this.#error);
+            }
+          """,
+              ),
+              (
+                  """  archive(
+              _record: AdminCatalogRecord,
+              _options: { readonly signal: AbortSignal },
+            ): Promise<AdminCatalogRecord> {
+              return Promise.reject(this.#error);
+            }
+          """,
+                  """  archive(
+              _record: AdminCatalogRecord,
+              _options: { readonly signal: AbortSignal },
+            ): Promise<AdminCatalogRecord> {
+              void _record;
+              void _options;
+              return Promise.reject(this.#error);
+            }
+          """,
+              ),
+              (
+                  """  delete(_record: AdminCatalogRecord, _options: { readonly signal: AbortSignal }): Promise<void> {
+              return Promise.reject(this.#error);
+            }
+          """,
+                  """  delete(_record: AdminCatalogRecord, _options: { readonly signal: AbortSignal }): Promise<void> {
+              void _record;
+              void _options;
+              return Promise.reject(this.#error);
+            }
+          """,
+              ),
+              (
+                  """  listEntityReferences(_options: {
+              readonly signal: AbortSignal;
+            }): Promise<readonly AdminEntityReference[]> {
+              return Promise.reject(this.#error);
+            }
+          """,
+                  """  listEntityReferences(_options: {
+              readonly signal: AbortSignal;
+            }): Promise<readonly AdminEntityReference[]> {
+              void _options;
+              return Promise.reject(this.#error);
+            }
+          """,
+              ),
+              (
+                  """  listGeographicNameReferences(_options: {
+              readonly signal: AbortSignal;
+            }): Promise<readonly AdminGeographicNameReference[]> {
+              return Promise.reject(this.#error);
+            }
+          """,
+                  """  listGeographicNameReferences(_options: {
+              readonly signal: AbortSignal;
+            }): Promise<readonly AdminGeographicNameReference[]> {
+              void _options;
+              return Promise.reject(this.#error);
+            }
+          """,
+              ),
+          ]
+          for old, new in method_uses:
+              runtime = runtime.replace(old, new, 1)
+          runtime_path.write_text(runtime)
+
+          replace_if_present(
+              "src/infrastructure/supabase/adminCatalogRepository.ts",
+              "    const { id: _id, ...body } = draftBody(draft);\n    return body;\n",
+              "    const { id: _id, ...body } = draftBody(draft);\n    void _id;\n    return body;\n",
           )
           PY
 
@@ -91,7 +220,7 @@ jobs:
         run: npm run format
 
       - name: Remove one-shot workflow
-        run: rm .github/workflows/map018-format.yml
+        run: rm -f .github/workflows/map018-format.yml
 
       - name: Commit fixes
         shell: bash
@@ -99,5 +228,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
+          if git diff --cached --quiet; then
+            echo "No branch fixes remain."
+            exit 0
+          fi
           git commit -m "MAP-018 — Corregir validación CI y foco administrativo"
           git push origin HEAD:agent/map-018-admin-taxonomy
