@@ -288,7 +288,7 @@ test('anonymous visitor has no CRUD controls and the public map remains availabl
 
   await expect(page.getByTestId('map-shell')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Contenido administrativo' })).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Crear' })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Crear', exact: true })).toBeHidden();
 });
 
 test('authorized admin can list, search, sort, create, edit, archive and delete never-published content', async ({
@@ -305,7 +305,7 @@ test('authorized admin can list, search, sort, create, edit, archive and delete 
   await page.getByRole('searchbox', { name: 'Buscar', exact: true }).fill('');
   await page.getByLabel('Ordenar').selectOption('name:desc');
 
-  await page.getByRole('button', { name: 'Crear' }).click();
+  await page.getByRole('button', { name: 'Crear', exact: true }).click();
   await page.getByLabel('ID estable').fill('bad id');
   await expect(page.getByText(/Usa un ID category/)).toBeVisible();
   await page.getByLabel('ID estable').fill('category-hamlets');
@@ -351,7 +351,7 @@ test('names reuse existing concepts and conflicts stay safe for the UI', async (
   await page.getByRole('button', { name: 'Cancelar' }).click();
 
   await page.getByRole('button', { name: 'Categorías' }).click();
-  await page.getByRole('button', { name: 'Crear' }).click();
+  await page.getByRole('button', { name: 'Crear', exact: true }).click();
   await page.getByLabel('ID estable').fill('category-conflict');
   await page.getByRole('textbox', { name: 'Slug', exact: true }).fill('conflict');
   await page.getByLabel('Nombre').fill('Conflict');
@@ -367,7 +367,7 @@ test('network failure and session expiry fail safely without breaking the public
   await page.goto('/');
   await loginAndConnect(page);
 
-  await page.getByRole('button', { name: 'Crear' }).click();
+  await page.getByRole('button', { name: 'Crear', exact: true }).click();
   await page.getByLabel('ID estable').fill('category-network');
   await page.getByRole('textbox', { name: 'Slug', exact: true }).fill('network');
   await page.getByLabel('Nombre').fill('Network');
@@ -394,7 +394,7 @@ test('admin CRUD remains keyboard-usable at 320px and never exposes tokens', asy
   await page.goto('/');
   await loginAndConnect(page);
 
-  const create = page.getByRole('button', { name: 'Crear' });
+  const create = page.getByRole('button', { name: 'Crear', exact: true });
   await create.focus();
   await page.keyboard.press('Enter');
   await expect(page.getByLabel('ID estable')).toBeVisible();
