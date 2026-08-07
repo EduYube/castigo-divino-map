@@ -25,7 +25,7 @@ function appendLabelledInput(
     readonly id: string;
     readonly label: string;
     readonly type: 'email' | 'password';
-    readonly autocomplete: string;
+    readonly autocomplete: HTMLInputElement['autocomplete'];
   },
 ): HTMLInputElement {
   const field = createElement('div', 'admin-auth__field');
