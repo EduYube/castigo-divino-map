@@ -76,7 +76,9 @@ function synchronize(root: ParentNode): void {
   const type = getPinTypeVisual(entityType);
   const dispositionDescription = describePlayerDispositions(dispositions);
 
-  const coordinateMarker = section.querySelector<HTMLElement>('[data-testid="admin-coordinate-marker"]');
+  const coordinateMarker = section.querySelector<HTMLElement>(
+    '[data-testid="admin-coordinate-marker"]',
+  );
   const coordinateVisual = coordinateMarker?.querySelector<HTMLElement>('.pin-visual');
   if (coordinateMarker && coordinateVisual) {
     populatePinVisual(coordinateVisual, entityType, dispositions);
