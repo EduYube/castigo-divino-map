@@ -3,10 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import { bootstrapAdminAuthRuntime } from './app/adminAuthRuntime';
 import { mountPlaceDetails } from './app/placeDetails';
 import { mountPlaceFilters } from './app/placeFilters';
-import {
-  bootstrapPublicDataRuntime,
-  type PublicDataRuntime,
-} from './app/publicDataRuntime';
+import { bootstrapPublicDataRuntime, type PublicDataRuntime } from './app/publicDataRuntime';
 import { mountPlaceSearch } from './app/placeSearch';
 import { createPlaceSelectionController } from './app/placeSelection';
 import { renderApp } from './app/renderApp';
@@ -18,10 +15,7 @@ import {
 import { campaignCatalog } from './data/catalog';
 import { deriveMatchingPublicPlaceIds } from './data/filters';
 import type { CampaignCatalog, PlaceId } from './data/model';
-import {
-  buildPlaceDetailModel,
-  createPlaceMarkerModels,
-} from './data/placeDetails';
+import { buildPlaceDetailModel, createPlaceMarkerModels } from './data/placeDetails';
 import type { AtlasSearchResult } from './data/search';
 import { mountFaerunMap } from './map/leaflet';
 import './styles/main.css';
@@ -72,9 +66,7 @@ function mountPublicExperience(
       selection.clear();
 
       if (previouslyActivePlaceId) {
-        window.requestAnimationFrame(() =>
-          mapController.focusMarker(previouslyActivePlaceId),
-        );
+        window.requestAnimationFrame(() => mapController.focusMarker(previouslyActivePlaceId));
       }
     },
   });
@@ -154,11 +146,7 @@ function mountPublicExperience(
     }
 
     const currentUrl = new URL(window.location.href);
-    const nextUrl = createCanonicalPublicAppUrl(
-      catalog,
-      currentUrl,
-      getCurrentPublicState(),
-    );
+    const nextUrl = createCanonicalPublicAppUrl(catalog, currentUrl, getCurrentPublicState());
 
     if (nextUrl.href === currentUrl.href) {
       return;
@@ -238,11 +226,7 @@ function mountPublicExperience(
     }
 
     if (!parsed.isCanonical) {
-      window.history.replaceState(
-        window.history.state,
-        '',
-        parsed.canonicalUrl,
-      );
+      window.history.replaceState(window.history.state, '', parsed.canonicalUrl);
     }
   }
 
@@ -266,7 +250,5 @@ function mountPublicExperience(
 }
 
 void bootstrapPublicDataRuntime(app, campaignCatalog)
-  .then((publicDataRuntime) =>
-    mountPublicExperience(publicDataRuntime.catalog, publicDataRuntime),
-  )
+  .then((publicDataRuntime) => mountPublicExperience(publicDataRuntime.catalog, publicDataRuntime))
   .catch(() => mountPublicExperience(campaignCatalog));
