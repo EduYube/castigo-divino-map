@@ -658,7 +658,9 @@ export function mountAdminCatalog(
     renderFieldErrors();
     window.requestAnimationFrame(() => {
       const first = Array.from(controls.values()).find(
-        (control) => !control.input.disabled && !control.input.readOnly,
+        (control) =>
+          !control.input.disabled &&
+          (control.input instanceof HTMLSelectElement || !control.input.readOnly),
       );
       first?.input.focus();
     });

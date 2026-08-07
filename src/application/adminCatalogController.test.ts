@@ -133,7 +133,7 @@ describe('AdminCatalogController', () => {
 
   it('drops stale overlapping loads when the selected resource changes', async () => {
     const repository = new FakeRepository();
-    let resolveFirst: ((records: readonly AdminCatalogRecord[]) => void) | null = null;
+    let resolveFirst: (records: readonly AdminCatalogRecord[]) => void = () => undefined;
     repository.list.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
@@ -159,7 +159,7 @@ describe('AdminCatalogController', () => {
     expect(controller.getState().resourceKind).toBe('tag');
     expect(controller.getState().records[0]?.id).toBe('safe-harbor');
 
-    resolveFirst?.([category]);
+    resolveFirst([category]);
     await flush();
     expect(controller.getState().resourceKind).toBe('tag');
     expect(controller.getState().records[0]?.id).toBe('safe-harbor');
