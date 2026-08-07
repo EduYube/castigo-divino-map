@@ -33,6 +33,11 @@
   list-style: none;
 }
 
+.admin-character-location-relation__editor[hidden],
+.admin-character-location-relation__list[hidden] {
+  display: none;
+}
+
 .admin-character-location-relation__item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
