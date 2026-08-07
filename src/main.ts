@@ -1,5 +1,6 @@
 import 'leaflet/dist/leaflet.css';
 
+import { bootstrapAdminAuthRuntime } from './app/adminAuthRuntime';
 import { mountPlaceDetails } from './app/placeDetails';
 import { mountPlaceFilters } from './app/placeFilters';
 import { bootstrapPublicDataRuntime } from './app/publicDataRuntime';
@@ -20,6 +21,7 @@ import './styles/main.css';
 import './styles/search.css';
 import './styles/filters.css';
 import './styles/backend-status.css';
+import './styles/admin-auth.css';
 import './styles/accessibility.css';
 
 const appElement = document.querySelector<HTMLDivElement>('#app');
@@ -30,6 +32,7 @@ if (!appElement) {
 
 const app = appElement;
 app.innerHTML = renderApp();
+bootstrapAdminAuthRuntime(app);
 
 function mountPublicExperience(catalog: CampaignCatalog): void {
   let isRestoringFromHistory = false;
