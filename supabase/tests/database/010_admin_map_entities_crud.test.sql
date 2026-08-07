@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(21);
+select plan(22);
 
 select ok(
   not has_function_privilege('anon', 'public.admin_get_map_entity_editor(text)', 'execute'),
