@@ -1,14 +1,17 @@
+import type { PublicCatalogSnapshotV2 } from '../data/beta02-model';
 import type { CampaignCatalog, PlaceId } from '../data/model';
 import {
   normalizePlaceSearchQuery,
-  searchPublicPlaces,
+  searchPublicAtlas,
+  type AtlasSearchResult,
+  type AtlasSearchResultType,
   type PlaceSearchMatchKind,
-  type PlaceSearchResult,
 } from '../data/search';
 
 export interface PlaceSearchController {
   getQuery(): string;
   setQuery(query: string, options?: PlaceSearchStateUpdateOptions): void;
+  setBeta02Catalog(catalog: PublicCatalogSnapshotV2 | null): void;
   clear(): void;
   destroy(): void;
 }
@@ -19,7 +22,8 @@ export interface PlaceSearchStateUpdateOptions {
 
 export interface PlaceSearchOptions {
   readonly catalog: CampaignCatalog;
-  readonly onSelect: (placeId: PlaceId) => void;
+  readonly onSelect: (result: AtlasSearchResult) => void;
+  readonly onOpenPlace?: (placeId: PlaceId) => void;
   readonly onQueryChange?: (query: string) => void;
 }
 
@@ -73,31 +77,64 @@ function describeMatch(matchKind: PlaceSearchMatchKind, matchedText: string): st
   }
 }
 
+function describeResultType(type: AtlasSearchResultType): string {
+  switch (type) {
+    case 'geographic':
+      return 'Lugar geográfico';
+    case 'character':
+      return 'Personaje';
+    case 'location':
+      return 'Emplazamiento de campaña';
+  }
+}
+
 function createResultItem(
-  result: PlaceSearchResult,
-  onSelect: (placeId: PlaceId) => void,
+  result: AtlasSearchResult,
+  onSelect: (result: AtlasSearchResult) => void,
+  onOpenPlace: ((placeId: PlaceId) => void) | undefined,
 ): HTMLLIElement {
   const item = document.createElement('li');
-  const button = document.createElement('button');
+  const resultButton = document.createElement('button');
   const matchDescription = describeMatch(result.matchKind, result.matchedText);
 
   item.className = 'place-search__result-item';
-  button.className = 'place-search__result';
-  button.type = 'button';
-  button.dataset.placeId = result.placeId;
-  button.dataset.matchKind = result.matchKind;
-  button.append(
-    createTextElement('span', 'place-search__result-name', result.placeName),
+  resultButton.className = 'place-search__result';
+  resultButton.type = 'button';
+  resultButton.dataset.searchResultId = result.id;
+  resultButton.dataset.searchResultType = result.type;
+  resultButton.dataset.placeId = result.legacyPlaceId ?? '';
+  resultButton.append(
+    createTextElement('span', 'place-search__result-name', result.name),
+    createTextElement('span', 'place-search__result-type', describeResultType(result.type)),
     createTextElement('span', 'place-search__result-match', matchDescription),
   );
-  button.addEventListener('click', () => onSelect(result.placeId));
-  item.append(button);
+  resultButton.addEventListener('click', () => onSelect(result));
+
+  if (result.type === 'geographic' && result.legacyPlaceId && onOpenPlace) {
+    const row = document.createElement('div');
+    const openPlaceButton = document.createElement('button');
+
+    row.className = 'place-search__result-row';
+    openPlaceButton.className = 'place-search__open-details';
+    openPlaceButton.type = 'button';
+    openPlaceButton.dataset.placeId = result.legacyPlaceId;
+    openPlaceButton.textContent = `Abrir ficha de ${result.name}`;
+    openPlaceButton.addEventListener('click', () => onOpenPlace(result.legacyPlaceId!));
+    row.append(resultButton, openPlaceButton);
+    item.append(row);
+  } else {
+    item.append(resultButton);
+  }
 
   return item;
 }
 
 function getResultButtons(results: HTMLUListElement): readonly HTMLButtonElement[] {
-  return Array.from(results.querySelectorAll<HTMLButtonElement>('.place-search__result'));
+  return Array.from(
+    results.querySelectorAll<HTMLButtonElement>(
+      '.place-search__result, .place-search__open-details',
+    ),
+  );
 }
 
 function setStatusText(status: HTMLElement, message: string): void {
@@ -112,14 +149,17 @@ export function mountPlaceSearch(
 ): PlaceSearchController {
   const elements = resolveElements(root);
   let query = '';
+  let beta02Catalog: PublicCatalogSnapshotV2 | null = null;
 
   const render = (): void => {
     const normalizedQuery = normalizePlaceSearchQuery(query);
-    const searchResults = searchPublicPlaces(options.catalog, query);
+    const searchResults = searchPublicAtlas(options.catalog, beta02Catalog, query);
 
     elements.clearButton.disabled = query.length === 0;
     elements.results.replaceChildren(
-      ...searchResults.map((result) => createResultItem(result, options.onSelect)),
+      ...searchResults.map((result) =>
+        createResultItem(result, options.onSelect, options.onOpenPlace),
+      ),
     );
 
     if (!normalizedQuery) {
@@ -129,7 +169,10 @@ export function mountPlaceSearch(
     }
 
     if (searchResults.length === 0) {
-      setStatusText(elements.status, `No hay lugares para “${query.trim()}”.`);
+      setStatusText(
+        elements.status,
+        `No hay lugares, personajes ni nombres geográficos para “${query.trim()}”.`,
+      );
       elements.results.hidden = true;
       return;
     }
@@ -138,7 +181,7 @@ export function mountPlaceSearch(
       elements.status,
       searchResults.length === 1
         ? '1 lugar encontrado.'
-        : `${searchResults.length} lugares encontrados.`,
+        : `${searchResults.length} resultados encontrados.`,
     );
     elements.results.hidden = false;
   };
@@ -226,6 +269,10 @@ export function mountPlaceSearch(
       return query;
     },
     setQuery,
+    setBeta02Catalog(catalog: PublicCatalogSnapshotV2 | null): void {
+      beta02Catalog = catalog;
+      render();
+    },
     clear: handleClear,
     destroy(): void {
       elements.input.removeEventListener('input', handleInput);
