@@ -396,12 +396,18 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
 
   const map = page.getByTestId('admin-coordinate-map');
   await expect(map).toHaveClass(/leaflet-container/);
-  const mapBox = await map.boundingBox();
-  expect(mapBox).not.toBeNull();
-  await page.mouse.click(
-    (mapBox?.x ?? 0) + (mapBox?.width ?? 0) * 0.55,
-    (mapBox?.y ?? 0) + (mapBox?.height ?? 0) * 0.45,
-  );
+  const mapSize = await map.evaluate((element) => ({
+    width: element.clientWidth,
+    height: element.clientHeight,
+  }));
+  expect(mapSize.width).toBeGreaterThan(0);
+  expect(mapSize.height).toBeGreaterThan(0);
+  await map.click({
+    position: {
+      x: mapSize.width * 0.55,
+      y: mapSize.height * 0.45,
+    },
+  });
   const xInput = page.getByLabel('Coordenada X');
   const yInput = page.getByLabel('Coordenada Y');
   await expect(xInput).not.toHaveValue('');
