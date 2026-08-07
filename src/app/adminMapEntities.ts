@@ -1,4 +1,7 @@
-import type { AdminMapEntityController, AdminMapEntityState } from '../application/adminMapEntityController';
+import type {
+  AdminMapEntityController,
+  AdminMapEntityState,
+} from '../application/adminMapEntityController';
 import type { AdminAuthController } from '../auth/adminAuthController';
 import type { BackendState } from '../data-access/publicCatalog';
 import {
@@ -138,13 +141,7 @@ export function mountAdminMapEntities(
   createLocationButton.textContent = 'Crear emplazamiento';
   refreshButton.type = 'button';
   refreshButton.textContent = 'Recargar entidades';
-  toolbar.append(
-    searchLabel,
-    search,
-    createCharacterButton,
-    createLocationButton,
-    refreshButton,
-  );
+  toolbar.append(searchLabel, search, createCharacterButton, createLocationButton, refreshButton);
 
   status.setAttribute('role', 'status');
   status.setAttribute('aria-live', 'polite');
@@ -313,7 +310,9 @@ export function mountAdminMapEntities(
       x: xInput instanceof HTMLInputElement ? readNumber(xInput) : Number.NaN,
       y: yInput instanceof HTMLInputElement ? readNumber(yInput) : Number.NaN,
       categoryId: input('categoryId'),
-      tagIds: tagCheckboxes.filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value),
+      tagIds: tagCheckboxes
+        .filter((checkbox) => checkbox.checked)
+        .map((checkbox) => checkbox.value),
       dispositions: dispositionSelects.map((select) => ({
         playerId: select.dataset.playerId ?? '',
         disposition: select.value as PlayerDisposition,
@@ -363,7 +362,8 @@ export function mountAdminMapEntities(
     previewMarker.hidden = draft.visibility !== 'pin';
     previewName.textContent = draft.name.trim() || 'Sin nombre';
     previewMeta.textContent = `${draft.entityType} · ${category?.name ?? 'Sin categoría'} · X ${draft.x}, Y ${draft.y}${tagNames ? ` · ${tagNames}` : ''}${dispositions ? ` · ${dispositions}` : ''}`;
-    previewDescription.textContent = draft.summary.trim() || draft.description.trim() || 'Sin resumen.';
+    previewDescription.textContent =
+      draft.summary.trim() || draft.description.trim() || 'Sin resumen.';
     preview.hidden = false;
   }
 
@@ -507,7 +507,8 @@ export function mountAdminMapEntities(
       const wrapper = createElement('div', 'admin-map-entity__field');
       const label = createElement('label', 'admin-map-entity__label');
       const select = createElement('select', 'admin-map-entity__control');
-      const selected = draft.dispositions.find(({ playerId }) => playerId === player.id)?.disposition ?? 'neutral';
+      const selected =
+        draft.dispositions.find(({ playerId }) => playerId === player.id)?.disposition ?? 'neutral';
       const id = `admin-map-entity-disposition-${player.id}`;
       label.htmlFor = id;
       label.textContent = `${player.displayName} · ${player.publicationStatus}`;
@@ -574,7 +575,9 @@ export function mountAdminMapEntities(
                 : 'La imagen oficial no está disponible; las coordenadas siguen siendo editables.';
         },
       });
-      const first = Array.from(controls.values()).find(({ input }) => !input.readOnly && !input.disabled);
+      const first = Array.from(controls.values()).find(
+        ({ input }) => !input.readOnly && !input.disabled,
+      );
       first?.input.focus();
     });
     showFieldErrors(draft);
@@ -671,9 +674,11 @@ export function mountAdminMapEntities(
   function render(nextState: AdminMapEntityState): void {
     state = nextState;
     const unavailable = !state.authorized || !state.backendConnected;
-    const busy = state.phase === 'loading' || state.phase === 'loading-editor' || state.phase === 'mutating';
+    const busy =
+      state.phase === 'loading' || state.phase === 'loading-editor' || state.phase === 'mutating';
     search.disabled = unavailable || busy;
-    createCharacterButton.disabled = unavailable || state.phase !== 'ready' || renderedEditorKey !== null;
+    createCharacterButton.disabled =
+      unavailable || state.phase !== 'ready' || renderedEditorKey !== null;
     createLocationButton.disabled = createCharacterButton.disabled;
     refreshButton.disabled = unavailable || busy;
     saveDraftButton.disabled = busy;
@@ -683,11 +688,15 @@ export function mountAdminMapEntities(
     deleteButton.disabled = busy;
     confirmButton.disabled = busy;
 
-    if (!state.authorized) status.textContent = 'La edición de entidades permanece cerrada hasta autorizar la sesión.';
-    else if (!state.backendConnected) status.textContent = 'La edición de entidades está bloqueada mientras el backend público no esté conectado.';
+    if (!state.authorized)
+      status.textContent = 'La edición de entidades permanece cerrada hasta autorizar la sesión.';
+    else if (!state.backendConnected)
+      status.textContent =
+        'La edición de entidades está bloqueada mientras el backend público no esté conectado.';
     else if (state.phase === 'loading') status.textContent = 'Cargando entidades y relaciones…';
     else if (state.phase === 'loading-editor') status.textContent = 'Cargando editor de entidad…';
-    else if (state.phase === 'mutating') status.textContent = 'Guardando la entidad de forma atómica…';
+    else if (state.phase === 'mutating')
+      status.textContent = 'Guardando la entidad de forma atómica…';
     else if (state.issue) status.textContent = state.issue.message;
     else status.textContent = `${state.records.length} entidades administrativas.`;
 
@@ -764,8 +773,7 @@ export function mountAdminMapEntities(
   const handlePublish = (): void => void saveWithStatus('published');
   const handleArchiveEditor = (): void =>
     openConfirmation({ action: 'archive-editor' }, archiveButton);
-  const handleDelete = (): void =>
-    openConfirmation({ action: 'delete-editor' }, deleteButton);
+  const handleDelete = (): void => openConfirmation({ action: 'delete-editor' }, deleteButton);
   const handleCancel = (): void => controller.closeEditor();
   const handleConfirm = (): void => {
     const pending = pendingConfirmation;

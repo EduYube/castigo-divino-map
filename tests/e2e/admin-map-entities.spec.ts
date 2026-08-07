@@ -91,14 +91,10 @@ async function configureBackend(page: Page): Promise<BackendControl> {
   ];
   const entityTags = new Map<string, string[]>([['entity-aster-guide', ['notable']]]);
   const dispositions = new Map<string, Record<string, Disposition>>([
-    [
-      'entity-aster-guide',
-      { 'player-demo-one': 'ally', 'player-demo-two': 'neutral' },
-    ],
+    ['entity-aster-guide', { 'player-demo-one': 'ally', 'player-demo-two': 'neutral' }],
   ]);
 
-  const timestamp = (): string =>
-    `2026-08-07T12:00:${String(counter++).padStart(2, '0')}.000Z`;
+  const timestamp = (): string => `2026-08-07T12:00:${String(counter++).padStart(2, '0')}.000Z`;
   const relationRevision = (id: string): string =>
     `revision-${id}-${(entityTags.get(id) ?? []).join('-')}-${Object.values(dispositions.get(id) ?? {}).join('-')}`;
 
@@ -255,8 +251,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         y: Number(body.p_y),
         category_id: String(body.p_category_id),
         publication_status: nextStatus,
-        published_at:
-          existing?.published_at ?? (nextStatus === 'published' ? updatedAt : null),
+        published_at: existing?.published_at ?? (nextStatus === 'published' ? updatedAt : null),
         archived_at: nextStatus === 'archived' ? updatedAt : null,
         updated_at: updatedAt,
       };
@@ -441,7 +436,9 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await expect(page.getByLabel('Nombre principal (inglés)')).toHaveValue('MAP-019 Character');
 });
 
-test('keyboard coordinate editing can create, publish and archive an emplacement', async ({ page }) => {
+test('keyboard coordinate editing can create, publish and archive an emplacement', async ({
+  page,
+}) => {
   const backend = await configureBackend(page);
   await page.goto('/');
   await loginAndConnect(page);
@@ -534,10 +531,15 @@ test('physical deletion requires confirmation, restores focus on Escape and rema
   await expect(deleteButton).toBeFocused();
 
   await deleteButton.click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Eliminar definitivamente' }).click();
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: 'Eliminar definitivamente' })
+    .click();
   await expect(page.getByText('Disposable Place', { exact: true })).toBeHidden();
   expect(backend.getEntity('place-map019-disposable')).toBeUndefined();
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
   ).toBe(true);
 });

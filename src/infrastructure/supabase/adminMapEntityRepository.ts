@@ -144,7 +144,10 @@ function mapRecord(row: Record<string, unknown>): AdminMapEntityRecord {
 
 function mapTagLink(value: unknown): AdminEntityTagLink {
   if (!isRecord(value)) {
-    throw new AdminMapEntityRepositoryError('invalid-response', 'Supabase devolvió tags no válidos.');
+    throw new AdminMapEntityRepositoryError(
+      'invalid-response',
+      'Supabase devolvió tags no válidos.',
+    );
   }
   return {
     id: requiredString(value, 'id'),
@@ -567,7 +570,10 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
       );
     }
     if (!serialized) {
-      throw new AdminMapEntityRepositoryError('session-expired', 'No hay una sesión administrativa activa.');
+      throw new AdminMapEntityRepositoryError(
+        'session-expired',
+        'No hay una sesión administrativa activa.',
+      );
     }
     try {
       const parsed = JSON.parse(serialized) as unknown;
