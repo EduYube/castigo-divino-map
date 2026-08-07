@@ -205,7 +205,7 @@ test('authenticated non-admin never receives administrative mode', async ({ page
   await expect(page.locator('#admin-auth-status')).toContainText(
     'La cuenta autenticada no tiene acceso administrativo.',
   );
-  await expect(page.getByText('Modo administrativo activo.')).toHaveCount(0);
+  await expect(page.getByText('Modo administrativo activo.')).toBeHidden();
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toBeVisible();
 });
 
@@ -222,7 +222,7 @@ test('authorization 401 after reload expires the admin session without removing 
   await openAdminDialog(page);
 
   await expect(page.locator('#admin-auth-status')).toContainText('ha caducado');
-  await expect(page.getByText('Modo administrativo activo.')).toHaveCount(0);
+  await expect(page.getByText('Modo administrativo activo.')).toBeHidden();
   await expect(page.getByTestId('map-shell')).toBeVisible();
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toBeVisible();
 });
@@ -237,7 +237,9 @@ test('Auth network failure does not change the public atlas availability', async
   await expect(page.locator('#admin-auth-status')).toContainText(
     'El atlas público sigue disponible.',
   );
-  await expect(page.getByTestId('map-shell')).toBeVisible();
+  const mapShell = page.getByTestId('map-shell');
+  await expect(mapShell).toBeVisible();
+  await expect(mapShell).toHaveAttribute('data-map-state', 'ready');
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   await searchbox.fill('paso');
   await expect(searchbox).toHaveValue('paso');
