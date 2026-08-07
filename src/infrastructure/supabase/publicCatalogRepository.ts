@@ -10,7 +10,7 @@ import { expectRows } from './publicCatalogRows';
 export { parsePublicCatalogSnapshotV2 } from './publicCatalogCodec';
 
 const PROJECT_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
-const LOCAL_PROJECT_URL_PATTERN = /^http:\/(?:127\.0\.0\.1|localhost)(?::\d+)?\/?$/i;
+const LOCAL_PROJECT_URL_PATTERN = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?\/?$/i;
 const PUBLISHABLE_KEY_PATTERN = /^sb_publishable_[A-Za-z0-9_-]{10,}$/;
 const LEGACY_ANON_KEY_PATTERN = /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 const PAGE_SIZE = 1000;
