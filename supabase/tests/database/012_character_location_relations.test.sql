@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(22);
+select plan(23);
 
 select has_table(
   'public',
@@ -133,17 +133,17 @@ select throws_ok(
   'active character-location relations must be retired before archiving the entity',
   'an endpoint cannot be archived while an active relation exists'
 );
+select lives_ok(
+  $$delete from public.character_location_relations
+    where character_id = 'entity-aster-guide' and location_id = 'entity-bramble-fort'$$,
+  'a physical delete request is safely ignored by RLS after first publication'
+);
 select is(
-  (
-    with deleted as (
-      delete from public.character_location_relations
-      where character_id = 'entity-aster-guide' and location_id = 'entity-bramble-fort'
-      returning character_id
-    )
-    select count(*) from deleted
-  ),
-  0::bigint,
-  'RLS prevents physical deletion after first publication'
+  (select count(character_id)
+   from public.character_location_relations
+   where character_id = 'entity-aster-guide' and location_id = 'entity-bramble-fort'),
+  1::bigint,
+  'RLS leaves the previously published relation intact after the delete request'
 );
 select lives_ok(
   $$update public.character_location_relations
