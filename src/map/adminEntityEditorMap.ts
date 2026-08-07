@@ -21,8 +21,8 @@ export interface AdminEntityEditorMapController {
 
 export interface AdminEntityEditorMapOptions {
   readonly coordinate: CampaignCoordinate | null;
-  readonly entityType: MapEntityType;
-  readonly dispositions: readonly PinPlayerDispositionInput[];
+  readonly entityType?: MapEntityType;
+  readonly dispositions?: readonly PinPlayerDispositionInput[];
   readonly onCoordinateChange: (coordinate: CampaignCoordinate) => void;
   readonly onImageStateChange?: (state: 'loading' | 'ready' | 'error') => void;
 }
@@ -97,8 +97,8 @@ export function mountAdminEntityEditorMap(
 
   let destroyed = false;
   let marker: Marker | null = null;
-  let currentEntityType = options.entityType;
-  let currentDispositions = options.dispositions;
+  let currentEntityType = options.entityType ?? 'location';
+  let currentDispositions = options.dispositions ?? [];
 
   const applyMarkerAccessibility = (): void => {
     const element = marker?.getElement();
