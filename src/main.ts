@@ -1,6 +1,7 @@
 import 'leaflet/dist/leaflet.css';
 
 import { bootstrapAdminAuthRuntime } from './app/adminAuthRuntime';
+import { mountAdminPinVisualSync } from './app/adminPinVisualSync';
 import { mountPlaceDetails } from './app/placeDetails';
 import { mountPlaceFilters } from './app/placeFilters';
 import { bootstrapPublicDataRuntime, type PublicDataRuntime } from './app/publicDataRuntime';
@@ -36,6 +37,7 @@ if (!appElement) {
 const app = appElement;
 app.innerHTML = renderApp();
 bootstrapAdminAuthRuntime(app);
+mountAdminPinVisualSync(app);
 
 function describeSearchTarget(result: AtlasSearchResult): string {
   switch (result.type) {
