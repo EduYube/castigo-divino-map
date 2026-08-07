@@ -320,27 +320,31 @@ begin
 
   select pg_catalog.count(*)::integer
   into disposition_count
-  from pg_catalog.jsonb_to_recordset(p_dispositions) as input(player_id text, disposition text);
+  from pg_catalog.jsonb_to_recordset(p_dispositions)
+    as input(player_id text, "playerId" text, disposition text);
 
   if disposition_count is distinct from (
     select pg_catalog.count(*)::integer
     from public.entity_player_dispositions as relation
     where relation.entity_id = p_id
   ) or disposition_count is distinct from (
-    select pg_catalog.count(distinct input.player_id)::integer
-    from pg_catalog.jsonb_to_recordset(p_dispositions) as input(player_id text, disposition text)
+    select pg_catalog.count(distinct coalesce(input."playerId", input.player_id))::integer
+    from pg_catalog.jsonb_to_recordset(p_dispositions)
+      as input(player_id text, "playerId" text, disposition text)
   ) or exists (
     select 1
-    from pg_catalog.jsonb_to_recordset(p_dispositions) as input(player_id text, disposition text)
-    where input.player_id is null
+    from pg_catalog.jsonb_to_recordset(p_dispositions)
+      as input(player_id text, "playerId" text, disposition text)
+    where coalesce(input."playerId", input.player_id) is null
       or input.disposition not in ('ally', 'enemy', 'neutral')
   ) or exists (
     select relation.player_id
     from public.entity_player_dispositions as relation
     where relation.entity_id = p_id
     except
-    select input.player_id
-    from pg_catalog.jsonb_to_recordset(p_dispositions) as input(player_id text, disposition text)
+    select coalesce(input."playerId", input.player_id)
+    from pg_catalog.jsonb_to_recordset(p_dispositions)
+      as input(player_id text, "playerId" text, disposition text)
   ) then
     raise exception using
       errcode = '23514',
@@ -392,9 +396,10 @@ begin
 
   update public.entity_player_dispositions as relation
   set disposition = input.disposition::public.player_disposition
-  from pg_catalog.jsonb_to_recordset(p_dispositions) as input(player_id text, disposition text)
+  from pg_catalog.jsonb_to_recordset(p_dispositions)
+    as input(player_id text, "playerId" text, disposition text)
   where relation.entity_id = p_id
-    and relation.player_id = input.player_id
+    and relation.player_id = coalesce(input."playerId", input.player_id)
     and relation.disposition is distinct from input.disposition::public.player_disposition;
 
   return public.admin_get_map_entity_editor(p_id);
