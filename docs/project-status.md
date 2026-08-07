@@ -6,13 +6,15 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- MAP-001 a MAP-017: completadas.
-- Trabajo actual: MAP-018 — Crear el CRUD administrativo de categorías, etiquetas y nombres.
-- PR actual: #66, inicialmente draft sobre `agent/map-018-admin-taxonomy`.
+- MAP-001 a MAP-018: completadas.
+- Trabajo actual: MAP-019 — CRUD de pines con editor visual y previsualización.
+- PR de cierre de MAP-018: #66 sobre `agent/map-018-admin-taxonomy`.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-07.
 
 MAP-017 se integró mediante la PR #65 y el merge commit `1eda9885d54cb72cf3436496287a92c5c61c8de3`. Su CI definitiva fue la #222. Las migraciones alojadas añadidas por MAP-017 son `20260807111646_expose_admin_authorization_probe` y `20260807111841_harden_admin_authorization_probe`; el historial remoto final quedó en doce migraciones. El despliegue de Pages posterior al merge fue validado por el run `31174128169`, incluido el smoke contra la URL publicada. La Issue #36 quedó cerrada como completada.
+
+MAP-018 cerró el CRUD administrativo de categorías, etiquetas y nombres sin añadir migraciones ni dependencias de runtime. La implementación mantiene separadas la sesión administrativa y las lecturas públicas, reutiliza RLS y las invariantes PostgreSQL existentes, bloquea mutaciones cuando el backend no está conectado y conserva el borrado físico como excepción para contenido nunca publicado y sin referencias. La validación funcional previa al cierre dejó formato, auditoría de secretos, lint, 151 pruebas unitarias, build TypeScript/Pages, auditoría del artefacto, 59 escenarios Playwright, smoke local de Pages, 173 aserciones pgTAP y 13 comprobaciones de concurrencia en verde. El Supabase alojado conserva exactamente las doce migraciones previas.
 
 ## Beta 0.1
 
@@ -49,7 +51,7 @@ Las decisiones completas viven en `docs/architecture.md`, `docs/data-model.md`, 
 
 ## Supabase y modelo de datos
 
-El proyecto alojado `atlas-nuevos-dioses-prod` está activo. Al iniciar MAP-018 se comprobó mediante las herramientas conectadas que el historial remoto contiene exactamente doce migraciones, en el mismo orden que Git:
+El proyecto alojado `atlas-nuevos-dioses-prod` está activo. MAP-018 comprobó mediante las herramientas conectadas que el historial remoto contiene exactamente doce migraciones, en el mismo orden que Git:
 
 1. `20260805120000_create_application_schema`
 2. `20260805121000_create_authorization_and_rls`
@@ -125,8 +127,8 @@ Orden recomendado:
 3. MAP-015 — Evolucionar entidades y relaciones. **Completada.**
 4. MAP-016 — Acceso público resiliente y estado backend. **Completada.**
 5. MAP-017 — Login y autorización administrativa. **Completada.**
-6. MAP-018 — CRUD administrativo de categorías, etiquetas y nombres. **Trabajo actual.**
-7. MAP-019 — CRUD de pines con editor visual y previsualización.
+6. MAP-018 — CRUD administrativo de categorías, etiquetas y nombres. **Completada.**
+7. MAP-019 — CRUD de pines con editor visual y previsualización. **Trabajo actual.**
 8. MAP-020 — Relacionar personajes importantes con emplazamientos.
 9. MAP-021 — Búsqueda geográfica por nombres del mapa.
 10. MAP-022 — Diferenciar visualmente tipos y disposiciones.
@@ -139,18 +141,20 @@ Orden recomendado:
 17. MAP-029 — Validar seguridad, accesibilidad y rendimiento.
 18. MAP-030 — Publicar y validar Beta 0.2.
 
-## Trabajo actual — MAP-018
+## Acciones completadas para MAP-018
 
-- Reutilizar la sesión segura de MAP-017 sin añadir el JWT a lecturas públicas.
-- Separar dominio, acceso a datos, coordinación y UI del CRUD.
-- Listar, buscar, ordenar, crear, editar y archivar categorías, etiquetas y nombres.
-- Mantener borrado físico excepcional y protegido por historial de publicación y foreign keys.
-- Mantener idioma `en` y el modelo preparado para futuras traducciones.
-- Normalizar conflictos sin exponer SQL.
-- Bloquear mutaciones con backend `degraded` u `offline`.
-- Añadir cobertura Vitest, integración, Playwright y pgTAP.
-- Mantener la UI usable con teclado, lector de pantalla, 320 px y escritorio.
-- No adelantar MAP-019 ni MAP-028.
+- Reutilización de la sesión segura de MAP-017 sin añadir el JWT a lecturas públicas.
+- Separación de dominio, acceso a datos, coordinación y UI del CRUD.
+- Listado, búsqueda, ordenación, creación, edición y archivado de categorías, etiquetas y nombres.
+- Borrado físico excepcional protegido por historial de publicación, RLS, constraints y foreign keys.
+- Idioma nominal `en` conservando el modelo preparado para futuras traducciones.
+- Conflictos normalizados para la UI sin exponer SQL interno.
+- Mutaciones bloqueadas con backend `degraded` u `offline`.
+- Pérdida de sesión 401/403 tratada cerrando el modo administrativo sin romper el mapa público.
+- Cobertura con Vitest, integración, Playwright, pgTAP y pruebas de concurrencia.
+- UI usable con teclado y a 320 px, con controles y mensajes accesibles.
+- Publicación limitada a la proyección pública Beta 0.2 existente, sin adelantar MAP-019 ni MAP-028.
+- Supabase alojado revisado de forma no destructiva y mantenido en doce migraciones, sin cambios de Auth, allowlist ni configuración.
 
 ## Acciones completadas para MAP-014
 
@@ -194,7 +198,7 @@ Orden recomendado:
 
 ## Bloqueos
 
-No hay bloqueos técnicos conocidos para MAP-018. No existe un checkpoint humano pendiente al iniciar la implementación.
+No hay bloqueos técnicos conocidos para iniciar MAP-019 al cerrar MAP-018.
 
 Las herramientas disponibles permiten inspeccionar GitHub y Supabase alojado. Cualquier operación destructiva/irreversible, cambio de Auth/allowlist/configuración o uso inevitable de credenciales reales mantiene su checkpoint humano obligatorio.
 
@@ -207,9 +211,9 @@ Las herramientas disponibles permiten inspeccionar GitHub y Supabase alojado. Cu
 - En planes sin recuperación avanzada, el rollback de cambios destructivos depende de backups operativos y correcciones hacia delante.
 - La protección contra contraseñas filtradas no está disponible en el plan actual.
 
-## Riesgos pendientes de MAP-018 a MAP-030
+## Riesgos pendientes de MAP-019 a MAP-030
 
-- Mantener el CRUD administrativo accesible y evitar filtración accidental de JWT o detalles SQL.
+- Mantener el CRUD administrativo accesible y evitar filtración accidental de JWT o detalles SQL al ampliar el editor de pines.
 - Mantener invariantes de IDs, slugs, nombres, archivado y relaciones frente a un frontend manipulado.
 - Migrar en MAP-028 el catálogo Beta 0.1 sin romper IDs, slugs, coordenadas ni URLs existentes.
 - Resolver en MAP-022 la representación de disposiciones distintas por jugador sin colapsarlas en un color ambiguo.
@@ -218,7 +222,7 @@ Las herramientas disponibles permiten inspeccionar GitHub y Supabase alojado. Cu
 
 ## Próximo paso
 
-Completar MAP-018 en la PR #66, validar el SHA final mediante una CI nueva, revisar Supabase alojado de forma no destructiva, fusionar únicamente el head validado y comprobar Pages. Si los seis criterios de la Issue #37 quedan satisfechos, cerrar MAP-018 y establecer MAP-019 como siguiente trabajo.
+Iniciar MAP-019 — CRUD de pines con editor visual y previsualización — desde `master`, conservando la separación entre sesión administrativa y catálogo público, las garantías RLS/PostgreSQL y el flujo de CI establecido desde MAP-018.
 
 ## Últimos cambios
 
@@ -231,5 +235,5 @@ Completar MAP-018 en la PR #66, validar el SHA final mediante una CI nueva, revi
 | 2026-08-06 | MAP-015 cerró el modelo Beta 0.2 y el historial remoto llegó a diez migraciones; PR #59 e Issue #34 cerradas. |
 | 2026-08-07 | MAP-016 integró acceso público resiliente y fallback sin modificar producción; PR #60 e Issue #35 cerradas. |
 | 2026-08-07 | MAP-017 integró login/autorización, dos migraciones y probe administrativa; CI #222, PR #65 y Pages `31174128169` validados; Issue #36 cerrada. |
-| 2026-08-07 | MAP-018 pasó a ser el trabajo actual. Se retiró el preflight local obligatorio previo a CI; Actions pasa a ser el bucle principal de validación sin debilitar controles de producción de Supabase. |
-| 2026-08-07 | MAP-018 definió el alcance real de nombres, la separación del CRUD administrativo y la interpretación del criterio de publicación sin adelantar MAP-028. |
+| 2026-08-07 | MAP-018 retiró el preflight local obligatorio previo a CI y consolidó GitHub Actions como bucle principal sin debilitar controles de producción de Supabase. |
+| 2026-08-07 | MAP-018 cerró el CRUD administrativo de categorías, etiquetas y nombres, validó seguridad, accesibilidad y publicación Beta 0.2, mantuvo Supabase alojado sin cambios y dejó MAP-019 como siguiente trabajo. |
