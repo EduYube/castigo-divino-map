@@ -262,6 +262,7 @@ function draftBody(draft: AdminCatalogDraft): Record<string, unknown> {
 
 function updateBody(draft: AdminCatalogDraft): Record<string, unknown> {
   const { id: _id, ...body } = draftBody(draft);
+  void _id;
   return body;
 }
 

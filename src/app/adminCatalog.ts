@@ -495,16 +495,14 @@ export function mountAdminCatalog(
       ? `Editar ${getAdminRecordDisplayName(record)}`
       : 'Crear registro';
 
-    addField(form, controls, {
+    const idInput = addField(form, controls, {
       name: 'id',
       label: 'ID estable',
       value: draft.id,
       required: true,
       readOnly: Boolean(record),
     });
-    if (fields.parentElement !== form) {
-      fields.append(...Array.from(form.querySelectorAll(':scope > .admin-catalog__field')));
-    }
+    fields.append(idInput.closest('.admin-catalog__field') as HTMLElement);
 
     if (draft.kind === 'category' || draft.kind === 'geographic-name') {
       const input = addField(form, controls, {
