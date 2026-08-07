@@ -395,20 +395,26 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await page.getByLabel('Demo Player One · published').selectOption('ally');
 
   const map = page.getByTestId('admin-coordinate-map');
+  await expect(map).toHaveClass(/leaflet-container/);
   const mapBox = await map.boundingBox();
   expect(mapBox).not.toBeNull();
   await page.mouse.click(
     (mapBox?.x ?? 0) + (mapBox?.width ?? 0) * 0.55,
     (mapBox?.y ?? 0) + (mapBox?.height ?? 0) * 0.45,
   );
-  const xBeforeDrag = Number(await page.getByLabel('Coordenada X').inputValue());
-  const yBeforeDrag = Number(await page.getByLabel('Coordenada Y').inputValue());
+  const xInput = page.getByLabel('Coordenada X');
+  const yInput = page.getByLabel('Coordenada Y');
+  await expect(xInput).not.toHaveValue('');
+  await expect(yInput).not.toHaveValue('');
+  const xBeforeDrag = Number(await xInput.inputValue());
+  const yBeforeDrag = Number(await yInput.inputValue());
   expect(xBeforeDrag).toBeGreaterThanOrEqual(0);
   expect(xBeforeDrag).toBeLessThanOrEqual(3600);
   expect(yBeforeDrag).toBeGreaterThanOrEqual(0);
   expect(yBeforeDrag).toBeLessThanOrEqual(2329);
 
   const marker = page.getByTestId('admin-coordinate-marker');
+  await expect(marker).toBeVisible();
   const markerBox = await marker.boundingBox();
   expect(markerBox).not.toBeNull();
   await page.mouse.move(
@@ -418,7 +424,7 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await page.mouse.down();
   await page.mouse.move((markerBox?.x ?? 0) + 55, (markerBox?.y ?? 0) + 25, { steps: 5 });
   await page.mouse.up();
-  await expect(page.getByLabel('Coordenada X')).not.toHaveValue(String(xBeforeDrag));
+  await expect(xInput).not.toHaveValue(String(xBeforeDrag));
 
   await page.getByRole('button', { name: 'Previsualizar' }).click();
   await expect(page.getByRole('heading', { name: 'Previsualización no publicada' })).toBeVisible();
