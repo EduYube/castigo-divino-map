@@ -15,10 +15,12 @@ import {
 import { campaignCatalog } from './data/catalog';
 import { deriveMatchingPublicPlaceIds } from './data/filters';
 import type { CampaignCatalog, PlaceId } from './data/model';
-import { buildPlaceDetailModel, createPlaceMarkerModels } from './data/placeDetails';
+import { createAtlasPinMarkerModels } from './data/pinMarkers';
+import { buildPlaceDetailModel } from './data/placeDetails';
 import type { AtlasSearchResult } from './data/search';
-import { mountFaerunMap } from './map/leaflet';
+import { mountFaerunMap, type FaerunMapController } from './map/leaflet';
 import './styles/main.css';
+import './styles/pin-visual-system.css';
 import './styles/search.css';
 import './styles/filters.css';
 import './styles/backend-status.css';
@@ -52,10 +54,15 @@ function mountPublicExperience(
 ): void {
   let isRestoringFromHistory = false;
   const selection = createPlaceSelectionController();
-  const mapController = mountFaerunMap(app, {
-    markers: createPlaceMarkerModels(catalog),
-    onPlaceActivate(placeId): void {
-      selection.select(placeId);
+  let mapController: FaerunMapController;
+  mapController = mountFaerunMap(app, {
+    markers: createAtlasPinMarkerModels(catalog, null),
+    onPinActivate(pin): void {
+      if (pin.legacyPlaceId) {
+        selection.select(pin.legacyPlaceId);
+      } else {
+        selection.clear();
+      }
     },
   });
 
@@ -126,7 +133,9 @@ function mountPublicExperience(
   });
 
   publicDataRuntime?.subscribeBeta02Catalog((beta02Catalog) => {
+    mapController.setMarkers(createAtlasPinMarkerModels(catalog, beta02Catalog));
     placeSearchController.setBeta02Catalog(beta02Catalog);
+    updateMatchingPlaces();
   });
 
   function getCurrentPublicState(): PublicAppUrlState {
