@@ -12,6 +12,7 @@ export type EntityType = 'character' | 'location';
 export type MapVisibility = 'pin' | 'search_only';
 export type PlayerDisposition = 'ally' | 'enemy' | 'neutral';
 export type CharacterLocationEventType = 'sighting' | 'departure';
+export type CharacterLocationRelationStatus = 'present' | 'associated' | 'last-seen';
 
 export interface PublicCoordinate {
   readonly x: number;
@@ -64,6 +65,12 @@ export interface PublicEntityPlayerDisposition {
   readonly entityId: EntityId;
   readonly playerId: PlayerId;
   readonly disposition: PlayerDisposition;
+}
+
+export interface PublicCharacterLocationRelation {
+  readonly characterId: EntityId;
+  readonly locationId: EntityId;
+  readonly relationStatus: CharacterLocationRelationStatus;
 }
 
 export interface PublicNote {
@@ -144,6 +151,7 @@ export interface PublicCatalogSnapshotV2 {
   readonly players: readonly PublicPlayer[];
   readonly entities: readonly PublicMapEntity[];
   readonly dispositions: readonly PublicEntityPlayerDisposition[];
+  readonly characterLocationRelations: readonly PublicCharacterLocationRelation[];
   readonly notes: readonly PublicNote[];
   readonly geographicNames: readonly PublicGeographicName[];
   readonly characterLocationEvents: readonly PublicCharacterLocationEvent[];
