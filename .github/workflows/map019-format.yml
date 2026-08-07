@@ -29,12 +29,13 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          import json
 
           ui_path = Path('src/app/adminMapEntities.ts')
           ui = ui_path.read_text()
           ui = ui.replace(
-              "const first = Array.from(controls.values()).find(({ input }) => !input.readOnly && !input.disabled);",
+              """const first = Array.from(controls.values()).find(
+                ({ input }) => !input.readOnly && !input.disabled,
+              );""",
               """const first = Array.from(controls.values()).find(
                 ({ input }) =>
                   !input.disabled &&
@@ -57,15 +58,6 @@ jobs:
                 : null;""",
           )
           ui_path.write_text(ui)
-
-          package_path = Path('package.json')
-          package = json.loads(package_path.read_text())
-          package['scripts']['format:check'] = (
-              'prettier --check "src/**/*.{ts,json}" "public/**/*.json" '
-              '"tests/**/*.ts" "scripts/**/*.{mjs,mts}" "*.{js,mjs,ts,json,html}" '
-              '".github/**/*.yml"'
-          )
-          package_path.write_text(json.dumps(package, indent=2) + '\n')
       - name: Format tracked sources
         run: npm run format
       - name: Commit cleanup only when needed
@@ -76,6 +68,6 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- src public tests scripts package.json '*.js' '*.mjs' '*.ts' '*.json' '*.html' .github
-          git commit -m "MAP-019 finalize formatting and editor safety"
+          git add -- src/app/adminMapEntities.ts
+          git commit -m "MAP-019 harden editor refresh after save"
           git push origin HEAD:${{ github.head_ref }}
