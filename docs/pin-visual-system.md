@@ -5,6 +5,8 @@
 - Head funcional final: `45dfa13ca616ef5f3e4e31fa95fbe76040d4dfaf`.
 - CI pre-merge: #393, run `31224128324`, completamente verde.
 - Merge funcional: `ccd8d5c372307b1d5ec02539fae8a4d5df8b4f51`.
+- CI post-merge de `master`: run `31224454225`, intento final completamente verde.
+- Pages post-merge: run `31225809275`, build, deploy, smoke publicado y estado `github-pages/deployment` verdes.
 - Alcance: mapa público y previsualización/editor administrativo.
 
 ## Propósito y frontera
@@ -168,7 +170,7 @@ El head funcional final `45dfa13ca616ef5f3e4e31fa95fbe76040d4dfaf` fue validado 
 
 La PR #71 se marcó Ready solo después de esa ejecución y se fusionó mediante el merge commit `ccd8d5c372307b1d5ec02539fae8a4d5df8b4f51`. La Issue #41 quedó cerrada automáticamente.
 
-La verificación post-merge de los workflows `push` de `master` y de Pages se registra en `docs/project-status.md`; no se inventan run IDs cuando el conector no puede enumerarlos.
+La primera ejecución CI post-merge, run `31224454225`, sufrió un fallo transitorio de infraestructura al arrancar Supabase (`Rate exceeded` y puerto local `54322` ocupado). Se relanzó únicamente ese job; el intento final quedó completamente verde sin cambios de código. Ese cierre exitoso disparó Pages run `31225809275`, donde build, auditoría del artefacto, smoke local, despliegue, smoke de la URL publicada y estado `github-pages/deployment` finalizaron correctamente.
 
 ## Archivos principales
 
