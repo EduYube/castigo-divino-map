@@ -16,11 +16,11 @@ export function renderApp(): string {
     <main id="main-content" class="atlas-main">
       <section class="map-introduction" aria-labelledby="atlas-title">
         <div>
-          <p class="eyebrow">Cartografía interactiva · MAP-021</p>
+          <p class="eyebrow">Cartografía interactiva · MAP-022</p>
           <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
           <p class="map-introduction__lead">
-            Explora lugares públicos de la campaña sobre la Costa de la Espada, busca nombres
-            geográficos impresos en el mapa y localiza personajes o emplazamientos por su nombre.
+            Explora lugares públicos de la campaña, localiza personajes y reconoce el tipo y las
+            disposiciones de los pines sin abrir una ficha.
           </p>
         </div>
         <p class="map-introduction__source">
@@ -35,9 +35,9 @@ export function renderApp(): string {
             <h2 id="map-heading">Faerûn</h2>
           </div>
           <p id="map-instructions" class="map-instructions">
-            Busca y filtra lugares. Recorre controles, resultados y marcadores con Tab, y actívalos
-            con Enter o la barra espaciadora. Arrastra el mapa y usa la rueda, los gestos táctiles o
-            los controles para cambiar el zoom. Los marcadores atenuados siguen siendo operables.
+            Busca y filtra lugares. Recorre controles, resultados y pines con Tab, y actívalos con
+            Enter o la barra espaciadora. Un pin con contador agrupa entidades en la misma
+            coordenada y abre una lista accesible. Los pines atenuados siguen siendo operables.
           </p>
         </div>
 
@@ -152,6 +152,31 @@ export function renderApp(): string {
           </p>
         </section>
 
+        <aside class="pin-legend" data-pin-legend aria-labelledby="pin-legend-title">
+          <strong id="pin-legend-title" class="pin-legend__title">Leyenda de pines</strong>
+          <div class="pin-legend__group" aria-label="Tipos de entidad">
+            <span class="pin-legend__item">
+              <span class="pin-legend__shape pin-legend__shape--character" aria-hidden="true"><span>●</span></span>
+              Personaje
+            </span>
+            <span class="pin-legend__item">
+              <span class="pin-legend__shape pin-legend__shape--location" aria-hidden="true"><span>◆</span></span>
+              Emplazamiento
+            </span>
+          </div>
+          <div class="pin-legend__group" aria-label="Disposición por jugador">
+            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--ally" aria-hidden="true">+</span>Aliado</span>
+            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--enemy" aria-hidden="true">−</span>Enemigo</span>
+            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--neutral" aria-hidden="true">•</span>Neutral</span>
+            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--unknown" aria-hidden="true">?</span>Sin dato visible</span>
+          </div>
+          <p id="pin-legend-note" class="pin-legend__note">
+            La disposición es por jugador: varios símbolos en un pin representan perspectivas
+            distintas. El color es complementario; forma, símbolo, borde y texto conservan el
+            significado en alto contraste.
+          </p>
+        </aside>
+
         <div class="map-workspace" data-map-workspace>
           <div
             class="map-shell"
@@ -165,7 +190,7 @@ export function renderApp(): string {
               data-map-canvas
               role="region"
               aria-label="Mapa navegable de la Costa de la Espada y el noroeste de Faerûn"
-              aria-describedby="map-instructions place-filters-status map-search-status"
+              aria-describedby="map-instructions place-filters-status pin-legend-note map-search-status"
             ></div>
             <p class="map-status" data-map-status role="status" aria-atomic="true">
               Cargando la cartografía oficial de Faerûn…
