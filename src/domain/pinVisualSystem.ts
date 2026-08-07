@@ -32,6 +32,8 @@ export interface CoordinatePin {
   readonly coordinate: readonly [number, number];
 }
 
+export type CoordinatePinGroup<T extends CoordinatePin> = readonly [T, ...T[]];
+
 const TYPE_VISUALS: Record<PinEntityType, PinTypeVisual> = {
   character: {
     type: 'character',
@@ -118,8 +120,8 @@ export function coordinateGroupKey(coordinate: readonly [number, number]): strin
 
 export function groupPinsByCoordinate<T extends CoordinatePin>(
   pins: readonly T[],
-): readonly (readonly T[])[] {
-  const groups = new Map<string, T[]>();
+): readonly CoordinatePinGroup<T>[] {
+  const groups = new Map<string, [T, ...T[]]>();
 
   for (const pin of pins) {
     const key = coordinateGroupKey(pin.coordinate);
