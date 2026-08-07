@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(20);
+select plan(22);
 
 select has_table(
   'public',
@@ -169,8 +169,8 @@ select ok(
   'RLS is enabled on the relation table'
 );
 select ok(
-  not has_function_privilege('anon', 'private.validate_character_location_relation()', 'execute'),
-  'anonymous visitors cannot execute the internal validation trigger function directly'
+  not has_schema_privilege('anon', 'private', 'usage'),
+  'anonymous visitors cannot resolve private trigger functions through Data API'
 );
 
 select * from finish();
