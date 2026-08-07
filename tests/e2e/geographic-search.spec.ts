@@ -75,7 +75,7 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
       language: 'en',
       x: 1690,
       y: 1020,
-      recommended_zoom: 1.5,
+      recommended_zoom: 0.75,
       entity_id: 'entity-waterdeep',
     },
     {
@@ -169,7 +169,7 @@ test('searches Waterdeep as a separate geographic identity and applies its recom
 
   const shell = page.getByTestId('map-shell');
   await expect(shell).toHaveAttribute('data-map-center', '1020.00,1690.00');
-  await expect(shell).toHaveAttribute('data-map-zoom', '1.50');
+  await expect(shell).toHaveAttribute('data-map-zoom', '0.75');
   await expect(shell).toHaveAttribute('data-search-highlight', 'true');
   await expect(page.locator('.geographic-search-highlight__symbol')).toBeVisible();
   await expect(page.locator('[data-map-search-status]')).toContainText(
