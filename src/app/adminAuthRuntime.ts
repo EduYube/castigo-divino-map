@@ -168,9 +168,7 @@ class UnavailableAdminMapEntityRepository implements AdminMapEntityRepository {
     return Promise.reject(this.#error);
   }
 
-  loadReferences(_options: {
-    readonly signal: AbortSignal;
-  }): Promise<AdminMapEntityReferences> {
+  loadReferences(_options: { readonly signal: AbortSignal }): Promise<AdminMapEntityReferences> {
     void _options;
     return Promise.reject(this.#error);
   }
@@ -195,10 +193,7 @@ class UnavailableAdminMapEntityRepository implements AdminMapEntityRepository {
     return Promise.reject(this.#error);
   }
 
-  delete(
-    _detail: AdminMapEntityDetail,
-    _options: { readonly signal: AbortSignal },
-  ): Promise<void> {
+  delete(_detail: AdminMapEntityDetail, _options: { readonly signal: AbortSignal }): Promise<void> {
     void _detail;
     void _options;
     return Promise.reject(this.#error);
