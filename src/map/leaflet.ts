@@ -266,7 +266,6 @@ export function mountFaerunMap(
 
   const groupMarkers = new Set<Marker>();
   const groupMarkerByPinId = new Map<string, Marker>();
-  const markerModelByPinId = new Map<string, AtlasPinMarkerModel>();
   const pinIdByLegacyPlaceId = new Map<PlaceId, string>();
   const markerDomListeners: MarkerDomListener[] = [];
   let renderedMarkers: readonly AtlasPinMarkerModel[] = [];
@@ -438,7 +437,6 @@ export function mountFaerunMap(
     groupMarkers.forEach((marker) => marker.removeFrom(map));
     groupMarkers.clear();
     groupMarkerByPinId.clear();
-    markerModelByPinId.clear();
     pinIdByLegacyPlaceId.clear();
   };
 
@@ -450,14 +448,14 @@ export function mountFaerunMap(
     }
 
     for (const pin of markers) {
-      markerModelByPinId.set(pin.id, pin);
       if (pin.legacyPlaceId) pinIdByLegacyPlaceId.set(pin.legacyPlaceId, pin.id);
     }
 
     for (const pins of groupPinsByCoordinate(markers)) {
       const coordinate = pins[0].coordinate;
       const leafletMarker = L.marker(L.latLng(coordinate[0], coordinate[1]), {
-        icon: pins.length === 1 ? createSinglePinIcon(pins[0]) : createCoincidentPinIcon(pins.length),
+        icon:
+          pins.length === 1 ? createSinglePinIcon(pins[0]) : createCoincidentPinIcon(pins.length),
         keyboard: true,
         riseOnHover: true,
         title:
@@ -465,12 +463,11 @@ export function mountFaerunMap(
             ? `${pins[0].name} — ${getPinTypeVisual(pins[0].entityType).label}`
             : `${pins.length} pines coincidentes`,
       });
-      let popup: L.Popup | null = null;
 
       const openCoincidentList = (): void => {
         if (pins.length === 1) return;
         const content = createCoincidentPopup(pins, activatePin);
-        popup = L.popup({
+        L.popup({
           closeButton: true,
           autoPan: true,
           className: 'pin-coincident-leaflet-popup',
@@ -492,7 +489,6 @@ export function mountFaerunMap(
       };
       const handlePopupClose = (): void => {
         leafletMarker.getElement()?.setAttribute('aria-expanded', 'false');
-        popup = null;
       };
 
       leafletMarker.on('click', handleClick);
@@ -501,7 +497,6 @@ export function mountFaerunMap(
       leafletMarker.on('remove', () => {
         leafletMarker.off('click', handleClick);
         map.off('popupclose', handlePopupClose);
-        popup = null;
       });
       leafletMarker.addTo(map);
       groupMarkers.add(leafletMarker);
