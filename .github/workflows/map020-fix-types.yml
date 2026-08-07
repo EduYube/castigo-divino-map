@@ -1,0 +1,69 @@
+name: MAP-020 targeted type fixes
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.event.pull_request.number == 68 && github.head_ref == 'agent/map-020-character-location-relations'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout MAP-020 head
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - name: Apply targeted source fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/app/adminCharacterLocationRelations.ts')
+          text = path.read_text()
+          text = text.replace(
+              "  const handleLocationChange = (): void =>\n    showValidation(readDraft(editing?.publicationStatus ?? 'draft'));\n  const handleRelationChange = (): void =>\n    showValidation(readDraft(editing?.publicationStatus ?? 'draft'));",
+              "  const handleLocationChange = (): void => {\n    showValidation(readDraft(editing?.publicationStatus ?? 'draft'));\n  };\n  const handleRelationChange = (): void => {\n    showValidation(readDraft(editing?.publicationStatus ?? 'draft'));\n  };",
+          )
+          path.write_text(text)
+
+          path = Path('src/application/publicCatalogService.test.ts')
+          text = path.read_text()
+          text = text.replace(
+              "      dispositions: [],\n      notes: [],",
+              "      dispositions: [],\n      characterLocationRelations: [],\n      notes: [],",
+              1,
+          )
+          path.write_text(text)
+
+          path = Path('tests/e2e/admin-character-location-relations.spec.ts')
+          text = path.read_text()
+          text = text.replace(
+              "import { expect, test, type Page, type Route } from '@playwright/test';",
+              "import { expect, test, type Page, type Route } from '@playwright/test';\nimport type { Request as PlaywrightRequest } from '@playwright/test';",
+          )
+          text = text.replace(
+              "  readonly publicRelationRequests: Request[];",
+              "  readonly publicRelationRequests: PlaywrightRequest[];",
+          )
+          text = text.replace(
+              "  const publicRelationRequests: Request[] = [];",
+              "  const publicRelationRequests: PlaywrightRequest[] = [];",
+          )
+          path.write_text(text)
+          PY
+      - name: Format targeted files
+        run: npx prettier --write src/app/adminCharacterLocationRelations.ts src/application/publicCatalogService.test.ts tests/e2e/admin-character-location-relations.spec.ts
+      - name: Commit targeted fixes
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/app/adminCharacterLocationRelations.ts src/application/publicCatalogService.test.ts tests/e2e/admin-character-location-relations.spec.ts
+          git commit -m "MAP-020 fix TypeScript contract errors"
+          git push origin HEAD:${{ github.head_ref }}
