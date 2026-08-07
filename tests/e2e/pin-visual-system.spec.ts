@@ -206,13 +206,26 @@ test('keeps selection and keyboard focus independent from type and disposition s
   await expect(character).toBeFocused();
   await page.keyboard.press('Enter');
 
+  const panel = page.getByTestId('place-details');
   await expect(character).toHaveClass(/campaign-marker-icon--active/);
   await expect(character.locator('.pin-visual')).toHaveClass(/pin-visual--character/);
   await expect(character.locator('.pin-disposition--enemy')).toBeVisible();
-  await expect(page.getByTestId('place-details')).toBeHidden();
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-entity-type', 'character');
+  await expect(panel.getByRole('heading', { level: 3, name: 'Scout' })).toBeFocused();
+  await expect(panel).toContainText('Personaje');
+  await expect(panel).toContainText('Alicia');
+  await expect(panel).toContainText('Enemigo');
+  await expect(panel).toContainText('Borin');
+  await expect(panel).toContainText('Neutral');
   await expect(page.locator('[data-map-search-status]')).toContainText(
-    'Scout, personaje, seleccionado en el mapa',
+    'Scout, personaje, seleccionado en el mapa. Ficha compacta abierta.',
   );
+
+  await panel.getByRole('button', { name: /Cerrar la ficha de Scout/i }).click();
+  await expect(panel).toBeHidden();
+  await expect(character).toBeFocused();
+  await expect(character).toHaveAttribute('aria-pressed', 'false');
 });
 
 test('opens all coincident pins as keyboard-operable options without changing their canonical coordinate', async ({
@@ -238,16 +251,23 @@ test('opens all coincident pins as keyboard-operable options without changing th
   );
 
   await options.first().click();
-  await expect(page.getByTestId('place-details')).toHaveAttribute(
-    'data-active-place-id',
-    'place-demo-harbor',
-  );
+  const panel = page.getByTestId('place-details');
+  await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
+  await panel.getByRole('button', { name: /Cerrar la ficha de Demonstration Harbor/i }).click();
+  await expect(coincident).toBeFocused();
 
   await coincident.click();
   await page.getByTestId('coincident-pin-option').nth(1).click();
-  await expect(page.getByTestId('place-details')).toBeHidden();
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-entity-id', 'entity-harbor-guard');
+  await expect(panel).toHaveAttribute('data-entity-type', 'character');
+  await expect(panel.getByRole('heading', { level: 3, name: 'Harbor Guard' })).toBeFocused();
   await expect(coincident).toHaveClass(/campaign-marker-icon--active/);
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-center', '820.00,1080.50');
+
+  await panel.getByRole('button', { name: /Cerrar la ficha de Harbor Guard/i }).click();
+  await expect(panel).toBeHidden();
+  await expect(coincident).toBeFocused();
 });
 
 test('preserves legacy filter dimming while keeping type semantics and pins operable', async ({
