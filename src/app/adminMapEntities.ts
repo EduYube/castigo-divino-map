@@ -576,7 +576,10 @@ export function mountAdminMapEntities(
         },
       });
       const first = Array.from(controls.values()).find(
-        ({ input }) => !input.readOnly && !input.disabled,
+        ({ input }) =>
+          !input.disabled &&
+          (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) ||
+            !input.readOnly),
       );
       first?.input.focus();
     });
@@ -710,7 +713,7 @@ export function mountAdminMapEntities(
     const desiredEditorKey = state.creating
       ? `new:${requestedEntityType}`
       : state.editorDetail
-        ? state.editorDetail.record.id
+        ? `${state.editorDetail.record.id}:${state.editorDetail.record.updatedAt}`
         : null;
     if (desiredEditorKey !== renderedEditorKey) {
       renderedEditorKey = desiredEditorKey;
