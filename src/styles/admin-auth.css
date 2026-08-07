@@ -1,0 +1,197 @@
+.admin-auth-entry {
+  display: grid;
+  justify-items: end;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.admin-auth-entry__button,
+.admin-auth__submit,
+.admin-auth__logout,
+.admin-auth-dialog__close {
+  color: var(--ink);
+  background: rgba(18, 24, 20, 0.86);
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.admin-auth-entry__button {
+  min-height: 2rem;
+  padding: 0.32rem 0.72rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 760;
+  letter-spacing: 0.035em;
+}
+
+.admin-auth-entry__button:hover,
+.admin-auth__submit:hover,
+.admin-auth__logout:hover,
+.admin-auth-dialog__close:hover {
+  border-color: rgba(240, 213, 138, 0.62);
+}
+
+.admin-auth-entry__notice {
+  max-width: 22rem;
+  margin: 0;
+  color: var(--accent-strong);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.admin-auth-dialog {
+  width: min(30rem, calc(100% - 1.5rem));
+  max-width: 100%;
+  max-height: calc(100svh - 1.5rem);
+  padding: clamp(1rem, 4vw, 1.5rem);
+  overflow: auto;
+  color: var(--ink);
+  background: #182019;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.admin-auth-dialog::backdrop {
+  background: rgba(2, 6, 3, 0.74);
+  backdrop-filter: blur(3px);
+}
+
+.admin-auth-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-auth-dialog__title {
+  margin-bottom: 0.5rem;
+  font-size: clamp(1.35rem, 7vw, 1.8rem);
+}
+
+.admin-auth-dialog__close {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 1.4rem;
+}
+
+.admin-auth-dialog__description,
+.admin-auth__status,
+.admin-auth__summary,
+.admin-auth__backend-guard {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.admin-auth-dialog__description {
+  margin-bottom: 1.25rem;
+}
+
+.admin-auth__form,
+.admin-auth__shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-auth__form[hidden],
+.admin-auth__shell[hidden] {
+  display: none;
+}
+
+.admin-auth__field {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.admin-auth__label {
+  font-size: 0.86rem;
+  font-weight: 760;
+}
+
+.admin-auth__input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  color: var(--ink);
+  background: rgba(8, 13, 10, 0.58);
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  font: inherit;
+}
+
+.admin-auth__input:focus-visible {
+  outline: 3px solid #f6da8a;
+  outline-offset: 2px;
+}
+
+.admin-auth__status {
+  min-height: 1.5em;
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+.admin-auth__submit,
+.admin-auth__logout {
+  min-height: 2.65rem;
+  padding: 0.62rem 0.9rem;
+  border-radius: 0.65rem;
+  font-weight: 760;
+}
+
+.admin-auth__submit {
+  color: #172018;
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.admin-auth__submit:disabled,
+.admin-auth__logout:disabled,
+.admin-auth__input:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.admin-auth__identity {
+  margin: 0;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.admin-auth__summary,
+.admin-auth__backend-guard {
+  margin: 0;
+}
+
+.admin-auth__backend-guard[data-admin-mutations="blocked"] {
+  padding: 0.75rem;
+  color: var(--accent-strong);
+  background: rgba(215, 185, 111, 0.08);
+  border: 1px solid rgba(215, 185, 111, 0.26);
+  border-radius: 0.7rem;
+}
+
+@media (max-width: 52rem) {
+  .admin-auth-entry__notice {
+    text-align: left;
+  }
+}
+
+@media (max-width: 36rem) {
+  .admin-auth-entry {
+    justify-items: start;
+  }
+
+  .admin-auth-dialog {
+    width: calc(100% - 1rem);
+    max-height: calc(100svh - 1rem);
+    padding: 1rem;
+    border-radius: 0.8rem;
+  }
+}
