@@ -10,6 +10,10 @@
   color: CanvasText;
 }
 
+.admin-map-entity [hidden] {
+  display: none !important;
+}
+
 .admin-map-entity__heading,
 .admin-map-entity__editor-heading,
 .admin-map-entity__subheading,
