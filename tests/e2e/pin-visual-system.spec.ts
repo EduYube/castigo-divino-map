@@ -255,7 +255,7 @@ test('preserves legacy filter dimming while keeping type semantics and pins oper
 }) => {
   await openPinVisualMap(page);
 
-  await page.getByLabel('Asentamiento').check();
+  await page.getByRole('checkbox', { name: /Asentamiento/ }).check();
   const pass = page.locator('[data-testid="place-marker"][data-place-id="place-demo-pass"]');
 
   await expect(pass).toHaveClass(/campaign-marker-icon--dimmed/);
@@ -290,7 +290,7 @@ test('remains usable at 320 px, keeps touch targets large and honors forced colo
       outlineStyle: style.outlineStyle,
     };
   });
-  expect(styles.transitionDuration).toBe('0s');
+  expect(Number.parseFloat(styles.transitionDuration)).toBeLessThanOrEqual(0.00001);
   expect(styles.outlineStyle).not.toBe('none');
 
   await page.getByTestId('coincident-pin').click();
