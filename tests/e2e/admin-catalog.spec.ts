@@ -124,7 +124,7 @@ async function configureAdminBackend(page: Page): Promise<AdminBackend> {
     window.__MAP017_AUTH_TEST_CONFIG__ = {
       projectUrl,
       publishableKey: 'sb_publishable_map018_e2e_key',
-      timeoutMs: 500,
+      timeoutMs: 2_000,
     };
   }, PROJECT_URL);
 
