@@ -19,7 +19,7 @@ import type { CampaignCatalog, PlaceId } from './data/model';
 import { createAtlasPinMarkerModels } from './data/pinMarkers';
 import { buildPlaceDetailModel } from './data/placeDetails';
 import type { AtlasSearchResult } from './data/search';
-import { mountFaerunMap, type FaerunMapController } from './map/leaflet';
+import { mountFaerunMap } from './map/leaflet';
 import './styles/main.css';
 import './styles/pin-visual-system.css';
 import './styles/search.css';
@@ -56,8 +56,7 @@ function mountPublicExperience(
 ): void {
   let isRestoringFromHistory = false;
   const selection = createPlaceSelectionController();
-  let mapController: FaerunMapController;
-  mapController = mountFaerunMap(app, {
+  const mapController = mountFaerunMap(app, {
     markers: createAtlasPinMarkerModels(catalog, null),
     onPinActivate(pin): void {
       if (pin.legacyPlaceId) {
