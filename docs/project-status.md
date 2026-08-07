@@ -6,14 +6,12 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- MAP-001 a MAP-020: completadas.
-- Trabajo actual: MAP-021 — Implementar búsqueda geográfica por nombres del mapa.
-- Rama actual: `agent/map-021-geographic-search`.
-- PR actual: #69, draft.
+- MAP-001 a MAP-021: completadas funcionalmente e integradas.
+- Siguiente trabajo del backlog: MAP-022 — Diferenciar visualmente tipos y disposiciones.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-07.
 
-MAP-021 parte del `master` cuyo head era el merge de MAP-020, `d9a1f53d9da59b731fddb1dad41242f903278436`. La Issue #39 ya está cerrada tras verificar su gate post-merge de CI y GitHub Pages; MAP-021 no reimplementa MAP-020.
+MAP-021 se integró en `master` mediante la PR #69 con merge commit `fb3e50b07cdfe40f83d4edf0336e1eae825aff72`. La Issue #40 quedó cerrada automáticamente como completada. La evidencia de CI pre-merge está cerrada y el checkpoint humano posterior al merge confirmó en verde las tres ejecuciones relevantes: CI de `master`, despliegue de GitHub Pages y CI documental #375. El conector disponible en esta sesión no enumera los run IDs disparados por `push`, por lo que no se inventan identificadores ausentes.
 
 ## Beta 0.1 y frontera de Beta 0.2
 
@@ -21,7 +19,7 @@ MAP-001 a MAP-011 entregaron la Beta 0.1 publicada con Vite, TypeScript, Leaflet
 
 Beta 0.2 mantiene como contratos de compatibilidad el pathname de Pages, query string, IDs, slugs, coordenadas, búsqueda, filtros, historial, accesibilidad y tratamiento del mapa remoto hasta que MAP-028 demuestre equivalencia y haga la transición completa del catálogo visible.
 
-MAP-013 a MAP-020 ya han cerrado arquitectura, seguridad, Supabase/RLS, modelo de entidades, acceso público resiliente, autenticación administrativa, CRUD de catálogo, CRUD de entidades y relaciones personaje–emplazamiento.
+MAP-013 a MAP-021 ya han cerrado arquitectura, seguridad, Supabase/RLS, modelo de entidades, acceso público resiliente, autenticación administrativa, CRUD de catálogo, CRUD de entidades, relaciones personaje–emplazamiento y búsqueda geográfica pública.
 
 ## Arquitectura y seguridad vigentes
 
@@ -42,7 +40,7 @@ Las decisiones completas viven en `docs/architecture.md`, `docs/data-model.md`, 
 
 Proyecto: `atlas-nuevos-dioses-prod`.
 
-El historial alojado verificado al iniciar MAP-021 contiene catorce migraciones, en este orden:
+El historial alojado verificado durante MAP-021 contiene catorce migraciones, en este orden:
 
 1. `20260805120000_create_application_schema`
 2. `20260805121000_create_authorization_and_rls`
@@ -61,7 +59,7 @@ El historial alojado verificado al iniciar MAP-021 contiene catorce migraciones,
 
 Las versiones alojadas 13 y 14 corresponden respectivamente al SQL versionado de MAP-019 y MAP-020. No se ejecuta `seed.sql` en producción.
 
-Al iniciar MAP-021 se verificó además que `geographic_names`, `geographic_name_aliases`, `map_entities` y `entity_aliases` tienen RLS activa. `geographic_names` ya contiene `x`, `y`, `recommended_zoom` y `entity_id` opcional; las policies públicas filtran contenido publicado y las lecturas anónimas no incluyen permisos de escritura. Por tanto MAP-021 no necesita DDL ni migración nueva.
+MAP-021 verificó que `geographic_names`, `geographic_name_aliases`, `map_entities` y `entity_aliases` tienen RLS activa. `geographic_names` ya contiene `x`, `y`, `recommended_zoom` y `entity_id` opcional; las policies públicas filtran contenido publicado y las lecturas anónimas no incluyen permisos de escritura. MAP-021 no añadió DDL ni migración.
 
 ## Modelo funcional relevante
 
@@ -108,11 +106,22 @@ MAP-019 entregó CRUD administrativo de personajes/emplazamientos, editor visual
 
 MAP-020 añadió `character_location_relations`, lectura pública mínima bajo RLS, administración sin nueva RPC, concurrencia por `updated_at` y helpers de dominio para las fichas futuras. MAP-023/MAP-024 conservan la responsabilidad visual de esas relaciones.
 
-## MAP-021 — trabajo actual
+## MAP-021 — completada e integrada
 
-Objetivo: ampliar la búsqueda pública para que nombres geográficos en inglés puedan localizarse aunque no tengan pin visible.
+- Issue: #40, cerrada como completada.
+- PR: #69.
+- Head final validado: `7cd6643fb35c65caf77c29caf72e92cdf9ded73f`.
+- Merge commit: `fb3e50b07cdfe40f83d4edf0336e1eae825aff72`.
+- CI pre-merge: #373, run `31216650715`, completamente verde.
+- Unitarios: 188/188 en 29 archivos.
+- E2E: 74/74.
+- Smoke local del build Pages: 2/2.
+- pgTAP: 222/222 en 12 archivos, además de migraciones, lint, RLS y prueba de concurrencia Supabase.
+- Migración de MAP-021: ninguna.
+- Producción: no se sembró ni se modificaron Auth, usuarios, allowlist administrativa o credenciales.
+- CI/Pages post-merge: checkpoint humano del 2026-08-07 confirmó en verde CI de `master` y GitHub Pages sobre la integración; los run IDs `push` no son enumerables por el conector disponible.
 
-Diseño adoptado en la PR #69:
+Diseño integrado:
 
 - el catálogo visible Beta 0.1 permanece como compatibilidad y no se sustituye antes de MAP-028;
 - MAP-021 consume únicamente el último snapshot/proyección Beta 0.2 que ya pasó por el repositorio público y codec de MAP-016;
@@ -122,9 +131,7 @@ Diseño adoptado en la PR #69:
 - el resaltado usa forma, símbolo y anuncio textual, y queda estático con `prefers-reduced-motion`;
 - una ficha Beta 0.1 asociada se abre con una acción separada para conservar la semántica geográfica principal;
 - no se añade parámetro de URL: `q`, `place`, `category` y `tag` siguen siendo el contrato reproducible;
-- no hay migración de MAP-021 ni siembra de producción.
-
-La evidencia definitiva de MAP-021 será la CI limpia del SHA final de la PR #69 y la verificación post-merge de `master`, Pages y smoke publicado.
+- no se crean nuevos pines para nombres geográficos.
 
 ## Backlog Beta 0.2
 
@@ -136,8 +143,8 @@ La evidencia definitiva de MAP-021 será la CI limpia del SHA final de la PR #69
 6. MAP-018 — CRUD administrativo de categorías, etiquetas y nombres. **Completada.**
 7. MAP-019 — CRUD de pines con editor visual y previsualización. **Completada.**
 8. MAP-020 — Relacionar personajes importantes con emplazamientos. **Completada.**
-9. MAP-021 — Búsqueda geográfica por nombres del mapa. **Trabajo actual.**
-10. MAP-022 — Diferenciar visualmente tipos y disposiciones.
+9. MAP-021 — Búsqueda geográfica por nombres del mapa. **Completada.**
+10. MAP-022 — Diferenciar visualmente tipos y disposiciones. **Siguiente.**
 11. MAP-023 — Rediseñar ficha compacta.
 12. MAP-024 — Ficha completa en pestaña nueva.
 13. MAP-025 — Búsqueda y filtros colapsables.
@@ -165,7 +172,6 @@ Los cambios de producción de Supabase conservan sus controles adicionales: comp
 
 ## Riesgos y fronteras pendientes
 
-- MAP-021 no debe convertir nombres geográficos en pines ni mezclar identidades homónimas.
 - MAP-022 mantiene el rediseño visual de tipos y disposiciones.
 - MAP-023/MAP-024 mantienen los rediseños de ficha compacta/completa.
 - MAP-028 mantiene la transición completa del catálogo Beta 0.1 a Supabase.
@@ -185,4 +191,4 @@ Los cambios de producción de Supabase conservan sus controles adicionales: comp
 | 2026-08-07 | MAP-018 cerró el CRUD administrativo de categorías, etiquetas y nombres; PR #66. |
 | 2026-08-07 | MAP-019 cerró el CRUD de entidades; PR #67, merge `5fdb6d2…`, migración alojada `20260807154307_add_admin_map_entity_editor_rpc`. |
 | 2026-08-07 | MAP-020 cerró relaciones personaje–emplazamiento; PR #68, merge `d9a1f53…`, Pages `31212733439`, migración alojada `20260807180851_add_character_location_relations`. |
-| 2026-08-07 | MAP-021 iniciada en PR draft #69 sin DDL; búsqueda geográfica separada de entidades y pines. |
+| 2026-08-07 | MAP-021 cerró búsqueda geográfica pública; PR #69, head verde `7cd6643…`, merge `fb3e50b…`, checkpoint post-merge CI/Pages verde y sin DDL. |
