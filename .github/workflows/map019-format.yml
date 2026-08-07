@@ -1,9 +1,9 @@
 name: MAP-019 one-shot format
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/map-019-pin-crud
+      - master
 
 permissions:
   contents: write
@@ -13,10 +13,10 @@ jobs:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout branch
+      - name: Checkout MAP-019 branch
         uses: actions/checkout@v4
         with:
-          ref: agent/map-019-pin-crud
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -78,4 +78,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- src public tests scripts package.json '*.js' '*.mjs' '*.ts' '*.json' '*.html' .github
           git commit -m "MAP-019 finalize formatting and editor safety"
-          git push origin HEAD:agent/map-019-pin-crud
+          git push origin HEAD:${{ github.head_ref }}
