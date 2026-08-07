@@ -1,8 +1,8 @@
 # Modelo de datos de campaña
 
 - Versión de contrato: Beta 0.2
-- Estado: dominio físico y semántico definido por MAP-014 y MAP-015
-- Fecha: 2026-08-05
+- Estado: dominio físico y semántico definido por MAP-014, MAP-015 y MAP-020
+- Fecha: 2026-08-07
 
 ## Propósito
 
@@ -48,6 +48,14 @@ No existe `unknown`. La ausencia de evidencia a favor o en contra se expresa com
 - `sighting`
 - `departure`
 
+### `character_location_relation_status`
+
+- `present`: el personaje se considera presente actualmente en el emplazamiento según la información pública conocida.
+- `associated`: existe una asociación pública relevante con el emplazamiento sin afirmar presencia actual.
+- `last-seen`: el emplazamiento es la última localización pública relevante conocida para esa relación, sin afirmar presencia actual.
+
+Estos estados describen la relación editorial vigente; no sustituyen el historial cronológico de `character_location_events`.
+
 ### `publication_status`
 
 - `draft`
@@ -77,7 +85,9 @@ Los IDs son texto estable con prefijo:
 - nombres geográficos: `geo-...`;
 - eventos de localización: `location-event-...` o IDs históricos `relation-...` migrados;
 - etiquetas: kebab-case legible;
-- relaciones editoriales: prefijos específicos y estables.
+- relaciones editoriales: prefijos específicos y estables cuando poseen ID propio.
+
+`character_location_relations` no introduce un ID independiente: su identidad es la clave compuesta `(character_id, location_id)`.
 
 Los IDs publicados quedan reservados incluso tras una purga excepcional. No se introduce un UUID público obligatorio para el contenido editorial.
 
@@ -162,6 +172,38 @@ También es válido que una ubicación sea `enemy` para un jugador y `ally` para
 - Una relación solo es pública cuando sus extremos y la relación están publicados.
 - Una categoría o tag usado por relaciones publicadas no puede retirarse sin resolver antes sus consumidores.
 
+## Relaciones personaje–emplazamiento
+
+### `character_location_relations`
+
+Es la única fuente de verdad normalizada para la relación editorial vigente entre un personaje importante y un emplazamiento. No se almacenan arrays de personajes dentro de ubicaciones ni arrays de ubicaciones dentro de personajes.
+
+| Campo | Invariante |
+|---|---|
+| `character_id` | Entidad existente de tipo `character`; extremo inmutable. |
+| `location_id` | Entidad existente de tipo `location`; extremo inmutable. |
+| `relation_status` | `present`, `associated` o `last-seen`. |
+| `publication_status` | Ciclo editorial `draft / published / archived`. |
+| `published_at`, `archived_at`, timestamps | Gestionados por PostgreSQL. |
+
+La clave primaria `(character_id, location_id)` impide duplicados y permite que un personaje se relacione con varios emplazamientos, mientras cada emplazamiento puede reunir varios personajes importantes. Cambiar de personaje o emplazamiento significa crear otra relación; los extremos de una fila existente no se reescriben.
+
+Una relación activa (`draft` o `published`) no puede apuntar a una entidad archivada. Para publicarla, ambos extremos deben estar publicados. PostgreSQL valida los tipos y estados de los dos extremos y los bloquea durante la mutación para evitar carreras con archivados concurrentes.
+
+#### Retirada y archivado
+
+“Retirar” una relación significa cambiar su `publication_status` a `archived`; no significa borrarla físicamente. Así se conserva la identidad y el historial editorial después de una primera publicación, mientras la fila deja inmediatamente de formar parte de la proyección pública.
+
+Una entidad no puede pasar a `archived` mientras conserve una relación personaje–emplazamiento no archivada. El administrador debe retirar explícitamente cada relación antes de archivar el personaje o el emplazamiento. Esta regla evita cascadas editoriales implícitas y relaciones públicas colgantes.
+
+Las relaciones nunca publicadas pueden ser eliminables solo conforme a las reglas generales de RLS y borrado físico; la UI de MAP-020 usa retirada explícita como operación normal. Una relación publicada o anteriormente publicada no se purga mediante la aplicación.
+
+#### Concurrencia
+
+- La creación concurrente de la misma pareja se resuelve autoritativamente mediante la clave primaria y devuelve conflicto.
+- Las actualizaciones administrativas incluyen el `updated_at` conocido en el filtro del `PATCH`; cero filas afectadas significa escritura obsoleta y obliga a recargar.
+- Los locks de los extremos en PostgreSQL evitan validar una relación contra un estado de entidad que cambie simultáneamente.
+
 ## Nombres y contenido editorial
 
 ### `entity_aliases`
@@ -237,7 +279,7 @@ Los aliases geográficos se almacenan como filas normalizadas, no como un array.
 
 ### `character_location_events`
 
-Representa noticias públicas cronológicas sobre la posición de un personaje. Sustituye a la relación estática `character_locations`.
+Representa noticias públicas cronológicas sobre la posición de un personaje. Complementa a `character_location_relations`: los eventos conservan evidencia temporal y la relación normalizada expresa el estado editorial vigente que consumen las fichas.
 
 | Campo | Invariante |
 |---|---|
@@ -299,10 +341,13 @@ RLS entrega únicamente:
 - categorías, tags, jugadores y entidades publicados;
 - disposiciones cuyos dos extremos son públicos;
 - aliases, notas y relaciones con extremos públicos;
+- relaciones personaje–emplazamiento publicadas cuyos dos extremos están publicados y son de tipo compatible;
 - nombres geográficos y aliases publicados;
 - eventos publicados cuyos extremos referenciados también son públicos.
 
 `search_only` no modifica la política de lectura.
+
+Para `character_location_relations`, `anon` solo recibe permisos de columna sobre `character_id`, `location_id` y `relation_status`. La consulta pública no necesita ni puede leer `publication_status`, timestamps ni metadatos editoriales; RLS es la autoridad que filtra borradores, archivados y extremos no públicos. No se usa un JWT administrativo para esta lectura.
 
 ### Escritura administrativa
 
@@ -310,6 +355,7 @@ RLS entrega únicamente:
 - RLS limita filas y grants de columna limitan campos suministrables.
 - Campos normalizados, timestamps, IDs y auditoría no se confían al navegador.
 - Los cambios de estado y validaciones referenciales se ejecutan en PostgreSQL.
+- MAP-020 usa operaciones normales de tabla bajo RLS para la relación: no introduce una RPC porque crear, cambiar estado o retirar son mutaciones atómicas de una sola fila.
 
 ### Ciclo editorial
 
@@ -326,6 +372,8 @@ archived -> draft
 `archived -> published` exige volver primero a `draft`.
 
 `published_at` se fija en la primera publicación y no se reinicia. El contenido publicado o anteriormente publicado no se elimina físicamente mediante la aplicación.
+
+En MAP-020, archivar un personaje o emplazamiento con relaciones activas se rechaza hasta que esas relaciones se retiren explícitamente. La base de datos, y no la UI, aplica esta regla.
 
 ## Proyección y snapshot público
 
@@ -344,6 +392,7 @@ interface PublicCatalogSnapshotV2 {
   readonly players: readonly PublicPlayer[];
   readonly entities: readonly PublicMapEntity[];
   readonly dispositions: readonly PublicEntityPlayerDisposition[];
+  readonly characterLocationRelations: readonly PublicCharacterLocationRelation[];
   readonly notes: readonly PublicNote[];
   readonly geographicNames: readonly PublicGeographicName[];
   readonly characterLocationEvents: readonly PublicCharacterLocationEvent[];
@@ -358,9 +407,13 @@ Reglas:
 - un snapshot inválido hace fallar CI;
 - no se incluyen usuarios, solicitudes, campos privados ni timestamps internos innecesarios.
 
+Las fichas compactas y completas deben derivar sus relaciones de `characterLocationRelations`. `src/data/characterLocationRelations.ts` concentra la proyección estable para obtener personajes importantes de un emplazamiento y emplazamientos relacionados de un personaje, evitando que cada ficha reconstruya o duplique el dato.
+
+MAP-020 no adelanta el rediseño visual de fichas reservado a MAP-023/MAP-024 ni la transición pública completa reservada a MAP-028; deja preparado el contrato común que esas Issues consumirán.
+
 ## Compatibilidad con Beta 0.1
 
-El catálogo estático actual permanece operativo hasta MAP-028. No se modifica en MAP-015 porque contiene contenido ficticio en castellano y un contrato limitado a lugares.
+El catálogo estático actual permanece operativo hasta MAP-028. MAP-020 amplía el contrato Beta 0.2 y su Data API sin sustituir todavía el catálogo visual de Beta 0.1.
 
 Se conservan:
 
@@ -370,7 +423,7 @@ Se conservan:
 - el parámetro público `place`;
 - búsqueda, filtros, fichas, historial y URLs actuales.
 
-No se construye una adaptación con pérdida que convierta personajes, pistas o entidades `search_only` en marcadores de lugar. MAP-028 deberá demostrar equivalencia antes de hacer que la UI consuma el dominio Beta 0.2.
+No se construye una adaptación con pérdida que convierta personajes, pistas o entidades `search_only` en marcadores de lugar. MAP-028 deberá demostrar equivalencia antes de hacer que la UI consuma el dominio Beta 0.2 como fuente pública completa.
 
 ## Propiedad y control
 
