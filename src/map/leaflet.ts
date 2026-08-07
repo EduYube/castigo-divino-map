@@ -168,6 +168,15 @@ function describePin(marker: AtlasPinMarkerModel): string {
   return `${marker.name}. ${type.label}. Disposición por jugador: ${dispositions}. Categoría: ${marker.categoryName}.`;
 }
 
+function describeLegacyMarkerName(marker: AtlasPinMarkerModel): string {
+  return `${marker.name}. Categoría: ${marker.categoryName}.`;
+}
+
+function describePinSemantics(marker: AtlasPinMarkerModel): string {
+  const type = getPinTypeVisual(marker.entityType);
+  return `${type.label}. Disposición por jugador: ${describePlayerDispositions(marker.dispositions)}.`;
+}
+
 function createCoincidentPopup(
   markers: readonly AtlasPinMarkerModel[],
   activatePin: (marker: AtlasPinMarkerModel) => void,
@@ -344,13 +353,23 @@ export function mountFaerunMap(
     const isActive = pins.some(isPinActive);
     const filterState = getGroupFilterState(pins);
     const inner = element.querySelector<HTMLElement>('.pin-visual');
-    const activeDescription = isActive ? 'Contiene el pin activo. ' : '';
+    const isLegacySingle = pins.length === 1 && pins[0]?.legacyPlaceId !== null;
+    const semanticDescription =
+      pins.length === 1
+        ? `${describePinSemantics(pins[0])} `
+        : `${pins.length} entidades comparten esta coordenada. `;
+    const activeDescription = isActive
+      ? isLegacySingle
+        ? 'Lugar activo. '
+        : 'Contiene el pin activo. '
+      : '';
     const filterDescription =
       filterState === 'true'
         ? 'Coincide con los filtros aplicables.'
         : filterState === 'false'
           ? 'No coincide con la búsqueda y los filtros actuales, pero sigue disponible.'
           : 'Contiene pines coincidentes con estados de filtro distintos; todos siguen disponibles.';
+    const accessibleState = `${semanticDescription}${activeDescription}${filterDescription}`;
 
     element.classList.toggle('campaign-marker-icon--active', isActive);
     element.classList.toggle('campaign-marker-icon--matching', filterState !== 'false');
@@ -358,8 +377,8 @@ export function mountFaerunMap(
     inner?.classList.toggle('pin-visual--active', isActive);
     inner?.classList.toggle('pin-visual--dimmed', filterState === 'false');
     element.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    element.setAttribute('aria-description', `${activeDescription}${filterDescription}`);
-    element.dataset.accessibleState = `${activeDescription}${filterDescription}`;
+    element.setAttribute('aria-description', accessibleState);
+    element.dataset.accessibleState = accessibleState;
     element.dataset.filterMatch = filterState;
     leafletMarker.setZIndexOffset(isActive ? 1000 : filterState === 'false' ? 0 : 200);
   };
@@ -399,7 +418,10 @@ export function mountFaerunMap(
 
     if (pins.length === 1) {
       const pin = pins[0];
-      element.setAttribute('aria-label', describePin(pin));
+      element.setAttribute(
+        'aria-label',
+        pin.legacyPlaceId ? describeLegacyMarkerName(pin) : describePin(pin),
+      );
       element.setAttribute('data-testid', pin.legacyPlaceId ? 'place-marker' : 'entity-pin');
       element.dataset.pinId = pin.id;
       element.dataset.entityType = pin.entityType;
