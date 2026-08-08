@@ -27,6 +27,11 @@ interface AdminPublicRequestRepositoryOptions {
   readonly allowLocalProject?: boolean;
 }
 
+interface RequestCursor {
+  readonly createdAt: string;
+  readonly id: string;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -148,6 +153,16 @@ function parseErrorCode(value: unknown): string | null {
   return isRecord(value) && typeof value.code === 'string' ? value.code : null;
 }
 
+function quotePostgrestValue(value: string): string {
+  return `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
+}
+
+function cursorFilter(cursor: RequestCursor): string {
+  const createdAt = quotePostgrestValue(cursor.createdAt);
+  const id = quotePostgrestValue(cursor.id);
+  return `(created_at.lt.${createdAt},and(created_at.eq.${createdAt},id.gt.${id}))`;
+}
+
 export class SupabaseAdminPublicRequestRepository implements AdminPublicRequestRepository {
   readonly #projectUrl: string;
   readonly #publishableKey: string;
@@ -186,29 +201,20 @@ export class SupabaseAdminPublicRequestRepository implements AdminPublicRequestR
   async list(options: {
     readonly signal: AbortSignal;
   }): Promise<readonly AdminPublicRequestRecord[]> {
-    const rows: Record<string, unknown>[] = [];
-    let offset = 0;
-    let expectedTotal: number | null = null;
+    const records: AdminPublicRequestRecord[] = [];
+    let cursor: RequestCursor | null = null;
 
-    do {
+    while (true) {
       const url = new URL(`${this.#projectUrl}/rest/v1/public_requests`);
       url.searchParams.set(
         'select',
         'id,sender_name,proposed_name,entity_type,x,y,description,reason,request_status,moderator_user_id,moderation_note,converted_entity_id,moderated_at,created_at,updated_at',
       );
       url.searchParams.set('order', 'created_at.desc,id.asc');
-      const response = await this.#request(
-        url,
-        {
-          method: 'GET',
-          headers: {
-            Prefer: 'count=exact',
-            Range: `${offset}-${offset + PAGE_SIZE - 1}`,
-            'Range-Unit': 'items',
-          },
-        },
-        options.signal,
-      );
+      url.searchParams.set('limit', String(PAGE_SIZE));
+      if (cursor) url.searchParams.set('or', cursorFilter(cursor));
+
+      const response = await this.#request(url, { method: 'GET' }, options.signal);
       const payload = await this.#readJson(response);
       if (!Array.isArray(payload) || payload.some((row) => !isRecord(row))) {
         throw new AdminPublicRequestRepositoryError(
@@ -216,41 +222,15 @@ export class SupabaseAdminPublicRequestRepository implements AdminPublicRequestR
           'Supabase devolvió una bandeja de solicitudes no válida.',
         );
       }
-      const contentRange = response.headers.get('content-range');
-      const match = contentRange?.match(/^(?:\*|(\d+)-(\d+))\/(\d+)$/);
-      if (!match) {
-        throw new AdminPublicRequestRepositoryError(
-          'invalid-response',
-          'Supabase no confirmó el tamaño de la bandeja administrativa.',
-        );
-      }
-      const total = Number(match[3]);
-      if (!Number.isSafeInteger(total)) {
-        throw new AdminPublicRequestRepositoryError(
-          'invalid-response',
-          'Supabase devolvió un tamaño de bandeja no válido.',
-        );
-      }
-      if (expectedTotal === null) expectedTotal = total;
-      else if (expectedTotal !== total) {
-        throw new AdminPublicRequestRepositoryError(
-          'stale-write',
-          'Las solicitudes cambiaron durante la lectura. Vuelve a cargar la bandeja.',
-        );
-      }
-      if (total === 0) return [];
-      const page = payload as Record<string, unknown>[];
-      if (Number(match[1]) !== offset || Number(match[2]) !== offset + page.length - 1) {
-        throw new AdminPublicRequestRepositoryError(
-          'invalid-response',
-          'Supabase devolvió una página de solicitudes incompleta.',
-        );
-      }
-      rows.push(...page);
-      offset += page.length;
-    } while (expectedTotal === null || offset < expectedTotal);
 
-    return rows.map(mapRequest);
+      const page = (payload as Record<string, unknown>[]).map(mapRequest);
+      records.push(...page);
+      if (page.length < PAGE_SIZE) return records;
+
+      const last = page.at(-1);
+      if (!last) return records;
+      cursor = { createdAt: last.createdAt, id: last.id };
+    }
   }
 
   reject(
