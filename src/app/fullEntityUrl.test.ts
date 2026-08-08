@@ -45,7 +45,9 @@ describe('full entity URL contract', () => {
   });
 
   it('does not claim map URLs without entity as full entity requests', () => {
-    expect(parseFullEntityUrlRequest(new URL('https://example.test/castigo-divino-map/?q=guard'))).toBeNull();
+    expect(
+      parseFullEntityUrlRequest(new URL('https://example.test/castigo-divino-map/?q=guard')),
+    ).toBeNull();
   });
 
   it('accepts only public slug syntax', () => {
