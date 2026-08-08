@@ -196,10 +196,7 @@ function appendFullDetailsAction(
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.textContent = 'Abrir ficha completa';
-    link.setAttribute(
-      'aria-label',
-      `Abrir ficha completa de ${details.name} en una pestaña nueva`,
-    );
+    link.setAttribute('aria-label', `Abrir ficha completa de ${details.name} en una pestaña nueva`);
     link.setAttribute('aria-describedby', note.id);
     note.textContent = 'Se abrirá en una pestaña nueva para conservar el estado actual del mapa.';
     section.append(link, note);
