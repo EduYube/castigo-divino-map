@@ -2,7 +2,6 @@ import { describe, expect, test } from 'vitest';
 
 import {
   fetchCompletePublicCatalogTable,
-  PublicCatalogReadError,
   type PublicCatalogTableQuery,
 } from './publicCatalogQueryContract.js';
 
@@ -34,10 +33,6 @@ function requestRangeStart(input: RequestInfo | URL, init?: RequestInit): number
   }
 
   return Number(match[1]);
-}
-
-function expectPartialResponse(error: unknown): boolean {
-  return error instanceof PublicCatalogReadError && error.kind === 'partial-response';
 }
 
 describe('shared public catalog pagination contract', () => {
@@ -72,7 +67,7 @@ describe('shared public catalog pagination contract', () => {
         signal: new AbortController().signal,
         fetchImplementation: async () => response([{ id: 'a' }], '1-1/2'),
       }),
-    ).rejects.toSatisfy(expectPartialResponse);
+    ).rejects.toMatchObject({ kind: 'partial-response' });
   });
 
   test('rejects a short page body relative to the advertised range', async () => {
@@ -84,7 +79,7 @@ describe('shared public catalog pagination contract', () => {
         signal: new AbortController().signal,
         fetchImplementation: async () => response([{ id: 'a' }], '0-1/2'),
       }),
-    ).rejects.toSatisfy(expectPartialResponse);
+    ).rejects.toMatchObject({ kind: 'partial-response' });
   });
 
   test('rejects a total that changes between pages', async () => {
@@ -102,7 +97,7 @@ describe('shared public catalog pagination contract', () => {
             : response([{ id: 'c' }], '2-2/4');
         },
       }),
-    ).rejects.toSatisfy(expectPartialResponse);
+    ).rejects.toMatchObject({ kind: 'partial-response' });
   });
 
   test('rejects an empty page before the declared collection is complete', async () => {
@@ -114,7 +109,7 @@ describe('shared public catalog pagination contract', () => {
         signal: new AbortController().signal,
         fetchImplementation: async () => response([], '*/3'),
       }),
-    ).rejects.toSatisfy(expectPartialResponse);
+    ).rejects.toMatchObject({ kind: 'partial-response' });
   });
 
   test('fails closed when the collection cannot reach its advertised final total', async () => {
