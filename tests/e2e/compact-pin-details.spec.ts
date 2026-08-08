@@ -175,7 +175,7 @@ async function openMap(page: Page, available = true): Promise<void> {
   );
 }
 
-test('renders compact location data and important characters', async ({ page }) => {
+test('renders compact location data and exposes a safe full-details link', async ({ page }) => {
   await openMap(page);
 
   await page.getByTestId('coincident-pin').click();
@@ -207,10 +207,16 @@ test('renders compact location data and important characters', async ({ page }) 
   await expect(panel).not.toContainText('Título de nota pública que no debe aparecer');
   await expect(panel).not.toContainText('Cuerpo de nota pública deliberadamente largo');
 
-  const fullAction = panel.getByRole('button', { name: 'Abrir ficha completa' });
+  const fullAction = panel.getByRole('link', {
+    name: 'Abrir ficha completa de Demonstration Harbor en una pestaña nueva',
+  });
   await expect(fullAction).toBeVisible();
-  await expect(fullAction).toBeDisabled();
-  await expect(panel).toContainText('La ficha completa se incorporará en MAP-024');
+  await expect(fullAction).toHaveAttribute('target', '_blank');
+  await expect(fullAction).toHaveAttribute('rel', /noopener/);
+  await expect(fullAction).toHaveAttribute('href', /\?entity=puerto-de-demostracion$/);
+  await expect(panel).toContainText(
+    'Se abrirá en una pestaña nueva para conservar el estado actual del mapa.',
+  );
 });
 
 test('opens a character card and returns focus on close', async ({ page }) => {
@@ -235,6 +241,9 @@ test('opens a character card and returns focus on close', async ({ page }) => {
   await expect(panel).toContainText('Borin');
   await expect(panel).toContainText('Aliado');
   await expect(important).toHaveCount(0);
+  await expect(
+    panel.getByRole('link', { name: 'Abrir ficha completa de Scout en una pestaña nueva' }),
+  ).toHaveAttribute('href', /\?entity=scout$/);
 
   await panel.getByRole('button', { name: 'Cerrar la ficha de Scout' }).click();
   await expect(panel).toBeHidden();
@@ -242,7 +251,9 @@ test('opens a character card and returns focus on close', async ({ page }) => {
   await expect(character).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('falls back to a compact Beta 0.1 card offline', async ({ page }) => {
+test('falls back to a compact Beta 0.1 card offline without inventing a full URL', async ({
+  page,
+}) => {
   await openMap(page, false);
 
   const marker = page.locator('[data-testid="place-marker"][data-place-id="place-demo-harbor"]');
@@ -262,6 +273,12 @@ test('falls back to a compact Beta 0.1 card offline', async ({ page }) => {
   await expect(panel).not.toContainText('Puerto de ejemplo');
   await expect(panel).not.toContainText('Información pública de demostración');
   await expect(panel).not.toContainText('Este puerto ficticio');
+
+  const fullAction = panel.getByRole('button', { name: 'Abrir ficha completa' });
+  await expect(fullAction).toBeDisabled();
+  await expect(panel).toContainText(
+    'Esta entidad no dispone de una ficha completa pública en Beta 0.2.',
+  );
 });
 
 test('stays usable at 320 px in forced colors and reduced motion', async ({ page }) => {
@@ -279,7 +296,9 @@ test('stays usable at 320 px in forced colors and reduced motion', async ({ page
   expect(panelBox?.x ?? 0).toBeGreaterThanOrEqual(0);
   expect((panelBox?.x ?? 0) + (panelBox?.width ?? 0)).toBeLessThanOrEqual(320);
 
-  const fullAction = panel.getByRole('button', { name: 'Abrir ficha completa' });
+  const fullAction = panel.getByRole('link', {
+    name: 'Abrir ficha completa de Scout en una pestaña nueva',
+  });
   const actionBox = await fullAction.boundingBox();
   expect(actionBox?.height ?? 0).toBeGreaterThanOrEqual(44);
 

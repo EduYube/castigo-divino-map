@@ -3,6 +3,8 @@ import 'leaflet/dist/leaflet.css';
 import { bootstrapAdminAuthRuntime } from './app/adminAuthRuntime';
 import { mountAdminPinVisualSync } from './app/adminPinVisualSync';
 import { mountCompactPinDetails } from './app/compactPinDetails';
+import { mountFullEntityDetails, renderFullEntityDetailsShell } from './app/fullEntityDetails';
+import { createFullEntityUrl, parseFullEntityUrlRequest } from './app/fullEntityUrl';
 import { mountPlaceFilters } from './app/placeFilters';
 import { bootstrapPublicDataRuntime, type PublicDataRuntime } from './app/publicDataRuntime';
 import { mountPlaceSearch } from './app/placeSearch';
@@ -17,6 +19,7 @@ import type { PublicCatalogSnapshotV2 } from './data/beta02-model';
 import { campaignCatalog } from './data/catalog';
 import { buildCompactPinDetailModel } from './data/compactPinDetails';
 import { deriveMatchingPublicPlaceIds } from './data/filters';
+import { resolveFullEntityDetail } from './data/fullEntityDetails';
 import type { CampaignCatalog, PlaceId } from './data/model';
 import { createAtlasPinMarkerModels, type AtlasPinMarkerModel } from './data/pinMarkers';
 import type { AtlasSearchResult } from './data/search';
@@ -25,6 +28,7 @@ import { mountFaerunMap } from './map/leaflet';
 import './styles/main.css';
 import './styles/pin-visual-system.css';
 import './styles/compact-pin-details.css';
+import './styles/full-entity-details.css';
 import './styles/search.css';
 import './styles/filters.css';
 import './styles/backend-status.css';
@@ -38,9 +42,6 @@ if (!appElement) {
 }
 
 const app = appElement;
-app.innerHTML = renderApp();
-bootstrapAdminAuthRuntime(app);
-mountAdminPinVisualSync(app);
 
 function describeSearchTarget(result: AtlasSearchResult): string {
   switch (result.type) {
@@ -128,6 +129,13 @@ function mountPublicExperience(
       activeSupplementalPin = null;
       clearSupplementalMapSelection(supplementalPin);
       window.requestAnimationFrame(() => focusPinControl(supplementalPin));
+    },
+    createFullDetailsUrl(details): string | null {
+      if (!details.entitySlug) {
+        return null;
+      }
+
+      return createFullEntityUrl(new URL(window.location.href), details.entitySlug).href;
     },
   });
 
@@ -353,6 +361,59 @@ function mountPublicExperience(
   restorePublicStateFromUrl(new URL(window.location.href));
 }
 
-void bootstrapPublicDataRuntime(app, campaignCatalog)
-  .then((publicDataRuntime) => mountPublicExperience(publicDataRuntime.catalog, publicDataRuntime))
-  .catch(() => mountPublicExperience(campaignCatalog));
+function startMapExperience(): void {
+  app.innerHTML = renderApp();
+  bootstrapAdminAuthRuntime(app);
+  mountAdminPinVisualSync(app);
+
+  void bootstrapPublicDataRuntime(app, campaignCatalog)
+    .then((publicDataRuntime) =>
+      mountPublicExperience(publicDataRuntime.catalog, publicDataRuntime),
+    )
+    .catch(() => mountPublicExperience(campaignCatalog));
+}
+
+function startFullEntityExperience(sourceUrl: URL): void {
+  const request = parseFullEntityUrlRequest(sourceUrl);
+
+  if (!request) {
+    startMapExperience();
+    return;
+  }
+
+  app.innerHTML = renderFullEntityDetailsShell();
+  const mapUrl = new URL(sourceUrl);
+  mapUrl.search = '';
+  mapUrl.hash = '';
+  const detailsController = mountFullEntityDetails(app, mapUrl);
+
+  if (!request.slug) {
+    detailsController.showUnavailable();
+    void bootstrapPublicDataRuntime(app, campaignCatalog).catch(() => undefined);
+    return;
+  }
+
+  if (!request.isCanonical && request.canonicalUrl) {
+    window.history.replaceState(window.history.state, '', request.canonicalUrl);
+  }
+
+  void bootstrapPublicDataRuntime(app, campaignCatalog)
+    .then((runtime) => {
+      runtime.subscribeBeta02Catalog((catalog) => {
+        if (!catalog) {
+          detailsController.showUnavailable();
+          return;
+        }
+
+        const details = resolveFullEntityDetail(catalog, request.slug!);
+        if (details) {
+          detailsController.show(details);
+        } else {
+          detailsController.showUnavailable();
+        }
+      });
+    })
+    .catch(() => detailsController.showUnavailable());
+}
+
+startFullEntityExperience(new URL(window.location.href));

@@ -1,11 +1,7 @@
-import type {
-  CharacterLocationRelationStatus,
-  EntityId,
-  PublicCatalogSnapshotV2,
-} from './beta02-model';
-import { getImportantCharactersForLocation } from './characterLocationRelations';
+import type { EntityId, PublicCatalogSnapshotV2 } from './beta02-model';
 import type { CampaignCatalog, PlaceId } from './model';
 import type { AtlasPinMarkerModel } from './pinMarkers';
+import { buildPublicEntityPresentation } from './publicEntityPresentation';
 import type { PinEntityType, PinPlayerDispositionInput } from '../domain/pinVisualSystem';
 
 export interface CompactDetailCategory {
@@ -21,7 +17,7 @@ export interface CompactDetailTag {
 export interface CompactImportantCharacter {
   readonly id: EntityId;
   readonly name: string;
-  readonly relationStatus: CharacterLocationRelationStatus;
+  readonly relationStatus: 'present' | 'associated' | 'last-seen';
   readonly relationLabel: string;
 }
 
@@ -29,6 +25,7 @@ export interface CompactPinDetailModel {
   readonly id: string;
   readonly legacyPlaceId: PlaceId | null;
   readonly entityId: EntityId | null;
+  readonly entitySlug: string | null;
   readonly entityType: PinEntityType;
   readonly name: string;
   readonly category: CompactDetailCategory;
@@ -37,12 +34,6 @@ export interface CompactPinDetailModel {
   readonly importantCharacters: readonly CompactImportantCharacter[];
   readonly source: 'beta01' | 'beta02';
 }
-
-const RELATION_LABELS: Record<CharacterLocationRelationStatus, string> = {
-  present: 'Presente',
-  associated: 'Relacionado',
-  'last-seen': 'Visto por última vez',
-};
 
 function buildBeta02Details(
   catalog: PublicCatalogSnapshotV2,
@@ -57,34 +48,32 @@ function buildBeta02Details(
     return undefined;
   }
 
-  const category = catalog.categories.find(({ id }) => id === entity.categoryId);
-  const tags = entity.tagIds
-    .map((tagId) => catalog.tags.find(({ id }) => id === tagId))
-    .filter((tag): tag is NonNullable<typeof tag> => Boolean(tag))
-    .map(({ id, name }) => ({ id, name }));
-  const importantCharacters =
-    entity.entityType === 'location'
-      ? getImportantCharactersForLocation(catalog, entity.id).map(({ character, relation }) => ({
-          id: character.id,
-          name: character.name,
-          relationStatus: relation.relationStatus,
-          relationLabel: RELATION_LABELS[relation.relationStatus],
-        }))
-      : [];
+  const presentation = buildPublicEntityPresentation(catalog, entity);
+  if (!presentation) {
+    return undefined;
+  }
 
   return {
     id: marker.id,
     legacyPlaceId: marker.legacyPlaceId,
     entityId: entity.id,
+    entitySlug: entity.slug,
     entityType: entity.entityType,
     name: entity.name,
     category: {
-      id: entity.categoryId,
-      name: category?.name ?? marker.categoryName,
+      id: presentation.category.id,
+      name: presentation.category.name,
     },
-    tags,
-    dispositions: marker.dispositions,
-    importantCharacters,
+    tags: presentation.tags.map(({ id, name }) => ({ id, name })),
+    dispositions: presentation.dispositions,
+    importantCharacters: presentation.importantCharacters.map(
+      ({ id, name, relationStatus, relationLabel }) => ({
+        id,
+        name,
+        relationStatus,
+        relationLabel,
+      }),
+    ),
     source: 'beta02',
   };
 }
@@ -120,6 +109,7 @@ function buildLegacyDetails(
     id: marker.id,
     legacyPlaceId: place.id,
     entityId: null,
+    entitySlug: null,
     entityType: 'location',
     name: place.name,
     category: { id: category.id, name: category.name },

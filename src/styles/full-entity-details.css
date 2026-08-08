@@ -1,0 +1,230 @@
+.full-entity {
+  width: min(100% - 2rem, 74rem);
+  margin-inline: auto;
+  padding-block: clamp(1rem, 3vw, 2.5rem) 4rem;
+}
+
+.full-entity__navigation {
+  margin-bottom: 1rem;
+}
+
+.full-entity__navigation a,
+.full-entity__card a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  overflow-wrap: anywhere;
+}
+
+.full-entity__card {
+  border: 1px solid var(--border-color, currentColor);
+  border-radius: 1rem;
+  padding: clamp(1rem, 4vw, 2rem);
+  background: var(--surface-color, Canvas);
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 8%);
+}
+
+.full-entity__type {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  margin: 0 0 0.75rem;
+  font-weight: 700;
+}
+
+.full-entity__type-shape {
+  display: inline-grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  flex: none;
+  border: 2px solid currentColor;
+}
+
+.full-entity__type-shape--character {
+  border-radius: 50%;
+}
+
+.full-entity__type-shape--location {
+  transform: rotate(45deg);
+  border-radius: 0.18rem;
+}
+
+.full-entity__type-shape--location > * {
+  transform: rotate(-45deg);
+}
+
+.full-entity h1,
+.full-entity h2,
+.full-entity h3,
+.full-entity p,
+.full-entity li,
+.full-entity a,
+.full-entity time {
+  overflow-wrap: anywhere;
+}
+
+.full-entity h1 {
+  margin: 0;
+  font-size: clamp(2rem, 7vw, 4.25rem);
+  line-height: 1.05;
+}
+
+.full-entity__status,
+.full-entity__summary,
+.full-entity__description {
+  max-width: 68ch;
+}
+
+.full-entity__status {
+  margin-top: 1rem;
+}
+
+.full-entity__summary {
+  margin-top: 1.5rem;
+  font-size: clamp(1.05rem, 2.5vw, 1.3rem);
+  font-weight: 650;
+}
+
+.full-entity__description {
+  white-space: pre-wrap;
+}
+
+.full-entity__body {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.full-entity__section {
+  min-width: 0;
+  border-top: 1px solid var(--border-color, currentColor);
+  padding-top: 1.25rem;
+}
+
+.full-entity__section-title,
+.full-entity__note-title,
+.full-entity__history-title {
+  margin-top: 0;
+}
+
+.full-entity__aliases,
+.full-entity__tags,
+.full-entity__dispositions,
+.full-entity__relations,
+.full-entity__note-tags,
+.full-entity__history {
+  padding-left: 1.25rem;
+}
+
+.full-entity__tags,
+.full-entity__dispositions,
+.full-entity__relations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.75rem;
+  padding-left: 0;
+  list-style: none;
+}
+
+.full-entity__tags li,
+.full-entity__dispositions li,
+.full-entity__relations li,
+.full-entity__note,
+.full-entity__history li {
+  min-width: 0;
+  border: 1px solid var(--border-color, currentColor);
+  border-radius: 0.75rem;
+  padding: 0.85rem;
+}
+
+.full-entity__tags li,
+.full-entity__dispositions li,
+.full-entity__relations li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.full-entity__tags li,
+.full-entity__note {
+  align-items: flex-start;
+}
+
+.full-entity__note + .full-entity__note {
+  margin-top: 0.85rem;
+}
+
+.full-entity__note-body,
+.full-entity__history li p {
+  white-space: pre-wrap;
+}
+
+.full-entity__note-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-left: 0;
+  list-style: none;
+}
+
+.full-entity__relation-status,
+.full-entity__muted {
+  opacity: 0.8;
+}
+
+.full-entity__history {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.full-entity__history-title {
+  font-size: 1rem;
+}
+
+@media (max-width: 36rem) {
+  .full-entity {
+    width: min(100% - 1rem, 74rem);
+    padding-top: 0.75rem;
+  }
+
+  .full-entity__card {
+    border-radius: 0.7rem;
+    padding: 1rem;
+  }
+
+  .full-entity__tags,
+  .full-entity__dispositions,
+  .full-entity__relations {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (forced-colors: active) {
+  .full-entity__card,
+  .full-entity__section,
+  .full-entity__tags li,
+  .full-entity__dispositions li,
+  .full-entity__relations li,
+  .full-entity__note,
+  .full-entity__history li,
+  .full-entity__type-shape {
+    border-color: CanvasText;
+  }
+
+  .full-entity__card {
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .full-entity *,
+  .full-entity *::before,
+  .full-entity *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

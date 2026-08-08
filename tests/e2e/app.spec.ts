@@ -255,7 +255,9 @@ test('opens compact public details and closes back to its marker', async ({ page
   await expect(panel).not.toContainText('Información pública de demostración');
   await expect(panel).not.toContainText('Este puerto ficticio sirve para comprobar fichas');
   await expect(panel.getByRole('button', { name: 'Abrir ficha completa' })).toBeDisabled();
-  await expect(panel).toContainText('La ficha completa se incorporará en MAP-024');
+  await expect(panel).toContainText(
+    'Esta entidad no dispone de una ficha completa pública en Beta 0.2.',
+  );
   await expect(marker).toHaveAttribute('aria-pressed', 'true');
   await expect(marker).toHaveClass(/campaign-marker-icon--active/);
 
