@@ -44,10 +44,7 @@ export interface FullEntityDetailModel {
 function resolveHistoryLocation(
   catalog: PublicCatalogSnapshotV2,
   event: PublicCharacterLocationEvent,
-): Pick<
-  FullEntityLocationHistoryEntry,
-  'locationEntityId' | 'locationSlug' | 'locationName'
-> {
+): Pick<FullEntityLocationHistoryEntry, 'locationEntityId' | 'locationSlug' | 'locationName'> {
   const locationEntity = event.location.locationEntityId
     ? catalog.entities.find(({ id }) => id === event.location.locationEntityId)
     : undefined;
