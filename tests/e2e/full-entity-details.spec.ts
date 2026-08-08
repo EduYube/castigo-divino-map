@@ -332,7 +332,7 @@ test('keeps full details available from the Beta 0.2 snapshot when the remote pr
   );
   await expect(page.getByText('Puerto de ejemplo')).toBeVisible();
   await expect(page.getByText('Información pública de demostración')).toBeVisible();
-  await expect(page.getByText('Costero', { exact: true })).toBeVisible();
+  await expect(page.getByRole('strong').filter({ hasText: 'Costero' })).toBeVisible();
   await expect(page.getByText('Resumen público del puerto.')).toHaveCount(0);
   await expect(page.getByRole('heading', { level: 1, name: 'Entidad no disponible' })).toHaveCount(
     0,
