@@ -35,7 +35,7 @@ describe('Beta 0.1 compatibility projection', () => {
       categories: [
         ...catalog.categories,
         {
-          id: 'category-future',
+          id: 'category-future' as const,
           slug: 'future-category',
           name: 'Future category',
           description: 'Not part of the Beta 0.1 compatibility surface.',
