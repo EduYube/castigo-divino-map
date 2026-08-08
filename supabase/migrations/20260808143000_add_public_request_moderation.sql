@@ -19,12 +19,15 @@ alter table public.map_entities
   validate constraint map_entities_published_category_required;
 
 do $$
+declare
+  moderator_role pg_catalog.pg_roles%rowtype;
 begin
-  if not exists (
-    select 1
-    from pg_catalog.pg_roles
-    where rolname = 'atlas_public_request_moderator'
-  ) then
+  select *
+  into moderator_role
+  from pg_catalog.pg_roles
+  where rolname = 'atlas_public_request_moderator';
+
+  if not found then
     create role atlas_public_request_moderator
       nologin
       nosuperuser
@@ -33,18 +36,19 @@ begin
       noreplication
       nobypassrls
       inherit;
+  elsif moderator_role.rolcanlogin
+     or moderator_role.rolsuper
+     or moderator_role.rolcreatedb
+     or moderator_role.rolcreaterole
+     or moderator_role.rolreplication
+     or moderator_role.rolbypassrls
+     or not moderator_role.rolinherit then
+    raise exception using
+      errcode = '42501',
+      message = 'atlas_public_request_moderator role is not hardened as required';
   end if;
 end;
 $$;
-
-alter role atlas_public_request_moderator
-  nologin
-  nosuperuser
-  nocreatedb
-  nocreaterole
-  noreplication
-  nobypassrls
-  inherit;
 
 -- The dedicated RPC owner inherits the existing authenticated grants and RLS
 -- policy membership, while browser sessions do not inherit this dedicated role.
