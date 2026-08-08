@@ -299,21 +299,24 @@ select ok(
 );
 
 select ok(
-  pg_temp.statement_succeeds(
+  pg_temp.statement_fails(
     $$update public.public_requests
       set request_status = 'accepted'
       where id = '10000000-0000-4000-8000-000000000001'$$
   ),
-  'administrator can perform a valid request transition'
+  'administrator browser cannot bypass the moderation RPC with a direct request transition'
 );
 
 select ok(
-  pg_temp.statement_fails(
-    $$update public.public_requests
-      set request_status = 'pending'
-      where id = '10000000-0000-4000-8000-000000000001'$$
+  pg_temp.statement_succeeds(
+    $$select public.admin_moderate_public_request(
+      '10000000-0000-4000-8000-000000000001',
+      (select updated_at from public.public_requests where id = '10000000-0000-4000-8000-000000000001'),
+      'reject',
+      null
+    )$$
   ),
-  'closed request transitions cannot return to pending'
+  'administrator can moderate a request through the authoritative RPC'
 );
 
 select * from finish();
