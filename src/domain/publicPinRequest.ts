@@ -10,12 +10,7 @@ export const PUBLIC_PIN_REQUEST_LIMITS = {
 } as const;
 
 export type PublicPinRequestField =
-  | 'senderName'
-  | 'proposedName'
-  | 'entityType'
-  | 'position'
-  | 'description'
-  | 'reason';
+  'senderName' | 'proposedName' | 'entityType' | 'position' | 'description' | 'reason';
 
 export interface PublicPinRequestDraft {
   readonly senderName: string;
@@ -92,9 +87,7 @@ function validateText(
   return { normalized };
 }
 
-export function isPublicPinRequestEntityType(
-  value: string,
-): value is PublicPinRequestEntityType {
+export function isPublicPinRequestEntityType(value: string): value is PublicPinRequestEntityType {
   return PUBLIC_PIN_REQUEST_ENTITY_TYPES.some((entityType) => entityType === value);
 }
 
