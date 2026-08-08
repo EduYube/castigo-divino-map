@@ -339,6 +339,10 @@ test('keeps search, map and compact details useful in a mobile viewport', async 
   await page.setViewportSize({ width: 390, height: 844 });
   await openReadyMap(page);
 
+  const searchToggle = page.locator('[data-place-search-toggle]');
+  await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
+  await searchToggle.click();
+
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
 
   await searchbox.fill('demostracion');
