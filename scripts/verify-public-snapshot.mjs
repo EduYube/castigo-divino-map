@@ -11,7 +11,12 @@ import {
 } from './public-snapshot-lib.mjs';
 
 const verifyRemote = process.argv.includes('--remote');
+const verifyMigrationFixture = process.argv.includes('--migration-fixture');
 const snapshot = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'));
+
+if (verifyRemote && verifyMigrationFixture) {
+  throw new Error('Choose either --remote or --migration-fixture, not both.');
+}
 
 if (snapshot.schemaVersion !== 2) {
   throw new Error('The committed public snapshot must use schemaVersion 2.');
@@ -26,20 +31,95 @@ if (snapshot.checksum !== committedChecksum || snapshot.sourceRevision !== commi
   throw new Error('The committed public snapshot checksum/sourceRevision is invalid.');
 }
 
-const raw = verifyRemote ? await loadRemotePublicRows() : await loadFixtureRows(FIXTURE_PATH);
-const expectedContent = buildPublicSnapshotContent(raw);
-const expectedChecksum = checksum(expectedContent);
+if (verifyRemote || verifyMigrationFixture) {
+  const raw = verifyRemote
+    ? await loadRemotePublicRows()
+    : await loadFixtureRows(FIXTURE_PATH);
+  const expectedContent = buildPublicSnapshotContent(raw);
+  const expectedChecksum = checksum(expectedContent);
+  const sourceLabel = verifyRemote ? 'Supabase published data' : 'the MAP-028 migration fixture';
 
-if (expectedChecksum !== committedChecksum) {
-  throw new Error(
-    `Public snapshot drift: committed ${committedChecksum}, ${verifyRemote ? 'Supabase' : 'fixture'} ${expectedChecksum}.`,
-  );
+  if (expectedChecksum !== committedChecksum) {
+    throw new Error(
+      `Public snapshot drift: committed ${committedChecksum}, ${sourceLabel} ${expectedChecksum}.`,
+    );
+  }
+
+  if (JSON.stringify(committedContent) !== JSON.stringify(expectedContent)) {
+    throw new Error(`Public snapshot order/content differs from ${sourceLabel}.`);
+  }
 }
 
-if (JSON.stringify(committedContent) !== JSON.stringify(expectedContent)) {
-  throw new Error(
-    `Public snapshot order/content differs from the ${verifyRemote ? 'Supabase' : 'fixture'} projection.`,
-  );
+const migrationFixture = await loadFixtureRows(FIXTURE_PATH);
+const expectedFixtureContent = buildPublicSnapshotContent(migrationFixture);
+const contaminatedFixture = structuredClone(migrationFixture);
+contaminatedFixture.categories.push({
+  id: 'category-draft-synthetic',
+  slug: 'draft-synthetic',
+  name: 'Draft synthetic',
+  description: 'Must never reach the public snapshot.',
+  publication_status: 'draft',
+});
+contaminatedFixture.tags.push({
+  id: 'tag-archived-synthetic',
+  name: 'Archived synthetic',
+  description: 'Must never reach the public snapshot.',
+  publication_status: 'archived',
+});
+contaminatedFixture.entities.push({
+  id: 'entity-draft-synthetic',
+  slug: 'draft-synthetic',
+  entity_type: 'location',
+  visibility: 'pin',
+  name: 'Draft synthetic',
+  name_language: 'en',
+  summary: 'Protected draft content',
+  description: 'Protected draft content',
+  x: 1,
+  y: 1,
+  category_id: 'category-settlement',
+  publication_status: 'draft',
+});
+contaminatedFixture.entityAliases.push({
+  id: 'alias-draft-synthetic',
+  entity_id: 'place-demo-harbor',
+  language: 'en',
+  value: 'Protected alias',
+  publication_status: 'draft',
+});
+contaminatedFixture.entityTags.push({
+  id: 'entity-tag-draft-synthetic',
+  entity_id: 'place-demo-harbor',
+  tag_id: 'coastal',
+  publication_status: 'draft',
+});
+contaminatedFixture.notes.push({
+  id: 'note-draft-synthetic',
+  slug: 'draft-synthetic',
+  entity_id: 'place-demo-harbor',
+  title: 'Protected draft note',
+  body: 'Must never reach the public snapshot.',
+  sort_order: 99,
+  publication_status: 'draft',
+});
+contaminatedFixture.noteTags.push({
+  id: 'note-tag-draft-synthetic',
+  note_id: 'note-demo-harbor-overview',
+  tag_id: 'coastal',
+  publication_status: 'draft',
+});
+contaminatedFixture.publicRequests = [
+  {
+    sender_name: 'Private sender',
+    reason: 'Administrative input must be ignored.',
+    moderation_note: 'Protected moderation data',
+    request_status: 'pending',
+  },
+];
+
+const contaminatedContent = buildPublicSnapshotContent(contaminatedFixture);
+if (JSON.stringify(contaminatedContent) !== JSON.stringify(expectedFixtureContent)) {
+  throw new Error('Draft, archived or administrative fixture data changed the public projection.');
 }
 
 const serialized = JSON.stringify(snapshot);
@@ -50,12 +130,16 @@ for (const forbidden of [
   '"sender_name"',
   '"reason"',
   '"public_requests"',
+  '"publicRequests"',
 ]) {
   if (serialized.includes(forbidden)) {
     throw new Error(`Public snapshot leaked a non-public field or domain marker: ${forbidden}.`);
   }
 }
 
-console.log(
-  `Verified Beta 0.2 public snapshot against ${verifyRemote ? 'Supabase published data' : 'the MAP-028 CI fixture'}: ${committedChecksum}.`,
-);
+const verificationTarget = verifyRemote
+  ? 'Supabase published data'
+  : verifyMigrationFixture
+    ? 'the MAP-028 migration fixture'
+    : 'its canonical public content and publication filters';
+console.log(`Verified Beta 0.2 public snapshot against ${verificationTarget}: ${committedChecksum}.`);
