@@ -89,15 +89,29 @@ jobs:
         continue-on-error: true
         run: npx playwright test tests/e2e/public-pin-request.spec.ts --grep "keeps the request flow accessible"
 
-      - name: Require all end-to-end diagnostics
-        if: always()
-        run: |
-          test "${{ steps.e2e_existing.outcome }}" = "success"
-          test "${{ steps.e2e_map026_submit.outcome }}" = "success"
-          test "${{ steps.e2e_map026_validation.outcome }}" = "success"
-          test "${{ steps.e2e_map026_network.outcome }}" = "success"
-          test "${{ steps.e2e_map026_cooldown.outcome }}" = "success"
-          test "${{ steps.e2e_map026_mobile.outcome }}" = "success"
+      - name: MAP-026 valid submission failed
+        if: ${{ always() && steps.e2e_map026_submit.outcome != 'success' }}
+        run: exit 1
+
+      - name: MAP-026 validation failed
+        if: ${{ always() && steps.e2e_map026_validation.outcome != 'success' }}
+        run: exit 1
+
+      - name: MAP-026 network preservation failed
+        if: ${{ always() && steps.e2e_map026_network.outcome != 'success' }}
+        run: exit 1
+
+      - name: MAP-026 abuse cooldown failed
+        if: ${{ always() && steps.e2e_map026_cooldown.outcome != 'success' }}
+        run: exit 1
+
+      - name: MAP-026 mobile accessibility failed
+        if: ${{ always() && steps.e2e_map026_mobile.outcome != 'success' }}
+        run: exit 1
+
+      - name: Existing end-to-end regression failed
+        if: ${{ always() && steps.e2e_existing.outcome != 'success' }}
+        run: exit 1
 
       - name: Smoke test the Pages build locally
         run: npm run test:e2e:pages
