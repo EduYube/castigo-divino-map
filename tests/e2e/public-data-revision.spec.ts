@@ -12,9 +12,26 @@ const TEST_MAP = `
   </svg>
 `;
 
-type PublicRows = Record<string, Record<string, unknown>[]>;
+type PublicRow = Record<string, unknown>;
 
-function projectRows(value: unknown, fields: readonly string[]): Record<string, unknown>[] {
+interface PublicRows {
+  [table: string]: PublicRow[];
+  categories: PublicRow[];
+  tags: PublicRow[];
+  players: PublicRow[];
+  map_entities: PublicRow[];
+  entity_aliases: PublicRow[];
+  entity_tags: PublicRow[];
+  entity_player_dispositions: PublicRow[];
+  character_location_relations: PublicRow[];
+  public_notes: PublicRow[];
+  public_note_tags: PublicRow[];
+  geographic_names: PublicRow[];
+  geographic_name_aliases: PublicRow[];
+  character_location_events: PublicRow[];
+}
+
+function projectRows(value: unknown, fields: readonly string[]): PublicRow[] {
   if (!Array.isArray(value)) {
     throw new Error('Expected fixture rows.');
   }
@@ -24,7 +41,7 @@ function projectRows(value: unknown, fields: readonly string[]): Record<string, 
       throw new Error('Expected fixture row object.');
     }
 
-    const row = entry as Record<string, unknown>;
+    const row = entry as PublicRow;
     return Object.fromEntries(fields.map((field) => [field, row[field]]));
   });
 }
