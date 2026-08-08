@@ -1,4 +1,5 @@
 import type {
+  CharacterLocationRelationStatus,
   PublicCatalogSnapshotV2,
   PublicCharacterLocationRelation,
   PublicMapEntity,
@@ -19,6 +20,18 @@ const STATUS_ORDER = new Map([
   ['associated', 1],
   ['last-seen', 2],
 ] as const);
+
+const RELATION_LABELS: Record<CharacterLocationRelationStatus, string> = {
+  present: 'Presente',
+  associated: 'Relacionado',
+  'last-seen': 'Visto por última vez',
+};
+
+export function getCharacterLocationRelationLabel(
+  status: CharacterLocationRelationStatus,
+): string {
+  return RELATION_LABELS[status];
+}
 
 export function getImportantCharactersForLocation(
   catalog: PublicCatalogSnapshotV2,
