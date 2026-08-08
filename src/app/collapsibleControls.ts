@@ -27,7 +27,10 @@ export function getInitialCollapsibleControlState(
   };
 }
 
-function getRequiredElement<T extends HTMLElement>(root: ParentNode, selector: string): T {
+function getRequiredElement<T extends HTMLElement>(
+  root: ParentNode,
+  selector: string,
+): T {
   const element = root.querySelector<T>(selector);
 
   if (!element) {
@@ -46,7 +49,9 @@ function mountCollapsibleSection(
   const region = getRequiredElement<HTMLElement>(section, options.regionSelector);
 
   if (toggle.getAttribute('aria-controls') !== region.id) {
-    throw new Error(`Collapsible control ${options.toggleSelector} must reference ${region.id}.`);
+    throw new Error(
+      `Collapsible control ${options.toggleSelector} must reference ${region.id}.`,
+    );
   }
 
   let expanded = options.initiallyExpanded;
@@ -75,7 +80,9 @@ function mountCollapsibleSection(
 
 export function mountCollapsibleMapControls(
   root: ParentNode = document,
-  mediaQueryList: Pick<MediaQueryList, 'matches'> = window.matchMedia(MOBILE_CONTROLS_MEDIA_QUERY),
+  mediaQueryList: Pick<MediaQueryList, 'matches'> = window.matchMedia(
+    MOBILE_CONTROLS_MEDIA_QUERY,
+  ),
 ): CollapsibleMapControlsController {
   const initialState = getInitialCollapsibleControlState(mediaQueryList.matches);
   const destroySearch = mountCollapsibleSection(root, {
