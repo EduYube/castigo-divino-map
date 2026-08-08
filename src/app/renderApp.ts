@@ -41,12 +41,7 @@ export function renderApp(): string {
           </p>
         </div>
 
-        <section
-          class="place-search"
-          data-place-search
-          role="search"
-          aria-labelledby="place-search-title"
-        >
+        <section class="place-search" data-place-search role="search" aria-label="Buscar lugares">
           <div class="collapsible-control__header">
             <div class="collapsible-control__heading-copy">
               <h3 id="place-search-title" class="collapsible-control__title">Búsqueda</h3>
