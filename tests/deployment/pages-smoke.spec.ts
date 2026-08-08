@@ -96,11 +96,24 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
     '?place=paso-de-demostracion&q=paso&category=lugares-destacados&tag=mountain-pass',
   );
 
+  const searchToggle = page.locator('[data-place-search-toggle]');
+  const filtersToggle = page.locator('[data-place-filters-toggle]');
+  const searchbox = page.getByRole('searchbox', {
+    name: 'Buscar lugares',
+    includeHidden: true,
+  });
+
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'error');
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
-  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
-  await expect(page.getByRole('checkbox', { name: /Lugar destacado/ })).toBeChecked();
-  await expect(page.getByRole('checkbox', { name: /Paso de montaña/ })).toBeChecked();
+  await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(filtersToggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(searchbox).toHaveValue('paso');
+  await expect(
+    page.getByRole('checkbox', { name: /Lugar destacado/, includeHidden: true }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole('checkbox', { name: /Paso de montaña/, includeHidden: true }),
+  ).toBeChecked();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-place-id',
     'place-demo-pass',
@@ -110,7 +123,8 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 
-  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await searchToggle.click();
+  await expect(searchToggle).toHaveAttribute('aria-expanded', 'true');
   await searchbox.focus();
   await expect(searchbox).toBeFocused();
   await searchbox.press('Tab');
