@@ -343,7 +343,9 @@ test('anonymous visitors never receive the moderation inbox', async ({ page }) =
   await expect(page.getByRole('button', { name: 'Convertir en borrador' })).toBeHidden();
 });
 
-test('the admin inbox filters and sorts request details without exposing a needs-changes action', async ({ page }) => {
+test('the admin inbox filters and sorts request details without exposing a needs-changes action', async ({
+  page,
+}) => {
   await configureBackend(page);
   await page.goto('/');
   await loginAndConnect(page);
