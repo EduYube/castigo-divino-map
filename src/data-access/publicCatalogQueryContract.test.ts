@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
+import { loadRemotePublicRows } from '../../scripts/public-snapshot-lib.mjs';
 import {
   fetchCompletePublicCatalogTable,
   type PublicCatalogTableQuery,
@@ -156,5 +157,28 @@ describe('shared public catalog pagination contract', () => {
     controller.abort();
 
     await expect(promise).rejects.toMatchObject({ kind: 'request-aborted' });
+  });
+
+  test('times out the deploy reader instead of relying on the job timeout', async () => {
+    const pendingFetch: typeof fetch = async (_input, init) =>
+      await new Promise<Response>((_resolve, reject) => {
+        const signal = init?.signal;
+        const handleAbort = (): void => reject(new DOMException('Aborted', 'AbortError'));
+
+        if (signal?.aborted) {
+          handleAbort();
+        } else {
+          signal?.addEventListener('abort', handleAbort, { once: true });
+        }
+      });
+
+    await expect(
+      loadRemotePublicRows({
+        projectUrl: PROJECT_URL,
+        publishableKey: PUBLISHABLE_KEY,
+        fetchImplementation: pendingFetch,
+        timeoutMs: 20,
+      }),
+    ).rejects.toThrow('Remote public catalog read timed out after 20 ms.');
   });
 });
