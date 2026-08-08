@@ -316,28 +316,28 @@ test('uses one generic unavailable state for invalid, missing and non-public ide
   }
 });
 
-test('keeps full details available from the Beta 0.2 snapshot when the remote projection is unavailable', async ({
-  context,
-  page,
-}) => {
-  await configureRuntime(context, { available: false });
-  await page.goto('/?entity=puerto-de-demostracion');
+test(
+  'keeps full details available from the Beta 0.2 snapshot when the remote projection is unavailable',
+  async ({ context, page }) => {
+    await configureRuntime(context, { available: false });
+    await page.goto('/?entity=puerto-de-demostracion');
 
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Puerto de demostración' }),
-  ).toBeVisible();
-  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
-    'data-backend-state',
-    /degraded|offline/,
-  );
-  await expect(page.getByText('Puerto de ejemplo')).toBeVisible();
-  await expect(page.getByText('Información pública de demostración')).toBeVisible();
-  await expect(page.getByText('Costero', { exact: true })).toBeVisible();
-  await expect(page.getByText('Resumen público del puerto.')).toHaveCount(0);
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Entidad no disponible' }),
-  ).toHaveCount(0);
-});
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Puerto de demostración' }),
+    ).toBeVisible();
+    await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+      'data-backend-state',
+      /degraded|offline/,
+    );
+    await expect(page.getByText('Puerto de ejemplo')).toBeVisible();
+    await expect(page.getByText('Información pública de demostración')).toBeVisible();
+    await expect(page.getByText('Costero', { exact: true })).toBeVisible();
+    await expect(page.getByText('Resumen público del puerto.')).toHaveCount(0);
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Entidad no disponible' }),
+    ).toHaveCount(0);
+  },
+);
 
 test('keeps the independent page usable at 320 px with keyboard and forced colors', async ({
   context,
