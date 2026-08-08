@@ -52,6 +52,7 @@ export interface PublicMapEntity {
   readonly coordinates: PublicCoordinate;
   readonly categoryId: CategoryId;
   readonly tagIds: readonly TagId[];
+  readonly updatedAt: string | null;
 }
 
 export interface PublicEntityAlias {
