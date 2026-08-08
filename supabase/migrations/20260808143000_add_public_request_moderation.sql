@@ -1,7 +1,9 @@
 -- MAP-027: administrative moderation and atomic conversion of public requests.
 --
--- The browser remains an untrusted SECURITY INVOKER client. RLS, explicit grants,
--- constraints and triggers continue to authorize and validate every table write.
+-- The browser remains an untrusted client. Direct moderation-column writes are
+-- revoked from authenticated. The RPC runs as a dedicated NOLOGIN role that has
+-- only the extra column privilege required by this operation and does not bypass
+-- RLS, so the existing administrative policies remain authoritative.
 -- A converted request creates an intentionally incomplete draft: category and tags
 -- remain editorial decisions and are never inferred from public input.
 
@@ -16,6 +18,47 @@ alter table public.map_entities
 alter table public.map_entities
   validate constraint map_entities_published_category_required;
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_catalog.pg_roles
+    where rolname = 'atlas_public_request_moderator'
+  ) then
+    create role atlas_public_request_moderator
+      nologin
+      nosuperuser
+      nocreatedb
+      nocreaterole
+      noreplication
+      nobypassrls
+      inherit;
+  end if;
+end;
+$$;
+
+alter role atlas_public_request_moderator
+  nologin
+  nosuperuser
+  nocreatedb
+  nocreaterole
+  noreplication
+  nobypassrls
+  inherit;
+
+-- The dedicated RPC owner inherits the existing authenticated grants and RLS
+-- policy membership, while browser sessions do not inherit this dedicated role.
+grant authenticated to atlas_public_request_moderator;
+
+-- Moderation state and audit notes must only change through the atomic RPC.
+revoke update (request_status, moderation_note, converted_entity_id)
+  on public.public_requests
+  from authenticated;
+
+grant update (request_status, moderation_note, converted_entity_id)
+  on public.public_requests
+  to atlas_public_request_moderator;
+
 create or replace function public.admin_moderate_public_request(
   p_request_id uuid,
   p_expected_updated_at timestamptz,
@@ -24,7 +67,7 @@ create or replace function public.admin_moderate_public_request(
 )
 returns jsonb
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -126,10 +169,20 @@ begin
 end;
 $$;
 
+-- PostgreSQL grants EXECUTE to PUBLIC on new functions by default. Close that
+-- surface before transferring ownership to the dedicated least-privilege role.
 revoke all on function public.admin_moderate_public_request(uuid, timestamptz, text, text)
-  from public, anon;
+  from public, anon, authenticated;
 grant execute on function public.admin_moderate_public_request(uuid, timestamptz, text, text)
   to authenticated;
 
 comment on function public.admin_moderate_public_request(uuid, timestamptz, text, text) is
-  'Atomically rejects a pending public request or converts it into an uncategorized draft pin under RLS, with optimistic concurrency and database-owned audit fields.';
+  'Atomically rejects a pending public request or converts it into an uncategorized draft pin. Direct browser updates are revoked; the dedicated NOLOGIN owner remains subject to the existing administrative RLS policies.';
+
+-- PostgreSQL requires the new owner to have CREATE on the containing schema at
+-- ownership-transfer time. Grant it only inside this migration transaction and
+-- revoke it again before commit.
+grant create on schema public to atlas_public_request_moderator;
+alter function public.admin_moderate_public_request(uuid, timestamptz, text, text)
+  owner to atlas_public_request_moderator;
+revoke create on schema public from atlas_public_request_moderator;
