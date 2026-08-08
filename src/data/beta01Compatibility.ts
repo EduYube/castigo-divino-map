@@ -60,7 +60,14 @@ export function toBeta01CompatibilityCatalog(catalog: PublicCatalogSnapshotV2): 
         left.sortOrder - right.sortOrder ||
         left.id.localeCompare(right.id),
     )
-    .map(({ sortOrder: _sortOrder, ...note }) => note);
+    .map((note) => ({
+      id: note.id,
+      slug: note.slug,
+      placeId: note.placeId,
+      title: note.title,
+      body: note.body,
+      tagIds: note.tagIds,
+    }));
 
   const categories = sortCompatibilityCategories(
     catalog.categories.map((category) => ({ ...category })),
