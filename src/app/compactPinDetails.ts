@@ -1,0 +1,269 @@
+import type { CompactPinDetailModel } from '../data/compactPinDetails';
+import { createPlayerDispositionVisuals, getPinTypeVisual } from '../domain/pinVisualSystem';
+
+export interface CompactPinDetailsController {
+  show(details: CompactPinDetailModel, options?: CompactPinDetailsShowOptions): void;
+  hide(): void;
+  destroy(): void;
+}
+
+export interface CompactPinDetailsShowOptions {
+  readonly focus?: boolean;
+}
+
+export interface CompactPinDetailsOptions {
+  readonly onClose: () => void;
+}
+
+interface CompactPinDetailsElements {
+  readonly workspace: HTMLElement;
+  readonly panel: HTMLElement;
+  readonly content: HTMLElement;
+  readonly closeButton: HTMLButtonElement;
+}
+
+function getRequiredElement<T extends HTMLElement>(root: ParentNode, selector: string): T {
+  const element = root.querySelector<T>(selector);
+
+  if (!element) {
+    throw new Error(`Missing required compact pin details element: ${selector}`);
+  }
+
+  return element;
+}
+
+function resolveElements(root: ParentNode): CompactPinDetailsElements {
+  return {
+    workspace: getRequiredElement(root, '[data-map-workspace]'),
+    panel: getRequiredElement(root, '[data-place-details]'),
+    content: getRequiredElement(root, '[data-place-details-content]'),
+    closeButton: getRequiredElement<HTMLButtonElement>(root, '[data-place-details-close]'),
+  };
+}
+
+function appendTextElement<K extends keyof HTMLElementTagNameMap>(
+  parent: HTMLElement,
+  tagName: K,
+  className: string,
+  text: string,
+): HTMLElementTagNameMap[K] {
+  const element = document.createElement(tagName);
+  element.className = className;
+  element.textContent = text;
+  parent.append(element);
+  return element;
+}
+
+function appendType(parent: HTMLElement, details: CompactPinDetailModel): void {
+  const type = getPinTypeVisual(details.entityType);
+  const row = document.createElement('p');
+  const shape = document.createElement('span');
+  const label = document.createElement('span');
+
+  row.className = 'compact-details__type';
+  shape.className = `compact-details__type-shape compact-details__type-shape--${details.entityType}`;
+  shape.setAttribute('aria-hidden', 'true');
+  shape.textContent = type.symbol;
+  label.textContent = type.label;
+  row.append(shape, label);
+  parent.append(row);
+}
+
+function appendCategory(parent: HTMLElement, details: CompactPinDetailModel): void {
+  const row = document.createElement('p');
+  const label = document.createElement('span');
+  const value = document.createElement('span');
+
+  row.className = 'compact-details__category';
+  label.className = 'compact-details__meta-label';
+  label.textContent = 'Categoría';
+  value.className = 'compact-details__category-value';
+  value.textContent = details.category.name;
+  row.append(label, value);
+  parent.append(row);
+}
+
+function appendDispositions(parent: HTMLElement, details: CompactPinDetailModel): void {
+  const section = document.createElement('section');
+  const heading = appendTextElement(
+    section,
+    'h4',
+    'compact-details__section-title',
+    'Disposición por jugador',
+  );
+  const list = document.createElement('ul');
+
+  heading.id = 'compact-details-dispositions-title';
+  section.setAttribute('aria-labelledby', heading.id);
+  list.className = 'compact-details__dispositions';
+
+  for (const disposition of createPlayerDispositionVisuals(details.dispositions)) {
+    const item = document.createElement('li');
+    const symbol = document.createElement('span');
+    const player = document.createElement('span');
+    const state = document.createElement('span');
+
+    item.className = 'compact-details__disposition';
+    symbol.className = `pin-disposition ${disposition.className}`;
+    symbol.setAttribute('aria-hidden', 'true');
+    symbol.textContent = disposition.symbol;
+    player.className = 'compact-details__disposition-player';
+    player.textContent = disposition.playerName;
+    state.className = 'compact-details__disposition-state';
+    state.textContent = disposition.label;
+    item.append(symbol, player, state);
+    list.append(item);
+  }
+
+  section.append(list);
+  parent.append(section);
+}
+
+function appendTags(parent: HTMLElement, details: CompactPinDetailModel): void {
+  const section = document.createElement('section');
+  const heading = appendTextElement(section, 'h4', 'compact-details__section-title', 'Etiquetas');
+
+  heading.id = 'compact-details-tags-title';
+  section.setAttribute('aria-labelledby', heading.id);
+
+  if (details.tags.length === 0) {
+    appendTextElement(section, 'p', 'compact-details__empty', 'Sin etiquetas públicas.');
+    parent.append(section);
+    return;
+  }
+
+  const list = document.createElement('ul');
+  list.className = 'compact-details__tags';
+  details.tags.forEach((tag) => appendTextElement(list, 'li', 'compact-details__tag', tag.name));
+  section.append(list);
+  parent.append(section);
+}
+
+function appendImportantCharacters(parent: HTMLElement, details: CompactPinDetailModel): void {
+  if (details.entityType !== 'location' || details.importantCharacters.length === 0) {
+    return;
+  }
+
+  const section = document.createElement('section');
+  const heading = appendTextElement(
+    section,
+    'h4',
+    'compact-details__section-title',
+    'Personajes importantes aquí',
+  );
+  const list = document.createElement('ul');
+
+  heading.id = 'compact-details-important-characters-title';
+  section.setAttribute('aria-labelledby', heading.id);
+  list.className = 'compact-details__important-characters';
+
+  details.importantCharacters.forEach((character) => {
+    const item = document.createElement('li');
+    const name = appendTextElement(item, 'span', 'compact-details__character-name', character.name);
+    const status = appendTextElement(
+      item,
+      'span',
+      'compact-details__relation-status',
+      character.relationLabel,
+    );
+
+    name.dataset.entityId = character.id;
+    status.dataset.relationStatus = character.relationStatus;
+    list.append(item);
+  });
+
+  section.append(list);
+  parent.append(section);
+}
+
+function appendFullDetailsBoundary(parent: HTMLElement): void {
+  const section = document.createElement('section');
+  const button = document.createElement('button');
+  const note = appendTextElement(
+    section,
+    'p',
+    'compact-details__future-note',
+    'La ficha completa se incorporará en MAP-024; esta beta no inventa todavía una URL de detalle.',
+  );
+
+  note.id = 'compact-details-full-note';
+  button.type = 'button';
+  button.className = 'compact-details__full-action';
+  button.textContent = 'Abrir ficha completa';
+  button.disabled = true;
+  button.setAttribute('aria-describedby', note.id);
+  section.className = 'compact-details__full-boundary';
+  section.prepend(button);
+  parent.append(section);
+}
+
+function renderDetails(content: HTMLElement, details: CompactPinDetailModel): HTMLElement {
+  content.replaceChildren();
+  appendType(content, details);
+
+  const title = appendTextElement(
+    content,
+    'h3',
+    'place-details__title compact-details__title',
+    details.name,
+  );
+  title.id = 'place-details-title';
+  title.tabIndex = -1;
+
+  appendCategory(content, details);
+  appendDispositions(content, details);
+  appendTags(content, details);
+  appendImportantCharacters(content, details);
+  appendFullDetailsBoundary(content);
+  return title;
+}
+
+export function mountCompactPinDetails(
+  root: ParentNode = document,
+  options: CompactPinDetailsOptions,
+): CompactPinDetailsController {
+  const elements = resolveElements(root);
+  const handleClose = (): void => options.onClose();
+
+  elements.closeButton.addEventListener('click', handleClose);
+
+  return {
+    show(details, showOptions = {}): void {
+      const existingTitle = elements.content.querySelector<HTMLElement>('#place-details-title');
+      const canReuseContent =
+        !elements.panel.hidden &&
+        elements.panel.dataset.activePinId === details.id &&
+        existingTitle !== null;
+      const title = canReuseContent ? existingTitle : renderDetails(elements.content, details);
+
+      elements.panel.hidden = false;
+      elements.panel.dataset.activePinId = details.id;
+      elements.panel.dataset.entityType = details.entityType;
+      elements.panel.dataset.detailSource = details.source;
+      if (details.legacyPlaceId) elements.panel.dataset.activePlaceId = details.legacyPlaceId;
+      else delete elements.panel.dataset.activePlaceId;
+      if (details.entityId) elements.panel.dataset.entityId = details.entityId;
+      else delete elements.panel.dataset.entityId;
+      elements.workspace.dataset.detailsOpen = 'true';
+      elements.closeButton.setAttribute('aria-label', `Cerrar la ficha de ${details.name}`);
+
+      if (showOptions.focus !== false) {
+        title.focus({ preventScroll: false });
+      }
+    },
+    hide(): void {
+      elements.panel.hidden = true;
+      delete elements.panel.dataset.activePinId;
+      delete elements.panel.dataset.activePlaceId;
+      delete elements.panel.dataset.entityId;
+      delete elements.panel.dataset.entityType;
+      delete elements.panel.dataset.detailSource;
+      delete elements.workspace.dataset.detailsOpen;
+      elements.closeButton.setAttribute('aria-label', 'Cerrar la ficha compacta');
+      elements.content.replaceChildren();
+    },
+    destroy(): void {
+      elements.closeButton.removeEventListener('click', handleClose);
+    },
+  };
+}

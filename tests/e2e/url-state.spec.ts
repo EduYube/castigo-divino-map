@@ -133,7 +133,7 @@ test('restores all dimensions with back and forward without creating entries', a
   await searchbox.fill('paso');
   await landmark.check();
   await marker(page, 'place-demo-pass').click();
-  await panel.getByRole('button', { name: 'Cerrar la ficha del lugar' }).click();
+  await panel.getByRole('button', { name: 'Cerrar la ficha de Paso de demostración' }).click();
 
   const historyLength = await page.evaluate(() => window.history.length);
 

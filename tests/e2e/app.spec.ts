@@ -137,17 +137,18 @@ test('selects an alias result, locates the map and opens the existing active pla
   await expect(
     panel.getByRole('heading', { level: 3, name: 'Puerto de demostración' }),
   ).toBeFocused();
+  await expect(panel).not.toContainText('Puerto de ejemplo');
   await expect(marker).toHaveAttribute('aria-pressed', 'true');
   await expect(marker).toHaveClass(/campaign-marker-icon--active/);
   await expect.poll(async () => shell.getAttribute('data-map-center')).not.toBe(initialCenter);
 
-  await panel.getByRole('button', { name: 'Cerrar la ficha del lugar' }).click();
+  await panel.getByRole('button', { name: 'Cerrar la ficha de Puerto de demostración' }).click();
 
   await expect(panel).toBeHidden();
   await expect(marker).toBeFocused();
 });
 
-test('selects a note title result and opens the associated place', async ({ page }) => {
+test('selects a note-title result without rendering note content', async ({ page }) => {
   await openReadyMap(page);
 
   await page.getByRole('searchbox', { name: 'Buscar lugares' }).fill('referencia publica de viaje');
@@ -162,7 +163,9 @@ test('selects a note title result and opens the associated place', async ({ page
 
   await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-pass');
   await expect(panel).toContainText('Paso de demostración');
-  await expect(panel).toContainText('Referencia pública de viaje');
+  await expect(panel).toContainText('Lugar destacado');
+  await expect(panel).not.toContainText('Referencia pública de viaje');
+  await expect(panel).not.toContainText('Este paso ficticio');
 });
 
 test('shows an accessible empty state and clears the query predictably', async ({ page }) => {
@@ -209,7 +212,9 @@ test('operates search results with the keyboard and preserves close focus behavi
 
   const panel = page.getByTestId('place-details');
   const title = panel.getByRole('heading', { level: 3, name: 'Paso de demostración' });
-  const closeButton = panel.getByRole('button', { name: 'Cerrar la ficha del lugar' });
+  const closeButton = panel.getByRole('button', {
+    name: 'Cerrar la ficha de Paso de demostración',
+  });
   const marker = page.getByRole('button', {
     name: 'Paso de demostración. Categoría: Lugar destacado.',
   });
@@ -222,7 +227,7 @@ test('operates search results with the keyboard and preserves close focus behavi
   await expect(marker).toBeFocused();
 });
 
-test('opens the correct public place details and closes back to its marker', async ({ page }) => {
+test('opens compact public details and closes back to its marker', async ({ page }) => {
   await openReadyMap(page);
 
   const marker = page.getByRole('button', {
@@ -235,22 +240,26 @@ test('opens the correct public place details and closes back to its marker', asy
 
   await expect(panel).toBeVisible();
   await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
+  await expect(panel).toHaveAttribute('data-detail-source', 'beta01');
   await expect(
     page.getByRole('heading', { level: 3, name: 'Puerto de demostración' }),
   ).toBeFocused();
-  await expect(panel.getByText('Puerto de ejemplo', { exact: true })).toBeVisible();
+  await expect(panel.getByText('Emplazamiento', { exact: true })).toBeVisible();
   await expect(panel.getByText('Asentamiento', { exact: true })).toBeVisible();
   await expect(panel.getByText('Costero', { exact: true })).toBeVisible();
   await expect(panel.getByText('Dato de demostración', { exact: true })).toBeVisible();
   await expect(panel.getByText('Ruta comercial', { exact: true })).toBeVisible();
-  await expect(
-    panel.getByRole('heading', { level: 5, name: 'Información pública de demostración' }),
-  ).toBeVisible();
-  await expect(panel).toContainText('Este puerto ficticio sirve para comprobar fichas');
+  await expect(panel).toContainText('Perspectiva no disponible');
+  await expect(panel).toContainText('Sin disposición disponible');
+  await expect(panel).not.toContainText('Puerto de ejemplo');
+  await expect(panel).not.toContainText('Información pública de demostración');
+  await expect(panel).not.toContainText('Este puerto ficticio sirve para comprobar fichas');
+  await expect(panel.getByRole('button', { name: 'Abrir ficha completa' })).toBeDisabled();
+  await expect(panel).toContainText('La ficha completa se incorporará en MAP-024');
   await expect(marker).toHaveAttribute('aria-pressed', 'true');
   await expect(marker).toHaveClass(/campaign-marker-icon--active/);
 
-  await panel.getByRole('button', { name: 'Cerrar la ficha del lugar' }).click();
+  await panel.getByRole('button', { name: 'Cerrar la ficha de Puerto de demostración' }).click();
 
   await expect(panel).toBeHidden();
   await expect(marker).toHaveAttribute('aria-pressed', 'false');
@@ -271,13 +280,16 @@ test('supports keyboard marker activation and keyboard close without a focus tra
 
   const panel = page.getByTestId('place-details');
   const title = panel.getByRole('heading', { level: 3, name: 'Paso de demostración' });
-  const closeButton = panel.getByRole('button', { name: 'Cerrar la ficha del lugar' });
+  const closeButton = panel.getByRole('button', {
+    name: 'Cerrar la ficha de Paso de demostración',
+  });
 
   await expect(panel).toBeVisible();
   await expect(title).toBeFocused();
+  await expect(panel.getByText('Emplazamiento', { exact: true })).toBeVisible();
   await expect(panel.getByText('Lugar destacado', { exact: true })).toBeVisible();
-  await expect(panel.getByText('Desfiladero de ejemplo', { exact: true })).toBeVisible();
-  await expect(panel).toContainText('Referencia pública de viaje');
+  await expect(panel).not.toContainText('Desfiladero de ejemplo');
+  await expect(panel).not.toContainText('Referencia pública de viaje');
 
   await closeButton.focus();
   await page.keyboard.press('Enter');
@@ -321,7 +333,7 @@ test('supports bounded zoom and drag navigation', async ({ page }) => {
   await expect(zoomOutControl).toHaveClass(/leaflet-disabled/);
 });
 
-test('keeps search, map and details useful in a mobile viewport', async ({ page }) => {
+test('keeps search, map and compact details useful in a mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openReadyMap(page);
 
@@ -346,6 +358,9 @@ test('keeps search, map and details useful in a mobile viewport', async ({ page 
   await results.getByRole('button', { name: /Puerto de demostración.*nombre principal/i }).click();
 
   const panel = page.getByTestId('place-details');
+  const closeButton = panel.getByRole('button', {
+    name: 'Cerrar la ficha de Puerto de demostración',
+  });
 
   await panel.scrollIntoViewIfNeeded();
   const panelBox = await panel.boundingBox();
@@ -353,11 +368,13 @@ test('keeps search, map and details useful in a mobile viewport', async ({ page 
   expect(panelBox).not.toBeNull();
   expect(panelBox?.x).toBeGreaterThanOrEqual(0);
   expect((panelBox?.x ?? 0) + (panelBox?.width ?? 0)).toBeLessThanOrEqual(390);
-  await expect(panel.getByRole('button', { name: 'Cerrar la ficha del lugar' })).toBeVisible();
-  await expect(panel).toContainText('Información pública de demostración');
+  await expect(closeButton).toBeVisible();
+  await expect(panel).toContainText('Costero');
+  await expect(panel).not.toContainText('Información pública de demostración');
+  await expect(panel.getByRole('button', { name: 'Abrir ficha completa' })).toBeVisible();
 });
 
-test('keeps search, markers and details available when the remote image fails', async ({
+test('keeps search, markers and compact details available when the remote image fails', async ({
   page,
 }) => {
   await page.route(OFFICIAL_MAP_URL, async (route) => {
@@ -377,7 +394,9 @@ test('keeps search, markers and details available when the remote image fails', 
   await searchbox.press('ArrowDown');
   await page.keyboard.press('Enter');
 
-  await expect(page.getByTestId('place-details')).toContainText('Paso de demostración');
+  const panel = page.getByTestId('place-details');
+  await expect(panel).toContainText('Paso de demostración');
+  await expect(panel).not.toContainText('Referencia pública de viaje');
   await expect(
     page.getByRole('button', {
       name: 'Paso de demostración. Categoría: Lugar destacado.',

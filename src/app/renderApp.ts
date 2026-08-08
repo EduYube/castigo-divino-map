@@ -16,11 +16,11 @@ export function renderApp(): string {
     <main id="main-content" class="atlas-main">
       <section class="map-introduction" aria-labelledby="atlas-title">
         <div>
-          <p class="eyebrow">Cartografía interactiva · MAP-022</p>
+          <p class="eyebrow">Cartografía interactiva · MAP-023</p>
           <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
           <p class="map-introduction__lead">
-            Explora lugares públicos de la campaña, localiza personajes y reconoce el tipo y las
-            disposiciones de los pines sin abrir una ficha.
+            Explora lugares públicos de la campaña, localiza personajes y abre fichas compactas
+            para reconocer su tipo, categoría, etiquetas y disposiciones sin abandonar el mapa.
           </p>
         </div>
         <p class="map-introduction__source">
@@ -214,12 +214,12 @@ export function renderApp(): string {
             hidden
           >
             <div class="place-details__toolbar">
-              <p class="place-details__label">Ficha del lugar activo</p>
+              <p class="place-details__label">Ficha compacta</p>
               <button
                 class="place-details__close"
                 type="button"
                 data-place-details-close
-                aria-label="Cerrar la ficha del lugar"
+                aria-label="Cerrar la ficha compacta"
               >
                 <span aria-hidden="true">×</span>
               </button>

@@ -76,7 +76,7 @@ test('loads a complete shared URL from the repository subdirectory', async ({ pa
 
   await page
     .getByTestId('place-details')
-    .getByRole('button', { name: 'Cerrar la ficha del lugar' })
+    .getByRole('button', { name: 'Cerrar la ficha de Paso de demostración' })
     .click();
   await expect(page.getByTestId('place-details')).toBeHidden();
   await page.goBack();
@@ -118,7 +118,7 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
 
   await page
     .getByTestId('place-details')
-    .getByRole('button', { name: 'Cerrar la ficha del lugar' })
+    .getByRole('button', { name: 'Cerrar la ficha de Paso de demostración' })
     .click();
   await expect(page.getByTestId('place-details')).toBeHidden();
   await expect(
