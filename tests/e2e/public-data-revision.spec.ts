@@ -14,10 +14,7 @@ const TEST_MAP = `
 
 type PublicRows = Record<string, Record<string, unknown>[]>;
 
-function projectRows(
-  value: unknown,
-  fields: readonly string[],
-): Record<string, unknown>[] {
+function projectRows(value: unknown, fields: readonly string[]): Record<string, unknown>[] {
   if (!Array.isArray(value)) {
     throw new Error('Expected fixture rows.');
   }
@@ -127,9 +124,7 @@ function createRemoteRevisionB(): PublicRows {
   rows.entity_aliases = rows.entity_aliases.map((row) =>
     row.entity_id === 'place-demo-harbor' ? { ...row, value: 'Alias remoto B' } : row,
   );
-  rows.entity_tags = rows.entity_tags.filter(
-    (row) => row.entity_id !== 'place-demo-harbor',
-  );
+  rows.entity_tags = rows.entity_tags.filter((row) => row.entity_id !== 'place-demo-harbor');
   rows.entity_tags.push(
     { entity_id: 'place-demo-harbor', tag_id: 'remote-revision' },
     { entity_id: 'place-demo-harbor', tag_id: 'demo-data' },
@@ -176,10 +171,7 @@ async function mockOfficialMap(page: Page): Promise<void> {
   });
 }
 
-async function configureBackend(
-  page: Page,
-  getRows: () => PublicRows | null,
-): Promise<void> {
+async function configureBackend(page: Page, getRows: () => PublicRows | null): Promise<void> {
   await page.addInitScript((projectUrl) => {
     window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
       projectUrl,
@@ -218,13 +210,22 @@ function currentSearchParams(page: Page): URLSearchParams {
 test('switches marker, search, filters and URL atomically from snapshot A to Supabase B and removes archived legacy places', async ({
   page,
 }) => {
-  let remoteRows = createRemoteRevisionB();
+  let remoteRows: PublicRows | null = null;
 
   await mockOfficialMap(page);
   await configureBackend(page, () => remoteRows);
   await page.goto('/');
 
   const backendStatus = page.locator('[data-backend-status]');
+  await expect(backendStatus).toHaveAttribute('data-backend-state', 'degraded');
+  await expect(backendStatus).toHaveAttribute('data-data-source', 'bundled-snapshot');
+  await expect(
+    page.getByRole('button', { name: 'Puerto de demostración. Categoría: Asentamiento.' }),
+  ).toBeVisible();
+
+  remoteRows = createRemoteRevisionB();
+  await backendStatus.getByRole('button', { name: 'Reintentar' }).click();
+
   await expect(backendStatus).toHaveAttribute('data-backend-state', 'connected');
   await expect(
     page.getByRole('button', { name: 'Puerto remoto B. Categoría: Asentamiento.' }),
