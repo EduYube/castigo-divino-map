@@ -100,6 +100,19 @@ describe('AdminPublicRequestController', () => {
     expect(repository.convert).toHaveBeenCalledOnce();
   });
 
+  it('does not publish a new state when access flags repeat unchanged', async () => {
+    const controller = await readyController(new FakeRepository());
+    const listener = vi.fn();
+    const unsubscribe = controller.subscribe(listener);
+    listener.mockClear();
+
+    controller.setAccess(true, true);
+
+    expect(listener).not.toHaveBeenCalled();
+    expect(controller.getState().phase).toBe('ready');
+    unsubscribe();
+  });
+
   it('invalidates administrative access when the backend reports an expired session', async () => {
     const onAuthorizationRejected = vi.fn();
     const repository: AdminPublicRequestRepository = {
