@@ -147,6 +147,14 @@ async function openGeographicSearch(page: Page, path = '/'): Promise<void> {
   );
 }
 
+async function ensureSearchExpanded(page: Page): Promise<void> {
+  const toggle = page.locator('[data-place-search-toggle]');
+
+  if ((await toggle.getAttribute('aria-expanded')) === 'false') {
+    await toggle.click();
+  }
+}
+
 test('searches Waterdeep as a separate geographic identity and applies its recommended zoom', async ({
   page,
 }) => {
@@ -270,7 +278,12 @@ test('remains usable at 320 px and restores the geographic query after reload', 
   await openGeographicSearch(page, '/?q=Waterdeep');
 
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  const searchToggle = page.locator('[data-place-search-toggle]');
+  await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(searchbox).toHaveValue('Waterdeep');
+  await expect(page.locator('[data-place-search-summary]')).toContainText('Consulta: “Waterdeep”');
+  await ensureSearchExpanded(page);
+
   const geographic = page.getByRole('button', {
     name: /Waterdeep.*Lugar geográfico/i,
   });
@@ -283,7 +296,9 @@ test('remains usable at 320 px and restores the geographic query after reload', 
   expect(horizontalOverflow).toBe(false);
 
   await page.reload();
+  await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(searchbox).toHaveValue('Waterdeep');
+  await ensureSearchExpanded(page);
   await expect(
     page.getByRole('button', {
       name: /Waterdeep.*Lugar geográfico/i,
