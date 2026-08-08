@@ -1,11 +1,13 @@
 import type { PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
 import type { CampaignCatalog, CampaignCategory, CampaignPlace, PlaceId } from './model';
 
+const BETA01_PLACE_IDS = new Set<PlaceId>(['place-demo-harbor', 'place-demo-pass']);
+
 function isLegacyPlaceEntity(
   entity: PublicMapEntity,
 ): entity is PublicMapEntity & { readonly id: PlaceId } {
   return (
-    entity.id.startsWith('place-') &&
+    BETA01_PLACE_IDS.has(entity.id as PlaceId) &&
     entity.entityType === 'location' &&
     entity.visibility === 'pin'
   );
@@ -68,15 +70,21 @@ export function toBeta01CompatibilityCatalog(catalog: PublicCatalogSnapshotV2): 
       body: note.body,
       tagIds: note.tagIds,
     }));
-
+  const categoryIds = new Set(places.map(({ categoryId }) => categoryId));
+  const tagIds = new Set([
+    ...places.flatMap(({ tagIds: placeTagIds }) => placeTagIds),
+    ...notes.flatMap(({ tagIds: noteTagIds }) => noteTagIds),
+  ]);
   const categories = sortCompatibilityCategories(
-    catalog.categories.map((category) => ({ ...category })),
+    catalog.categories
+      .filter(({ id }) => categoryIds.has(id))
+      .map((category) => ({ ...category })),
     places,
   );
 
   return {
     categories,
-    tags: catalog.tags.map((tag) => ({ ...tag })),
+    tags: catalog.tags.filter(({ id }) => tagIds.has(id)).map((tag) => ({ ...tag })),
     places,
     notes,
   };
