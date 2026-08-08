@@ -183,10 +183,12 @@ grant execute on function public.admin_moderate_public_request(uuid, timestamptz
 comment on function public.admin_moderate_public_request(uuid, timestamptz, text, text) is
   'Atomically rejects a pending public request or converts it into an uncategorized draft pin. Direct browser updates are revoked; the dedicated NOLOGIN owner remains subject to the existing administrative RLS policies.';
 
--- PostgreSQL requires the new owner to have CREATE on the containing schema at
--- ownership-transfer time. Grant it only inside this migration transaction and
--- revoke it again before commit.
+-- PostgreSQL 17 requires the role changing object ownership to be able to SET ROLE
+-- to the new owner. Grant that membership and schema CREATE only for the transfer,
+-- then revoke both before the migration transaction commits.
+grant atlas_public_request_moderator to current_user;
 grant create on schema public to atlas_public_request_moderator;
 alter function public.admin_moderate_public_request(uuid, timestamptz, text, text)
   owner to atlas_public_request_moderator;
 revoke create on schema public from atlas_public_request_moderator;
+revoke atlas_public_request_moderator from current_user;
