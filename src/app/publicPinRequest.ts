@@ -474,9 +474,7 @@ export function mountPublicPinRequest(
     (Object.keys(errorTargets) as PublicPinRequestField[]).forEach(clearFieldError);
   };
 
-  const showValidationErrors = (
-    errors: Partial<Record<PublicPinRequestField, string>>,
-  ): void => {
+  const showValidationErrors = (errors: Partial<Record<PublicPinRequestField, string>>): void => {
     clearValidationErrors();
     const orderedFields: readonly PublicPinRequestField[] = [
       'senderName',
