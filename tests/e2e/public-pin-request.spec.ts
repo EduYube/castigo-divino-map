@@ -132,9 +132,15 @@ test('submits a valid anonymous request through the closed RPC without publishin
   const form = await openRequestForm(page);
   await fillValidRequest(form);
 
-  const typeOptions = await form.getByLabel('Tipo de pin').locator('option').evaluateAll((options) =>
-    options.map((option) => ({ value: (option as HTMLOptionElement).value, text: option.textContent })),
-  );
+  const typeOptions = await form
+    .getByLabel('Tipo de pin')
+    .locator('option')
+    .evaluateAll((options) =>
+      options.map((option) => ({
+        value: (option as HTMLOptionElement).value,
+        text: option.textContent,
+      })),
+    );
   expect(typeOptions).toEqual([
     { value: '', text: 'Elige un tipo' },
     { value: 'character', text: 'Personaje' },
@@ -153,7 +159,9 @@ test('submits a valid anonymous request through the closed RPC without publishin
   const box = await mapCanvas.boundingBox();
   expect(box).not.toBeNull();
   if (!box) return;
-  await mapCanvas.click({ position: { x: Math.floor(box.width * 0.55), y: Math.floor(box.height * 0.45) } });
+  await mapCanvas.click({
+    position: { x: Math.floor(box.width * 0.55), y: Math.floor(box.height * 0.45) },
+  });
 
   await expect(form.locator('[data-public-pin-request-position]')).toContainText(
     'Posición seleccionada',
@@ -194,16 +202,11 @@ test('associates validation errors with fields and preserves the navigable map s
   const sender = form.getByLabel('Nombre o apodo');
   await expect(sender).toBeFocused();
   await expect(sender).toHaveAttribute('aria-invalid', 'true');
-  await expect(sender).toHaveAttribute(
-    'aria-errormessage',
-    'public-pin-request-sender-error',
-  );
+  await expect(sender).toHaveAttribute('aria-errormessage', 'public-pin-request-sender-error');
   await expect(form.locator('[data-public-pin-request-error="position"]')).toContainText(
     'Selecciona una posición válida',
   );
-  await expect(form.locator('[data-public-pin-request-status]')).toContainText(
-    'Revisa los campos',
-  );
+  await expect(form.locator('[data-public-pin-request-status]')).toContainText('Revisa los campos');
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
   expect(page.url()).toBe(initialUrl);
 });
