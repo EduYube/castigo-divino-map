@@ -248,6 +248,7 @@ export class ResilientPublicCatalogService {
         }
 
         this.#lastRemoteEnvelope = remoteEnvelope;
+        this.#visibleEnvelope = remoteEnvelope;
 
         if (this.#sessionCache) {
           try {
