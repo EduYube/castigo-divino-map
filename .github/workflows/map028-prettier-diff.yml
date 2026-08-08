@@ -1,0 +1,25 @@
+name: MAP-028 Prettier diff diagnostic
+
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  prettier-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Print canonical Prettier diff
+        run: |
+          npx prettier --write tests/e2e/full-entity-details.spec.ts
+          git diff -- tests/e2e/full-entity-details.spec.ts
+          test -z "$(git status --porcelain -- tests/e2e/full-entity-details.spec.ts)"
