@@ -32,9 +32,7 @@ if (snapshot.checksum !== committedChecksum || snapshot.sourceRevision !== commi
 }
 
 if (verifyRemote || verifyMigrationFixture) {
-  const raw = verifyRemote
-    ? await loadRemotePublicRows()
-    : await loadFixtureRows(FIXTURE_PATH);
+  const raw = verifyRemote ? await loadRemotePublicRows() : await loadFixtureRows(FIXTURE_PATH);
   const expectedContent = buildPublicSnapshotContent(raw);
   const expectedChecksum = checksum(expectedContent);
   const sourceLabel = verifyRemote ? 'Supabase published data' : 'the MAP-028 migration fixture';
@@ -142,4 +140,6 @@ const verificationTarget = verifyRemote
   : verifyMigrationFixture
     ? 'the MAP-028 migration fixture'
     : 'its canonical public content and publication filters';
-console.log(`Verified Beta 0.2 public snapshot against ${verificationTarget}: ${committedChecksum}.`);
+console.log(
+  `Verified Beta 0.2 public snapshot against ${verificationTarget}: ${committedChecksum}.`,
+);
