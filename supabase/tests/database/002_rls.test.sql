@@ -76,19 +76,19 @@ select is(
 
 set local role anon;
 
-select is((select count(*) from public.map_entities), 2::bigint, 'anon sees only published entities');
-select is((select count(*) from public.categories), 2::bigint, 'anon sees only published categories');
-select is((select count(*) from public.tags), 1::bigint, 'anon sees only published tags');
+select is((select count(*) from public.map_entities), 4::bigint, 'anon sees only published entities');
+select is((select count(*) from public.categories), 4::bigint, 'anon sees only published categories');
+select is((select count(*) from public.tags), 5::bigint, 'anon sees only published tags');
 select is((select count(*) from public.players), 2::bigint, 'anon sees the two published player perspectives');
 select is(
   (select count(*) from public.entity_player_dispositions),
-  4::bigint,
+  8::bigint,
   'anon sees one disposition for every public entity and public player'
 );
-select is((select count(*) from public.entity_aliases), 1::bigint, 'anon does not see aliases of withdrawn entities');
-select is((select count(*) from public.entity_tags), 1::bigint, 'anon does not see tag relations of withdrawn entities');
-select is((select count(*) from public.public_notes), 1::bigint, 'anon does not see notes of withdrawn entities');
-select is((select count(*) from public.public_note_tags), 1::bigint, 'anon sees note tags only through public endpoints');
+select is((select count(*) from public.entity_aliases), 3::bigint, 'anon does not see aliases of withdrawn entities');
+select is((select count(*) from public.entity_tags), 7::bigint, 'anon does not see tag relations of withdrawn entities');
+select is((select count(*) from public.public_notes), 3::bigint, 'anon does not see notes of withdrawn entities');
+select is((select count(*) from public.public_note_tags), 6::bigint, 'anon sees note tags only through public endpoints');
 select is(
   (select count(*) from public.character_location_events),
   2::bigint,
@@ -189,10 +189,10 @@ set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000002",
 set local role authenticated;
 
 select is((select private.is_admin()), false, 'editable user metadata does not grant administration');
-select is((select count(*) from public.map_entities), 2::bigint, 'authenticated non-admin keeps public reads');
+select is((select count(*) from public.map_entities), 4::bigint, 'authenticated non-admin keeps public reads');
 select is(
   (select count(*) from public.entity_player_dispositions),
-  4::bigint,
+  8::bigint,
   'authenticated non-admin keeps only public disposition reads'
 );
 
@@ -230,11 +230,11 @@ set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000001",
 set local role authenticated;
 
 select is((select private.is_admin()), true, 'allowlisted user is an administrator');
-select is((select count(*) from public.map_entities), 5::bigint, 'administrator sees every entity state');
+select is((select count(*) from public.map_entities), 7::bigint, 'administrator sees every entity state');
 select is((select count(*) from public.players), 2::bigint, 'administrator sees every player state');
 select is(
   (select count(*) from public.entity_player_dispositions),
-  10::bigint,
+  14::bigint,
   'administrator sees the complete entity-player matrix'
 );
 select is((select count(*) from public.public_requests), 2::bigint, 'administrator can enumerate requests');
