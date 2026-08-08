@@ -1,90 +1,15 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
+import {
+  fetchCompletePublicCatalogTable,
+  PUBLIC_CATALOG_TABLE_QUERIES,
+  PublicCatalogReadError,
+} from '../src/data-access/publicCatalogQueryContract.js';
+
 export const SNAPSHOT_PATH = 'public/data/public-catalog.snapshot.json';
 export const FIXTURE_PATH = 'scripts/fixtures/beta01-public-rows.json';
-
-const TABLE_QUERIES = {
-  categories: {
-    table: 'categories',
-    select: 'id,slug,name,description',
-    order: 'id.asc',
-    published: true,
-  },
-  tags: {
-    table: 'tags',
-    select: 'id,name,description',
-    order: 'id.asc',
-    published: true,
-  },
-  players: {
-    table: 'players',
-    select: 'id,slug,display_name,name_language',
-    order: 'id.asc',
-    published: true,
-  },
-  entities: {
-    table: 'map_entities',
-    select: 'id,slug,entity_type,visibility,name,name_language,summary,description,x,y,category_id',
-    order: 'id.asc',
-    published: true,
-  },
-  entityAliases: {
-    table: 'entity_aliases',
-    select: 'id,entity_id,language,value',
-    order: 'id.asc',
-    published: true,
-  },
-  entityTags: {
-    table: 'entity_tags',
-    select: 'entity_id,tag_id',
-    order: 'entity_id.asc,tag_id.asc',
-    published: true,
-  },
-  dispositions: {
-    table: 'entity_player_dispositions',
-    select: 'entity_id,player_id,disposition',
-    order: 'entity_id.asc,player_id.asc',
-    published: false,
-  },
-  characterLocationRelations: {
-    table: 'character_location_relations',
-    select: 'character_id,location_id,relation_status',
-    order: 'location_id.asc,character_id.asc',
-    published: false,
-  },
-  notes: {
-    table: 'public_notes',
-    select: 'id,slug,entity_id,title,body,sort_order',
-    order: 'entity_id.asc,sort_order.asc,id.asc',
-    published: true,
-  },
-  noteTags: {
-    table: 'public_note_tags',
-    select: 'note_id,tag_id',
-    order: 'note_id.asc,tag_id.asc',
-    published: true,
-  },
-  geographicNames: {
-    table: 'geographic_names',
-    select: 'id,slug,name,language,x,y,recommended_zoom,entity_id',
-    order: 'id.asc',
-    published: true,
-  },
-  geographicAliases: {
-    table: 'geographic_name_aliases',
-    select: 'id,geographic_name_id,language,value',
-    order: 'id.asc',
-    published: true,
-  },
-  locationEvents: {
-    table: 'character_location_events',
-    select:
-      'id,character_id,event_type,location_entity_id,geographic_name_id,x,y,location_label,summary,language,observed_at,related_sighting_id',
-    order: 'id.asc',
-    published: true,
-  },
-};
+export const DEFAULT_REMOTE_READ_TIMEOUT_MS = 15_000;
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -355,58 +280,56 @@ function readRequiredEnv(name) {
   return value;
 }
 
-async function fetchTable(projectUrl, publishableKey, query) {
-  const result = [];
-  let offset = 0;
-  const pageSize = 1000;
+export async function loadRemotePublicRows(options = {}) {
+  const projectUrl = options.projectUrl ?? readRequiredEnv('VITE_SUPABASE_URL');
+  const publishableKey =
+    options.publishableKey ?? readRequiredEnv('VITE_SUPABASE_PUBLISHABLE_KEY');
+  const fetchImplementation = options.fetchImplementation ?? globalThis.fetch.bind(globalThis);
+  const timeoutMs = options.timeoutMs ?? DEFAULT_REMOTE_READ_TIMEOUT_MS;
+  const controller = new AbortController();
+  const handleParentAbort = () => controller.abort();
 
-  while (true) {
-    const url = new URL(`${projectUrl.replace(/\/$/, '')}/rest/v1/${query.table}`);
-    url.searchParams.set('select', query.select);
-    url.searchParams.set('order', query.order);
-    if (query.published) url.searchParams.set('publication_status', 'eq.published');
-
-    const response = await fetch(url, {
-      headers: {
-        Accept: 'application/json',
-        apikey: publishableKey,
-        Prefer: 'count=exact',
-        Range: `${offset}-${offset + pageSize - 1}`,
-        'Range-Unit': 'items',
-      },
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      throw new Error(`${query.table} returned ${response.status}: ${await response.text()}`);
-    }
-
-    const page = await response.json();
-    if (!Array.isArray(page)) throw new Error(`${query.table} returned non-array JSON.`);
-    result.push(...page);
-
-    const contentRange = response.headers.get('content-range');
-    const match = contentRange?.match(/^(?:\*|(\d+)-(\d+))\/(\d+)$/);
-    if (!match) throw new Error(`${query.table} did not return a verifiable Content-Range.`);
-    const total = Number(match[3]);
-    offset += page.length;
-    if (offset >= total) break;
-    if (page.length === 0) throw new Error(`${query.table} pagination stopped before ${total}.`);
+  if (options.signal?.aborted) {
+    controller.abort();
+  } else {
+    options.signal?.addEventListener('abort', handleParentAbort, { once: true });
   }
 
-  return result;
-}
+  const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
 
-export async function loadRemotePublicRows() {
-  const projectUrl = readRequiredEnv('VITE_SUPABASE_URL');
-  const publishableKey = readRequiredEnv('VITE_SUPABASE_PUBLISHABLE_KEY');
-  const entries = await Promise.all(
-    Object.entries(TABLE_QUERIES).map(async ([key, query]) => [
-      key,
-      await fetchTable(projectUrl, publishableKey, query),
-    ]),
-  );
-  return Object.fromEntries(entries);
+  try {
+    const entries = await Promise.all(
+      Object.entries(PUBLIC_CATALOG_TABLE_QUERIES).map(async ([key, query]) => [
+        key,
+        await fetchCompletePublicCatalogTable({
+          projectUrl,
+          publishableKey,
+          query,
+          fetchImplementation,
+          signal: controller.signal,
+        }),
+      ]),
+    );
+
+    return Object.fromEntries(entries);
+  } catch (error) {
+    controller.abort();
+
+    if (
+      error instanceof PublicCatalogReadError &&
+      error.kind === 'request-aborted' &&
+      !options.signal?.aborted
+    ) {
+      throw new Error(`Remote public catalog read timed out after ${timeoutMs} ms.`, {
+        cause: error,
+      });
+    }
+
+    throw error;
+  } finally {
+    globalThis.clearTimeout(timeout);
+    options.signal?.removeEventListener('abort', handleParentAbort);
+  }
 }
 
 export async function loadFixtureRows(path = FIXTURE_PATH) {
