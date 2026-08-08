@@ -52,14 +52,34 @@ export interface PublicPinRequestRpcPayload {
   readonly p_honeypot: string;
 }
 
-const UNSAFE_CONTROL_CHARACTERS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u;
-
 function normalizeText(value: string): string {
   return value.replace(/\r\n?/g, '\n').trim();
 }
 
 function countCodePoints(value: string): number {
   return Array.from(value).length;
+}
+
+function containsUnsafeControlCharacter(value: string): boolean {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0);
+
+    if (codePoint === undefined) {
+      continue;
+    }
+
+    const isDisallowedC0 =
+      codePoint <= 0x08 ||
+      codePoint === 0x0b ||
+      codePoint === 0x0c ||
+      (codePoint >= 0x0e && codePoint <= 0x1f);
+
+    if (isDisallowedC0 || codePoint === 0x7f) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function validateText(
@@ -80,7 +100,7 @@ function validateText(
     };
   }
 
-  if (UNSAFE_CONTROL_CHARACTERS.test(normalized)) {
+  if (containsUnsafeControlCharacter(normalized)) {
     return { normalized, error: `${label} contiene caracteres de control no permitidos.` };
   }
 
