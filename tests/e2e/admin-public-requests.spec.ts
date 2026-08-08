@@ -289,11 +289,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     const table = url.pathname.split('/').at(-1) ?? '';
     if (request.method() === 'GET') {
       const rows: Record<string, unknown>[] =
-        table === 'public_requests'
-          ? requests
-          : table === 'map_entities'
-            ? entities
-            : [];
+        table === 'public_requests' ? requests : table === 'map_entities' ? entities : [];
       const range = rangeResponse(rows);
       await route.fulfill({ status: 200, headers: range.headers, body: range.body });
       return;
@@ -347,9 +343,7 @@ test('anonymous visitors never receive the moderation inbox', async ({ page }) =
   await expect(page.getByRole('button', { name: 'Convertir en borrador' })).toBeHidden();
 });
 
-test('the admin inbox filters and sorts request details without exposing a needs-changes action', async ({
-  page,
-}) => {
+test('the admin inbox filters and sorts request details without exposing a needs-changes action', async ({ page }) => {
   await configureBackend(page);
   await page.goto('/');
   await loginAndConnect(page);

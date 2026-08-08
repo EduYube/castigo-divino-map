@@ -1,9 +1,5 @@
 export type AdminPublicRequestStatus =
-  | 'pending'
-  | 'accepted'
-  | 'rejected'
-  | 'converted'
-  | 'archived';
+  'pending' | 'accepted' | 'rejected' | 'converted' | 'archived';
 
 export type AdminPublicRequestEntityType = 'character' | 'location';
 export type AdminPublicRequestSort = 'newest' | 'oldest';

@@ -36,10 +36,9 @@ describe('filterAndSortAdminPublicRequests', () => {
   ];
 
   it('filters by moderation state and shows newest first', () => {
-    expect(filterAndSortAdminPublicRequests(records, 'pending', 'newest').map(({ id }) => id)).toEqual([
-      'c',
-      'a',
-    ]);
+    expect(
+      filterAndSortAdminPublicRequests(records, 'pending', 'newest').map(({ id }) => id),
+    ).toEqual(['c', 'a']);
   });
 
   it('can show all requests oldest first with a stable id tie-breaker', () => {

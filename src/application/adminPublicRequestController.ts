@@ -41,7 +41,10 @@ export class AdminPublicRequestController {
   #activeController: AbortController | null = null;
   #destroyed = false;
 
-  constructor(repository: AdminPublicRequestRepository, options: AdminPublicRequestControllerOptions = {}) {
+  constructor(
+    repository: AdminPublicRequestRepository,
+    options: AdminPublicRequestControllerOptions = {},
+  ) {
     this.#repository = repository;
     this.#onAuthorizationRejected = options.onAuthorizationRejected;
   }

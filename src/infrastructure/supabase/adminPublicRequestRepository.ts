@@ -183,7 +183,9 @@ export class SupabaseAdminPublicRequestRepository implements AdminPublicRequestR
     this.#storage.assertAvailable();
   }
 
-  async list(options: { readonly signal: AbortSignal }): Promise<readonly AdminPublicRequestRecord[]> {
+  async list(options: {
+    readonly signal: AbortSignal;
+  }): Promise<readonly AdminPublicRequestRecord[]> {
     const rows: Record<string, unknown>[] = [];
     let offset = 0;
     let expectedTotal: number | null = null;

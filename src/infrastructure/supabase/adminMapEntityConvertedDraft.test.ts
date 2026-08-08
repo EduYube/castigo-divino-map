@@ -58,14 +58,15 @@ describe('MAP-027 converted drafts in the entity repository', () => {
       archived_at: null,
       updated_at: '2026-08-08T12:00:00.000Z',
     };
-    const fetchImplementation = vi.fn<typeof fetch>(async () =>
-      new Response(JSON.stringify([row]), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Range': '0-0/1',
-        },
-      }),
+    const fetchImplementation = vi.fn<typeof fetch>(
+      async () =>
+        new Response(JSON.stringify([row]), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Range': '0-0/1',
+          },
+        }),
     );
     const repository = new SupabaseAdminMapEntityRepository({
       projectUrl: 'https://example-project.supabase.co',

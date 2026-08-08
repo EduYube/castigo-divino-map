@@ -144,11 +144,12 @@ describe('SupabaseAdminPublicRequestRepository', () => {
 
   it('normalizes stale and authorization failures without leaking PostgreSQL details', async () => {
     const stale = repository(
-      vi.fn<typeof fetch>(async () =>
-        new Response(
-          JSON.stringify({ code: '40001', message: 'secret row-lock implementation detail' }),
-          { status: 409, headers: { 'Content-Type': 'application/json' } },
-        ),
+      vi.fn<typeof fetch>(
+        async () =>
+          new Response(
+            JSON.stringify({ code: '40001', message: 'secret row-lock implementation detail' }),
+            { status: 409, headers: { 'Content-Type': 'application/json' } },
+          ),
       ),
     );
     await expect(
@@ -159,8 +160,9 @@ describe('SupabaseAdminPublicRequestRepository', () => {
     });
 
     const expired = repository(
-      vi.fn<typeof fetch>(async () =>
-        new Response('{}', { status: 401, headers: { 'Content-Type': 'application/json' } }),
+      vi.fn<typeof fetch>(
+        async () =>
+          new Response('{}', { status: 401, headers: { 'Content-Type': 'application/json' } }),
       ),
     );
     await expect(
