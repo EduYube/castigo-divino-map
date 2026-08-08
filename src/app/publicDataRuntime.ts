@@ -86,6 +86,7 @@ export async function bootstrapPublicDataRuntime(
   root: ParentNode,
   _legacyCatalog?: CampaignCatalog,
 ): Promise<PublicDataRuntime> {
+  void _legacyCatalog;
   const status = mountBackendStatus(root);
   const testConfig = resolveTestConfig();
   const projectUrl = testConfig?.projectUrl ?? import.meta.env.VITE_SUPABASE_URL ?? '';
