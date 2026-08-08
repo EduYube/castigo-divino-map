@@ -83,13 +83,16 @@ describe('public pin request domain', () => {
     ]);
   });
 
-  test.each(['enemy', 'unknown', 'custom', ''])('rejects a non-controlled pin type: %s', (entityType) => {
-    const result = validatePublicPinRequest(validDraft({ entityType }));
+  test.each(['enemy', 'unknown', 'custom', ''])(
+    'rejects a non-controlled pin type: %s',
+    (entityType) => {
+      const result = validatePublicPinRequest(validDraft({ entityType }));
 
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.errors.entityType).toBe('Elige un tipo de pin permitido.');
-  });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.errors.entityType).toBe('Elige un tipo de pin permitido.');
+    },
+  );
 
   test.each([
     { x: -0.01, y: 100 },
