@@ -104,7 +104,12 @@ function appendDispositions(parent: HTMLElement, details: FullEntityDetailModel)
 
   createPlayerDispositionVisuals(details.dispositions).forEach((disposition) => {
     const item = document.createElement('li');
-    const symbol = appendTextElement(item, 'span', `pin-disposition ${disposition.className}`, disposition.symbol);
+    const symbol = appendTextElement(
+      item,
+      'span',
+      `pin-disposition ${disposition.className}`,
+      disposition.symbol,
+    );
     symbol.setAttribute('aria-hidden', 'true');
     appendTextElement(item, 'strong', '', disposition.playerName);
     appendTextElement(item, 'span', '', disposition.label);
@@ -152,7 +157,11 @@ function appendEntityLink(
   return link;
 }
 
-function appendRelations(parent: HTMLElement, details: FullEntityDetailModel, sourceUrl: URL): void {
+function appendRelations(
+  parent: HTMLElement,
+  details: FullEntityDetailModel,
+  sourceUrl: URL,
+): void {
   const relations =
     details.entityType === 'location' ? details.importantCharacters : details.relatedLocations;
   const section = appendSection(
@@ -170,7 +179,12 @@ function appendRelations(parent: HTMLElement, details: FullEntityDetailModel, so
   relations.forEach((relation) => {
     const item = document.createElement('li');
     appendEntityLink(item, sourceUrl, relation);
-    const status = appendTextElement(item, 'span', 'full-entity__relation-status', relation.relationLabel);
+    const status = appendTextElement(
+      item,
+      'span',
+      'full-entity__relation-status',
+      relation.relationLabel,
+    );
     status.dataset.relationStatus = relation.relationStatus;
     list.append(item);
   });
@@ -234,7 +248,12 @@ function renderDetails(elements: FullEntityDetailsElements, details: FullEntityD
   elements.body.replaceChildren();
   elements.type.replaceChildren();
 
-  const shape = appendTextElement(elements.type, 'span', `full-entity__type-shape full-entity__type-shape--${details.entityType}`, type.symbol);
+  const shape = appendTextElement(
+    elements.type,
+    'span',
+    `full-entity__type-shape full-entity__type-shape--${details.entityType}`,
+    type.symbol,
+  );
   shape.setAttribute('aria-hidden', 'true');
   appendTextElement(elements.type, 'span', '', type.label);
 
@@ -242,8 +261,10 @@ function renderDetails(elements: FullEntityDetailsElements, details: FullEntityD
   elements.status.hidden = true;
   elements.status.textContent = '';
 
-  if (details.summary) appendTextElement(elements.body, 'p', 'full-entity__summary', details.summary);
-  if (details.description) appendTextElement(elements.body, 'p', 'full-entity__description', details.description);
+  if (details.summary)
+    appendTextElement(elements.body, 'p', 'full-entity__summary', details.summary);
+  if (details.description)
+    appendTextElement(elements.body, 'p', 'full-entity__description', details.description);
   appendAliases(elements.body, details);
   appendCategory(elements.body, details);
   appendTags(elements.body, details);
@@ -263,7 +284,8 @@ function renderDetails(elements: FullEntityDetailsElements, details: FullEntityD
 
   document.title = `${details.name} · El Atlas de los Nuevos Dioses`;
   ensureDescriptionMeta().content =
-    details.summary || `Ficha pública completa de ${details.name} en El Atlas de los Nuevos Dioses.`;
+    details.summary ||
+    `Ficha pública completa de ${details.name} en El Atlas de los Nuevos Dioses.`;
 }
 
 export function renderFullEntityDetailsShell(): string {
@@ -302,10 +324,7 @@ export function renderFullEntityDetailsShell(): string {
   `;
 }
 
-export function mountFullEntityDetails(
-  root: ParentNode,
-  mapUrl: URL,
-): FullEntityDetailsController {
+export function mountFullEntityDetails(root: ParentNode, mapUrl: URL): FullEntityDetailsController {
   const elements: FullEntityDetailsElements = {
     title: getRequiredElement(root, '[data-full-entity-title]'),
     type: getRequiredElement(root, '[data-full-entity-type]'),
