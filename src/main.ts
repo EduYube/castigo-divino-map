@@ -3,10 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import { bootstrapAdminAuthRuntime } from './app/adminAuthRuntime';
 import { mountAdminPinVisualSync } from './app/adminPinVisualSync';
 import { mountCompactPinDetails } from './app/compactPinDetails';
-import {
-  mountFullEntityDetails,
-  renderFullEntityDetailsShell,
-} from './app/fullEntityDetails';
+import { mountFullEntityDetails, renderFullEntityDetailsShell } from './app/fullEntityDetails';
 import { createFullEntityUrl, parseFullEntityUrlRequest } from './app/fullEntityUrl';
 import { mountPlaceFilters } from './app/placeFilters';
 import { bootstrapPublicDataRuntime, type PublicDataRuntime } from './app/publicDataRuntime';
@@ -370,7 +367,9 @@ function startMapExperience(): void {
   mountAdminPinVisualSync(app);
 
   void bootstrapPublicDataRuntime(app, campaignCatalog)
-    .then((publicDataRuntime) => mountPublicExperience(publicDataRuntime.catalog, publicDataRuntime))
+    .then((publicDataRuntime) =>
+      mountPublicExperience(publicDataRuntime.catalog, publicDataRuntime),
+    )
     .catch(() => mountPublicExperience(campaignCatalog));
 }
 
