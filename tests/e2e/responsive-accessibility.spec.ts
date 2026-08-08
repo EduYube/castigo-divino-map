@@ -274,6 +274,7 @@ test('keeps a useful landscape surface and restored state when the remote map fa
     await route.fulfill({ status: 503, contentType: 'text/plain', body: 'Unavailable' });
   });
   await page.goto(COMPLETE_STATE_URL);
+  await ensureControlsExpanded(page);
 
   const shell = page.getByTestId('map-shell');
   const map = page.locator('[data-map-canvas]');
