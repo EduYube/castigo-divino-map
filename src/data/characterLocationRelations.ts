@@ -27,9 +27,7 @@ const RELATION_LABELS: Record<CharacterLocationRelationStatus, string> = {
   'last-seen': 'Visto por última vez',
 };
 
-export function getCharacterLocationRelationLabel(
-  status: CharacterLocationRelationStatus,
-): string {
+export function getCharacterLocationRelationLabel(status: CharacterLocationRelationStatus): string {
   return RELATION_LABELS[status];
 }
 
