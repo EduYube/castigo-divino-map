@@ -217,6 +217,7 @@ export async function bootstrapPublicDataRuntime(
       beta02Listeners.clear();
       unsubscribe();
       service.dispose();
+      status.destroy();
     },
   };
 }
