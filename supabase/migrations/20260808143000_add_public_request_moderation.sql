@@ -40,7 +40,7 @@ begin
       message = 'administrative authorization required';
   end if;
 
-  if p_action not in ('reject', 'convert') then
+  if p_action is null or p_action not in ('reject', 'convert') then
     raise exception using
       errcode = '23514',
       message = 'unsupported public request moderation action';
