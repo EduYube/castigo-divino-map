@@ -213,7 +213,10 @@ export function mountAdminPublicRequests(
     const meta = createElement('p', 'admin-public-requests__meta');
     const details = createElement('dl', 'admin-public-requests__details');
     const noteLabel = createElement('label', 'admin-public-requests__label');
-    const note = createElement('textarea', 'admin-public-requests__control admin-public-requests__note');
+    const note = createElement(
+      'textarea',
+      'admin-public-requests__control admin-public-requests__note',
+    );
     const actions = createElement('div', 'admin-public-requests__actions');
 
     cardHeading.textContent = request.proposedName;
@@ -289,7 +292,8 @@ export function mountAdminPublicRequests(
     }
 
     if (!state.backendConnected) {
-      status.textContent = 'La moderación requiere conexión con el backend antes de leer o procesar solicitudes.';
+      status.textContent =
+        'La moderación requiere conexión con el backend antes de leer o procesar solicitudes.';
     } else if (state.phase === 'loading') {
       status.textContent = 'Cargando solicitudes…';
     } else if (state.phase === 'mutating') {
