@@ -17,17 +17,20 @@ PostgreSQL y RLS siguen siendo la frontera definitiva para decidir qué filas pu
 src/data-access/publicCatalog.ts
   contrato común, errores normalizados, metadatos y checksum
 
+src/data-access/publicCatalogQueryContract.js
+  consultas REST públicas, Range/Content-Range y paginación compartida por navegador y tooling
+
 src/infrastructure/snapshot/
   snapshot público V2 empaquetado y caché de sesión
 
 src/infrastructure/supabase/
-  consultas REST públicas, paginación, mapeo y validación del contrato Beta 0.2
+  validación de configuración, mapeo y validación del contrato Beta 0.2
 
 src/application/publicCatalogService.ts
   precedencia, timeout, reintentos, cancelación y máquina de estados
 
 src/app/publicDataRuntime.ts
-  composición del navegador, compatibilidad legacy, refresco y eventos de conectividad
+  composición del navegador y publicación atómica de cada revisión visible
 
 src/app/backendStatus.ts
   indicador visible y accesible
@@ -57,10 +60,12 @@ MAP-028 completa la transición:
 - una respuesta remota Beta 0.2 válida se convierte en el envelope visible del servicio;
 - el snapshot V2 es el respaldo local reproducible;
 - `src/data/catalog.json` queda solo como fixture histórica de pruebas y deja de ser fallback de runtime;
-- la compatibilidad de búsqueda, filtros, URLs y fichas Beta 0.1 se deriva del snapshot V2 mediante `toBeta01CompatibilityCatalog(...)`;
+- la compatibilidad de búsqueda, filtros, URLs y fichas Beta 0.1 se deriva **del mismo envelope visible** mediante `toBeta01CompatibilityCatalog(...)`;
 - la proyección legacy reconoce únicamente las identidades históricas y no incorpora taxonomía Beta 0.2 futura no relacionada.
 
-La caché de sesión conserva best-effort la última proyección remota validada, pero no desplaza al snapshot empaquetado durante el arranque. Cuando Supabase responde correctamente, el resultado remoto validado pasa a ser la fuente visible.
+`PublicDataRuntime` publica cada revisión como una única unidad `{ beta02, compatibility, checksum, availability }`. Markers, búsqueda, filtros, URL y fichas se actualizan desde esa misma unidad dentro de una sola transición síncrona. Por tanto, una sesión no conserva la representación legacy del snapshot mientras muestra entidades de una revisión distinta de Supabase. Si una identidad legacy deja de estar publicada en el envelope remoto, desaparece también de markers, búsqueda, filtros, selección y estado canónico de URL.
+
+La caché de sesión conserva best-effort la última proyección remota validada, pero no desplaza al snapshot empaquetado durante el arranque. Cuando Supabase responde correctamente, el resultado remoto validado pasa a ser la fuente visible completa.
 
 ## Snapshot público V2
 
@@ -84,22 +89,27 @@ La caducidad sigue siendo blanda y se fija en 30 días. Un snapshot antiguo cont
 ```text
 arranque:
   snapshot V2 empaquetado válido
-  -> shell recuperable sin datos si el snapshot no puede validarse
+  -> revisión visible inicial
+
+  snapshot ausente o inválido
+  -> shell recuperable con availability=unavailable y acción Reintentar
 
 tras comprobación remota:
   Supabase Beta 0.2 válido
-  -> pasa a ser la fuente visible
+  -> sustituye atómicamente la revisión visible completa
 
 si una comprobación posterior falla:
   último envelope visible validado
   -> estado degraded/offline sin sustituirlo por datos parciales
 ```
 
-No se mezcla contenido parcial de Supabase con el snapshot.
+No se mezcla contenido parcial de Supabase con el snapshot ni se mezclan dos revisiones válidas entre distintos consumidores de UI.
 
 ## Consulta pública de Supabase
 
 La implementación usa la Data REST API en `/rest/v1/` y envía la clave pública únicamente en la cabecera `apikey`. No envía una clave `sb_publishable_...` como bearer token.
+
+El contrato de consultas y paginación vive en `src/data-access/publicCatalogQueryContract.js` y se comparte literalmente entre el repositorio del navegador y los scripts de generación/verificación del snapshot. No existen dos paginadores con garantías distintas.
 
 Cada consulta:
 
@@ -110,7 +120,9 @@ Cada consulta:
 - no solicita timestamps internos, estados editoriales, usuarios, solicitudes ni campos administrativos;
 - se carga por páginas de hasta 1.000 filas mediante `Range` y `Range-Unit: items`;
 - solicita `Prefer: count=exact` y comprueba `Content-Range` en cada página;
-- rechaza totales ausentes, cambiantes, desalineados o incompatibles con las filas recibidas;
+- fija el total declarado por la primera página y rechaza que cambie durante la lectura;
+- exige que `start` coincida con el offset solicitado y que `end` corresponda exactamente con el número de filas recibido;
+- rechaza una página vacía prematura, rangos desplazados, páginas cortas, exceso de filas y una colección final incompleta;
 - comparte un `AbortSignal` interno para cancelar el conjunto completo.
 
 Se consultan:
@@ -129,7 +141,7 @@ Se consultan:
 
 La respuesta solo se acepta cuando se ha confirmado el total de cada tabla, se han recibido todas sus páginas y todas las colecciones forman un catálogo válido. Si una consulta falla, el repositorio aborta las demás solicitudes pendientes del mismo intento antes de propagar el error.
 
-El generador remoto del snapshot reutiliza el mismo contrato público de columnas, filtros y orden, y Pages compara su proyección con el snapshot comprometido antes de desplegar.
+El generador y el verificador remoto reutilizan el mismo contrato, incluido el algoritmo de completitud. El tooling remoto añade además un timeout explícito y abortable de 15 segundos para que un gate de despliegue no dependa únicamente del timeout global de GitHub Actions.
 
 ## Estados
 
@@ -153,7 +165,7 @@ El navegador parece conectado, pero ocurre alguno de estos casos:
 - colección o relación inválida;
 - contrato no soportado.
 
-El atlas conserva el último envelope visible validado. En un arranque sin respuesta remota ese envelope es el snapshot V2 empaquetado.
+El atlas conserva el último envelope visible validado. En un arranque normal sin respuesta remota ese envelope es el snapshot V2 empaquetado. Si tampoco existe un snapshot válido, el runtime permanece vivo con `availability=unavailable`, muestra el shell sin catálogo y deja disponible el reintento remoto.
 
 ### `offline`
 
@@ -161,8 +173,9 @@ El atlas conserva el último envelope visible validado. En un arranque sin respu
 
 ## Timeout, reintentos y cancelación
 
-- timeout por intento remoto: 5 segundos;
+- timeout por intento remoto del navegador: 5 segundos;
 - timeout por origen local: 2 segundos;
+- timeout del lector remoto de snapshot en tooling/Pages: 15 segundos;
 - intentos remotos máximos: 3;
 - retrasos base: 0, 2 y 5 segundos;
 - jitter acotado: entre el 80 % y el 120 %;
