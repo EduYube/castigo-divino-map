@@ -16,11 +16,6 @@ exception
 end;
 $$;
 
-create temporary table _map027_expected (
-  request_id uuid primary key,
-  expected_updated_at timestamptz not null
-);
-
 insert into public.public_requests (
   id,
   sender_name,
@@ -62,15 +57,6 @@ values
     'A request used for non-admin authorization.',
     'Must stay pending.'
   );
-
-insert into _map027_expected (request_id, expected_updated_at)
-select id, updated_at
-from public.public_requests
-where id in (
-  '10000000-0000-4000-8000-000000000271',
-  '10000000-0000-4000-8000-000000000272',
-  '10000000-0000-4000-8000-000000000273'
-);
 
 select plan(24);
 
@@ -118,7 +104,7 @@ set local role authenticated;
 select throws_ok(
   $$select public.admin_moderate_public_request(
       '10000000-0000-4000-8000-000000000273',
-      (select expected_updated_at from _map027_expected where request_id = '10000000-0000-4000-8000-000000000273'),
+      timezone('utc', now()),
       'reject',
       null
     )$$,
@@ -146,7 +132,7 @@ set local role authenticated;
 select lives_ok(
   $$select public.admin_moderate_public_request(
       '10000000-0000-4000-8000-000000000272',
-      (select expected_updated_at from _map027_expected where request_id = '10000000-0000-4000-8000-000000000272'),
+      (select updated_at from public.public_requests where id = '10000000-0000-4000-8000-000000000272'),
       'reject',
       '  Not enough evidence.  '
     )$$,
@@ -203,7 +189,7 @@ select throws_ok(
 select lives_ok(
   $$select public.admin_moderate_public_request(
       '10000000-0000-4000-8000-000000000271',
-      (select expected_updated_at from _map027_expected where request_id = '10000000-0000-4000-8000-000000000271'),
+      (select updated_at from public.public_requests where id = '10000000-0000-4000-8000-000000000271'),
       'convert',
       null
     )$$,
@@ -286,7 +272,7 @@ select ok(
 select throws_ok(
   $$select public.admin_moderate_public_request(
       '10000000-0000-4000-8000-000000000271',
-      (select expected_updated_at from _map027_expected where request_id = '10000000-0000-4000-8000-000000000271'),
+      '2000-01-01T00:00:00Z'::timestamptz,
       'convert',
       null
     )$$,
