@@ -29,6 +29,18 @@ async function openReadyMap(page: Page, path = '/'): Promise<void> {
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
 }
 
+async function ensureControlsExpanded(page: Page): Promise<void> {
+  const searchToggle = page.locator('[data-place-search-toggle]');
+  const filtersToggle = page.locator('[data-place-filters-toggle]');
+
+  if ((await searchToggle.getAttribute('aria-expanded')) === 'false') {
+    await searchToggle.click();
+  }
+  if ((await filtersToggle.getAttribute('aria-expanded')) === 'false') {
+    await filtersToggle.click();
+  }
+}
+
 function marker(page: Page, placeId: string): Locator {
   return page.locator(`[data-testid="place-marker"][data-place-id="${placeId}"]`);
 }
@@ -76,6 +88,15 @@ test('keeps semantic regions, names, focus and touch targets usable from 320 px'
   await page.setViewportSize({ width: 320, height: 740 });
   await openReadyMap(page);
 
+  const searchToggle = page.locator('[data-place-search-toggle]');
+  const filtersToggle = page.locator('[data-place-filters-toggle]');
+  await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(filtersToggle).toHaveAttribute('aria-expanded', 'false');
+  await expectTouchTarget(searchToggle);
+  await expectTouchTarget(filtersToggle);
+  await searchToggle.click();
+  await filtersToggle.click();
+
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   const categoryGroup = page.getByRole('group', { name: 'Categorías' });
   const tagGroup = page.getByRole('group', { name: 'Etiquetas' });
@@ -122,6 +143,7 @@ test('keeps semantic regions, names, focus and touch targets usable from 320 px'
 
 test('preserves a logical keyboard flow for search and filters', async ({ page }) => {
   await openReadyMap(page);
+  await ensureControlsExpanded(page);
 
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   const clearSearch = page.getByRole('button', { name: 'Limpiar búsqueda' });
@@ -165,6 +187,7 @@ test('activates matching and dimmed markers with Enter and Space and restores fo
   page,
 }) => {
   await openReadyMap(page);
+  await ensureControlsExpanded(page);
 
   await page.getByRole('checkbox', { name: /Lugar destacado/ }).check();
 
@@ -205,6 +228,16 @@ test('activates matching and dimmed markers with Enter and Space and restores fo
 test('restores a complete mobile URL and history without stealing focus', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await openReadyMap(page, COMPLETE_STATE_URL);
+
+  await expect(page.locator('[data-place-search-toggle]')).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
+  await expect(page.locator('[data-place-filters-toggle]')).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
+  await ensureControlsExpanded(page);
 
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   const landmark = page.getByRole('checkbox', { name: /Lugar destacado/ });
@@ -247,6 +280,7 @@ test('keeps a useful landscape surface and restored state when the remote map fa
     await route.fulfill({ status: 503, contentType: 'text/plain', body: 'Unavailable' });
   });
   await page.goto(COMPLETE_STATE_URL);
+  await ensureControlsExpanded(page);
 
   const shell = page.getByTestId('map-shell');
   const map = page.locator('[data-map-canvas]');

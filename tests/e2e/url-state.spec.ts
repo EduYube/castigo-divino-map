@@ -210,9 +210,15 @@ test('restores state on mobile and when the official map fails', async ({ page }
   );
 
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'error');
-  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
-  await expect(page.getByRole('checkbox', { name: /Lugar destacado/ })).toBeChecked();
-  await expect(page.getByRole('checkbox', { name: /Paso de montaña/ })).toBeChecked();
+  await expect(
+    page.getByRole('searchbox', { name: 'Buscar lugares', includeHidden: true }),
+  ).toHaveValue('paso');
+  await expect(
+    page.getByRole('checkbox', { name: /Lugar destacado/, includeHidden: true }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole('checkbox', { name: /Paso de montaña/, includeHidden: true }),
+  ).toBeChecked();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-place-id',
     'place-demo-pass',

@@ -165,9 +165,12 @@ test('keeps filters, map and details usable in a mobile viewport', async ({ page
   await openReadyMap(page);
 
   const filters = page.locator('[data-place-filters]');
+  const filtersToggle = page.locator('[data-place-filters-toggle]');
   const map = page.locator('[data-map-canvas]');
 
   await expect(filters).toBeVisible();
+  await expect(filtersToggle).toHaveAttribute('aria-expanded', 'false');
+  await filtersToggle.click();
   await expect(page.getByRole('button', { name: 'Limpiar filtros' })).toBeVisible();
   await page.getByRole('checkbox', { name: /Ruta comercial/ }).check();
 
@@ -185,6 +188,10 @@ test('keeps filters, map and details usable in a mobile viewport', async ({ page
 test('wraps long category and tag names without horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openReadyMap(page);
+
+  const filtersToggle = page.locator('[data-place-filters-toggle]');
+  await expect(filtersToggle).toHaveAttribute('aria-expanded', 'false');
+  await filtersToggle.click();
 
   await page.locator('.place-filters__option-name').evaluateAll((names) => {
     names.forEach((name, index) => {
