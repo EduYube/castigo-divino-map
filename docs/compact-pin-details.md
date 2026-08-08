@@ -1,10 +1,14 @@
 # Ficha compacta de pines
 
-- Issue: MAP-023 (#42).
-- PR funcional: #73.
+- Issue: MAP-023 (#42), cerrada como completada.
+- PR funcional: #73, fusionada.
 - Rama funcional: `agent/map-023-compact-pin-details`.
 - Base funcional: `a4993f23f1357c88d990a40c1f2d2f1236e8d00a`.
-- Estado: contrato funcional implementado; la evidencia definitiva de CI, merge y Pages se registra únicamente después de verificarla.
+- Head funcional final: `1eb2c198ef711248272ae98ab34bc4c12cc7359d`.
+- CI pre-merge: #418, run `31229733395`, completamente verde.
+- Merge funcional: `1e2532574d5c66a237b06bf6e4ea2fa744b59c59`.
+- CI post-merge de `master`: verde; el run `push` no es enumerable por el conector disponible, pero su conclusión `success` queda demostrada por el workflow de Pages que solo construye después de CI verde sobre `master`.
+- Pages post-merge: run `31230128079`, build, deploy, smoke publicado y estado `github-pages/deployment` completamente verdes sobre el merge funcional.
 
 ## Propósito
 
@@ -155,7 +159,7 @@ Se reutilizan exclusivamente los contratos ya disponibles:
 
 No se añaden tablas, columnas, enums, RPC, grants, policies, usuarios, credenciales, datos de producción ni migraciones. RLS continúa entregando al navegador únicamente contenido publicado. No se ejecuta `seed.sql` en producción.
 
-## Pruebas
+## Pruebas y evidencia funcional
 
 Cobertura específica de MAP-023:
 
@@ -164,7 +168,22 @@ Cobertura específica de MAP-023:
 - `tests/e2e/pin-visual-system.spec.ts`: convivencia con selección, formas, disposiciones y coordenadas coincidentes de MAP-022;
 - `tests/e2e/app.spec.ts`: compatibilidad de búsqueda, filtros, teclado, fallo de imagen, móvil, URL/foco y ficha compacta Beta 0.1.
 
-Las suites heredadas completas siguen siendo obligatorias. Los conteos, SHA y runs definitivos se documentarán solo después de que GitHub Actions valide el head final real.
+El head funcional final `1eb2c198ef711248272ae98ab34bc4c12cc7359d` quedó completamente verde en CI #418 / run `31229733395` con:
+
+- 202/202 pruebas unitarias en 32 archivos;
+- 85/85 pruebas E2E de Playwright;
+- 2/2 smoke tests del build de Pages;
+- 222/222 pruebas pgTAP en 12 archivos;
+- 13/13 comprobaciones de concurrencia Supabase;
+- formatting, auditoría de credenciales, lint, build de Pages, auditoría del artefacto, migraciones y RLS verdes.
+
+Durante el bucle de CI se corrigieron dos clases de regresión detectadas por las propias suites: expectativas heredadas del antiguo nombre accesible genérico del botón de cierre y un recálculo de tamaño de Leaflet necesario para preservar el centro canónico al abrir una ficha suplementaria en un layout que cambia de ancho. El head final volvió a ejecutar la matriz completa antes de pasar a Ready.
+
+La PR #73 se fusionó mediante el merge commit `1e2532574d5c66a237b06bf6e4ea2fa744b59c59`, y la Issue #42 quedó cerrada automáticamente como completada.
+
+El workflow post-merge de Pages run `31230128079` resolvió y reconstruyó exactamente ese merge commit, volvió a auditar el artefacto y superó 2/2 smoke tests locales antes de desplegar. Después, el job `Validate published Beta 0.1` comprobó la URL pública `https://eduyube.github.io/castigo-divino-map/` sobre el mismo SHA y superó 2/2 smoke tests publicados. Los jobs `Build and upload production artifact`, `Deploy GitHub Pages`, `Validate published Beta 0.1` y `Record deployment status` terminaron en `success`, y el commit quedó marcado con `github-pages/deployment = success`.
+
+El propio contrato de `.github/workflows/pages.yml` solo ejecuta el build automático cuando el workflow `CI` sobre `master` concluye `success`; por tanto, la ejecución y publicación de `31230128079` constituye también evidencia verificable de que el CI post-merge del merge funcional fue verde. El identificador numérico del run `push` de CI no es enumerable por el conector disponible y no se inventa en esta documentación.
 
 ## Archivos principales
 

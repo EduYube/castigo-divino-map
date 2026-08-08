@@ -6,14 +6,14 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- MAP-001 a MAP-022: implementadas e integradas funcionalmente.
-- Siguiente trabajo de backlog: MAP-023 — Rediseñar ficha compacta.
+- MAP-001 a MAP-023: implementadas e integradas funcionalmente.
+- Siguiente trabajo de backlog: MAP-024 — Crear la ficha completa en una pestaña nueva.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-08.
 
-MAP-022 se integró mediante PR #71 sobre el `master` que contenía el cierre documental de MAP-021. La solución mantiene el catálogo visible Beta 0.1 como compatibilidad, consume la proyección Beta 0.2 solo para enriquecer o añadir pines `visibility = pin`, introduce un contrato visual compartido para tipo y disposición por jugador y resuelve coordenadas coincidentes mediante un marcador compuesto con lista accesible. No requirió DDL ni migración de Supabase.
+MAP-023 se integró mediante PR #73 sobre el `master` que contenía el cierre documental de MAP-022. La solución sustituye la ficha extensa heredada por una superficie compacta común para personajes y emplazamientos, reutiliza el contrato visual de MAP-022 para tipo y disposición por jugador, muestra categoría, tags y personajes importantes cuando aplica y conserva URL, historial, responsive y accesibilidad sin adelantar la ficha completa de MAP-024. No requirió DDL ni migración de Supabase.
 
-El head funcional final `45dfa13ca616ef5f3e4e31fa95fbe76040d4dfaf` quedó completamente verde en CI #393 / run `31224128324`; la PR #71 se fusionó con merge commit `ccd8d5c372307b1d5ec02539fae8a4d5df8b4f51` y la Issue #41 quedó cerrada automáticamente. El CI post-merge de `master`, run `31224454225`, sufrió inicialmente un fallo transitorio de infraestructura al arrancar Supabase (`Rate exceeded` y puerto local `54322` ocupado); se relanzó solo ese job y el intento final quedó completamente verde sin cambios de código. Ese cierre exitoso disparó Pages run `31225809275`, con build, despliegue, smoke publicado y estado `github-pages/deployment` verdes. El primer Pages run `31224603340` se omitió correctamente porque correspondía a la conclusión fallida del intento inicial de CI.
+El head funcional final `1eb2c198ef711248272ae98ab34bc4c12cc7359d` quedó completamente verde en CI #418 / run `31229733395`; la PR #73 se fusionó con merge commit `1e2532574d5c66a237b06bf6e4ea2fa744b59c59` y la Issue #42 quedó cerrada automáticamente. El CI post-merge de `master` terminó en verde; su run `push` no es enumerable por el conector disponible, pero esa conclusión queda demostrada por el contrato de Pages, que solo construye automáticamente tras `CI = success` sobre `master`. Pages run `31230128079` reconstruyó exactamente el merge, completó build, despliegue, 2/2 smoke locales, 2/2 smoke publicados sobre `https://eduyube.github.io/castigo-divino-map/` y registró `github-pages/deployment = success`.
 
 ## Beta 0.1 y frontera de Beta 0.2
 
@@ -21,7 +21,7 @@ MAP-001 a MAP-011 entregaron la Beta 0.1 publicada con Vite, TypeScript, Leaflet
 
 Beta 0.2 mantiene como contratos de compatibilidad el pathname de Pages, query string, IDs, slugs, coordenadas, búsqueda, filtros, historial, accesibilidad y tratamiento del mapa remoto hasta que MAP-028 demuestre equivalencia y haga la transición completa del catálogo visible.
 
-MAP-013 a MAP-022 ya han cerrado arquitectura, seguridad, Supabase/RLS, modelo de entidades, acceso público resiliente, autenticación administrativa, CRUD de catálogo, CRUD de entidades, relaciones personaje–emplazamiento, búsqueda geográfica pública y el sistema visual accesible de pines. MAP-023 mantiene el siguiente cambio visual de ficha; MAP-028 conserva la transición completa del catálogo.
+MAP-013 a MAP-023 ya han cerrado arquitectura, seguridad, Supabase/RLS, modelo de entidades, acceso público resiliente, autenticación administrativa, CRUD de catálogo, CRUD de entidades, relaciones personaje–emplazamiento, búsqueda geográfica pública, sistema visual accesible de pines y ficha compacta común. MAP-024 conserva la ficha completa y su URL estable; MAP-028 conserva la transición completa del catálogo.
 
 ## Arquitectura y seguridad vigentes
 
@@ -36,7 +36,7 @@ MAP-013 a MAP-022 ya han cerrado arquitectura, seguridad, Supabase/RLS, modelo d
 - Migraciones SQL hacia delante, versionadas y auditables.
 - GitHub Actions es el bucle principal de validación de cada head de PR; un SHA nuevo exige una ejecución nueva y limpia.
 
-Las decisiones completas viven en `docs/architecture.md`, `docs/data-model.md`, `docs/security.md`, ADR 0002 a 0005, `docs/admin-auth.md`, `docs/admin-catalog.md`, `docs/admin-map-entities.md`, `docs/geographic-search.md` y `docs/pin-visual-system.md`.
+Las decisiones completas viven en `docs/architecture.md`, `docs/data-model.md`, `docs/security.md`, ADR 0002 a 0005, `docs/admin-auth.md`, `docs/admin-catalog.md`, `docs/admin-map-entities.md`, `docs/geographic-search.md`, `docs/pin-visual-system.md` y `docs/compact-pin-details.md`.
 
 ## Supabase alojado y migraciones
 
@@ -65,6 +65,8 @@ MAP-021 verificó que `geographic_names`, `geographic_name_aliases`, `map_entiti
 
 MAP-022 reutiliza `entity_type`, `visibility`, `players` y `entity_player_dispositions`; no añade columnas, enums, tablas, RPC, grants, policies ni migraciones. `unknown` no se añade al modelo: el signo `?` se usa solo como fallback de presentación cuando una proyección no contiene una disposición disponible. No se modificaron Auth, usuarios, allowlist, credenciales ni datos de producción.
 
+MAP-023 reutiliza `map_entities`, `categories`, `tags` / `entity_tags`, `players` / `entity_player_dispositions`, `character_location_relations` y la proyección pública de MAP-016. No añade tablas, columnas, enums, RPC, grants, policies, migraciones, usuarios, credenciales ni datos de producción. La UI de ficha no consulta Supabase directamente y no ejecuta `seed.sql`.
+
 ## Modelo funcional relevante
 
 Beta 0.2 mantiene:
@@ -84,6 +86,8 @@ Beta 0.2 mantiene:
 Un nombre impreso en el mapa no necesita ser un pin. Un `map_entity` con `visibility = search_only` sí es una entidad completa; un `geographic_name` sigue siendo una identidad geográfica ligera para centrar, aplicar zoom recomendado y resaltar una posición.
 
 La disposición no es una propiedad global de la entidad: cada pin puede representar varias perspectivas de jugador. MAP-022 expresa esa matriz con tokens compactos y texto accesible sin introducir una taxonomía paralela.
+
+MAP-023 proyecta esa información en una ficha compacta común: nombre, tipo, categoría, tags, disposición por jugador y, para emplazamientos, `Personajes importantes aquí`. Aliases, descripciones extensas, cuerpos de notas, historial cronológico y relaciones inversas de personajes permanecen fuera de esta superficie y corresponden a la ficha completa de MAP-024.
 
 ## MAP-019 — completada
 
@@ -170,6 +174,47 @@ Evidencia del head funcional:
 
 El contrato completo está documentado en `docs/pin-visual-system.md`.
 
+## MAP-023 — completada e integrada
+
+- Issue: #42, cerrada como completada.
+- PR funcional: #73, fusionada.
+- Rama funcional: `agent/map-023-compact-pin-details`.
+- Base: `a4993f23f1357c88d990a40c1f2d2f1236e8d00a`.
+- Head funcional final: `1eb2c198ef711248272ae98ab34bc4c12cc7359d`.
+- CI pre-merge: #418, run `31229733395`, completamente verde.
+- Merge funcional: `1e2532574d5c66a237b06bf6e4ea2fa744b59c59`.
+- CI post-merge de `master`: verde; el run `push` no es enumerable por el conector disponible. Pages solo construye automáticamente cuando ese CI concluye `success`, y por ello el despliegue posterior constituye evidencia verificable de su resultado.
+- Pages post-merge: run `31230128079`, con build, deploy, smoke publicado y estado `github-pages/deployment` completamente verdes sobre el merge funcional.
+- Migración: ninguna.
+- Supabase/RLS/Auth/usuarios/allowlist/credenciales/datos de producción: sin cambios.
+
+Contrato integrado:
+
+- ficha compacta común para `character` y `location`;
+- nombre, tipo, categoría, tags y disposición por jugador como superficie compacta pública;
+- `Personajes importantes aquí` solo para emplazamientos con relaciones públicas disponibles;
+- exclusión deliberada de aliases, descripciones extensas, cuerpos de notas, historial cronológico y relaciones inversas de personajes;
+- fallback Beta 0.1 sin inventar disposiciones ni datos Beta 0.2;
+- pines suplementarios Beta 0.2 abren la misma superficie sin introducir todavía una URL estable nueva;
+- conservación del parámetro histórico `place`, búsqueda, filtros, `popstate` e historial para lugares Beta 0.1;
+- cierre con retorno de foco al marcador correcto, incluidos grupos de coordenadas coincidentes;
+- recálculo de tamaño de Leaflet antes de centrar un pin suplementario cuando el panel cambia el ancho del workspace;
+- acción visible `Abrir ficha completa` deshabilitada y documentada como frontera de MAP-024, sin inventar una ruta provisional;
+- responsive a 320 px, teclado, lectores de pantalla, `forced-colors` y `prefers-reduced-motion` cubiertos por pruebas.
+
+Evidencia del head funcional:
+
+- 202 unitarios verdes en 32 archivos;
+- 85 E2E verdes;
+- 2 smoke del build Pages verdes;
+- 222 pgTAP verdes en 12 archivos;
+- 13 comprobaciones de concurrencia Supabase verdes;
+- formatting, auditoría de credenciales, lint, build Pages, auditoría del artefacto, migraciones y RLS verdes.
+
+Pages run `31230128079` resolvió y reconstruyó exactamente `1e2532574d5c66a237b06bf6e4ea2fa744b59c59`, superó 2/2 smoke locales, desplegó GitHub Pages y volvió a superar 2/2 smoke tests sobre la URL pública. Los cuatro jobs `Build and upload production artifact`, `Deploy GitHub Pages`, `Validate published Beta 0.1` y `Record deployment status` terminaron en `success`.
+
+El contrato completo está documentado en `docs/compact-pin-details.md`.
+
 ## Backlog Beta 0.2
 
 1. MAP-013 — Definir arquitectura y seguridad. **Completada.**
@@ -182,8 +227,8 @@ El contrato completo está documentado en `docs/pin-visual-system.md`.
 8. MAP-020 — Relacionar personajes importantes con emplazamientos. **Completada.**
 9. MAP-021 — Búsqueda geográfica por nombres del mapa. **Completada.**
 10. MAP-022 — Diferenciar visualmente tipos y disposiciones. **Completada.**
-11. MAP-023 — Rediseñar ficha compacta. **Siguiente.**
-12. MAP-024 — Ficha completa en pestaña nueva.
+11. MAP-023 — Rediseñar ficha compacta. **Completada.**
+12. MAP-024 — Ficha completa en pestaña nueva. **Siguiente.**
 13. MAP-025 — Búsqueda y filtros colapsables.
 14. MAP-026 — Solicitudes públicas de nuevos pines.
 15. MAP-027 — Moderar y convertir solicitudes en borradores.
@@ -211,8 +256,8 @@ Los cambios de producción de Supabase conservan sus controles adicionales: comp
 
 ## Riesgos y fronteras pendientes
 
-- MAP-023/MAP-024 mantienen los rediseños de ficha compacta/completa.
-- MAP-025 mantiene la evolución de búsqueda/filtros; MAP-022 no amplió esa superficie.
+- MAP-024 mantiene la ficha completa, la URL estable de entidad y la apertura en pestaña nueva; MAP-023 no adelantó ese contrato.
+- MAP-025 mantiene la evolución de búsqueda/filtros; MAP-023 no amplió esa superficie.
 - MAP-028 mantiene la transición completa del catálogo Beta 0.1 a Supabase.
 - GitHub Pages, Supabase y la imagen cartográfica remota no tienen SLA propio del proyecto.
 - El snapshot de compatibilidad puede quedar temporalmente por detrás de la proyección publicada hasta el siguiente build validado.
@@ -232,3 +277,4 @@ Los cambios de producción de Supabase conservan sus controles adicionales: comp
 | 2026-08-07 | MAP-020 cerró relaciones personaje–emplazamiento; PR #68, merge `d9a1f53…`, Pages `31212733439`, migración alojada `20260807180851_add_character_location_relations`. |
 | 2026-08-07 | MAP-021 cerró búsqueda geográfica pública; PR #69, head verde `7cd6643…`, merge `fb3e50b…`, checkpoint post-merge CI/Pages verde y sin DDL. |
 | 2026-08-08 | MAP-022 quedó cerrada de extremo a extremo; PR #71, head `45dfa13…`, CI #393/run `31224128324`, merge `ccd8d5c…`, CI post-merge `31224454225` verde tras reintento transitorio y Pages `31225809275` con deploy/smoke verdes; sin DDL. |
+| 2026-08-08 | MAP-023 quedó cerrada de extremo a extremo; PR #73, head `1eb2c198…`, CI #418/run `31229733395`, merge `1e25325…`, CI post-merge verde y Pages `31230128079` con build/deploy/2 smoke locales/2 smoke publicados y deployment status verdes; sin DDL. |
