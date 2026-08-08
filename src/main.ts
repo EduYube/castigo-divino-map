@@ -93,6 +93,8 @@ function mountPublicExperience(
         return;
       }
 
+      mapController.map.invalidateSize({ animate: false, pan: false });
+
       window.requestAnimationFrame(() => {
         if (!mapSearchStatus) return;
         const type = getPinTypeVisual(pin.entityType).label.toLocaleLowerCase('es');
