@@ -14,6 +14,12 @@ import { SupabasePublicCatalogRepository } from '../infrastructure/supabase/publ
 import { mountBackendStatus } from './backendStatus';
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const EMPTY_COMPATIBILITY_CATALOG: CampaignCatalog = {
+  categories: [],
+  tags: [],
+  places: [],
+  notes: [],
+};
 
 interface PublicDataTestConfig {
   readonly projectUrl?: string;
@@ -28,11 +34,18 @@ declare global {
   }
 }
 
-export type Beta02CatalogListener = (catalog: PublicCatalogSnapshotV2 | null) => void;
+export interface PublicCatalogState {
+  readonly availability: PublicCatalogLoadResult['availability'];
+  readonly checksum: string | null;
+  readonly beta02: PublicCatalogSnapshotV2 | null;
+  readonly compatibility: CampaignCatalog;
+}
+
+export type PublicCatalogStateListener = (state: PublicCatalogState) => void;
 
 export interface PublicDataRuntime {
-  readonly catalog: CampaignCatalog;
-  subscribeBeta02Catalog(listener: Beta02CatalogListener): () => void;
+  getCatalogState(): PublicCatalogState;
+  subscribeCatalogState(listener: PublicCatalogStateListener): () => void;
   destroy(): void;
 }
 
@@ -55,24 +68,39 @@ function dispatchSafeStatusEvent(result: PublicCatalogLoadResult): void {
   );
 }
 
-function getValidatedBeta02Catalog(
-  result: PublicCatalogLoadResult,
-): PublicCatalogSnapshotV2 | null {
-  return result.data?.contract === 'beta02' ? result.data.catalog : null;
-}
-
-function toCompatibilityCatalog(result: PublicCatalogLoadResult): CampaignCatalog {
+function toCatalogState(result: PublicCatalogLoadResult): PublicCatalogState {
   if (!result.data) {
-    throw new PublicDataRepositoryError(
-      'invalid-snapshot',
-      'No hay una proyección pública válida disponible para iniciar el atlas.',
-      { source: 'application' },
-    );
+    return {
+      availability: 'unavailable',
+      checksum: null,
+      beta02: null,
+      compatibility: EMPTY_COMPATIBILITY_CATALOG,
+    };
   }
 
-  return result.data.contract === 'beta01'
-    ? result.data.catalog
-    : toBeta01CompatibilityCatalog(result.data.catalog);
+  if (result.data.contract === 'beta01') {
+    return {
+      availability: result.availability,
+      checksum: result.metadata?.checksum ?? null,
+      beta02: null,
+      compatibility: result.data.catalog,
+    };
+  }
+
+  return {
+    availability: result.availability,
+    checksum: result.metadata?.checksum ?? result.data.catalog.checksum,
+    beta02: result.data.catalog,
+    compatibility: toBeta01CompatibilityCatalog(result.data.catalog),
+  };
+}
+
+function isSameCatalogRevision(left: PublicCatalogState, right: PublicCatalogState): boolean {
+  return (
+    left.availability === right.availability &&
+    left.checksum === right.checksum &&
+    (left.beta02 === null) === (right.beta02 === null)
+  );
 }
 
 export async function bootstrapPublicDataRuntime(
@@ -116,60 +144,44 @@ export async function bootstrapPublicDataRuntime(
     retryDelaysMs: testConfig?.retryDelaysMs,
   });
   const initialResult = await service.initialize();
-  const initialCatalog = toCompatibilityCatalog(initialResult);
-  const beta02Listeners = new Set<Beta02CatalogListener>();
-  let beta02Catalog = getValidatedBeta02Catalog(initialResult);
-  let beta02Checksum = beta02Catalog?.checksum ?? null;
-  let hasCompletedRemoteCheck = false;
+  const catalogListeners = new Set<PublicCatalogStateListener>();
+  let catalogState = toCatalogState(initialResult);
   let lastRefreshAt = 0;
 
-  const publishBeta02Catalog = (result: PublicCatalogLoadResult): void => {
-    const nextCatalog = getValidatedBeta02Catalog(result);
-    const nextChecksum = nextCatalog?.checksum ?? null;
+  const publishCatalogState = (result: PublicCatalogLoadResult): void => {
+    const nextState = toCatalogState(result);
 
-    if (nextChecksum === beta02Checksum) {
+    if (isSameCatalogRevision(nextState, catalogState)) {
       return;
     }
 
-    beta02Catalog = nextCatalog;
-    beta02Checksum = nextChecksum;
-    beta02Listeners.forEach((listener) => listener(beta02Catalog));
+    catalogState = nextState;
+    catalogListeners.forEach((listener) => listener(catalogState));
   };
 
   const unsubscribe = service.subscribe((result) => {
     dispatchSafeStatusEvent(result);
-    publishBeta02Catalog(result);
-
-    if (hasCompletedRemoteCheck) {
-      status.update(result);
-    }
+    publishCatalogState(result);
+    status.update(result);
   });
 
-  const refresh = async (): Promise<void> => {
-    const wasInitialCheck = !hasCompletedRemoteCheck;
-
-    if (wasInitialCheck) {
+  const refresh = async (showChecking: boolean): Promise<void> => {
+    if (showChecking) {
       status.setChecking();
     }
 
-    const result = await service.refresh();
-    hasCompletedRemoteCheck = true;
+    await service.refresh();
     lastRefreshAt = Date.now();
-
-    if (wasInitialCheck) {
-      status.update(result);
-    }
   };
 
   status.setRetryHandler(() => {
-    void refresh();
+    void refresh(true);
   });
 
   const handleOnline = (): void => {
-    void refresh();
+    void refresh(true);
   };
   const handleOffline = (): void => {
-    hasCompletedRemoteCheck = true;
     service.markOffline();
   };
   const handleVisibilityChange = (): void => {
@@ -178,28 +190,30 @@ export async function bootstrapPublicDataRuntime(
       navigator.onLine &&
       Date.now() - lastRefreshAt >= REFRESH_INTERVAL_MS
     ) {
-      void refresh();
+      void refresh(false);
     }
   };
   const refreshInterval = window.setInterval(() => {
     if (document.visibilityState === 'visible' && navigator.onLine) {
-      void refresh();
+      void refresh(false);
     }
   }, REFRESH_INTERVAL_MS);
 
   window.addEventListener('online', handleOnline);
   window.addEventListener('offline', handleOffline);
   document.addEventListener('visibilitychange', handleVisibilityChange);
-  void refresh();
+  void refresh(false);
 
   return {
-    catalog: initialCatalog,
-    subscribeBeta02Catalog(listener: Beta02CatalogListener): () => void {
-      beta02Listeners.add(listener);
-      listener(beta02Catalog);
+    getCatalogState(): PublicCatalogState {
+      return catalogState;
+    },
+    subscribeCatalogState(listener: PublicCatalogStateListener): () => void {
+      catalogListeners.add(listener);
+      listener(catalogState);
 
       return (): void => {
-        beta02Listeners.delete(listener);
+        catalogListeners.delete(listener);
       };
     },
     destroy(): void {
@@ -207,7 +221,7 @@ export async function bootstrapPublicDataRuntime(
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      beta02Listeners.clear();
+      catalogListeners.clear();
       unsubscribe();
       service.dispose();
       status.destroy();
