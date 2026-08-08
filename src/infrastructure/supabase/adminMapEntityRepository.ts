@@ -134,7 +134,7 @@ function mapRecord(row: Record<string, unknown>): AdminMapEntityRecord {
     description: typeof row.description === 'string' ? row.description : '',
     x: numberValue(row, 'x'),
     y: numberValue(row, 'y'),
-    categoryId: requiredString(row, 'category_id'),
+    categoryId: nullableString(row, 'category_id') ?? '',
     publicationStatus: publicationStatus(row.publication_status),
     publishedAt: nullableString(row, 'published_at'),
     archivedAt: nullableString(row, 'archived_at'),
