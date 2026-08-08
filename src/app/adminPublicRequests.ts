@@ -105,6 +105,7 @@ export function mountAdminPublicRequests(
   let pendingAction: PendingAction | null = null;
   let restoreFocus: HTMLElement | null = null;
   let feedback = '';
+  const moderationNoteDrafts = new Map<string, string>();
 
   heading.textContent = 'Solicitudes públicas';
   heading.id = 'admin-public-requests-heading';
@@ -252,6 +253,11 @@ export function mountAdminPublicRequests(
       note.maxLength = 2000;
       note.rows = 3;
       note.placeholder = 'Contexto interno de la decisión';
+      note.value = moderationNoteDrafts.get(request.id) ?? '';
+      note.addEventListener('input', () => {
+        if (note.value) moderationNoteDrafts.set(request.id, note.value);
+        else moderationNoteDrafts.delete(request.id);
+      });
 
       const convertButton = createElement('button', 'admin-public-requests__primary');
       const rejectButton = createElement('button', 'admin-public-requests__danger');
@@ -306,6 +312,9 @@ export function mountAdminPublicRequests(
       status.textContent = `${state.records.length} solicitudes administrativas disponibles.`;
     }
 
+    for (const request of state.records) {
+      if (request.requestStatus !== 'pending') moderationNoteDrafts.delete(request.id);
+    }
     const visible = filterAndSortAdminPublicRequests(state.records, selectedFilter, selectedSort);
     list.replaceChildren(...visible.map(renderCard));
     empty.hidden = visible.length !== 0 || state.phase === 'loading';
@@ -338,7 +347,10 @@ export function mountAdminPublicRequests(
     void (async () => {
       if (action.action === 'reject') {
         const succeeded = await controller.reject(action.request, action.moderationNote);
-        if (succeeded) feedback = 'Solicitud rechazada. El historial de moderación se conserva.';
+        if (succeeded) {
+          moderationNoteDrafts.delete(action.request.id);
+          feedback = 'Solicitud rechazada. El historial de moderación se conserva.';
+        }
         render(controller.getState());
         return;
       }
@@ -348,6 +360,7 @@ export function mountAdminPublicRequests(
         render(controller.getState());
         return;
       }
+      moderationNoteDrafts.delete(action.request.id);
       feedback =
         'Borrador creado sin categoría ni etiquetas. Debe revisarse en el editor antes de cualquier publicación.';
       render(controller.getState());
@@ -393,6 +406,7 @@ export function mountAdminPublicRequests(
     destroy(): void {
       unsubscribeController();
       unsubscribeAuth();
+      moderationNoteDrafts.clear();
       filter.removeEventListener('change', handleFilter);
       sort.removeEventListener('change', handleSort);
       refresh.removeEventListener('click', handleRefresh);
