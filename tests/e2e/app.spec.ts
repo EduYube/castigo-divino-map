@@ -240,7 +240,7 @@ test('opens compact public details and closes back to its marker', async ({ page
 
   await expect(panel).toBeVisible();
   await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
-  await expect(panel).toHaveAttribute('data-detail-source', 'beta01');
+  await expect(panel).toHaveAttribute('data-detail-source', 'beta02');
   await expect(
     page.getByRole('heading', { level: 3, name: 'Puerto de demostración' }),
   ).toBeFocused();
@@ -254,10 +254,11 @@ test('opens compact public details and closes back to its marker', async ({ page
   await expect(panel).not.toContainText('Puerto de ejemplo');
   await expect(panel).not.toContainText('Información pública de demostración');
   await expect(panel).not.toContainText('Este puerto ficticio sirve para comprobar fichas');
-  await expect(panel.getByRole('button', { name: 'Abrir ficha completa' })).toBeDisabled();
-  await expect(panel).toContainText(
-    'Esta entidad no dispone de una ficha completa pública en Beta 0.2.',
-  );
+  const fullAction = panel.getByRole('link', {
+    name: 'Abrir ficha completa de Puerto de demostración en una pestaña nueva',
+  });
+  await expect(fullAction).toBeVisible();
+  await expect(fullAction).toHaveAttribute('href', /\?entity=puerto-de-demostracion$/);
   await expect(marker).toHaveAttribute('aria-pressed', 'true');
   await expect(marker).toHaveClass(/campaign-marker-icon--active/);
 
@@ -377,7 +378,11 @@ test('keeps search, map and compact details useful in a mobile viewport', async 
   await expect(closeButton).toBeVisible();
   await expect(panel).toContainText('Costero');
   await expect(panel).not.toContainText('Información pública de demostración');
-  await expect(panel.getByRole('button', { name: 'Abrir ficha completa' })).toBeVisible();
+  await expect(
+    panel.getByRole('link', {
+      name: 'Abrir ficha completa de Puerto de demostración en una pestaña nueva',
+    }),
+  ).toBeVisible();
 });
 
 test('keeps search, markers and compact details available when the remote image fails', async ({
