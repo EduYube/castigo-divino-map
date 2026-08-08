@@ -55,16 +55,7 @@ function dispatchSafeStatusEvent(result: PublicCatalogLoadResult): void {
   );
 }
 
-function getValidatedBeta02Catalog(
-  service: ResilientPublicCatalogService,
-  result: PublicCatalogLoadResult,
-): PublicCatalogSnapshotV2 | null {
-  const remoteEnvelope = service.getLastRemoteEnvelope();
-
-  if (remoteEnvelope?.data.contract === 'beta02') {
-    return remoteEnvelope.data.catalog;
-  }
-
+function getValidatedBeta02Catalog(result: PublicCatalogLoadResult): PublicCatalogSnapshotV2 | null {
   return result.data?.contract === 'beta02' ? result.data.catalog : null;
 }
 
@@ -125,13 +116,13 @@ export async function bootstrapPublicDataRuntime(
   const initialResult = await service.initialize();
   const initialCatalog = toCompatibilityCatalog(initialResult);
   const beta02Listeners = new Set<Beta02CatalogListener>();
-  let beta02Catalog = getValidatedBeta02Catalog(service, initialResult);
+  let beta02Catalog = getValidatedBeta02Catalog(initialResult);
   let beta02Checksum = beta02Catalog?.checksum ?? null;
   let hasCompletedRemoteCheck = false;
   let lastRefreshAt = 0;
 
   const publishBeta02Catalog = (result: PublicCatalogLoadResult): void => {
-    const nextCatalog = getValidatedBeta02Catalog(service, result);
+    const nextCatalog = getValidatedBeta02Catalog(result);
     const nextChecksum = nextCatalog?.checksum ?? null;
 
     if (nextChecksum === beta02Checksum) {
