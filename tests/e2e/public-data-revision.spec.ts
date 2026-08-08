@@ -256,19 +256,17 @@ test('switches marker, search, filters and URL atomically from snapshot A to Sup
 
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   const results = page.getByRole('list', { name: 'Resultados de búsqueda de lugares' });
+  const harborSearchResult = results.locator('[data-search-result-id="place-demo-harbor"]');
 
   await searchbox.fill('nota remota b');
-  await expect(
-    results.getByRole('button', {
-      name: /Puerto remoto B.*Coincidencia por nota pública: Nota remota B/i,
-    }),
-  ).toBeVisible();
+  await expect(harborSearchResult).toBeVisible();
+  await expect(harborSearchResult).toContainText('Puerto remoto B');
+  await expect(harborSearchResult).toContainText('Coincidencia por nota pública: Nota remota B');
 
   await searchbox.fill('alias remoto b');
-  const aliasResult = results.getByRole('button', {
-    name: /Puerto remoto B.*Coincidencia por alias: Alias remoto B/i,
-  });
-  await expect(aliasResult).toBeVisible();
+  await expect(harborSearchResult).toBeVisible();
+  await expect(harborSearchResult).toContainText('Puerto remoto B');
+  await expect(harborSearchResult).toContainText('Coincidencia por alias: Alias remoto B');
 
   const remoteTag = page.getByRole('checkbox', { name: /Revisión remota/ });
   await expect(remoteTag).toBeVisible();
@@ -276,7 +274,7 @@ test('switches marker, search, filters and URL atomically from snapshot A to Sup
   expect(currentSearchParams(page).getAll('tag')).toEqual(['remote-revision']);
   expect(currentSearchParams(page).get('q')).toBe('alias remoto b');
 
-  await aliasResult.click();
+  await harborSearchResult.click();
   await expect(page.getByTestId('place-details')).toContainText('Puerto remoto B');
   expect(currentSearchParams(page).get('place')).toBe('puerto-de-demostracion');
 
