@@ -32,6 +32,12 @@ const SECRET_PATTERNS = [
   /SUPABASE_(?:ACCESS_TOKEN|DB_PASSWORD|SERVICE_ROLE_KEY)/,
   /postgres(?:ql)?:\/\/[^:\s/@]+:[^@\s/]+@/i,
 ];
+const LEGACY_EDITORIAL_MARKERS = [
+  'Puerto de demostración',
+  'Paso de demostración',
+  'Este puerto ficticio sirve para comprobar fichas',
+  'Este paso ficticio demuestra cómo una nota pública',
+];
 
 function fail(message) {
   throw new Error(`Production build verification failed: ${message}`);
@@ -204,11 +210,10 @@ for (const filePath of files) {
   }
 }
 
-if (
-  javascriptBundle.includes('place-demo-harbor') ||
-  javascriptBundle.includes('Puerto de demostración')
-) {
-  fail('the Beta 0.1 static migration fixture was bundled into production JavaScript');
+for (const marker of LEGACY_EDITORIAL_MARKERS) {
+  if (javascriptBundle.includes(marker)) {
+    fail(`the Beta 0.1 static editorial fixture was bundled into production JavaScript: ${marker}`);
+  }
 }
 
 let textualBundle = '';
