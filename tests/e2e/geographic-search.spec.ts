@@ -277,7 +277,10 @@ test('remains usable at 320 px and restores the geographic query after reload', 
   await page.setViewportSize({ width: 320, height: 700 });
   await openGeographicSearch(page, '/?q=Waterdeep');
 
-  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  const searchbox = page.getByRole('searchbox', {
+    name: 'Buscar lugares',
+    includeHidden: true,
+  });
   const searchToggle = page.locator('[data-place-search-toggle]');
   await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(searchbox).toHaveValue('Waterdeep');
