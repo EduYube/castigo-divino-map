@@ -17,10 +17,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  diagnose-e2e:
-    name: Diagnose MAP-026 E2E failures
+  validate:
+    name: Build, quality and tests
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
 
     steps:
       - name: Checkout repository
@@ -35,40 +35,60 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Audit tracked files for privileged credentials
+        run: npm run verify:security
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Build application for GitHub Pages
+        run: npm run build:pages
+
+      - name: Audit production artifact
+        run: npm run verify:build
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Capture existing E2E regression
-        id: existing
-        continue-on-error: true
-        shell: bash
-        run: |
-          mkdir -p diagnostics
-          mapfile -t specs < <(find tests/e2e -name '*.spec.ts' ! -name 'public-pin-request.spec.ts' -print)
-          set -o pipefail
-          npx playwright test "${specs[@]}" 2>&1 | tee diagnostics/existing-e2e.log
+      - name: Run end-to-end tests
+        run: npm run test:e2e
 
-      - name: Capture MAP-026 mobile accessibility failure
-        id: mobile
-        continue-on-error: true
-        shell: bash
-        run: |
-          mkdir -p diagnostics
-          set -o pipefail
-          npx playwright test tests/e2e/public-pin-request.spec.ts --grep "keeps the request flow accessible" 2>&1 | tee diagnostics/map026-mobile.log
+      - name: Smoke test the Pages build locally
+        run: npm run test:e2e:pages
 
-      - name: Upload E2E diagnostics
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+  database:
+    name: Supabase migrations, lint and RLS tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
-          name: map-026-e2e-diagnostics
-          path: diagnostics/*.log
-          retention-days: 1
+          node-version: 22
+          cache: npm
 
-      - name: Existing E2E regression remains
-        if: ${{ always() && steps.existing.outcome != 'success' }}
-        run: exit 1
+      - name: Install dependencies
+        run: npm ci
 
-      - name: MAP-026 mobile accessibility failure remains
-        if: ${{ always() && steps.mobile.outcome != 'success' }}
-        run: exit 1
+      - name: Record pinned Supabase CLI version
+        run: npx supabase --version
+
+      - name: Start local Supabase database
+        run: npx supabase db start
+
+      - name: Rebuild, lint and test database
+        run: npm run supabase:db:validate
+
+      - name: Stop local Supabase database
+        if: always()
+        run: npx supabase stop --no-backup
