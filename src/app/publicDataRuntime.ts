@@ -55,7 +55,9 @@ function dispatchSafeStatusEvent(result: PublicCatalogLoadResult): void {
   );
 }
 
-function getValidatedBeta02Catalog(result: PublicCatalogLoadResult): PublicCatalogSnapshotV2 | null {
+function getValidatedBeta02Catalog(
+  result: PublicCatalogLoadResult,
+): PublicCatalogSnapshotV2 | null {
   return result.data?.contract === 'beta02' ? result.data.catalog : null;
 }
 
