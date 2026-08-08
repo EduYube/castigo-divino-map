@@ -115,10 +115,11 @@ export class AdminPublicRequestController {
     request: AdminPublicRequestRecord,
     moderationNote: string,
   ): Promise<AdminPublicRequestModerationResult | null> {
-    if (!this.#canUse() || this.#state.phase === 'mutating') {
+    if (!this.#canUse()) {
       this.#publishBlocked();
       return null;
     }
+    if (this.#state.phase === 'mutating') return null;
     if (request.requestStatus !== 'pending') {
       this.#publish({
         ...this.#state,
