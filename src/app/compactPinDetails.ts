@@ -13,6 +13,7 @@ export interface CompactPinDetailsShowOptions {
 
 export interface CompactPinDetailsOptions {
   readonly onClose: () => void;
+  readonly createFullDetailsUrl: (details: CompactPinDetailModel) => string | null;
 }
 
 interface CompactPinDetailsElements {
@@ -176,28 +177,51 @@ function appendImportantCharacters(parent: HTMLElement, details: CompactPinDetai
   parent.append(section);
 }
 
-function appendFullDetailsBoundary(parent: HTMLElement): void {
+function appendFullDetailsAction(
+  parent: HTMLElement,
+  details: CompactPinDetailModel,
+  url: string | null,
+): void {
   const section = document.createElement('section');
-  const button = document.createElement('button');
-  const note = appendTextElement(
-    section,
-    'p',
-    'compact-details__future-note',
-    'La ficha completa se incorporará en MAP-024; esta beta no inventa todavía una URL de detalle.',
-  );
+  const note = document.createElement('p');
 
-  note.id = 'compact-details-full-note';
-  button.type = 'button';
-  button.className = 'compact-details__full-action';
-  button.textContent = 'Abrir ficha completa';
-  button.disabled = true;
-  button.setAttribute('aria-describedby', note.id);
   section.className = 'compact-details__full-boundary';
-  section.prepend(button);
+  note.className = 'compact-details__future-note';
+  note.id = 'compact-details-full-note';
+
+  if (url) {
+    const link = document.createElement('a');
+    link.className = 'compact-details__full-action';
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Abrir ficha completa';
+    link.setAttribute(
+      'aria-label',
+      `Abrir ficha completa de ${details.name} en una pestaña nueva`,
+    );
+    link.setAttribute('aria-describedby', note.id);
+    note.textContent = 'Se abrirá en una pestaña nueva para conservar el estado actual del mapa.';
+    section.append(link, note);
+  } else {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'compact-details__full-action';
+    button.textContent = 'Abrir ficha completa';
+    button.disabled = true;
+    button.setAttribute('aria-describedby', note.id);
+    note.textContent = 'Esta entidad no dispone de una ficha completa pública en Beta 0.2.';
+    section.append(button, note);
+  }
+
   parent.append(section);
 }
 
-function renderDetails(content: HTMLElement, details: CompactPinDetailModel): HTMLElement {
+function renderDetails(
+  content: HTMLElement,
+  details: CompactPinDetailModel,
+  fullDetailsUrl: string | null,
+): HTMLElement {
   content.replaceChildren();
   appendType(content, details);
 
@@ -214,7 +238,7 @@ function renderDetails(content: HTMLElement, details: CompactPinDetailModel): HT
   appendDispositions(content, details);
   appendTags(content, details);
   appendImportantCharacters(content, details);
-  appendFullDetailsBoundary(content);
+  appendFullDetailsAction(content, details, fullDetailsUrl);
   return title;
 }
 
@@ -234,7 +258,9 @@ export function mountCompactPinDetails(
         !elements.panel.hidden &&
         elements.panel.dataset.activePinId === details.id &&
         existingTitle !== null;
-      const title = canReuseContent ? existingTitle : renderDetails(elements.content, details);
+      const title = canReuseContent
+        ? existingTitle
+        : renderDetails(elements.content, details, options.createFullDetailsUrl(details));
 
       elements.panel.hidden = false;
       elements.panel.dataset.activePinId = details.id;
