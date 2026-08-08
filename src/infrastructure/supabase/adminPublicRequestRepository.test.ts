@@ -92,20 +92,61 @@ function repository(fetchImplementation: typeof fetch): SupabaseAdminPublicReque
 }
 
 describe('SupabaseAdminPublicRequestRepository', () => {
-  it('lists private requests with the current administrative JWT', async () => {
-    const fetchImplementation = vi.fn<typeof fetch>(async (_input, init) => {
+  it('lists private requests with the current administrative JWT without exact counts', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>(async (input, init) => {
       const headers = new Headers(init?.headers);
+      const url = new URL(String(input));
       expect(headers.get('authorization')).toBe(`Bearer ${ACCESS_TOKEN}`);
       expect(headers.get('apikey')).toBe(PUBLISHABLE_KEY);
+      expect(headers.get('prefer')).toBeNull();
+      expect(url.searchParams.get('limit')).toBe('1000');
+      expect(url.searchParams.get('order')).toBe('created_at.desc,id.asc');
       return new Response(JSON.stringify([row]), {
         status: 200,
-        headers: { 'Content-Type': 'application/json', 'Content-Range': '0-0/1' },
+        headers: { 'Content-Type': 'application/json' },
       });
     });
 
     await expect(
       repository(fetchImplementation).list({ signal: new AbortController().signal }),
     ).resolves.toEqual([request]);
+  });
+
+  it('uses a stable created-at/id cursor instead of offset and total-count paging', async () => {
+    const firstPage = Array.from({ length: 1000 }, (_, index) => ({
+      ...row,
+      id: `request-${String(index).padStart(4, '0')}`,
+    }));
+    const finalRow = { ...row, id: 'request-1000' };
+    let call = 0;
+    const fetchImplementation = vi.fn<typeof fetch>(async (input) => {
+      call += 1;
+      const url = new URL(String(input));
+      expect(url.searchParams.get('limit')).toBe('1000');
+      expect(url.searchParams.get('offset')).toBeNull();
+      if (call === 1) {
+        expect(url.searchParams.get('or')).toBeNull();
+        return new Response(JSON.stringify(firstPage), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      expect(url.searchParams.get('or')).toBe(
+        '(created_at.lt."2026-08-08T10:00:00.000Z",and(created_at.eq."2026-08-08T10:00:00.000Z",id.gt."request-0999"))',
+      );
+      return new Response(JSON.stringify([finalRow]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    const result = await repository(fetchImplementation).list({
+      signal: new AbortController().signal,
+    });
+
+    expect(fetchImplementation).toHaveBeenCalledTimes(2);
+    expect(result).toHaveLength(1001);
+    expect(result.at(-1)?.id).toBe('request-1000');
   });
 
   it('sends the optimistic revision and closed conversion action to the RPC', async () => {
