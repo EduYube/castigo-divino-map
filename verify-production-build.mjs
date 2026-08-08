@@ -161,28 +161,56 @@ try {
   fail('the bundled public snapshot does not contain valid JSON');
 }
 
-if (snapshot.schemaVersion !== 1 || snapshot.contract !== 'beta01') {
-  fail('the bundled public snapshot uses an unsupported compatibility contract');
+if (snapshot.schemaVersion !== 2) {
+  fail('the bundled public snapshot does not use the Beta 0.2 public contract');
 }
 
 if (!snapshot.generatedAt || !Number.isFinite(Date.parse(snapshot.generatedAt))) {
   fail('the bundled public snapshot has an invalid generatedAt value');
 }
 
-if (typeof snapshot.sourceRevision !== 'string' || !snapshot.sourceRevision.startsWith('sha256:')) {
-  fail('the bundled public snapshot has an invalid sourceRevision');
+const {
+  generatedAt: _generatedAt,
+  sourceRevision,
+  checksum: snapshotChecksum,
+  ...snapshotContent
+} = snapshot;
+const expectedSnapshotChecksum = checksum(snapshotContent);
+
+if (
+  sourceRevision !== expectedSnapshotChecksum ||
+  snapshotChecksum !== expectedSnapshotChecksum
+) {
+  fail('the bundled public snapshot checksum/sourceRevision does not match its content');
 }
 
-const expectedSnapshotChecksum = checksum({
-  schemaVersion: snapshot.schemaVersion,
-  contract: snapshot.contract,
-  generatedAt: snapshot.generatedAt,
-  sourceRevision: snapshot.sourceRevision,
-  catalog: snapshot.catalog,
-});
+const snapshotText = JSON.stringify(snapshot);
+for (const forbidden of [
+  '"publication_status"',
+  '"request_status"',
+  '"moderation_note"',
+  '"sender_name"',
+  '"reason"',
+  '"public_requests"',
+]) {
+  if (snapshotText.includes(forbidden)) {
+    fail(`the public snapshot contains a protected field or domain marker: ${forbidden}`);
+  }
+}
 
-if (snapshot.checksum !== expectedSnapshotChecksum) {
-  fail('the bundled public snapshot checksum does not match its content');
+let javascriptBundle = '';
+
+for (const filePath of files) {
+  if (extname(filePath).toLowerCase() === '.js') {
+    javascriptBundle += `\n${await readFile(filePath, 'utf8')}`;
+  }
+}
+
+if (
+  javascriptBundle.includes('place-demo-harbor') ||
+  javascriptBundle.includes('Puerto de demostración')
+) {
+  fail('the Beta 0.1 static migration fixture was bundled into production JavaScript');
 }
 
 let textualBundle = '';
@@ -206,5 +234,5 @@ for (const pattern of SECRET_PATTERNS) {
 }
 
 console.log(
-  `Verified ${publicPaths.length} production files for ${expectedBase}: index, JavaScript, CSS, public snapshot, remote map reference, no raster map copy and no known or privileged Supabase credential patterns.`,
+  `Verified ${publicPaths.length} production files for ${expectedBase}: index, JavaScript, CSS, Beta 0.2 public snapshot, remote map reference, no raster map copy and no known or privileged Supabase credential patterns.`,
 );

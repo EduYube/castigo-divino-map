@@ -1,66 +1,61 @@
-import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
-const SOURCE_PATH = 'src/data/catalog.json';
-const SNAPSHOT_PATH = 'public/data/public-catalog.snapshot.json';
+import {
+  buildPublicSnapshotContent,
+  checksum,
+  FIXTURE_PATH,
+  loadFixtureRows,
+  loadRemotePublicRows,
+  SNAPSHOT_PATH,
+  snapshotContent,
+} from './public-snapshot-lib.mjs';
 
-function fail(message) {
-  throw new Error(`Public snapshot verification failed: ${message}`);
-}
-
-function canonicalize(value) {
-  if (Array.isArray(value)) {
-    return value.map(canonicalize);
-  }
-
-  if (typeof value === 'object' && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, entryValue]) => [key, canonicalize(entryValue)]),
-    );
-  }
-
-  return value;
-}
-
-function checksum(value) {
-  return `sha256:${createHash('sha256')
-    .update(JSON.stringify(canonicalize(value)))
-    .digest('hex')}`;
-}
-
-const catalog = JSON.parse(await readFile(SOURCE_PATH, 'utf8'));
+const verifyRemote = process.argv.includes('--remote');
 const snapshot = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'));
 
-if (snapshot.schemaVersion !== 1 || snapshot.contract !== 'beta01') {
-  fail('the committed snapshot does not use the Beta 0.1 compatibility contract');
+if (snapshot.schemaVersion !== 2) {
+  throw new Error('The committed public snapshot must use schemaVersion 2.');
+}
+if (!Number.isFinite(Date.parse(snapshot.generatedAt))) {
+  throw new Error('The committed public snapshot has an invalid generatedAt value.');
 }
 
-if (!snapshot.generatedAt || !Number.isFinite(Date.parse(snapshot.generatedAt))) {
-  fail('generatedAt is missing or invalid');
+const committedContent = snapshotContent(snapshot);
+const committedChecksum = checksum(committedContent);
+if (snapshot.checksum !== committedChecksum || snapshot.sourceRevision !== committedChecksum) {
+  throw new Error('The committed public snapshot checksum/sourceRevision is invalid.');
 }
 
-const expectedSourceRevision = checksum(catalog);
+const raw = verifyRemote ? await loadRemotePublicRows() : await loadFixtureRows(FIXTURE_PATH);
+const expectedContent = buildPublicSnapshotContent(raw);
+const expectedChecksum = checksum(expectedContent);
 
-if (snapshot.sourceRevision !== expectedSourceRevision) {
-  fail('sourceRevision does not match src/data/catalog.json; run npm run snapshot:generate');
+if (expectedChecksum !== committedChecksum) {
+  throw new Error(
+    `Public snapshot drift: committed ${committedChecksum}, ${verifyRemote ? 'Supabase' : 'fixture'} ${expectedChecksum}.`,
+  );
 }
 
-if (JSON.stringify(snapshot.catalog) !== JSON.stringify(catalog)) {
-  fail('catalog content does not match src/data/catalog.json; run npm run snapshot:generate');
+if (JSON.stringify(committedContent) !== JSON.stringify(expectedContent)) {
+  throw new Error(
+    `Public snapshot order/content differs from the ${verifyRemote ? 'Supabase' : 'fixture'} projection.`,
+  );
 }
 
-const expectedChecksum = checksum({
-  schemaVersion: 1,
-  contract: 'beta01',
-  generatedAt: snapshot.generatedAt,
-  sourceRevision: snapshot.sourceRevision,
-  catalog: snapshot.catalog,
-});
-
-if (snapshot.checksum !== expectedChecksum) {
-  fail('checksum does not match the committed snapshot content');
+const serialized = JSON.stringify(snapshot);
+for (const forbidden of [
+  '"publication_status"',
+  '"request_status"',
+  '"moderation_note"',
+  '"sender_name"',
+  '"reason"',
+  '"public_requests"',
+]) {
+  if (serialized.includes(forbidden)) {
+    throw new Error(`Public snapshot leaked a non-public field or domain marker: ${forbidden}.`);
+  }
 }
 
-console.log(`Verified ${SNAPSHOT_PATH} (${snapshot.sourceRevision}).`);
+console.log(
+  `Verified Beta 0.2 public snapshot against ${verifyRemote ? 'Supabase published data' : 'the MAP-028 CI fixture'}: ${committedChecksum}.`,
+);

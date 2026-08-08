@@ -1,5 +1,6 @@
 import { ResilientPublicCatalogService } from '../application/publicCatalogService';
 import type { PublicCatalogSnapshotV2 } from '../data/beta02-model';
+import { toBeta01CompatibilityCatalog } from '../data/beta01Compatibility';
 import type { CampaignCatalog } from '../data/model';
 import {
   PublicDataRepositoryError,
@@ -7,16 +8,12 @@ import {
   type PublicCatalogLoadResult,
   type PublicDataIssue,
 } from '../data-access/publicCatalog';
-import {
-  BundledPublicCatalogRepository,
-  StaticPublicCatalogRepository,
-} from '../infrastructure/snapshot/publicCatalogSnapshot';
+import { BundledPublicCatalogRepository } from '../infrastructure/snapshot/publicCatalogSnapshot';
 import { BrowserPublicCatalogSessionCache } from '../infrastructure/snapshot/sessionCatalogCache';
 import { SupabasePublicCatalogRepository } from '../infrastructure/supabase/publicCatalogRepository';
 import { mountBackendStatus } from './backendStatus';
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
-const LEGACY_CATALOG_REVISION = 'beta01-static-catalog';
 
 interface PublicDataTestConfig {
   readonly projectUrl?: string;
@@ -60,15 +57,34 @@ function dispatchSafeStatusEvent(result: PublicCatalogLoadResult): void {
 
 function getValidatedBeta02Catalog(
   service: ResilientPublicCatalogService,
+  result: PublicCatalogLoadResult,
 ): PublicCatalogSnapshotV2 | null {
-  const envelope = service.getLastRemoteEnvelope();
+  const remoteEnvelope = service.getLastRemoteEnvelope();
 
-  return envelope?.data.contract === 'beta02' ? envelope.data.catalog : null;
+  if (remoteEnvelope?.data.contract === 'beta02') {
+    return remoteEnvelope.data.catalog;
+  }
+
+  return result.data?.contract === 'beta02' ? result.data.catalog : null;
+}
+
+function toCompatibilityCatalog(result: PublicCatalogLoadResult): CampaignCatalog {
+  if (!result.data) {
+    throw new PublicDataRepositoryError(
+      'invalid-snapshot',
+      'No hay una proyección pública válida disponible para iniciar el atlas.',
+      { source: 'application' },
+    );
+  }
+
+  return result.data.contract === 'beta01'
+    ? result.data.catalog
+    : toBeta01CompatibilityCatalog(result.data.catalog);
 }
 
 export async function bootstrapPublicDataRuntime(
   root: ParentNode,
-  legacyCatalog: CampaignCatalog,
+  _legacyCatalog?: CampaignCatalog,
 ): Promise<PublicDataRuntime> {
   const status = mountBackendStatus(root);
   const testConfig = resolveTestConfig();
@@ -98,12 +114,7 @@ export async function bootstrapPublicDataRuntime(
 
   const snapshotUrl = `${import.meta.env.BASE_URL}data/public-catalog.snapshot.json`;
   const service = new ResilientPublicCatalogService({
-    fallbackRepositories: [
-      new BundledPublicCatalogRepository({ url: snapshotUrl }),
-      new StaticPublicCatalogRepository(legacyCatalog, {
-        sourceRevision: LEGACY_CATALOG_REVISION,
-      }),
-    ],
+    fallbackRepositories: [new BundledPublicCatalogRepository({ url: snapshotUrl })],
     remoteRepository,
     sessionCache: new BrowserPublicCatalogSessionCache(),
     configurationIssue,
@@ -111,16 +122,15 @@ export async function bootstrapPublicDataRuntime(
     retryDelaysMs: testConfig?.retryDelaysMs,
   });
   const initialResult = await service.initialize();
-  const initialCatalog =
-    initialResult.data?.contract === 'beta01' ? initialResult.data.catalog : legacyCatalog;
+  const initialCatalog = toCompatibilityCatalog(initialResult);
   const beta02Listeners = new Set<Beta02CatalogListener>();
-  let beta02Catalog = getValidatedBeta02Catalog(service);
+  let beta02Catalog = getValidatedBeta02Catalog(service, initialResult);
   let beta02Checksum = beta02Catalog?.checksum ?? null;
   let hasCompletedRemoteCheck = false;
   let lastRefreshAt = 0;
 
-  const publishBeta02Catalog = (): void => {
-    const nextCatalog = getValidatedBeta02Catalog(service);
+  const publishBeta02Catalog = (result: PublicCatalogLoadResult): void => {
+    const nextCatalog = getValidatedBeta02Catalog(service, result);
     const nextChecksum = nextCatalog?.checksum ?? null;
 
     if (nextChecksum === beta02Checksum) {
@@ -134,7 +144,7 @@ export async function bootstrapPublicDataRuntime(
 
   const unsubscribe = service.subscribe((result) => {
     dispatchSafeStatusEvent(result);
-    publishBeta02Catalog();
+    publishBeta02Catalog(result);
 
     if (hasCompletedRemoteCheck) {
       status.update(result);
@@ -206,7 +216,6 @@ export async function bootstrapPublicDataRuntime(
       beta02Listeners.clear();
       unsubscribe();
       service.dispose();
-      status.destroy();
     },
   };
 }

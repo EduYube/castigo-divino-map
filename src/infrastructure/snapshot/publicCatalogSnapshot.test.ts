@@ -2,12 +2,12 @@ import { readFile } from 'node:fs/promises';
 
 import { describe, expect, test } from 'vitest';
 
-import { campaignCatalog } from '../../data/catalog';
 import {
+  BundledPublicCatalogRepository,
   parsePublicCatalogSnapshotV1,
   PUBLIC_SNAPSHOT_MAX_AGE_MS,
-  StaticPublicCatalogRepository,
 } from './publicCatalogSnapshot';
+import { parsePublicCatalogSnapshotV2 } from '../supabase/publicCatalogCodec';
 
 const SNAPSHOT_URL = new URL('../../../public/data/public-catalog.snapshot.json', import.meta.url);
 
@@ -16,48 +16,69 @@ async function readSnapshot(): Promise<Record<string, unknown>> {
 }
 
 describe('public catalog snapshot', () => {
-  test('validates the committed Beta 0.1 snapshot and checksum', async () => {
+  test('validates the committed Beta 0.2 snapshot and checksum', async () => {
     const snapshot = await readSnapshot();
-    const result = await parsePublicCatalogSnapshotV1(snapshot, () =>
-      Date.parse('2026-08-07T00:00:00Z'),
+    const result = await parsePublicCatalogSnapshotV2(snapshot, () =>
+      Date.parse(String(snapshot.generatedAt)),
     );
 
-    expect(result.source).toBe('bundled-snapshot');
-    expect(result.data.contract).toBe('beta01');
-    expect(result.metadata.schemaVersion).toBe(1);
-    expect(result.metadata.stale).toBe(false);
+    expect(result.data.contract).toBe('beta02');
+    expect(result.metadata.schemaVersion).toBe(2);
+    expect(result.metadata.checksum).toBe(snapshot.checksum);
   });
 
-  test('rejects a snapshot whose content no longer matches its checksum', async () => {
+  test('rejects a Beta 0.2 snapshot whose public content no longer matches its checksum', async () => {
     const snapshot = await readSnapshot();
-    const catalog = snapshot.catalog as { places: { name: string }[] };
-    catalog.places[0]!.name = 'Contenido manipulado';
+    const entities = snapshot.entities as { name: string }[];
+    entities[0]!.name = 'Contenido manipulado';
 
-    await expect(parsePublicCatalogSnapshotV1(snapshot)).rejects.toMatchObject({
+    await expect(parsePublicCatalogSnapshotV2(snapshot)).rejects.toMatchObject({
       code: 'checksum-mismatch',
     });
   });
 
-  test('keeps an old valid snapshot usable and marks it stale', async () => {
+  test('loads the packaged Beta 0.2 snapshot as the bundled fallback and marks age', async () => {
     const snapshot = await readSnapshot();
     const generatedAt = Date.parse(String(snapshot.generatedAt));
-    const result = await parsePublicCatalogSnapshotV1(
-      snapshot,
-      () => generatedAt + PUBLIC_SNAPSHOT_MAX_AGE_MS + 1,
-    );
-
-    expect(result.metadata.stale).toBe(true);
-    expect(result.data.contract).toBe('beta01');
-  });
-
-  test('marks the undated static fallback as stale instead of claiming fresh content', async () => {
-    const repository = new StaticPublicCatalogRepository(campaignCatalog, {
-      sourceRevision: 'beta01-static-catalog',
-      now: () => Date.parse('2026-08-06T00:00:00.000Z'),
+    const repository = new BundledPublicCatalogRepository({
+      url: '/data/public-catalog.snapshot.json',
+      now: () => generatedAt + PUBLIC_SNAPSHOT_MAX_AGE_MS + 1,
+      fetchImplementation: async () =>
+        new Response(JSON.stringify(snapshot), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
     });
+
     const result = await repository.load({ signal: new AbortController().signal });
 
-    expect(result.source).toBe('legacy-static');
+    expect(result.source).toBe('bundled-snapshot');
+    expect(result.data.contract).toBe('beta02');
     expect(result.metadata.stale).toBe(true);
+  });
+
+  test('keeps the Beta 0.1 parser available for a forward rollback deployment', async () => {
+    const catalog = { categories: [], tags: [], places: [], notes: [] };
+    const generatedAt = '2026-08-06T00:00:00.000Z';
+    const sourceRevision = 'sha256:legacy';
+    const { createSha256Checksum } = await import('../../data-access/publicCatalog');
+    const checksum = await createSha256Checksum({
+      schemaVersion: 1,
+      contract: 'beta01',
+      generatedAt,
+      sourceRevision,
+      catalog,
+    });
+
+    const result = await parsePublicCatalogSnapshotV1({
+      schemaVersion: 1,
+      contract: 'beta01',
+      generatedAt,
+      sourceRevision,
+      checksum,
+      catalog,
+    });
+
+    expect(result.data.contract).toBe('beta01');
   });
 });
