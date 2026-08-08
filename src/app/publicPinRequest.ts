@@ -57,6 +57,226 @@ function getRequiredElement<T extends Element>(root: ParentNode, selector: strin
   return element;
 }
 
+function ensurePublicPinRequestMarkup(root: ParentNode): void {
+  if (root.querySelector('[data-public-pin-request-panel]')) {
+    return;
+  }
+
+  const mapHeading = getRequiredElement<HTMLElement>(root, '.map-experience__heading');
+  const mapWorkspace = getRequiredElement<HTMLElement>(root, '[data-map-workspace]');
+  const openButton = document.createElement('button');
+  const panel = document.createElement('section');
+
+  openButton.type = 'button';
+  openButton.className = 'public-pin-request__open';
+  openButton.dataset.publicPinRequestOpen = '';
+  openButton.setAttribute('aria-expanded', 'false');
+  openButton.setAttribute('aria-controls', 'public-pin-request-panel');
+  openButton.textContent = 'Proponer un pin';
+  mapHeading.append(openButton);
+
+  panel.id = 'public-pin-request-panel';
+  panel.className = 'public-pin-request';
+  panel.dataset.publicPinRequestPanel = '';
+  panel.setAttribute('aria-labelledby', 'public-pin-request-heading');
+  panel.hidden = true;
+  panel.innerHTML = `
+    <div class="public-pin-request__header">
+      <div>
+        <p class="eyebrow">Solicitud pública</p>
+        <h3 id="public-pin-request-heading" data-public-pin-request-heading tabindex="-1">
+          Proponer un nuevo pin
+        </h3>
+      </div>
+      <button
+        class="public-pin-request__close"
+        data-public-pin-request-close
+        type="button"
+        aria-label="Cerrar el formulario de solicitud"
+      >
+        <span aria-hidden="true">×</span>
+      </button>
+    </div>
+    <p class="public-pin-request__lead">
+      Elige una posición del mapa y describe tu propuesta. La solicitud queda pendiente de revisión:
+      nunca crea ni publica un pin automáticamente.
+    </p>
+    <p id="public-pin-request-privacy" class="public-pin-request__privacy">
+      Guardamos tu nombre o apodo y el contenido de esta solicitud exclusivamente para moderarla.
+      Otros visitantes no pueden leer estos datos. No incluyas correo, teléfono ni otros datos
+      personales. Si el envío falla, el formulario permanece en esta página para que puedas
+      corregirlo o reintentarlo; sus campos no se guardan en el almacenamiento del navegador.
+    </p>
+    <form
+      class="public-pin-request__form"
+      data-public-pin-request-form
+      data-submit-state="idle"
+      novalidate
+      aria-describedby="public-pin-request-privacy public-pin-request-status"
+    >
+      <div class="public-pin-request__field">
+        <label for="public-pin-request-sender">Nombre o apodo</label>
+        <input
+          id="public-pin-request-sender"
+          data-public-pin-request-sender
+          data-public-pin-request-field="senderName"
+          name="sender-name"
+          type="text"
+          maxlength="80"
+          autocomplete="nickname"
+          required
+        />
+        <p
+          id="public-pin-request-sender-error"
+          class="public-pin-request__error"
+          data-public-pin-request-error="senderName"
+          hidden
+        ></p>
+      </div>
+
+      <div class="public-pin-request__field">
+        <label for="public-pin-request-name">Nombre propuesto del pin</label>
+        <input
+          id="public-pin-request-name"
+          data-public-pin-request-name
+          data-public-pin-request-field="proposedName"
+          name="proposed-name"
+          type="text"
+          maxlength="160"
+          autocomplete="off"
+          required
+        />
+        <p
+          id="public-pin-request-name-error"
+          class="public-pin-request__error"
+          data-public-pin-request-error="proposedName"
+          hidden
+        ></p>
+      </div>
+
+      <div class="public-pin-request__field">
+        <label for="public-pin-request-type">Tipo de pin</label>
+        <select
+          id="public-pin-request-type"
+          data-public-pin-request-type
+          data-public-pin-request-field="entityType"
+          name="entity-type"
+          required
+        >
+          <option value="">Elige un tipo</option>
+          <option value="character">Personaje</option>
+          <option value="location">Emplazamiento</option>
+        </select>
+        <p class="public-pin-request__hint">La lista es cerrada; no se pueden proponer categorías ni etiquetas.</p>
+        <p
+          id="public-pin-request-type-error"
+          class="public-pin-request__error"
+          data-public-pin-request-error="entityType"
+          hidden
+        ></p>
+      </div>
+
+      <fieldset class="public-pin-request__field public-pin-request__position-field">
+        <legend>Posición en el mapa</legend>
+        <p class="public-pin-request__hint">
+          Puedes señalarla con ratón o toque. Si navegas con teclado, usa el centro visible del mapa.
+        </p>
+        <div class="public-pin-request__position-actions">
+          <button
+            type="button"
+            data-public-pin-request-choose-position
+            data-public-pin-request-field="position"
+            aria-pressed="false"
+          >
+            Elegir posición en el mapa
+          </button>
+          <button type="button" data-public-pin-request-use-center>Usar el centro visible</button>
+        </div>
+        <output
+          class="public-pin-request__position"
+          data-public-pin-request-position
+          aria-live="polite"
+          aria-atomic="true"
+        ></output>
+        <p
+          id="public-pin-request-position-error"
+          class="public-pin-request__error"
+          data-public-pin-request-error="position"
+          hidden
+        ></p>
+      </fieldset>
+
+      <div class="public-pin-request__field public-pin-request__field--wide">
+        <label for="public-pin-request-description">Descripción</label>
+        <textarea
+          id="public-pin-request-description"
+          data-public-pin-request-description
+          data-public-pin-request-field="description"
+          name="description"
+          rows="5"
+          maxlength="2000"
+          required
+        ></textarea>
+        <p class="public-pin-request__hint">Máximo 2000 caracteres.</p>
+        <p
+          id="public-pin-request-description-error"
+          class="public-pin-request__error"
+          data-public-pin-request-error="description"
+          hidden
+        ></p>
+      </div>
+
+      <div class="public-pin-request__field public-pin-request__field--wide">
+        <label for="public-pin-request-reason">Motivo de la solicitud</label>
+        <textarea
+          id="public-pin-request-reason"
+          data-public-pin-request-reason
+          data-public-pin-request-field="reason"
+          name="reason"
+          rows="4"
+          maxlength="1000"
+          required
+        ></textarea>
+        <p class="public-pin-request__hint">Máximo 1000 caracteres.</p>
+        <p
+          id="public-pin-request-reason-error"
+          class="public-pin-request__error"
+          data-public-pin-request-error="reason"
+          hidden
+        ></p>
+      </div>
+
+      <div class="public-pin-request__trap" aria-hidden="true">
+        <label for="public-pin-request-contact">Deja este campo vacío</label>
+        <input
+          id="public-pin-request-contact"
+          data-public-pin-request-honeypot
+          name="contact"
+          type="text"
+          tabindex="-1"
+          autocomplete="off"
+        />
+      </div>
+
+      <p
+        id="public-pin-request-status"
+        class="public-pin-request__status public-pin-request__field--wide"
+        data-public-pin-request-status
+        data-status-kind="neutral"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      ></p>
+      <div class="public-pin-request__actions public-pin-request__field--wide">
+        <button class="public-pin-request__submit" data-public-pin-request-submit type="submit">
+          Enviar solicitud para revisión
+        </button>
+      </div>
+    </form>
+  `;
+  mapWorkspace.before(panel);
+}
+
 function resolveElements(root: ParentNode): PublicPinRequestElements {
   return {
     openButton: getRequiredElement(root, '[data-public-pin-request-open]'),
@@ -96,7 +316,7 @@ function storeLastSuccessAt(value: number): void {
   try {
     window.sessionStorage.setItem(LAST_SUCCESS_STORAGE_KEY, String(value));
   } catch {
-    // A timestamp-only cooldown is an optional abuse control; submission still works without storage.
+    // The timestamp-only cooldown is optional; request submission still works without storage.
   }
 }
 
@@ -136,6 +356,7 @@ export function mountPublicPinRequest(
   root: ParentNode,
   map: LeafletMap,
 ): PublicPinRequestController {
+  ensurePublicPinRequestMarkup(root);
   const elements = resolveElements(root);
   const testConfig = resolveTestConfig();
   const cooldownMs = testConfig?.cooldownMs ?? DEFAULT_COOLDOWN_MS;
@@ -180,7 +401,7 @@ export function mountPublicPinRequest(
     elements.mapCanvas.dataset.publicRequestSelecting = value ? 'true' : 'false';
     elements.choosePositionButton.setAttribute('aria-pressed', value ? 'true' : 'false');
     elements.choosePositionButton.textContent = value
-      ? 'Cancela la selección en el mapa'
+      ? 'Cancelar selección en el mapa'
       : 'Elegir posición en el mapa';
 
     if (value) {
@@ -199,6 +420,20 @@ export function mountPublicPinRequest(
     delete elements.positionOutput.dataset.x;
     delete elements.positionOutput.dataset.y;
   };
+
+  function clearFieldError(field: PublicPinRequestField): void {
+    const target = errorTargets[field];
+    const error = elements.form.querySelector<HTMLElement>(
+      `[data-public-pin-request-error="${field}"]`,
+    );
+
+    target.removeAttribute('aria-invalid');
+    target.removeAttribute('aria-errormessage');
+    if (error) {
+      error.hidden = true;
+      error.textContent = '';
+    }
+  }
 
   const setPosition = (x: number, y: number, source: 'map' | 'center'): void => {
     selectedX = x;
@@ -234,18 +469,6 @@ export function mountPublicPinRequest(
     elements.openButton.setAttribute('aria-expanded', 'false');
     elements.openButton.focus({ preventScroll: true });
   };
-
-  function clearFieldError(field: PublicPinRequestField): void {
-    const target = errorTargets[field];
-    const error = elements.form.querySelector<HTMLElement>(`[data-public-pin-request-error="${field}"]`);
-
-    target.removeAttribute('aria-invalid');
-    target.removeAttribute('aria-errormessage');
-    if (error) {
-      error.hidden = true;
-      error.textContent = '';
-    }
-  }
 
   const clearValidationErrors = (): void => {
     (Object.keys(errorTargets) as PublicPinRequestField[]).forEach(clearFieldError);
@@ -343,13 +566,14 @@ export function mountPublicPinRequest(
     }
 
     submitController?.abort();
-    submitController = new AbortController();
+    const controller = new AbortController();
+    submitController = controller;
     elements.submitButton.disabled = true;
     elements.form.dataset.submitState = 'submitting';
     setStatus('Enviando la solicitud…');
 
     try {
-      await repository.submit(validation.value, submitController.signal);
+      await repository.submit(validation.value, controller.signal);
       const completedAt = Date.now();
       lastSuccessAt = completedAt;
       storeLastSuccessAt(completedAt);
@@ -360,13 +584,18 @@ export function mountPublicPinRequest(
         'success',
       );
     } catch (error) {
-      if (submitController.signal.aborted) return;
+      if (controller.signal.aborted) return;
       setStatus(errorMessage(error), 'error');
     } finally {
-      elements.submitButton.disabled = false;
-      elements.form.dataset.submitState = 'idle';
-      submitController = null;
+      if (submitController === controller) {
+        elements.submitButton.disabled = false;
+        elements.form.dataset.submitState = 'idle';
+        submitController = null;
+      }
     }
+  };
+  const handleSubmitEvent = (event: SubmitEvent): void => {
+    void handleSubmit(event);
   };
 
   elements.openButton.addEventListener('click', handleOpen);
@@ -375,7 +604,7 @@ export function mountPublicPinRequest(
   elements.useCenterButton.addEventListener('click', handleUseCenter);
   elements.form.addEventListener('input', handleInput);
   elements.form.addEventListener('change', handleInput);
-  elements.form.addEventListener('submit', (event) => void handleSubmit(event));
+  elements.form.addEventListener('submit', handleSubmitEvent);
   map.on('click', handleMapClick);
   clearPosition();
 
@@ -390,6 +619,7 @@ export function mountPublicPinRequest(
       elements.useCenterButton.removeEventListener('click', handleUseCenter);
       elements.form.removeEventListener('input', handleInput);
       elements.form.removeEventListener('change', handleInput);
+      elements.form.removeEventListener('submit', handleSubmitEvent);
       delete elements.mapCanvas.dataset.publicRequestSelecting;
     },
   };
