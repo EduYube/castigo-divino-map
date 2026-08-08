@@ -1,10 +1,4 @@
-import {
-  expect,
-  test,
-  type BrowserContext,
-  type Page,
-  type Route,
-} from '@playwright/test';
+import { expect, test, type BrowserContext, type Page, type Route } from '@playwright/test';
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
@@ -210,7 +204,9 @@ async function expectLocationDetails(page: Page): Promise<void> {
   await expect(page).toHaveTitle('Demonstration Harbor · El Atlas de los Nuevos Dioses');
   await expect(page.locator('[data-full-entity-type]')).toContainText('Emplazamiento');
   await expect(page.getByText('Resumen público del puerto.')).toBeVisible();
-  await expect(page.getByText('<script>Descripción literal, no HTML confiable.</script>')).toBeVisible();
+  await expect(
+    page.getByText('<script>Descripción literal, no HTML confiable.</script>'),
+  ).toBeVisible();
   await expect(page.getByText('<Harbor Alias>')).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Categoría' })).toBeVisible();
   await expect(page.getByText('Núcleo urbano público del Atlas.')).toBeVisible();
@@ -222,13 +218,17 @@ async function expectLocationDetails(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { level: 2, name: 'Notas públicas' })).toBeVisible();
   await expect(page.getByText('<b>Nota pública literal</b>')).toBeVisible();
   await expect(page.getByText('<img src=x onerror=alert(1)>')).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'Personajes importantes aquí' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Personajes importantes aquí' }),
+  ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Harbor Guard' })).toHaveAttribute(
     'href',
     /\?entity=harbor-guard$/,
   );
   await expect(page.getByText('Visto por última vez')).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'Actualización pública' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Actualización pública' }),
+  ).toBeVisible();
   await expect(page.locator('script').filter({ hasText: 'Descripción literal' })).toHaveCount(0);
   await expect(page.locator('img')).toHaveCount(0);
 }
@@ -236,7 +236,10 @@ async function expectLocationDetails(page: Page): Promise<void> {
 test('opens full details in a new tab without changing the map tab', async ({ context, page }) => {
   await configureRuntime(context);
   await page.goto('/?q=harbor');
-  await expect(page.locator('[data-backend-status]')).toHaveAttribute('data-backend-state', 'connected');
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'connected',
+  );
 
   await page.getByTestId('coincident-pin').click();
   await page.getByTestId('coincident-pin-option').first().click();
@@ -270,12 +273,16 @@ test('loads, canonicalizes and reloads a character direct URL with inverse relat
   await expect(title).toBeFocused();
   expect(page.url()).toMatch(/\?entity=harbor-guard$/);
   await expect(page.locator('[data-full-entity-type]')).toContainText('Personaje');
-  await expect(page.getByRole('heading', { level: 2, name: 'Ubicaciones relacionadas' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Ubicaciones relacionadas' }),
+  ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Demonstration Harbor' }).first()).toHaveAttribute(
     'href',
     /\?entity=puerto-de-demostracion$/,
   );
-  await expect(page.getByRole('heading', { level: 2, name: 'Historial público de localización' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Historial público de localización' }),
+  ).toBeVisible();
   await expect(page.getByText('Salida', { exact: false })).toBeVisible();
   await expect(page.getByText('Avistamiento', { exact: false })).toBeVisible();
   await expect(page.getByText('Abandonó el puesto.')).toBeVisible();
@@ -300,7 +307,9 @@ test('uses one generic unavailable state for invalid, missing and non-public ide
     '/?entity=demo-region',
   ]) {
     await page.goto(url);
-    await expect(page.getByRole('heading', { level: 1, name: 'Entidad no disponible' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Entidad no disponible' }),
+    ).toBeVisible();
     await expect(page.getByRole('alert')).toContainText(
       'Puede que no exista, no sea pública o los datos remotos no estén disponibles.',
     );
@@ -312,7 +321,9 @@ test('fails closed when the remote projection is unavailable', async ({ context,
   await configureRuntime(context, { available: false });
   await page.goto('/?entity=puerto-de-demostracion');
 
-  await expect(page.getByRole('heading', { level: 1, name: 'Entidad no disponible' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Entidad no disponible' }),
+  ).toBeVisible();
   await expect(page.locator('[data-backend-status]')).toHaveAttribute(
     'data-backend-state',
     /degraded|offline/,
