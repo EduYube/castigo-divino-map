@@ -1,0 +1,36 @@
+name: MAP-028 format review fixes
+
+on:
+  push:
+    branches:
+      - agent/map-028-static-catalog-migration
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-028-static-catalog-migration
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: >-
+          npx prettier --write
+          src/app/placeFilters.ts
+          src/data-access/publicCatalogQueryContract.d.ts
+          tests/e2e/public-data-revision.spec.ts
+          scripts/public-snapshot-lib.mjs
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/app/placeFilters.ts src/data-access/publicCatalogQueryContract.d.ts tests/e2e/public-data-revision.spec.ts scripts/public-snapshot-lib.mjs
+          git rm .github/workflows/map028-format-review.yml
+          git commit -m 'MAP-028: format review fixes'
+          git push origin HEAD:agent/map-028-static-catalog-migration
