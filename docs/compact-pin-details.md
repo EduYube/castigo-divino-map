@@ -7,7 +7,8 @@
 - Head funcional final: `1eb2c198ef711248272ae98ab34bc4c12cc7359d`.
 - CI pre-merge: #418, run `31229733395`, completamente verde.
 - Merge funcional: `1e2532574d5c66a237b06bf6e4ea2fa744b59c59`.
-- Estado post-merge: pendiente de registrar únicamente cuando CI de `master` y Pages hayan terminado sobre el merge real.
+- CI post-merge de `master`: verde; el run `push` no es enumerable por el conector disponible, pero su conclusión `success` queda demostrada por el workflow de Pages que solo construye después de CI verde sobre `master`.
+- Pages post-merge: run `31230128079`, build, deploy, smoke publicado y estado `github-pages/deployment` completamente verdes sobre el merge funcional.
 
 ## Propósito
 
@@ -178,7 +179,11 @@ El head funcional final `1eb2c198ef711248272ae98ab34bc4c12cc7359d` quedó comple
 
 Durante el bucle de CI se corrigieron dos clases de regresión detectadas por las propias suites: expectativas heredadas del antiguo nombre accesible genérico del botón de cierre y un recálculo de tamaño de Leaflet necesario para preservar el centro canónico al abrir una ficha suplementaria en un layout que cambia de ancho. El head final volvió a ejecutar la matriz completa antes de pasar a Ready.
 
-La PR #73 se fusionó mediante el merge commit `1e2532574d5c66a237b06bf6e4ea2fa744b59c59`, y la Issue #42 quedó cerrada automáticamente como completada. La evidencia post-merge de `master` y Pages se añadirá a este documento únicamente después de verificarse sobre ese merge commit.
+La PR #73 se fusionó mediante el merge commit `1e2532574d5c66a237b06bf6e4ea2fa744b59c59`, y la Issue #42 quedó cerrada automáticamente como completada.
+
+El workflow post-merge de Pages run `31230128079` resolvió y reconstruyó exactamente ese merge commit, volvió a auditar el artefacto y superó 2/2 smoke tests locales antes de desplegar. Después, el job `Validate published Beta 0.1` comprobó la URL pública `https://eduyube.github.io/castigo-divino-map/` sobre el mismo SHA y superó 2/2 smoke tests publicados. Los jobs `Build and upload production artifact`, `Deploy GitHub Pages`, `Validate published Beta 0.1` y `Record deployment status` terminaron en `success`, y el commit quedó marcado con `github-pages/deployment = success`.
+
+El propio contrato de `.github/workflows/pages.yml` solo ejecuta el build automático cuando el workflow `CI` sobre `master` concluye `success`; por tanto, la ejecución y publicación de `31230128079` constituye también evidencia verificable de que el CI post-merge del merge funcional fue verde. El identificador numérico del run `push` de CI no es enumerable por el conector disponible y no se inventa en esta documentación.
 
 ## Archivos principales
 
