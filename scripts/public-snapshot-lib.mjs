@@ -424,11 +424,9 @@ export function toSnapshot(content, generatedAt) {
 }
 
 export function snapshotContent(snapshot) {
-  const {
-    generatedAt: _generatedAt,
-    sourceRevision: _sourceRevision,
-    checksum: _checksum,
-    ...content
-  } = snapshot;
+  const content = { ...snapshot };
+  delete content.generatedAt;
+  delete content.sourceRevision;
+  delete content.checksum;
   return content;
 }
