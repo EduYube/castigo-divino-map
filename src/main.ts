@@ -8,6 +8,7 @@ import { mountFullEntityDetails, renderFullEntityDetailsShell } from './app/full
 import { createFullEntityUrl, parseFullEntityUrlRequest } from './app/fullEntityUrl';
 import { mountPlaceFilters } from './app/placeFilters';
 import { bootstrapPublicDataRuntime, type PublicDataRuntime } from './app/publicDataRuntime';
+import { mountPublicPinRequest } from './app/publicPinRequestEntry';
 import { mountPlaceSearch } from './app/placeSearch';
 import { createPlaceSelectionController } from './app/placeSelection';
 import { renderApp } from './app/renderApp';
@@ -105,6 +106,7 @@ function mountPublicExperience(
       });
     },
   });
+  mountPublicPinRequest(app, mapController.map);
 
   const clearSupplementalMapSelection = (pin: AtlasPinMarkerModel): void => {
     mapController.setMarkers(renderedMarkers.filter(({ id }) => id !== pin.id));

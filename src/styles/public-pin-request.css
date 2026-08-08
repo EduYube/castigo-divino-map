@@ -1,0 +1,312 @@
+.public-pin-request__open,
+.public-pin-request__close,
+.public-pin-request__position-actions button,
+.public-pin-request__submit {
+  min-height: 2.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  color: var(--ink);
+  background: var(--panel-soft);
+  cursor: pointer;
+}
+
+.public-pin-request__open {
+  align-self: center;
+  padding: 0.65rem 1rem;
+  font-weight: 760;
+}
+
+.public-pin-request {
+  min-width: 0;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--panel-soft);
+}
+
+.public-pin-request[hidden] {
+  display: none;
+}
+
+.public-pin-request__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.public-pin-request__header h3 {
+  margin-bottom: 0;
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+}
+
+.public-pin-request__close {
+  display: grid;
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  padding: 0;
+  place-items: center;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.public-pin-request__lead,
+.public-pin-request__privacy,
+.public-pin-request__hint,
+.public-pin-request__position,
+.public-pin-request__status,
+.public-pin-request__error {
+  overflow-wrap: anywhere;
+}
+
+.public-pin-request__lead {
+  max-width: 72ch;
+  margin: 0.9rem 0 0;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+.public-pin-request__privacy {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border-inline-start: 4px solid var(--accent);
+  color: var(--muted);
+  background: rgba(17, 23, 19, 0.52);
+  line-height: 1.55;
+}
+
+.public-pin-request__form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.public-pin-request__field {
+  min-width: 0;
+}
+
+.public-pin-request__field--wide,
+.public-pin-request__position-field {
+  grid-column: 1 / -1;
+}
+
+.public-pin-request__field label,
+.public-pin-request__position-field legend {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-weight: 740;
+}
+
+.public-pin-request__field input,
+.public-pin-request__field select,
+.public-pin-request__field textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  color: var(--ink);
+  background: rgba(12, 17, 14, 0.82);
+  font: inherit;
+}
+
+.public-pin-request__field textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.public-pin-request__field input:focus-visible,
+.public-pin-request__field select:focus-visible,
+.public-pin-request__field textarea:focus-visible,
+.public-pin-request__open:focus-visible,
+.public-pin-request__close:focus-visible,
+.public-pin-request__position-actions button:focus-visible,
+.public-pin-request__submit:focus-visible,
+[data-public-pin-request-heading]:focus-visible {
+  outline: 3px solid #f6da8a;
+  outline-offset: 3px;
+}
+
+.public-pin-request__field [aria-invalid="true"] {
+  border-width: 2px;
+  border-style: dashed;
+}
+
+.public-pin-request__hint {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.public-pin-request__error {
+  margin: 0.4rem 0 0;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.public-pin-request__error::before {
+  content: "Error: ";
+}
+
+.public-pin-request__position-field {
+  min-width: 0;
+  margin: 0;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.public-pin-request__position-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.public-pin-request__position-actions button,
+.public-pin-request__submit {
+  padding: 0.65rem 0.9rem;
+  font-weight: 720;
+}
+
+.public-pin-request__position-actions [aria-pressed="true"] {
+  border-width: 2px;
+  border-style: dashed;
+}
+
+.public-pin-request__position {
+  display: block;
+  margin-top: 0.75rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.public-pin-request__status {
+  min-height: 1.5rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.public-pin-request__status[data-status-kind="success"] {
+  font-weight: 720;
+}
+
+.public-pin-request__status[data-status-kind="error"] {
+  font-weight: 720;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 0.22em;
+}
+
+.public-pin-request__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.public-pin-request__submit {
+  border-color: transparent;
+  color: #172018;
+  background: var(--accent);
+}
+
+.public-pin-request__submit:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.public-pin-request__trap {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.map-canvas[data-public-request-selecting="true"] {
+  cursor: crosshair;
+}
+
+.public-request-position-marker {
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  background: transparent;
+}
+
+.public-request-position-marker > span {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 3px solid currentColor;
+  border-radius: 50%;
+  background: rgba(17, 23, 19, 0.8);
+  box-shadow: 0 0 0 3px rgba(215, 185, 111, 0.6);
+  font-size: 1.3rem;
+  font-weight: 900;
+}
+
+@media (max-width: 48rem) {
+  .public-pin-request__open {
+    width: 100%;
+  }
+
+  .public-pin-request__form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .public-pin-request__field--wide,
+  .public-pin-request__position-field {
+    grid-column: auto;
+  }
+
+  .public-pin-request__position-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .public-pin-request__actions,
+  .public-pin-request__submit {
+    width: 100%;
+  }
+}
+
+@media (forced-colors: active) {
+  .public-pin-request,
+  .public-pin-request__privacy,
+  .public-pin-request__position-field,
+  .public-pin-request__open,
+  .public-pin-request__close,
+  .public-pin-request__position-actions button,
+  .public-pin-request__submit,
+  .public-pin-request__field input,
+  .public-pin-request__field select,
+  .public-pin-request__field textarea,
+  .public-request-position-marker > span {
+    forced-color-adjust: auto;
+    border-color: CanvasText;
+  }
+
+  .public-pin-request__submit {
+    color: ButtonText;
+    background: ButtonFace;
+  }
+
+  .public-request-position-marker > span {
+    color: CanvasText;
+    background: Canvas;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-pin-request *,
+  .public-request-position-marker * {
+    scroll-behavior: auto;
+    transition: none !important;
+  }
+}
