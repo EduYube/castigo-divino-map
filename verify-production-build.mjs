@@ -177,10 +177,7 @@ const {
 } = snapshot;
 const expectedSnapshotChecksum = checksum(snapshotContent);
 
-if (
-  sourceRevision !== expectedSnapshotChecksum ||
-  snapshotChecksum !== expectedSnapshotChecksum
-) {
+if (sourceRevision !== expectedSnapshotChecksum || snapshotChecksum !== expectedSnapshotChecksum) {
   fail('the bundled public snapshot checksum/sourceRevision does not match its content');
 }
 

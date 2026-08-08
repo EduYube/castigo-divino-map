@@ -37,7 +37,7 @@ const TABLE_QUERIES = {
   },
   entityTags: {
     table: 'entity_tags',
-    select: 'id,entity_id,tag_id',
+    select: 'entity_id,tag_id',
     order: 'entity_id.asc,tag_id.asc',
     published: true,
   },
@@ -51,7 +51,7 @@ const TABLE_QUERIES = {
     table: 'character_location_relations',
     select: 'character_id,location_id,relation_status',
     order: 'location_id.asc,character_id.asc',
-    published: true,
+    published: false,
   },
   notes: {
     table: 'public_notes',
@@ -61,7 +61,7 @@ const TABLE_QUERIES = {
   },
   noteTags: {
     table: 'public_note_tags',
-    select: 'id,note_id,tag_id',
+    select: 'note_id,tag_id',
     order: 'note_id.asc,tag_id.asc',
     published: true,
   },
@@ -160,8 +160,8 @@ export function buildPublicSnapshotContent(raw) {
     categoryIds.has(category_id),
   );
   const entityIds = new Set(publicEntityRows.map(({ id }) => id));
-  const aliasRows = publishedRows(raw.entityAliases ?? [], 'entityAliases').filter(({ entity_id }) =>
-    entityIds.has(entity_id),
+  const aliasRows = publishedRows(raw.entityAliases ?? [], 'entityAliases').filter(
+    ({ entity_id }) => entityIds.has(entity_id),
   );
   const entityTagRows = publishedRows(raw.entityTags ?? [], 'entityTags').filter(
     ({ entity_id, tag_id }) => entityIds.has(entity_id) && tagIds.has(tag_id),
@@ -213,8 +213,7 @@ export function buildPublicSnapshotContent(raw) {
     'characterLocationRelations',
   )
     .filter(
-      ({ character_id, location_id }) =>
-        entityIds.has(character_id) && entityIds.has(location_id),
+      ({ character_id, location_id }) => entityIds.has(character_id) && entityIds.has(location_id),
     )
     .map(({ character_id, location_id, relation_status }) => ({
       characterId: character_id,
@@ -229,21 +228,18 @@ export function buildPublicSnapshotContent(raw) {
     ({ note_id, tag_id }) => noteIds.has(note_id) && tagIds.has(tag_id),
   );
   const tagsByNote = group(noteTagRows, ({ note_id }) => note_id);
-  const notes = publicNoteRows.map(
-    ({ id, slug, entity_id, title, body, sort_order }) => ({
-      id,
-      slug,
-      entityId: entity_id,
-      title,
-      body,
-      sortOrder: sort_order,
-      tagIds: (tagsByNote.get(id) ?? []).map(({ tag_id }) => tag_id),
-    }),
+  const notes = publicNoteRows.map(({ id, slug, entity_id, title, body, sort_order }) => ({
+    id,
+    slug,
+    entityId: entity_id,
+    title,
+    body,
+    sortOrder: sort_order,
+    tagIds: (tagsByNote.get(id) ?? []).map(({ tag_id }) => tag_id),
+  }));
+  const publicGeographicRows = publishedRows(raw.geographicNames ?? [], 'geographicNames').filter(
+    ({ entity_id }) => entity_id === null || entityIds.has(entity_id),
   );
-  const publicGeographicRows = publishedRows(
-    raw.geographicNames ?? [],
-    'geographicNames',
-  ).filter(({ entity_id }) => entity_id === null || entityIds.has(entity_id));
   const geographicIds = new Set(publicGeographicRows.map(({ id }) => id));
   const geographicAliasRows = publishedRows(
     raw.geographicAliases ?? [],
@@ -310,13 +306,34 @@ export function buildPublicSnapshotContent(raw) {
       }),
     );
 
-  requireUnique(categories.map(({ id }) => id), 'categories');
-  requireUnique(tags.map(({ id }) => id), 'tags');
-  requireUnique(players.map(({ id }) => id), 'players');
-  requireUnique(entities.map(({ id }) => id), 'entities');
-  requireUnique(notes.map(({ id }) => id), 'notes');
-  requireUnique(geographicNames.map(({ id }) => id), 'geographicNames');
-  requireUnique(locationEvents.map(({ id }) => id), 'characterLocationEvents');
+  requireUnique(
+    categories.map(({ id }) => id),
+    'categories',
+  );
+  requireUnique(
+    tags.map(({ id }) => id),
+    'tags',
+  );
+  requireUnique(
+    players.map(({ id }) => id),
+    'players',
+  );
+  requireUnique(
+    entities.map(({ id }) => id),
+    'entities',
+  );
+  requireUnique(
+    notes.map(({ id }) => id),
+    'notes',
+  );
+  requireUnique(
+    geographicNames.map(({ id }) => id),
+    'geographicNames',
+  );
+  requireUnique(
+    locationEvents.map(({ id }) => id),
+    'characterLocationEvents',
+  );
 
   return {
     schemaVersion: 2,

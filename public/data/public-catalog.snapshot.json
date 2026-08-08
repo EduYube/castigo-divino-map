@@ -60,11 +60,7 @@
         "y": 820
       },
       "categoryId": "category-settlement",
-      "tagIds": [
-        "coastal",
-        "demo-data",
-        "trade-route"
-      ]
+      "tagIds": ["coastal", "demo-data", "trade-route"]
     },
     {
       "id": "place-demo-pass",
@@ -88,11 +84,7 @@
         "y": 1240.25
       },
       "categoryId": "category-landmark",
-      "tagIds": [
-        "demo-data",
-        "mountain-pass",
-        "trade-route"
-      ]
+      "tagIds": ["demo-data", "mountain-pass", "trade-route"]
     }
   ],
   "dispositions": [],
@@ -105,10 +97,7 @@
       "title": "Información pública de demostración",
       "body": "Este puerto ficticio sirve para comprobar fichas, búsquedas y filtros sin representar hechos secretos ni confirmados de la campaña.",
       "sortOrder": 0,
-      "tagIds": [
-        "coastal",
-        "demo-data"
-      ]
+      "tagIds": ["coastal", "demo-data"]
     },
     {
       "id": "note-demo-pass-travel",
@@ -117,11 +106,7 @@
       "title": "Referencia pública de viaje",
       "body": "Este paso ficticio demuestra cómo una nota pública puede relacionar un lugar con etiquetas de viaje y terreno.",
       "sortOrder": 0,
-      "tagIds": [
-        "demo-data",
-        "mountain-pass",
-        "trade-route"
-      ]
+      "tagIds": ["demo-data", "mountain-pass", "trade-route"]
     }
   ],
   "geographicNames": [],

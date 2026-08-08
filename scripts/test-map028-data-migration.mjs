@@ -33,7 +33,8 @@ function runPsql(sql) {
   );
 
   if (result.error) fail(`Unable to run psql: ${result.error.message}`);
-  if (result.status !== 0) fail(result.stderr.trim() || `psql exited with ${String(result.status)}.`);
+  if (result.status !== 0)
+    fail(result.stderr.trim() || `psql exited with ${String(result.status)}.`);
   return result.stdout.trim();
 }
 
@@ -104,4 +105,6 @@ if (afterRollbackTest !== before) {
   fail('the transactional rollback test did not restore the pre-test state.');
 }
 
-console.log(`Verified MAP-028 repeated migration and rollback without changing persisted test state (${before}).`);
+console.log(
+  `Verified MAP-028 repeated migration and rollback without changing persisted test state (${before}).`,
+);
