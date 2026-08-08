@@ -111,7 +111,9 @@ VITE_SUPABASE_PUBLISHABLE_KEY=... \
 npm run snapshot:generate
 ```
 
-El generador consulta exclusivamente la Data API pública con la clave publicable, columnas explícitas, filtro de publicación, orden determinista, paginación por `Range` y `Content-Range`. No acepta ni necesita `service_role`, contraseña PostgreSQL ni token de administración.
+El generador consulta exclusivamente la Data API pública con la clave publicable, columnas explícitas, filtro de publicación, orden determinista y el mismo algoritmo estricto de paginación que usa el navegador. El contrato común vive en `src/data-access/publicCatalogQueryContract.js`: fija `TABLE_QUERIES`, `Range`, `Content-Range`, total inmutable, alineación exacta de rangos, rechazo de páginas vacías o cortas y comprobación de colección final completa. No acepta ni necesita `service_role`, contraseña PostgreSQL ni token de administración.
+
+El lector remoto del tooling usa además un `AbortSignal` con timeout explícito de 15 segundos; así el gate de snapshot/Pages no depende únicamente del timeout global del job.
 
 Si el checksum no cambia, conserva `generatedAt`; por ello la misma entrada produce el mismo archivo.
 
@@ -123,7 +125,9 @@ VITE_SUPABASE_PUBLISHABLE_KEY=... \
 npm run snapshot:verify:remote
 ```
 
-La verificación reconstruye la proyección publicada y compara contenido y checksum con el archivo comprometido. Un cambio editorial publicado exige regenerar y versionar el snapshot antes del siguiente despliegue que pretenda garantizar equivalencia exacta.
+La verificación reconstruye la proyección publicada con **el mismo lector paginado que el runtime** y compara contenido y checksum con el archivo comprometido. Un cambio editorial publicado exige regenerar y versionar el snapshot antes del siguiente despliegue que pretenda garantizar equivalencia exacta.
+
+Las pruebas del contrato compartido rechazan explícitamente rango desplazado, cuerpo corto respecto al rango anunciado, total cambiante, página vacía prematura, colección que no alcanza el total y una lectura abortada.
 
 ### Fixture histórica de MAP-028
 
@@ -146,7 +150,7 @@ La verificación permanente añade datos sintéticos `draft`/`archived` y admini
 
 ## Compatibilidad Beta 0.1
 
-`toBeta01CompatibilityCatalog(...)` reconstruye la interfaz histórica a partir del snapshot V2:
+`toBeta01CompatibilityCatalog(...)` reconstruye la interfaz histórica a partir de cada envelope V2 visible:
 
 - reconoce únicamente los IDs históricos `place-demo-harbor` y `place-demo-pass`;
 - mantiene sus IDs y slugs;
@@ -155,7 +159,17 @@ La verificación permanente añade datos sintéticos `draft`/`archived` y admini
 - conserva las notas y sus tags;
 - mantiene el orden funcional histórico de categorías a partir del primer uso por los lugares legacy.
 
-Las pruebas comparan el resultado completo con `src/data/catalog.json` y añaden taxonomía Beta 0.2 ajena para demostrar que el crecimiento futuro no contamina los filtros legacy. El runtime usa el snapshot V2 como fallback local y, tras un refresh válido, promueve la proyección Beta 0.2 remota de Supabase como fuente visible. `src/data/catalog.json` queda fuera del fallback de producción.
+Las pruebas comparan el resultado completo con `src/data/catalog.json` y añaden taxonomía Beta 0.2 ajena para demostrar que el crecimiento futuro no contamina los filtros legacy. `src/data/catalog.json` queda fuera del fallback de producción.
+
+### Revisión visible atómica
+
+`PublicDataRuntime` no publica por separado una representación legacy congelada y una Beta 0.2 mutable. Cada resultado válido se transforma en un único estado de catálogo con `beta02`, `compatibility`, `checksum` y `availability`. La aplicación sustituye desde ese mismo estado markers, búsqueda, filtros, selección, URLs y fichas.
+
+Una prueba E2E fuerza la secuencia `snapshot A -> Supabase B -> archivado remoto`: cambia nombre, alias, tag, nota y coordenadas de `place-demo-harbor`, comprueba que marker/búsqueda/filtros/URL usan B y después elimina la entidad de la proyección remota. El lugar archivado desaparece de toda la UI y los parámetros `place`/`tag` obsoletos se eliminan de la URL canónica.
+
+### Snapshot inválido en arranque
+
+Un snapshot 404, JSON corrupto o checksum incorrecto ya no aborta `bootstrapPublicDataRuntime()`. El runtime publica primero `availability=unavailable`, mantiene vivo el shell, actualiza el indicador a error y conserva **Reintentar**. Una respuesta posterior válida de Supabase puede recuperar la sesión sin recargar la página. Los tres casos están cubiertos por E2E.
 
 ## Rollback
 
