@@ -7,7 +7,11 @@ import { mountCompactPinDetails } from './app/compactPinDetails';
 import { mountFullEntityDetails, renderFullEntityDetailsShell } from './app/fullEntityDetails';
 import { createFullEntityUrl, parseFullEntityUrlRequest } from './app/fullEntityUrl';
 import { mountPlaceFilters } from './app/placeFilters';
-import { bootstrapPublicDataRuntime, type PublicDataRuntime } from './app/publicDataRuntime';
+import {
+  bootstrapPublicDataRuntime,
+  type PublicCatalogState,
+  type PublicDataRuntime,
+} from './app/publicDataRuntime';
 import { mountPublicPinRequest } from './app/publicPinRequestEntry';
 import { mountPlaceSearch } from './app/placeSearch';
 import { createPlaceSelectionController } from './app/placeSelection';
@@ -17,7 +21,6 @@ import {
   parsePublicAppUrlState,
   type PublicAppUrlState,
 } from './app/urlState';
-import type { PublicCatalogSnapshotV2 } from './data/beta02-model';
 import { campaignCatalog } from './data/catalog';
 import { buildCompactPinDetailModel } from './data/compactPinDetails';
 import { deriveMatchingPublicPlaceIds } from './data/filters';
@@ -57,13 +60,23 @@ function describeSearchTarget(result: AtlasSearchResult): string {
   }
 }
 
+function isSameCatalogState(left: PublicCatalogState, right: PublicCatalogState): boolean {
+  return (
+    left.availability === right.availability &&
+    left.checksum === right.checksum &&
+    (left.beta02 === null) === (right.beta02 === null)
+  );
+}
+
 function mountPublicExperience(
-  catalog: CampaignCatalog,
+  initialCatalogState: PublicCatalogState,
   publicDataRuntime?: PublicDataRuntime,
 ): void {
   let isRestoringFromHistory = false;
-  let beta02Catalog: PublicCatalogSnapshotV2 | null = null;
-  let renderedMarkers = createAtlasPinMarkerModels(catalog, null);
+  let catalogState = initialCatalogState;
+  let catalog = initialCatalogState.compatibility;
+  let beta02Catalog = initialCatalogState.beta02;
+  let renderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
   let activeSupplementalPin: AtlasPinMarkerModel | null = null;
   const selection = createPlaceSelectionController();
   const mapSearchStatus = app.querySelector<HTMLElement>('[data-map-search-status]');
@@ -209,30 +222,7 @@ function mountPublicExperience(
       openLegacyPlace(placeId);
     },
   });
-
-  publicDataRuntime?.subscribeBeta02Catalog((nextBeta02Catalog) => {
-    beta02Catalog = nextBeta02Catalog;
-    renderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
-    mapController.setMarkers(renderedMarkers);
-    placeSearchController.setBeta02Catalog(beta02Catalog);
-    updateMatchingPlaces();
-
-    const activePlaceId = selection.getActivePlaceId();
-    if (activePlaceId) {
-      showLegacyPlaceDetails(activePlaceId, false);
-      return;
-    }
-
-    if (activeSupplementalPin) {
-      const updatedPin = renderedMarkers.find(({ id }) => id === activeSupplementalPin?.id);
-      if (updatedPin && showCompactDetails(updatedPin, false)) {
-        activeSupplementalPin = updatedPin;
-      } else {
-        activeSupplementalPin = null;
-        compactDetailsController.hide();
-      }
-    }
-  });
+  placeSearchController.setCatalogState(catalog, beta02Catalog);
 
   function getCurrentPublicState(): PublicAppUrlState {
     const filters = placeFiltersController.getState();
@@ -305,6 +295,55 @@ function mountPublicExperience(
     }
   }
 
+  function applyCatalogState(nextCatalogState: PublicCatalogState): void {
+    if (isSameCatalogState(catalogState, nextCatalogState)) {
+      return;
+    }
+
+    catalogState = nextCatalogState;
+    const previousActivePlaceId = selection.getActivePlaceId();
+    const validPlaceIds = new Set(nextCatalogState.compatibility.places.map(({ id }) => id));
+
+    isRestoringFromHistory = true;
+
+    try {
+      catalog = nextCatalogState.compatibility;
+      beta02Catalog = nextCatalogState.beta02;
+      placeFiltersController.setCatalog(catalog);
+      placeSearchController.setCatalogState(catalog, beta02Catalog);
+      renderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
+      mapController.setMarkers(renderedMarkers);
+
+      const nextActivePlaceId =
+        previousActivePlaceId && validPlaceIds.has(previousActivePlaceId)
+          ? previousActivePlaceId
+          : null;
+
+      if (nextActivePlaceId) {
+        renderActivePlace(nextActivePlaceId, { focusDetails: false, locate: false });
+      } else {
+        selection.clear();
+        renderActivePlace(null, { focusDetails: false, locate: false });
+
+        if (activeSupplementalPin) {
+          const updatedPin = renderedMarkers.find(({ id }) => id === activeSupplementalPin?.id);
+          if (updatedPin && showCompactDetails(updatedPin, false)) {
+            activeSupplementalPin = updatedPin;
+          } else {
+            activeSupplementalPin = null;
+            compactDetailsController.hide();
+          }
+        }
+      }
+    } finally {
+      isRestoringFromHistory = false;
+    }
+
+    writePublicStateToHistory('replace');
+  }
+
+  publicDataRuntime?.subscribeCatalogState(applyCatalogState);
+
   function restorePublicStateFromUrl(sourceUrl: URL): void {
     const parsed = parsePublicAppUrlState(catalog, sourceUrl);
 
@@ -365,6 +404,15 @@ function mountPublicExperience(
   restorePublicStateFromUrl(new URL(window.location.href));
 }
 
+function unavailableCatalogState(catalog: CampaignCatalog): PublicCatalogState {
+  return {
+    availability: 'unavailable',
+    checksum: null,
+    beta02: null,
+    compatibility: catalog,
+  };
+}
+
 function startMapExperience(): void {
   app.innerHTML = renderApp();
   mountCollapsibleMapControls(app);
@@ -373,9 +421,9 @@ function startMapExperience(): void {
 
   void bootstrapPublicDataRuntime(app, campaignCatalog)
     .then((publicDataRuntime) =>
-      mountPublicExperience(publicDataRuntime.catalog, publicDataRuntime),
+      mountPublicExperience(publicDataRuntime.getCatalogState(), publicDataRuntime),
     )
-    .catch(() => mountPublicExperience(campaignCatalog));
+    .catch(() => mountPublicExperience(unavailableCatalogState(campaignCatalog)));
 }
 
 function startFullEntityExperience(sourceUrl: URL): void {
@@ -404,13 +452,13 @@ function startFullEntityExperience(sourceUrl: URL): void {
 
   void bootstrapPublicDataRuntime(app, campaignCatalog)
     .then((runtime) => {
-      runtime.subscribeBeta02Catalog((catalog) => {
-        if (!catalog) {
+      runtime.subscribeCatalogState(({ beta02 }) => {
+        if (!beta02) {
           detailsController.showUnavailable();
           return;
         }
 
-        const details = resolveFullEntityDetail(catalog, request.slug!);
+        const details = resolveFullEntityDetail(beta02, request.slug!);
         if (details) {
           detailsController.show(details);
         } else {
