@@ -6,8 +6,8 @@
 - Repositorio: `EduYube/castigo-divino-map`.
 - Versión publicada: Beta 0.1.
 - Próxima versión: Beta 0.2.
-- MAP-001 a MAP-025: implementadas e integradas funcionalmente.
-- Siguiente trabajo de backlog: MAP-026 — Permitir solicitudes públicas de nuevos pines.
+- MAP-001 a MAP-026: implementadas e integradas funcionalmente.
+- Siguiente trabajo de backlog: MAP-027 — Moderar y convertir solicitudes en borradores.
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
 - Última actualización: 2026-08-08.
 
@@ -15,13 +15,15 @@ MAP-024 se integró mediante PR #75 y añadió una ficha pública completa e ind
 
 MAP-025 se integró mediante PR #76 sobre ese `master` y separa de forma explícita estado funcional, estado de presentación y preferencia inicial responsive para hacer búsqueda y filtros colapsables sin modificar consulta, filtros, URL, historial ni selección. El head final `33dd04ae311e842040545aadad7787457c392db0` quedó con conclusión verde en CI run `31256781426`; la PR se fusionó mediante merge commit `21f3517e99d85cf0f03fa2f28d62a92966504257` y la Issue #44 quedó cerrada automáticamente. El conector disponible no enumera los runs `push`/Pages asociados a ese merge y `get_commit_combined_status` no expone checks para ese SHA, por lo que este documento no inventa una verificación post-merge no observable.
 
+MAP-026 se integró mediante PR #78 y habilita propuestas públicas de personajes o emplazamientos sin sesión administrativa, con selección en el mismo espacio cartográfico canónico, validación, privacidad, honeypot, cooldown local y conservación del formulario ante fallos. Reutiliza la frontera de escritura creada por MAP-014 (`public_requests` + `submit_public_request`) sin DDL, migraciones, policies, grants, RPC, Auth ni secretos nuevos. El head funcional final `f49344b315e0c6ca609e0dde497f7f690c95ad6e` quedó completamente verde en CI run `31260224062`, incluidos E2E, smoke local de Pages y la suite Supabase. La PR se fusionó con protección por SHA mediante merge commit `1101513229f2ec657213024e1e410d7ba50f6425`, `master` quedó exactamente en ese SHA y la Issue #45 se cerró automáticamente. Para ese merge, el helper disponible de Actions solo enumera runs disparados por `pull_request`; `get_commit_combined_status` no devolvió estados para el SHA tras varias comprobaciones. Por tanto no se atribuyen IDs ni resultados a CI `push` o Pages que no hayan sido observados directamente.
+
 ## Beta 0.1 y frontera de Beta 0.2
 
 MAP-001 a MAP-011 entregaron la Beta 0.1 publicada con Vite, TypeScript, Leaflet, mapa oficial remoto, catálogo público validado, marcadores, fichas, búsqueda, filtros, URL/historial, responsive, accesibilidad, CI y GitHub Pages.
 
 Beta 0.2 mantiene como contratos de compatibilidad el pathname de Pages, query string, IDs, slugs, coordenadas, búsqueda, filtros, historial, accesibilidad y tratamiento del mapa remoto hasta que MAP-028 demuestre equivalencia y haga la transición completa del catálogo visible.
 
-MAP-013 a MAP-025 ya han cerrado arquitectura, seguridad, Supabase/RLS, modelo de entidades, acceso público resiliente, autenticación administrativa, CRUD de catálogo, CRUD de entidades, relaciones personaje–emplazamiento, búsqueda geográfica pública, sistema visual accesible de pines, ficha compacta común, ficha pública completa con URL estable y controles colapsables responsive. MAP-026 conserva las solicitudes públicas y MAP-028 conserva la transición completa del catálogo.
+MAP-013 a MAP-026 ya han cerrado arquitectura, seguridad, Supabase/RLS, modelo de entidades, acceso público resiliente, autenticación administrativa, CRUD de catálogo, CRUD de entidades, relaciones personaje–emplazamiento, búsqueda geográfica pública, sistema visual accesible de pines, ficha compacta común, ficha pública completa con URL estable, controles colapsables responsive y solicitudes públicas de nuevos pines. MAP-027 conserva la moderación/conversión de solicitudes y MAP-028 conserva la transición completa del catálogo.
 
 ## Arquitectura y seguridad vigentes
 
@@ -32,11 +34,12 @@ MAP-013 a MAP-025 ya han cerrado arquitectura, seguridad, Supabase/RLS, modelo d
 - `service_role`, `sb_secret_*`, tokens de gestión, contraseñas de base de datos y otras credenciales privilegiadas quedan fuera del frontend, repositorio, logs y artefactos.
 - Catálogo público y sesión administrativa usan caminos separados.
 - Estados editoriales: `draft`, `published`, `archived`.
+- Estados de solicitud pública: alta controlada como `pending`; el visitante no puede publicar ni moderar.
 - Estados de backend: `connected`, `degraded`, `offline`.
 - Migraciones SQL hacia delante, versionadas y auditables.
 - GitHub Actions es el bucle principal de validación de cada head de PR; un SHA nuevo exige una ejecución nueva y limpia.
 
-Las decisiones completas viven en `docs/architecture.md`, `docs/data-model.md`, `docs/security.md`, ADR 0002 a 0005, `docs/admin-auth.md`, `docs/admin-catalog.md`, `docs/admin-map-entities.md`, `docs/geographic-search.md`, `docs/pin-visual-system.md`, `docs/compact-pin-details.md`, `docs/full-entity-details.md` y `docs/collapsible-controls.md`.
+Las decisiones completas viven en `docs/architecture.md`, `docs/data-model.md`, `docs/security.md`, ADR 0002 a 0005, `docs/admin-auth.md`, `docs/admin-catalog.md`, `docs/admin-map-entities.md`, `docs/geographic-search.md`, `docs/pin-visual-system.md`, `docs/compact-pin-details.md`, `docs/full-entity-details.md`, `docs/collapsible-controls.md` y `docs/public-pin-requests.md`.
 
 ## Supabase alojado y migraciones
 
@@ -71,6 +74,8 @@ MAP-024 reutiliza exclusivamente la proyección pública resiliente de MAP-016 y
 
 MAP-025 es estado de presentación del cliente. No añade persistencia, tablas, columnas, RPC, policies, grants, migraciones, usuarios ni credenciales y no ejecuta `seed.sql` en producción. La suite Supabase existente sigue siendo una prueba de no regresión, no una señal de cambio de esquema.
 
+MAP-026 reutiliza `public.public_requests` y `public.submit_public_request(...)`, ambas introducidas en MAP-014. La tabla mantiene RLS activa y no concede CRUD directo a `anon`/`authenticated`; la función `SECURITY DEFINER` conserva `search_path` fijo, superficie de parámetros cerrada, estado inicial `pending`, campos administrativos fijados por servidor y honeypot. MAP-026 no cambia esquema, migrations, RLS, grants, Auth, usuarios, allowlist ni datos alojados durante la implementación.
+
 ## Modelo funcional relevante
 
 Beta 0.2 mantiene:
@@ -85,7 +90,8 @@ Beta 0.2 mantiene:
 - relación opcional desde un nombre geográfico a una entidad `location` sin colapsar ambas identidades;
 - rastro cronológico público de avistamientos y salidas;
 - relaciones personaje–emplazamiento con estados `present`, `associated`, `last-seen`;
-- snapshot público versionado y fallback de MAP-016.
+- snapshot público versionado y fallback de MAP-016;
+- solicitudes públicas independientes del catálogo, siempre `pending` al entrar y sin publicación automática.
 
 Un nombre impreso en el mapa no necesita ser un pin. Un `map_entity` con `visibility = search_only` sí es una entidad completa; un `geographic_name` sigue siendo una identidad geográfica ligera para centrar, aplicar zoom recomendado y resaltar una posición.
 
@@ -96,6 +102,8 @@ MAP-023 proyecta esa información en una ficha compacta común: nombre, tipo, ca
 MAP-024 expone esos datos extensos en una página independiente resuelta por `map_entities.slug`: aliases, texto editorial, notas, relaciones en ambas direcciones e historial público cuando existe. `geographic_names` continúa siendo una identidad ligera y no obtiene una ficha completa por sí sola.
 
 MAP-025 no cambia el modelo funcional. `q`, `category`, `tag` y `place` siguen siendo las dimensiones navegables; abrir o cerrar búsqueda/filtros es estado efímero de presentación y los resúmenes se derivan de los controladores reales, sin duplicar query, filtros o resultados.
+
+MAP-026 tampoco amplía el estado navegable. La solicitud se opera fuera de `q`, `place`, `category`, `tag` y `entity`; las coordenadas propuestas usan el mismo espacio canónico del atlas y los únicos tipos aceptados son `character` y `location`.
 
 ## MAP-019 — completada
 
@@ -287,6 +295,45 @@ Contrato integrado:
 
 El contrato completo está documentado en `docs/collapsible-controls.md`.
 
+## MAP-026 — completada e integrada
+
+- Issue: #45, cerrada automáticamente como completada.
+- PR funcional: #78, fusionada.
+- Rama funcional: `agent/map-026-public-pin-requests`.
+- Base funcional: `31c11a46d4684ecfd6fbb6d539f1d1a27dc3c8fe`.
+- Head funcional final: `f49344b315e0c6ca609e0dde497f7f690c95ad6e`.
+- CI pre-merge: run `31260224062`, conclusión `success` en los jobs web y Supabase, sin retry del head final.
+- Merge funcional: `1101513229f2ec657213024e1e410d7ba50f6425`.
+- Smoke local del build Pages: verde dentro del mismo run CI.
+- Migración: ninguna.
+- Supabase/RLS/Auth/usuarios/allowlist/credenciales/datos de producción: sin cambios persistentes.
+- CI/Pages post-merge: el helper de runs por SHA disponible filtra a ejecuciones `pull_request`; `get_commit_combined_status` devolvió una lista vacía para el merge SHA en las comprobaciones realizadas. No se registra como verde ni como fallido ningún run `push`/Pages no observado.
+- GitHub Project: el conector instalado no expone operaciones de Projects v2, por lo que no se modificó manualmente la tarjeta ni se inventó su estado.
+
+Contrato integrado:
+
+- acción pública `Proponer un pin` disponible desde el mapa y formulario montado bajo demanda;
+- remitente, nombre propuesto, descripción y motivo con límites equivalentes a PostgreSQL;
+- tipos cerrados `character` y `location`; no existen campos de categoría, etiqueta ni código de campaña;
+- selección visual en `L.CRS.Simple` con `lng = x`, `lat = y`, marcador temporal corregible y alternativa de teclado usando el centro visible;
+- payload cerrado de ocho parámetros hacia `submit_public_request`, usando únicamente URL/claves públicas permitidas;
+- la RPC/tabla existentes fuerzan `pending`, no conceden lectura pública ni permiten publicación o moderación anónimas;
+- los fallos conservan campos y posición en el DOM, sin reintentos automáticos ni persistencia de PII en almacenamiento del navegador;
+- cooldown local de 60 segundos guarda solo un timestamp y el honeypot existente filtra automatización trivial;
+- avisos de privacidad, errores asociados a campos, foco, `aria-live`, 320 px, targets táctiles, `forced-colors` y `prefers-reduced-motion` cubiertos;
+- la solicitud no modifica URL, historial, búsqueda, filtros, selección ni catálogo visible y nunca aparece automáticamente como pin.
+
+Evidencia del head funcional:
+
+- formato, auditoría de credenciales, lint, unitarios, build Pages y auditoría del artefacto verdes;
+- suite E2E completa verde, incluida la cobertura específica de envío anónimo, validación, red, abuso básico, móvil y accesibilidad;
+- smoke local del artefacto Pages verde;
+- migraciones desde cero, lint SQL y pgTAP/RLS verdes;
+- revisión del diff final: 12 archivos y ningún SQL, workflow, grant, policy, RPC, Auth o esquema modificado;
+- sin comentarios, reviews ni review threads pendientes antes del merge.
+
+El contrato completo está documentado en `docs/public-pin-requests.md`.
+
 ## Backlog Beta 0.2
 
 1. MAP-013 — Definir arquitectura y seguridad. **Completada.**
@@ -302,8 +349,8 @@ El contrato completo está documentado en `docs/collapsible-controls.md`.
 11. MAP-023 — Rediseñar ficha compacta. **Completada.**
 12. MAP-024 — Ficha completa en pestaña nueva. **Completada.**
 13. MAP-025 — Búsqueda y filtros colapsables. **Completada.**
-14. MAP-026 — Solicitudes públicas de nuevos pines. **Siguiente.**
-15. MAP-027 — Moderar y convertir solicitudes en borradores.
+14. MAP-026 — Solicitudes públicas de nuevos pines. **Completada.**
+15. MAP-027 — Moderar y convertir solicitudes en borradores. **Siguiente.**
 16. MAP-028 — Migrar catálogo estático y transición a Supabase.
 17. MAP-029 — Validar seguridad, accesibilidad y rendimiento.
 18. MAP-030 — Publicar y validar Beta 0.2.
@@ -328,8 +375,7 @@ Los cambios de producción de Supabase conservan sus controles adicionales: comp
 
 ## Riesgos y fronteras pendientes
 
-- MAP-026 conserva la entrada pública de solicitudes de nuevos pines y no debe convertir el formulario público en una superficie administrativa.
-- MAP-027 conserva la moderación y conversión de solicitudes en borradores editoriales.
+- MAP-027 conserva la moderación y conversión de solicitudes en borradores editoriales; debe mantener lectura/moderación exclusivamente administrativa y evitar el doble procesamiento.
 - MAP-028 mantiene la transición completa del catálogo Beta 0.1 a Supabase.
 - GitHub Pages, Supabase y la imagen cartográfica remota no tienen SLA propio del proyecto.
 - El snapshot de compatibilidad puede quedar temporalmente por detrás de la proyección publicada hasta el siguiente build validado.
@@ -352,3 +398,4 @@ Los cambios de producción de Supabase conservan sus controles adicionales: comp
 | 2026-08-08 | MAP-023 quedó cerrada de extremo a extremo; PR #73, head `1eb2c198…`, CI #418/run `31229733395`, merge `1e25325…`, CI post-merge verde y Pages `31230128079` con build/deploy/2 smoke locales/2 smoke publicados y deployment status verdes; sin DDL. |
 | 2026-08-08 | MAP-024 integró la ficha pública completa; PR #75, head `b457de3…`, CI run `31253574174`, merge `d8963eb…`, 211 unitarios, 90 E2E y 2 smoke Pages verdes; sin DDL ni cambios persistentes de Supabase. |
 | 2026-08-08 | MAP-025 integró búsqueda y filtros colapsables; PR #76, head `33dd04a…`, CI run `31256781426`, merge `21f3517…`, 213 unitarios, 99 E2E finalmente verdes, 3 smoke Pages, 222 pgTAP y 13 checks de concurrencia; Issue #44 cerrada automáticamente y sin cambios persistentes de Supabase. |
+| 2026-08-08 | MAP-026 integró solicitudes públicas de nuevos pines; PR #78, head `f49344b…`, CI run `31260224062` completamente verde, merge `1101513…`, Issue #45 cerrada y sin cambios de esquema/RLS/grants/RPC/Auth; los runs post-merge `push`/Pages no quedaron observables mediante las interfaces disponibles. |
