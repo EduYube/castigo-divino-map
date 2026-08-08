@@ -4,7 +4,10 @@ function generatedResourceRequests(requests: readonly Request[]): readonly Reque
   return requests.filter((request) => /\.(?:css|js)(?:\?|$)/.test(request.url()));
 }
 
-test('loads a direct full-entity URL under the GitHub Pages subdirectory', async ({ page, baseURL }) => {
+test('loads a direct full-entity URL under the GitHub Pages subdirectory', async ({
+  page,
+  baseURL,
+}) => {
   const requests: Request[] = [];
   const failedResponses: string[] = [];
 
@@ -16,7 +19,9 @@ test('loads a direct full-entity URL under the GitHub Pages subdirectory', async
   const response = await page.goto('?entity=map024-smoke-missing');
 
   expect(response?.ok()).toBe(true);
-  await expect(page.getByRole('heading', { level: 1, name: 'Entidad no disponible' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Entidad no disponible' }),
+  ).toBeVisible();
   await expect(page).toHaveTitle('Entidad no disponible · El Atlas de los Nuevos Dioses');
   await expect(page.getByRole('link', { name: 'Volver al mapa' })).toHaveAttribute('href', /\/$/);
   await expect(page.getByText('Contenido de fans no oficial', { exact: true })).toBeVisible();
@@ -33,6 +38,8 @@ test('loads a direct full-entity URL under the GitHub Pages subdirectory', async
   expect(failedResponses).toEqual([]);
 
   await page.reload();
-  await expect(page.getByRole('heading', { level: 1, name: 'Entidad no disponible' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Entidad no disponible' }),
+  ).toBeVisible();
   expect(new URL(page.url()).search).toBe('?entity=map024-smoke-missing');
 });
