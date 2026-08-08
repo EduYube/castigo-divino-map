@@ -56,8 +56,48 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Run end-to-end tests
-        run: npm run test:e2e
+      - name: Run existing end-to-end tests
+        id: e2e_existing
+        continue-on-error: true
+        shell: bash
+        run: |
+          mapfile -t specs < <(find tests/e2e -name '*.spec.ts' ! -name 'public-pin-request.spec.ts' -print)
+          npx playwright test "${specs[@]}"
+
+      - name: Diagnose MAP-026 valid submission
+        id: e2e_map026_submit
+        continue-on-error: true
+        run: npx playwright test tests/e2e/public-pin-request.spec.ts --grep "submits a valid anonymous request"
+
+      - name: Diagnose MAP-026 validation
+        id: e2e_map026_validation
+        continue-on-error: true
+        run: npx playwright test tests/e2e/public-pin-request.spec.ts --grep "associates validation errors"
+
+      - name: Diagnose MAP-026 network preservation
+        id: e2e_map026_network
+        continue-on-error: true
+        run: npx playwright test tests/e2e/public-pin-request.spec.ts --grep "keeps entered data and position"
+
+      - name: Diagnose MAP-026 abuse cooldown
+        id: e2e_map026_cooldown
+        continue-on-error: true
+        run: npx playwright test tests/e2e/public-pin-request.spec.ts --grep "applies a local post-success cooldown"
+
+      - name: Diagnose MAP-026 mobile accessibility
+        id: e2e_map026_mobile
+        continue-on-error: true
+        run: npx playwright test tests/e2e/public-pin-request.spec.ts --grep "keeps the request flow accessible"
+
+      - name: Require all end-to-end diagnostics
+        if: always()
+        run: |
+          test "${{ steps.e2e_existing.outcome }}" = "success"
+          test "${{ steps.e2e_map026_submit.outcome }}" = "success"
+          test "${{ steps.e2e_map026_validation.outcome }}" = "success"
+          test "${{ steps.e2e_map026_network.outcome }}" = "success"
+          test "${{ steps.e2e_map026_cooldown.outcome }}" = "success"
+          test "${{ steps.e2e_map026_mobile.outcome }}" = "success"
 
       - name: Smoke test the Pages build locally
         run: npm run test:e2e:pages
