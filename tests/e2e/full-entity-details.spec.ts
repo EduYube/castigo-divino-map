@@ -235,7 +235,7 @@ async function expectLocationDetails(page: Page): Promise<void> {
 
 test('opens full details in a new tab without changing the map tab', async ({ context, page }) => {
   await configureRuntime(context);
-  await page.goto('/?q=harbor');
+  await page.goto('/');
   await expect(page.locator('[data-backend-status]')).toHaveAttribute(
     'data-backend-state',
     'connected',
@@ -258,7 +258,7 @@ test('opens full details in a new tab without changing the map tab', async ({ co
   expect(detailsPage.url()).toMatch(/\?entity=puerto-de-demostracion$/);
   expect(page.url()).toBe(originalUrl);
   await expect(panel).toHaveAttribute('data-entity-id', 'place-demo-harbor');
-  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('harbor');
+  expect(new URL(page.url()).searchParams.get('place')).toBe('puerto-de-demostracion');
 });
 
 test('loads, canonicalizes and reloads a character direct URL with inverse relations and history', async ({
