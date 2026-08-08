@@ -29,7 +29,10 @@ describe('SupabasePublicPinRequestRepository', () => {
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input, init) => {
         capturedRequest = new Request(input, init);
-        return new Response('true', { status: 200, headers: { 'Content-Type': 'application/json' } });
+        return new Response('true', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
       },
     });
 
@@ -66,8 +69,16 @@ describe('SupabasePublicPinRequestRepository', () => {
 
   test.each([
     { projectUrl: LOCAL_PROJECT_URL, publishableKey: LEGACY_ANON_KEY, allowLocalProject: false },
-    { projectUrl: LOCAL_PROJECT_URL, publishableKey: LEGACY_SERVICE_ROLE_KEY, allowLocalProject: true },
-    { projectUrl: 'https://example.com', publishableKey: PUBLISHABLE_KEY, allowLocalProject: false },
+    {
+      projectUrl: LOCAL_PROJECT_URL,
+      publishableKey: LEGACY_SERVICE_ROLE_KEY,
+      allowLocalProject: true,
+    },
+    {
+      projectUrl: 'https://example.com',
+      publishableKey: PUBLISHABLE_KEY,
+      allowLocalProject: false,
+    },
   ])('rejects unsafe public configuration %#', (options) => {
     expect(
       () =>
