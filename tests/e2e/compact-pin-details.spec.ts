@@ -214,7 +214,9 @@ test('renders compact location data and exposes a safe full-details link', async
   await expect(fullAction).toHaveAttribute('target', '_blank');
   await expect(fullAction).toHaveAttribute('rel', /noopener/);
   await expect(fullAction).toHaveAttribute('href', /\?entity=puerto-de-demostracion$/);
-  await expect(panel).toContainText('Se abrirá en una pestaña nueva para conservar el estado actual del mapa.');
+  await expect(panel).toContainText(
+    'Se abrirá en una pestaña nueva para conservar el estado actual del mapa.',
+  );
 });
 
 test('opens a character card and returns focus on close', async ({ page }) => {
@@ -249,7 +251,9 @@ test('opens a character card and returns focus on close', async ({ page }) => {
   await expect(character).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('falls back to a compact Beta 0.1 card offline without inventing a full URL', async ({ page }) => {
+test('falls back to a compact Beta 0.1 card offline without inventing a full URL', async ({
+  page,
+}) => {
   await openMap(page, false);
 
   const marker = page.locator('[data-testid="place-marker"][data-place-id="place-demo-harbor"]');
@@ -272,7 +276,9 @@ test('falls back to a compact Beta 0.1 card offline without inventing a full URL
 
   const fullAction = panel.getByRole('button', { name: 'Abrir ficha completa' });
   await expect(fullAction).toBeDisabled();
-  await expect(panel).toContainText('Esta entidad no dispone de una ficha completa pública en Beta 0.2.');
+  await expect(panel).toContainText(
+    'Esta entidad no dispone de una ficha completa pública en Beta 0.2.',
+  );
 });
 
 test('stays usable at 320 px in forced colors and reduced motion', async ({ page }) => {
