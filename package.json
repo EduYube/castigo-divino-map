@@ -36,7 +36,7 @@
     "supabase:db:reset": "supabase db reset --local",
     "supabase:db:test": "supabase test db --local",
     "supabase:db:test:upgrade": "node scripts/test-supabase-upgrade.mjs",
-    "supabase:db:test:concurrency": "node scripts/test-supabase-concurrency.mjs",
+    "supabase:db:test:concurrency": "node scripts/test-supabase-concurrency.mjs && node scripts/test-public-request-moderation-concurrency.mjs",
     "supabase:db:lint": "supabase db lint --local --fail-on warning",
     "supabase:db:validate": "npm run supabase:db:test:upgrade && npm run supabase:db:reset && npm run supabase:db:lint && npm run supabase:db:test && npm run supabase:db:test:concurrency",
     "supabase:types": "supabase gen types typescript --local --schema public > src/database.types.ts"
