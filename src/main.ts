@@ -2,6 +2,7 @@ import 'leaflet/dist/leaflet.css';
 
 import { bootstrapAdminAuthRuntime } from './app/adminAuthRuntime';
 import { mountAdminPinVisualSync } from './app/adminPinVisualSync';
+import { mountCollapsibleMapControls } from './app/collapsibleControls';
 import { mountCompactPinDetails } from './app/compactPinDetails';
 import { mountFullEntityDetails, renderFullEntityDetailsShell } from './app/fullEntityDetails';
 import { createFullEntityUrl, parseFullEntityUrlRequest } from './app/fullEntityUrl';
@@ -31,6 +32,7 @@ import './styles/compact-pin-details.css';
 import './styles/full-entity-details.css';
 import './styles/search.css';
 import './styles/filters.css';
+import './styles/collapsible-controls.css';
 import './styles/backend-status.css';
 import './styles/admin-auth.css';
 import './styles/accessibility.css';
@@ -363,6 +365,7 @@ function mountPublicExperience(
 
 function startMapExperience(): void {
   app.innerHTML = renderApp();
+  mountCollapsibleMapControls(app);
   bootstrapAdminAuthRuntime(app);
   mountAdminPinVisualSync(app);
 
