@@ -23,12 +23,12 @@ const REQUEST: ValidatedPublicPinRequest = {
 
 describe('SupabasePublicPinRequestRepository', () => {
   test('posts only the closed RPC payload with the publishable key', async () => {
-    let capturedRequest: Request | null = null;
+    const capturedRequests: Request[] = [];
     const repository = new SupabasePublicPinRequestRepository({
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input, init) => {
-        capturedRequest = new Request(input, init);
+        capturedRequests.push(new Request(input, init));
         return new Response('true', {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
@@ -38,7 +38,9 @@ describe('SupabasePublicPinRequestRepository', () => {
 
     await repository.submit(REQUEST, new AbortController().signal);
 
-    expect(capturedRequest).not.toBeNull();
+    expect(capturedRequests).toHaveLength(1);
+    const capturedRequest = capturedRequests[0];
+    expect(capturedRequest).toBeDefined();
     if (!capturedRequest) return;
     expect(capturedRequest.method).toBe('POST');
     expect(new URL(capturedRequest.url).pathname).toBe('/rest/v1/rpc/submit_public_request');
