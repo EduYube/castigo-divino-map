@@ -24,6 +24,7 @@ interface PlaceFiltersElements {
   readonly tags: HTMLElement;
   readonly clearButton: HTMLButtonElement;
   readonly status: HTMLElement;
+  readonly summary: HTMLElement;
 }
 
 function getRequiredElement<T extends HTMLElement>(root: ParentNode, selector: string): T {
@@ -43,6 +44,7 @@ function resolveElements(root: ParentNode): PlaceFiltersElements {
     tags: getRequiredElement(root, '[data-place-filter-tags]'),
     clearButton: getRequiredElement<HTMLButtonElement>(root, '[data-place-filters-clear]'),
     status: getRequiredElement(root, '[data-place-filters-status]'),
+    summary: getRequiredElement(root, '[data-place-filters-summary]'),
   };
 }
 
@@ -90,6 +92,12 @@ function createFilterOption(
   label.append(input, text);
 
   return label;
+}
+
+function setText(element: HTMLElement, message: string): void {
+  if (element.textContent !== message) {
+    element.textContent = message;
+  }
 }
 
 export function mountPlaceFilters(
@@ -141,6 +149,26 @@ export function mountPlaceFilters(
       .map(({ id }) => id),
   });
 
+  const renderCollapsedSummary = (): void => {
+    const activeFilterCount = selectedCategoryIds.size + selectedTagIds.size;
+    const rawMatchCount = elements.root.dataset.matchCount;
+    const matchCount = rawMatchCount === undefined ? null : Number(rawMatchCount);
+    const filterMessage =
+      activeFilterCount === 0
+        ? 'Sin filtros activos'
+        : activeFilterCount === 1
+          ? '1 filtro activo'
+          : `${activeFilterCount} filtros activos`;
+    const matchMessage =
+      matchCount === null || !Number.isFinite(matchCount)
+        ? ''
+        : matchCount === 1
+          ? ' · 1 lugar coincide'
+          : ` · ${matchCount} lugares coinciden`;
+
+    setText(elements.summary, `${filterMessage}${matchMessage}.`);
+  };
+
   const synchronizeControls = (): void => {
     elements.root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((input) => {
       const kind = input.dataset.placeFilterKind;
@@ -176,6 +204,7 @@ export function mountPlaceFilters(
       }
     });
     synchronizeControls();
+    renderCollapsedSummary();
 
     if (stateOptions.notify !== false) {
       options.onChange();
@@ -213,6 +242,7 @@ export function mountPlaceFilters(
     }
 
     synchronizeControls();
+    renderCollapsedSummary();
     options.onChange();
   };
 
@@ -226,6 +256,7 @@ export function mountPlaceFilters(
   };
 
   synchronizeControls();
+  renderCollapsedSummary();
   elements.root.addEventListener('change', handleChange);
   elements.clearButton.addEventListener('click', handleClear);
 
@@ -249,9 +280,8 @@ export function mountPlaceFilters(
           : '';
       const message = `${countMessage}${activeMessage}`;
 
-      if (elements.status.textContent !== message) {
-        elements.status.textContent = message;
-      }
+      setText(elements.status, message);
+      renderCollapsedSummary();
     },
     destroy(): void {
       elements.root.removeEventListener('change', handleChange);
