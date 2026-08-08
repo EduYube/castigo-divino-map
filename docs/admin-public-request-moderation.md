@@ -20,13 +20,18 @@ La bandeja vive dentro de la administración existente y reutiliza la autenticac
 PostgreSQL sigue siendo la frontera definitiva de autorización.
 
 - `anon` no tiene `SELECT` sobre `public_requests` ni `EXECUTE` sobre la RPC administrativa.
-- `authenticated` solo puede leer o actualizar solicitudes cuando RLS confirma `private.is_admin()`.
-- La RPC `public.admin_moderate_public_request(...)` es `SECURITY INVOKER`: no eleva privilegios ni evita RLS.
-- La función comprueba además `public.current_user_is_admin()` antes de bloquear o modificar una solicitud.
-- No se añade `service_role`, `SECURITY DEFINER`, secreto, credencial privilegiada ni persistencia de tokens nueva.
+- `authenticated` conserva lectura administrativa únicamente cuando RLS confirma `private.is_admin()`.
+- `authenticated` ya no tiene `UPDATE` directo sobre `request_status`, `moderation_note` ni `converted_entity_id`; el navegador no puede saltarse la operación atómica con PostgREST directo.
+- La única superficie de moderación es `public.admin_moderate_public_request(...)` y solo acepta las acciones cerradas `reject` y `convert`.
+- La RPC es `SECURITY DEFINER`, pero no pertenece a `postgres`: su propietario es `atlas_public_request_moderator`, un rol `NOLOGIN`, sin `SUPERUSER` y sin `BYPASSRLS`.
+- Ese rol dedicado hereda los grants y la pertenencia RLS de `authenticated` y recibe únicamente el `UPDATE` de las tres columnas de moderación revocadas al navegador. Por tanto, la elevación sirve para atravesar el grant de columnas, no para desactivar RLS.
+- La función comprueba explícitamente `public.current_user_is_admin()` antes de bloquear o modificar una solicitud, y las políticas administrativas existentes vuelven a comprobar la allowlist durante `SELECT`, `INSERT` y `UPDATE`.
+- El `search_path` de la RPC queda vacío y todas las relaciones/funciones sensibles se referencian con esquema explícito.
+- El `EXECUTE` implícito de `PUBLIC` se revoca y solo se concede a `authenticated`; `anon` permanece excluido.
+- No se añade `service_role`, secreto, credencial privilegiada ni persistencia de tokens nueva.
 - Los errores SQL se normalizan en el adaptador del navegador; constraints, nombres internos y datos de otras solicitudes no se presentan al usuario.
 
-La función solo expone dos acciones: `reject` y `convert`. No acepta estados arbitrarios del cliente.
+La creación del rol dedicado es idempotente para soportar reconstrucciones locales repetidas. La migración vuelve a endurecer sus atributos y retira el `CREATE` temporal sobre `public` antes de confirmar la transacción.
 
 ## Estados y auditoría
 
@@ -81,6 +86,7 @@ La autoridad de concurrencia vive en PostgreSQL, no en el estado de los botones.
 4. La creación del borrador y la transición de la solicitud comparten transacción.
 5. Una segunda pestaña, otro administrador o un reintento tardío espera el lock y, al reanudar, recibe SQLSTATE `40001` porque la solicitud ya cambió.
 6. Cualquier fallo después de insertar el borrador provoca rollback completo; no queda un borrador huérfano ni una solicitud parcialmente procesada.
+7. Un navegador con JWT administrativo tampoco puede reproducir las transiciones mediante `UPDATE` directo porque carece del grant de las columnas de moderación.
 
 El frontend deshabilita temporalmente las acciones durante una petición para evitar clics redundantes, pero esa medida es solo UX.
 
@@ -88,15 +94,23 @@ El frontend deshabilita temporalmente las acciones durante una petición para ev
 
 La bandeja reutiliza el shell administrativo. Incluye estados de carga, vacío, error, backend desconectado y sesión invalidada; filtro por estado; orden por fecha; nota administrativa; confirmación antes de rechazo o conversión; restauración de foco con `Escape`; `aria-live`; targets de 44 px; layout de 320 px; `forced-colors` y `prefers-reduced-motion`.
 
+Los borradores de nota administrativa se conservan fuera del DOM por ID de solicitud. Reordenar, cambiar el filtro o recibir un evento repetido de estado del backend no borra texto no enviado. El controlador tampoco publica un nuevo estado cuando `authorized` y `backendConnected` no han cambiado. El borrador de nota se elimina cuando la solicitud se procesa correctamente o deja de estar pendiente.
+
 Tras convertir, el runtime recarga el catálogo administrativo de entidades y abre el borrador en el editor de MAP-019. Si la apertura automática falla después de una conversión confirmada, la UI informa de que el borrador ya existe y pide recargar la lista de entidades, sin reintentar la conversión.
+
+## Volumen de la bandeja
+
+Beta 0.2 mantiene el contrato actual de cargar todas las solicitudes disponibles y aplicar filtro/orden en cliente. Esto simplifica la bandeja y conserva el comportamiento acordado, pero no es el diseño final para historiales grandes: la implementación actual pagina en bloques amplios y una futura evolución deberá mover filtro y paginación acotada al servidor.
+
+Ese límite es de rendimiento, no una frontera de autorización ni de integridad de moderación. Antes de exponer un volumen sostenido de solicitudes anónimas conviene sustituir el recorrido completo por páginas/cursor server-side y eliminar la dependencia de un total exacto estable entre páginas.
 
 ## Pruebas
 
 La cobertura de MAP-027 se reparte en cuatro niveles:
 
-- unitarios de filtrado/orden y del controlador de moderación;
-- E2E de visibilidad administrativa, detalles, filtros, confirmaciones, rechazo, conversión, editor, red, concurrencia de cliente, sesión, móvil y accesibilidad;
-- pgTAP para grants/RLS, auditoría, rechazo, conversión, ausencia de categorías/tags y barrera de publicación;
+- unitarios de filtrado/orden y del controlador de moderación, incluido que señales de acceso repetidas sean no-op;
+- E2E de visibilidad administrativa, detalles, filtros, persistencia de notas durante rerenders, confirmaciones, rechazo, conversión, editor, red, concurrencia de cliente, sesión, móvil y accesibilidad;
+- pgTAP para grants/RLS, propietario endurecido de la RPC, prohibición de `UPDATE` directo de moderación, auditoría, rechazo, conversión, ausencia de categorías/tags y barrera de publicación;
 - una prueba de dos sesiones PostgreSQL que compiten por la misma solicitud y verifica que solo una crea el borrador.
 
 La migración se valida desde cero y mediante el flujo de upgrade habitual del repositorio. `seed.sql` no forma parte del despliegue de producción.
