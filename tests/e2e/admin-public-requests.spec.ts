@@ -361,8 +361,29 @@ test('the admin inbox filters and sorts request details without exposing a needs
   await expect(page.getByText(/“Necesita cambios” no está disponible/)).toBeVisible();
   await expect(page.getByRole('button', { name: /Necesita cambios/i })).toHaveCount(0);
 
+  const newerCard = page.getByRole('heading', { name: 'Newer Requested Character' }).locator('..');
+  await newerCard.getByLabel('Nota administrativa (opcional)').fill('Draft note survives rerenders.');
   await page.getByLabel('Orden por fecha').selectOption('oldest');
   await expect(headings.nth(0)).toHaveText('Older Requested Place');
+  await expect(
+    page
+      .getByRole('heading', { name: 'Newer Requested Character' })
+      .locator('..')
+      .getByLabel('Nota administrativa (opcional)'),
+  ).toHaveValue('Draft note survives rerenders.');
+
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+    );
+  });
+  await expect(
+    page
+      .getByRole('heading', { name: 'Newer Requested Character' })
+      .locator('..')
+      .getByLabel('Nota administrativa (opcional)'),
+  ).toHaveValue('Draft note survives rerenders.');
+
   await page.getByLabel('Filtrar por estado').selectOption('rejected');
   await expect(page.getByText('Already Rejected', { exact: true })).toBeVisible();
   await expect(page.getByText('Historical rejection.')).toBeVisible();
