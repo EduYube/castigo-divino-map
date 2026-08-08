@@ -189,6 +189,10 @@ test('wraps long category and tag names without horizontal overflow', async ({ p
   await page.setViewportSize({ width: 390, height: 844 });
   await openReadyMap(page);
 
+  const filtersToggle = page.locator('[data-place-filters-toggle]');
+  await expect(filtersToggle).toHaveAttribute('aria-expanded', 'false');
+  await filtersToggle.click();
+
   await page.locator('.place-filters__option-name').evaluateAll((names) => {
     names.forEach((name, index) => {
       name.textContent =
