@@ -31,6 +31,7 @@ interface PlaceSearchElements {
   readonly input: HTMLInputElement;
   readonly clearButton: HTMLButtonElement;
   readonly status: HTMLElement;
+  readonly summary: HTMLElement;
   readonly results: HTMLUListElement;
 }
 
@@ -49,6 +50,7 @@ function resolveElements(root: ParentNode): PlaceSearchElements {
     input: getRequiredElement<HTMLInputElement>(root, '[data-place-search-input]'),
     clearButton: getRequiredElement<HTMLButtonElement>(root, '[data-place-search-clear]'),
     status: getRequiredElement(root, '[data-place-search-status]'),
+    summary: getRequiredElement(root, '[data-place-search-summary]'),
     results: getRequiredElement<HTMLUListElement>(root, '[data-place-search-results]'),
   };
 }
@@ -86,6 +88,18 @@ function describeResultType(type: AtlasSearchResultType): string {
     case 'location':
       return 'Emplazamiento de campaña';
   }
+}
+
+function describeCollapsedSearchSummary(query: string, resultCount: number): string {
+  const normalizedQuery = normalizePlaceSearchQuery(query);
+
+  if (!normalizedQuery) {
+    return 'Sin consulta activa.';
+  }
+
+  const countMessage = resultCount === 1 ? '1 resultado' : `${resultCount} resultados`;
+
+  return `Consulta: “${query.trim()}” · ${countMessage}.`;
 }
 
 function createResultItem(
@@ -161,6 +175,7 @@ export function mountPlaceSearch(
         createResultItem(result, options.onSelect, options.onOpenPlace),
       ),
     );
+    setStatusText(elements.summary, describeCollapsedSearchSummary(query, searchResults.length));
 
     if (!normalizedQuery) {
       setStatusText(elements.status, 'Escribe un nombre, alias o título de nota pública.');
