@@ -61,6 +61,12 @@ export class AdminPublicRequestController {
 
   setAccess(authorized: boolean, backendConnected: boolean): void {
     if (this.#destroyed) return;
+    if (
+      authorized === this.#state.authorized &&
+      backendConnected === this.#state.backendConnected
+    ) {
+      return;
+    }
     const wasAvailable = this.#state.authorized && this.#state.backendConnected;
     const isAvailable = authorized && backendConnected;
     if (!isAvailable) {
