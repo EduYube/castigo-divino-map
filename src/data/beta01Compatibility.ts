@@ -76,9 +76,7 @@ export function toBeta01CompatibilityCatalog(catalog: PublicCatalogSnapshotV2): 
     ...notes.flatMap(({ tagIds: noteTagIds }) => noteTagIds),
   ]);
   const categories = sortCompatibilityCategories(
-    catalog.categories
-      .filter(({ id }) => categoryIds.has(id))
-      .map((category) => ({ ...category })),
+    catalog.categories.filter(({ id }) => categoryIds.has(id)).map((category) => ({ ...category })),
     places,
   );
 
