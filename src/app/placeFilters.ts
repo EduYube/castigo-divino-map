@@ -162,8 +162,9 @@ export function mountPlaceFilters(
     const tagPlaceCounts = new Map(
       catalog.tags.map((tag) => [
         tag.id,
-        catalog.places.filter((place) => getPublicPlaceFilterTagIds(catalog, place).includes(tag.id))
-          .length,
+        catalog.places.filter((place) =>
+          getPublicPlaceFilterTagIds(catalog, place).includes(tag.id),
+        ).length,
       ]),
     );
 

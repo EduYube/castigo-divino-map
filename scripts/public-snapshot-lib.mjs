@@ -282,8 +282,7 @@ function readRequiredEnv(name) {
 
 export async function loadRemotePublicRows(options = {}) {
   const projectUrl = options.projectUrl ?? readRequiredEnv('VITE_SUPABASE_URL');
-  const publishableKey =
-    options.publishableKey ?? readRequiredEnv('VITE_SUPABASE_PUBLISHABLE_KEY');
+  const publishableKey = options.publishableKey ?? readRequiredEnv('VITE_SUPABASE_PUBLISHABLE_KEY');
   const fetchImplementation = options.fetchImplementation ?? globalThis.fetch.bind(globalThis);
   const timeoutMs = options.timeoutMs ?? DEFAULT_REMOTE_READ_TIMEOUT_MS;
   const controller = new AbortController();

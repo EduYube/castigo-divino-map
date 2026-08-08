@@ -31,9 +31,7 @@ export class PublicCatalogReadError extends Error {
 }
 
 export const PUBLIC_CATALOG_PAGE_SIZE: number;
-export const PUBLIC_CATALOG_TABLE_QUERIES: Readonly<
-  Record<string, PublicCatalogTableQuery>
->;
+export const PUBLIC_CATALOG_TABLE_QUERIES: Readonly<Record<string, PublicCatalogTableQuery>>;
 
 export function parsePublicCatalogContentRange(
   value: string | null,

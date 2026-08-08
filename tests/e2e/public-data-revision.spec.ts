@@ -153,9 +153,7 @@ function createArchivedRemoteRevision(): PublicRows {
   const rows = createRemoteRevisionB();
 
   rows.map_entities = rows.map_entities.filter((row) => row.id !== 'place-demo-harbor');
-  rows.entity_aliases = rows.entity_aliases.filter(
-    (row) => row.entity_id !== 'place-demo-harbor',
-  );
+  rows.entity_aliases = rows.entity_aliases.filter((row) => row.entity_id !== 'place-demo-harbor');
   rows.entity_tags = rows.entity_tags.filter((row) => row.entity_id !== 'place-demo-harbor');
   rows.public_notes = rows.public_notes.filter((row) => row.entity_id !== 'place-demo-harbor');
   rows.public_note_tags = rows.public_note_tags.filter(
