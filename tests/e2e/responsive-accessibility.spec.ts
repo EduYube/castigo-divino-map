@@ -229,8 +229,14 @@ test('restores a complete mobile URL and history without stealing focus', async 
   await page.setViewportSize({ width: 320, height: 740 });
   await openReadyMap(page, COMPLETE_STATE_URL);
 
-  await expect(page.locator('[data-place-search-toggle]')).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.locator('[data-place-filters-toggle]')).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('[data-place-search-toggle]')).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
+  await expect(page.locator('[data-place-filters-toggle]')).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
   await ensureControlsExpanded(page);
 
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
