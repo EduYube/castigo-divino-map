@@ -175,6 +175,7 @@ const {
   checksum: snapshotChecksum,
   ...snapshotContent
 } = snapshot;
+void _generatedAt;
 const expectedSnapshotChecksum = checksum(snapshotContent);
 
 if (sourceRevision !== expectedSnapshotChecksum || snapshotChecksum !== expectedSnapshotChecksum) {
