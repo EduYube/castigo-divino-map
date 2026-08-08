@@ -1,6 +1,7 @@
 import { AdminCatalogController } from '../application/adminCatalogController';
 import { AdminCharacterLocationRelationController } from '../application/adminCharacterLocationRelationController';
 import { AdminMapEntityController } from '../application/adminMapEntityController';
+import { AdminPublicRequestController } from '../application/adminPublicRequestController';
 import { AdminAuthController } from '../auth/adminAuthController';
 import {
   AuthGatewayError,
@@ -21,6 +22,10 @@ import {
   AdminMapEntityRepositoryError,
   type AdminMapEntityRepository,
 } from '../data-access/adminMapEntities';
+import {
+  AdminPublicRequestRepositoryError,
+  type AdminPublicRequestRepository,
+} from '../data-access/adminPublicRequests';
 import type {
   AdminCatalogDraft,
   AdminCatalogRecord,
@@ -35,6 +40,10 @@ import type {
   AdminMapEntityReferences,
 } from '../domain/adminMapEntities';
 import type {
+  AdminPublicRequestModerationResult,
+  AdminPublicRequestRecord,
+} from '../domain/adminPublicRequests';
+import type {
   AdminCharacterLocationRelationDraft,
   AdminCharacterLocationRelationRecord,
   AdminCharacterLocationRelationReferences,
@@ -43,9 +52,11 @@ import { SupabaseAdminAuthAdapter } from '../infrastructure/supabase/adminAuthAd
 import { SupabaseAdminCatalogRepository } from '../infrastructure/supabase/adminCatalogRepository';
 import { SupabaseAdminCharacterLocationRelationRepository } from '../infrastructure/supabase/adminCharacterLocationRelationRepository';
 import { SupabaseAdminMapEntityRepository } from '../infrastructure/supabase/adminMapEntityRepository';
+import { SupabaseAdminPublicRequestRepository } from '../infrastructure/supabase/adminPublicRequestRepository';
 import { mountAdminCatalog } from './adminCatalog';
 import { mountAdminCharacterLocationRelations } from './adminCharacterLocationRelations';
 import { mountAdminMapEntities } from './adminMapEntities';
+import { mountAdminPublicRequests } from './adminPublicRequests';
 import { mountAdminAuth } from './adminAuth';
 import '../styles/admin-catalog.css';
 
@@ -212,7 +223,9 @@ class UnavailableAdminMapEntityRepository implements AdminMapEntityRepository {
   }
 }
 
-class UnavailableAdminCharacterLocationRelationRepository implements AdminCharacterLocationRelationRepository {
+class UnavailableAdminCharacterLocationRelationRepository
+  implements AdminCharacterLocationRelationRepository
+{
   readonly #error: AdminCharacterLocationRelationRepositoryError;
 
   constructor(error: AdminCharacterLocationRelationRepositoryError) {
@@ -249,6 +262,41 @@ class UnavailableAdminCharacterLocationRelationRepository implements AdminCharac
   ): Promise<AdminCharacterLocationRelationRecord> {
     void _original;
     void _draft;
+    void _options;
+    return Promise.reject(this.#error);
+  }
+}
+
+class UnavailableAdminPublicRequestRepository implements AdminPublicRequestRepository {
+  readonly #error: AdminPublicRequestRepositoryError;
+
+  constructor(error: AdminPublicRequestRepositoryError) {
+    this.#error = error;
+  }
+
+  list(_options: { readonly signal: AbortSignal }): Promise<readonly AdminPublicRequestRecord[]> {
+    void _options;
+    return Promise.reject(this.#error);
+  }
+
+  reject(
+    _request: AdminPublicRequestRecord,
+    _moderationNote: string,
+    _options: { readonly signal: AbortSignal },
+  ): Promise<AdminPublicRequestModerationResult> {
+    void _request;
+    void _moderationNote;
+    void _options;
+    return Promise.reject(this.#error);
+  }
+
+  convert(
+    _request: AdminPublicRequestRecord,
+    _moderationNote: string,
+    _options: { readonly signal: AbortSignal },
+  ): Promise<AdminPublicRequestModerationResult> {
+    void _request;
+    void _moderationNote;
     void _options;
     return Promise.reject(this.#error);
   }
@@ -353,6 +401,26 @@ function createCharacterLocationRelationRepository(): AdminCharacterLocationRela
   }
 }
 
+function createPublicRequestRepository(): AdminPublicRequestRepository {
+  const configuration = resolveConfiguration();
+  try {
+    return new SupabaseAdminPublicRequestRepository({
+      ...configuration,
+      allowLocalProject: import.meta.env.DEV,
+    });
+  } catch (error) {
+    const normalized =
+      error instanceof AdminPublicRequestRepositoryError
+        ? error
+        : new AdminPublicRequestRepositoryError(
+            'backend-unavailable',
+            'La bandeja administrativa de solicitudes no pudo inicializarse.',
+            { cause: error },
+          );
+    return new UnavailableAdminPublicRequestRepository(normalized);
+  }
+}
+
 export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
   const adapter = createAuthAdapter();
   const authController = new AdminAuthController(adapter, adapter);
@@ -370,13 +438,24 @@ export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
     createCharacterLocationRelationRepository(),
     { onAuthorizationRejected: rejectAuthorization },
   );
+  const requestController = new AdminPublicRequestController(createPublicRequestRepository(), {
+    onAuthorizationRejected: rejectAuthorization,
+  });
   const catalogUi = mountAdminCatalog(root, catalogController, authController);
   const mapEntityUi = mountAdminMapEntities(root, mapEntityController, authController);
   const relationUi = mountAdminCharacterLocationRelations(root, relationController, authController);
+  const requestUi = mountAdminPublicRequests(root, requestController, authController, {
+    onOpenDraft: async (entityId) => {
+      await mapEntityController.reload();
+      await mapEntityController.openEditor(entityId);
+    },
+  });
   void authController.start();
 
   return {
     destroy(): void {
+      requestUi.destroy();
+      requestController.destroy();
       relationUi.destroy();
       relationController.destroy();
       mapEntityUi.destroy();
