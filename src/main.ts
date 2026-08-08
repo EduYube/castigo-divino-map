@@ -401,19 +401,19 @@ function startFullEntityExperience(sourceUrl: URL): void {
     .then((runtime) => {
       runtime.subscribeBeta02Catalog((catalog) => {
         if (!catalog) {
-          detailsController.showUnavailable({ focus: false });
+          detailsController.showUnavailable();
           return;
         }
 
         const details = resolveFullEntityDetail(catalog, request.slug!);
         if (details) {
-          detailsController.show(details, { focus: false });
+          detailsController.show(details);
         } else {
-          detailsController.showUnavailable({ focus: false });
+          detailsController.showUnavailable();
         }
       });
     })
-    .catch(() => detailsController.showUnavailable({ focus: false }));
+    .catch(() => detailsController.showUnavailable());
 }
 
 startFullEntityExperience(new URL(window.location.href));
