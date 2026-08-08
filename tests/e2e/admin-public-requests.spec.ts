@@ -362,7 +362,9 @@ test('the admin inbox filters and sorts request details without exposing a needs
   await expect(page.getByRole('button', { name: /Necesita cambios/i })).toHaveCount(0);
 
   const newerCard = page.getByRole('heading', { name: 'Newer Requested Character' }).locator('..');
-  await newerCard.getByLabel('Nota administrativa (opcional)').fill('Draft note survives rerenders.');
+  await newerCard
+    .getByLabel('Nota administrativa (opcional)')
+    .fill('Draft note survives rerenders.');
   await page.getByLabel('Orden por fecha').selectOption('oldest');
   await expect(headings.nth(0)).toHaveText('Older Requested Place');
   await expect(
