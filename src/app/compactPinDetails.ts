@@ -72,11 +72,14 @@ function appendType(parent: HTMLElement, details: CompactPinDetailModel): void {
 function appendCategory(parent: HTMLElement, details: CompactPinDetailModel): void {
   const row = document.createElement('p');
   const label = document.createElement('span');
+  const value = document.createElement('span');
 
   row.className = 'compact-details__category';
   label.className = 'compact-details__meta-label';
   label.textContent = 'Categoría';
-  row.append(label, document.createTextNode(details.category.name));
+  value.className = 'compact-details__category-value';
+  value.textContent = details.category.name;
+  row.append(label, value);
   parent.append(row);
 }
 
