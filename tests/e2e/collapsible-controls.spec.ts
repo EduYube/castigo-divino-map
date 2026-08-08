@@ -202,11 +202,19 @@ test('keeps keyboard focus on toggles and skips hidden interactive content', asy
   await expect(filters).toHaveAttribute('aria-expanded', 'true');
 });
 
-test('back and forward restore functional state without reopening collapsed controls', async ({ page }) => {
+test('back and forward restore functional state without reopening collapsed controls', async ({
+  page,
+}) => {
   await openReadyMap(page);
 
-  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
-  const landmark = page.getByRole('checkbox', { name: /Lugar destacado/ });
+  const searchbox = page.getByRole('searchbox', {
+    name: 'Buscar lugares',
+    includeHidden: true,
+  });
+  const landmark = page.getByRole('checkbox', {
+    name: /Lugar destacado/,
+    includeHidden: true,
+  });
 
   await searchbox.fill('paso');
   await landmark.check();
@@ -240,12 +248,17 @@ test('remains operable with reduced motion and forced colors', async ({ page }) 
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   const computed = await toggle.evaluate((element) => {
     const style = getComputedStyle(element);
+    const transitionDuration = style.transitionDuration;
+    const transitionDurationMilliseconds = transitionDuration.endsWith('ms')
+      ? Number.parseFloat(transitionDuration)
+      : Number.parseFloat(transitionDuration) * 1000;
+
     return {
       borderStyle: style.borderStyle,
-      transitionDuration: style.transitionDuration,
+      transitionDurationMilliseconds,
     };
   });
 
   expect(computed.borderStyle).not.toBe('none');
-  expect(computed.transitionDuration).toBe('0.01ms');
+  expect(computed.transitionDurationMilliseconds).toBeCloseTo(0.01, 5);
 });
