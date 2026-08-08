@@ -23,7 +23,9 @@ async function readCommittedBeta02Catalog() {
 
 describe('Beta 0.1 compatibility projection', () => {
   test('reconstructs the published Beta 0.1 catalog exactly from the Beta 0.2 snapshot', async () => {
-    expect(toBeta01CompatibilityCatalog(await readCommittedBeta02Catalog())).toEqual(campaignCatalog);
+    expect(toBeta01CompatibilityCatalog(await readCommittedBeta02Catalog())).toEqual(
+      campaignCatalog,
+    );
   });
 
   test('does not turn unrelated future Beta 0.2 taxonomy into legacy filters', async () => {
