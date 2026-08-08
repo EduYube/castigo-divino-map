@@ -339,11 +339,16 @@ select lives_ok(
   'request conversion fixtures are valid draft entities'
 );
 
+-- These assertions exercise the legacy request/entity integrity trigger directly.
+-- MAP-027 removes direct moderation-column UPDATE from browser roles; RPC/RLS
+-- access is covered separately by 002_rls and 013_public_request_moderation.
+reset role;
+
 select lives_ok(
   $$update public.public_requests
     set request_status = 'accepted'
     where id = '10000000-0000-4000-8000-000000000001'$$,
-  'a pending request can enter editorial review'
+  'the request trigger permits the internal pending-to-accepted transition'
 );
 
 select throws_ok(
@@ -374,7 +379,7 @@ select lives_ok(
       request_status = 'converted',
       converted_entity_id = 'entity-request-pin-target'
     where id = '10000000-0000-4000-8000-000000000001'$$,
-  'a matching draft pin entity can complete a request conversion'
+  'a matching draft pin entity can complete a request conversion at the trigger boundary'
 );
 
 select is(
@@ -418,8 +423,6 @@ values (
   'A second deterministic request.',
   'Exercises unique conversion ownership.'
 );
-
-set local role authenticated;
 
 update public.public_requests
 set request_status = 'accepted'

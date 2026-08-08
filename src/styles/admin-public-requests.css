@@ -1,0 +1,183 @@
+.admin-public-requests {
+  display: grid;
+  gap: 1rem;
+  padding-block: 1rem;
+  border-top: 1px solid currentColor;
+}
+
+.admin-public-requests[hidden] {
+  display: none;
+}
+
+.admin-public-requests__heading,
+.admin-public-requests__card-heading,
+.admin-public-requests__confirmation-heading,
+.admin-public-requests__intro,
+.admin-public-requests__notice,
+.admin-public-requests__status,
+.admin-public-requests__empty,
+.admin-public-requests__meta,
+.admin-public-requests__confirmation-text {
+  margin: 0;
+}
+
+.admin-public-requests__notice {
+  max-width: 70ch;
+  padding: 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+}
+
+.admin-public-requests__toolbar,
+.admin-public-requests__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.admin-public-requests__label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.admin-public-requests__control,
+.admin-public-requests__button,
+.admin-public-requests__primary,
+.admin-public-requests__danger {
+  min-height: 44px;
+  font: inherit;
+}
+
+.admin-public-requests__control {
+  width: min(100%, 32rem);
+  padding: 0.6rem;
+}
+
+.admin-public-requests__note {
+  min-height: 5.5rem;
+  resize: vertical;
+}
+
+.admin-public-requests__button,
+.admin-public-requests__primary,
+.admin-public-requests__danger {
+  padding: 0.6rem 0.9rem;
+  border: 1px solid currentColor;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.admin-public-requests__button:disabled,
+.admin-public-requests__primary:disabled,
+.admin-public-requests__danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.admin-public-requests__primary {
+  font-weight: 700;
+}
+
+.admin-public-requests__danger {
+  font-weight: 700;
+}
+
+.admin-public-requests__list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-public-requests__card,
+.admin-public-requests__confirmation {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid currentColor;
+  border-radius: 0.6rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-public-requests__details {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.35fr) minmax(0, 1fr);
+  gap: 0.45rem 0.8rem;
+  margin: 0;
+}
+
+.admin-public-requests__detail {
+  display: contents;
+}
+
+.admin-public-requests__detail dt {
+  font-weight: 700;
+}
+
+.admin-public-requests__detail dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.admin-public-requests__confirmation[hidden] {
+  display: none;
+}
+
+.admin-public-requests__confirmation {
+  position: sticky;
+  bottom: 1rem;
+  background: Canvas;
+  color: CanvasText;
+  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 25%);
+}
+
+@media (max-width: 640px) {
+  .admin-public-requests__toolbar,
+  .admin-public-requests__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .admin-public-requests__control,
+  .admin-public-requests__button,
+  .admin-public-requests__primary,
+  .admin-public-requests__danger {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .admin-public-requests__details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-public-requests *,
+  .admin-public-requests *::before,
+  .admin-public-requests *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .admin-public-requests__card,
+  .admin-public-requests__notice,
+  .admin-public-requests__confirmation,
+  .admin-public-requests__control,
+  .admin-public-requests__button,
+  .admin-public-requests__primary,
+  .admin-public-requests__danger {
+    border: 1px solid CanvasText;
+  }
+
+  .admin-public-requests__confirmation {
+    box-shadow: none;
+  }
+}

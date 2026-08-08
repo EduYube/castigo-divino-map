@@ -159,13 +159,18 @@ select ok(
   'map boundary coordinates are accepted'
 );
 
+-- MAP-027 removes direct request-status UPDATE from browser roles. These two
+-- assertions exercise the historical trigger state machine at the database-owner
+-- boundary rather than claiming that the browser exposes an archive action.
+reset role;
+
 select ok(
   pg_temp.statement_succeeds(
     $$update public.public_requests
       set request_status = 'archived'
       where id = '10000000-0000-4000-8000-000000000001'$$
   ),
-  'pending requests can be archived by an administrator'
+  'the request state machine permits the internal pending-to-archived transition'
 );
 
 select throws_ok(
@@ -174,8 +179,10 @@ select throws_ok(
     where id = '10000000-0000-4000-8000-000000000001'$$,
   '23514',
   'invalid public request status transition',
-  'archived requests are terminal for the expected transition error'
+  'archived requests remain terminal at the trigger boundary'
 );
+
+set local role authenticated;
 
 select ok(
   pg_temp.statement_fails(
