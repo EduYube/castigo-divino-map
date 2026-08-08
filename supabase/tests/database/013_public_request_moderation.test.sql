@@ -178,6 +178,8 @@ select ok(
   'rejection records its database-owned moderation timestamp'
 );
 
+reset role;
+
 select throws_ok(
   $$delete from public.public_requests
     where id = '10000000-0000-4000-8000-000000000272'$$,
@@ -185,6 +187,8 @@ select throws_ok(
   'moderated public requests cannot be physically deleted',
   'rejected requests preserve their audit history'
 );
+
+set local role authenticated;
 
 select lives_ok(
   $$select public.admin_moderate_public_request(
