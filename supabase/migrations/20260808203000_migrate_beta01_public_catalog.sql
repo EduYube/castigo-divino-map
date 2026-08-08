@@ -25,9 +25,7 @@ select id, name, description, 'published'::public.publication_status
 from expected
 where not exists (select 1 from public.tags existing where existing.id = expected.id);
 
-with expected(
-  id, slug, name, x, y, category_id
-) as (
+with expected(id, slug, name, x, y, category_id) as (
   values
     ('place-demo-harbor', 'puerto-de-demostracion', 'Puerto de demostración', 1080.5::double precision, 820::double precision, 'category-settlement'),
     ('place-demo-pass', 'paso-de-demostracion', 'Paso de demostración', 2240::double precision, 1240.25::double precision, 'category-landmark')
@@ -135,24 +133,17 @@ do $map028$
 begin
   if exists (
     select 1
-    from public.categories
-    where id = 'category-settlement'
-      and (
-        slug is distinct from 'asentamientos'
-        or name is distinct from 'Asentamiento'
-        or description is distinct from 'Ciudades, villas y otros núcleos habitados conocidos públicamente.'
-        or publication_status is distinct from 'published'::public.publication_status
-      )
-  ) or exists (
-    select 1
-    from public.categories
-    where id = 'category-landmark'
-      and (
-        slug is distinct from 'lugares-destacados'
-        or name is distinct from 'Lugar destacado'
-        or description is distinct from 'Accidentes geográficos y puntos de referencia públicos del mapa.'
-        or publication_status is distinct from 'published'::public.publication_status
-      )
+    from (
+      values
+        ('category-settlement', 'asentamientos', 'Asentamiento', 'Ciudades, villas y otros núcleos habitados conocidos públicamente.'),
+        ('category-landmark', 'lugares-destacados', 'Lugar destacado', 'Accidentes geográficos y puntos de referencia públicos del mapa.')
+    ) as expected(id, slug, name, description)
+    left join public.categories actual on actual.id = expected.id
+    where actual.id is null
+      or actual.slug is distinct from expected.slug
+      or actual.name is distinct from expected.name
+      or actual.description is distinct from expected.description
+      or actual.publication_status is distinct from 'published'::public.publication_status
   ) then
     raise exception using errcode = '23514', message = 'MAP-028 category identity conflicts with existing data';
   end if;
@@ -177,32 +168,24 @@ begin
 
   if exists (
     select 1
-    from public.map_entities
-    where id = 'place-demo-harbor'
-      and (
-        slug is distinct from 'puerto-de-demostracion'
-        or entity_type is distinct from 'location'::public.entity_type
-        or visibility is distinct from 'pin'::public.map_visibility
-        or name is distinct from 'Puerto de demostración'
-        or x is distinct from 1080.5::double precision
-        or y is distinct from 820::double precision
-        or category_id is distinct from 'category-settlement'
-        or publication_status is distinct from 'published'::public.publication_status
-      )
-  ) or exists (
-    select 1
-    from public.map_entities
-    where id = 'place-demo-pass'
-      and (
-        slug is distinct from 'paso-de-demostracion'
-        or entity_type is distinct from 'location'::public.entity_type
-        or visibility is distinct from 'pin'::public.map_visibility
-        or name is distinct from 'Paso de demostración'
-        or x is distinct from 2240::double precision
-        or y is distinct from 1240.25::double precision
-        or category_id is distinct from 'category-landmark'
-        or publication_status is distinct from 'published'::public.publication_status
-      )
+    from (
+      values
+        ('place-demo-harbor', 'puerto-de-demostracion', 'Puerto de demostración', 1080.5::double precision, 820::double precision, 'category-settlement'),
+        ('place-demo-pass', 'paso-de-demostracion', 'Paso de demostración', 2240::double precision, 1240.25::double precision, 'category-landmark')
+    ) as expected(id, slug, name, x, y, category_id)
+    left join public.map_entities actual on actual.id = expected.id
+    where actual.id is null
+      or actual.slug is distinct from expected.slug
+      or actual.entity_type is distinct from 'location'::public.entity_type
+      or actual.visibility is distinct from 'pin'::public.map_visibility
+      or actual.name_language is distinct from 'en'
+      or actual.name is distinct from expected.name
+      or actual.summary is distinct from ''
+      or actual.description is distinct from ''
+      or actual.x is distinct from expected.x
+      or actual.y is distinct from expected.y
+      or actual.category_id is distinct from expected.category_id
+      or actual.publication_status is distinct from 'published'::public.publication_status
   ) then
     raise exception using errcode = '23514', message = 'MAP-028 place identity conflicts with existing data';
   end if;
