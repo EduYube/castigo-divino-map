@@ -1,8 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { expect, test, type Page, type Route } from '@playwright/test';
 
-import bundledSnapshot from '../../public/data/public-catalog.snapshot.json';
-import beta01Fixture from '../../scripts/fixtures/beta01-public-rows.json';
-
+const bundledSnapshot = JSON.parse(
+  readFileSync(
+    new URL('../../public/data/public-catalog.snapshot.json', import.meta.url),
+    'utf8',
+  ),
+) as Record<string, unknown>;
+const beta01Fixture = JSON.parse(
+  readFileSync(new URL('../../scripts/fixtures/beta01-public-rows.json', import.meta.url), 'utf8'),
+) as Record<string, unknown>;
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
@@ -47,7 +55,7 @@ function projectRows(value: unknown, fields: readonly string[]): PublicRow[] {
 }
 
 function createFixtureRemoteRows(): PublicRows {
-  const fixture = beta01Fixture as unknown as Record<string, unknown>;
+  const fixture = beta01Fixture;
 
   return {
     categories: projectRows(fixture.categories, ['id', 'slug', 'name', 'description']),
