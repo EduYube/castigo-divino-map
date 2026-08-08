@@ -88,7 +88,7 @@ La migración es data-only y deja actuar a los triggers existentes para normaliz
 
 Cada inserción usa la identidad estable y solo inserta si ese ID no existe. Esto es importante porque los IDs publicados quedan reservados y un `INSERT ... ON CONFLICT DO UPDATE` volvería a atravesar el trigger de reserva antes de resolver el conflicto.
 
-Al final, la migración compara los campos públicos esperados con las filas persistidas. Si un ID ya existe con otra semántica, la transacción falla en lugar de sobrescribirlo. Los constraints existentes siguen detectando conflictos por slug o por parejas relacionales.
+Al final, la migración compara la proyección pública completa esperada de cada identidad con las filas persistidas. Si un ID ya existe con otra semántica —incluidos idioma, resumen o descripción de las entidades— la transacción falla en lugar de sobrescribirlo. Los constraints existentes siguen detectando conflictos por slug o por parejas relacionales.
 
 `npm run supabase:db:test:map028`:
 
@@ -125,7 +125,7 @@ npm run snapshot:verify:remote
 
 La verificación reconstruye la proyección publicada y compara contenido y checksum con el archivo comprometido. Un cambio editorial publicado exige regenerar y versionar el snapshot antes del siguiente despliegue que pretenda garantizar equivalencia exacta.
 
-### Fixture de CI previa a producción
+### Fixture histórica de MAP-028
 
 Antes del checkpoint de producción la base alojada todavía no contiene los datos MAP-028. CI no debe depender de credenciales ni escribir producción. Por eso existe:
 
@@ -133,31 +133,29 @@ Antes del checkpoint de producción la base alojada todavía no contiene los dat
 scripts/fixtures/beta01-public-rows.json
 ```
 
-La fixture representa el resultado esperado de la migración y se usa solo con:
+La fixture representa únicamente el resultado esperado de la migración inicial y no es una segunda fuente editorial. Puede usarse de forma explícita con:
 
 ```bash
 npm run snapshot:generate:fixture
-npm run snapshot:verify
+npm run snapshot:verify:migration
 ```
 
-`build` y `build:pages` verifican esa fixture de forma offline. Después de la escritura alojada aprobada, el checksum remoto debe coincidir con el mismo checksum comprometido.
+`build` y `build:pages` no quedan acoplados para siempre a esa fixture histórica: `npm run snapshot:verify` valida offline el checksum, la estructura y los filtros de publicación del snapshot comprometido. Las pruebas de compatibilidad y pgTAP cubren la migración Beta 0.1. Después de la escritura alojada aprobada, `snapshot:verify:remote` debe demostrar igualdad exacta entre el snapshot y Supabase.
 
-La generación filtra estados editoriales y nunca serializa `publication_status`, solicitudes públicas, remitentes, motivos, notas de moderación ni otros campos administrativos.
+La verificación permanente añade datos sintéticos `draft`/`archived` y administrativos a una entrada de prueba y exige que no alteren la proyección pública. La generación nunca serializa `publication_status`, solicitudes públicas, remitentes, motivos, notas de moderación ni otros campos administrativos.
 
 ## Compatibilidad Beta 0.1
 
 `toBeta01CompatibilityCatalog(...)` reconstruye la interfaz histórica a partir del snapshot V2:
 
-- mantiene IDs y slugs de `place-*`;
-- conserva aliases;
-- conserva coordenadas;
-- conserva categorías y tags;
-- conserva notas y sus tags;
+- reconoce únicamente los IDs históricos `place-demo-harbor` y `place-demo-pass`;
+- mantiene sus IDs y slugs;
+- conserva aliases y coordenadas;
+- incluye solo las categorías y tags usados por esas identidades y sus notas;
+- conserva las notas y sus tags;
 - mantiene el orden funcional histórico de categorías a partir del primer uso por los lugares legacy.
 
-Las pruebas comparan el resultado completo con `src/data/catalog.json`. Si la igualdad deja de cumplirse, CI falla.
-
-El runtime usa el snapshot V2 como fallback local y la proyección Beta 0.2 remota cuando Supabase responde. `src/data/catalog.json` queda fuera del fallback de producción.
+Las pruebas comparan el resultado completo con `src/data/catalog.json` y añaden taxonomía Beta 0.2 ajena para demostrar que el crecimiento futuro no contamina los filtros legacy. El runtime usa el snapshot V2 como fallback local y, tras un refresh válido, promueve la proyección Beta 0.2 remota de Supabase como fuente visible. `src/data/catalog.json` queda fuera del fallback de producción.
 
 ## Rollback
 
