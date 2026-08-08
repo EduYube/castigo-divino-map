@@ -58,7 +58,7 @@ values
     'Must stay pending.'
   );
 
-select plan(24);
+select plan(29);
 
 select ok(
   to_regprocedure(
@@ -82,7 +82,50 @@ select ok(
     'public.admin_moderate_public_request(uuid,timestamp with time zone,text,text)',
     'EXECUTE'
   ),
-  'authenticated may reach the RPC so RLS and the admin allowlist can authorize it'
+  'authenticated may reach the closed moderation RPC'
+);
+
+select ok(
+  (
+    select not rolcanlogin and not rolsuper and not rolbypassrls
+    from pg_catalog.pg_roles
+    where rolname = 'atlas_public_request_moderator'
+  ),
+  'the moderation function owner is a hardened NOLOGIN role without RLS bypass'
+);
+
+select ok(
+  (
+    select p.prosecdef
+      and p.proowner::regrole::text = 'atlas_public_request_moderator'
+    from pg_catalog.pg_proc as p
+    join pg_catalog.pg_namespace as n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = 'admin_moderate_public_request'
+  ),
+  'the security-definer RPC elevates only to the dedicated moderation role'
+);
+
+select ok(
+  not has_column_privilege(
+    'authenticated',
+    'public.public_requests',
+    'request_status',
+    'UPDATE'
+  )
+  and not has_column_privilege(
+    'authenticated',
+    'public.public_requests',
+    'moderation_note',
+    'UPDATE'
+  )
+  and not has_column_privilege(
+    'authenticated',
+    'public.public_requests',
+    'converted_entity_id',
+    'UPDATE'
+  ),
+  'authenticated browser sessions cannot update moderation columns directly'
 );
 
 select is(
@@ -129,6 +172,29 @@ set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}';
 set local role authenticated;
 
+select ok(
+  pg_temp.statement_fails(
+    $$update public.public_requests
+      set request_status = 'accepted'
+      where id = '10000000-0000-4000-8000-000000000273'$$
+  ),
+  'an authenticated administrator cannot bypass the moderation RPC with direct UPDATE'
+);
+
+reset role;
+
+select is(
+  (
+    select request_status
+    from public.public_requests
+    where id = '10000000-0000-4000-8000-000000000273'
+  ),
+  'pending'::public.request_status,
+  'a blocked direct admin UPDATE leaves the request pending'
+);
+
+set local role authenticated;
+
 select lives_ok(
   $$select public.admin_moderate_public_request(
       '10000000-0000-4000-8000-000000000272',
@@ -136,7 +202,7 @@ select lives_ok(
       'reject',
       '  Not enough evidence.  '
     )$$,
-  'an administrator can reject a pending request'
+  'an administrator can reject a pending request through the RPC'
 );
 
 select is(
