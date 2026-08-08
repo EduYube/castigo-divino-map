@@ -182,7 +182,7 @@ Se conservan y prueban:
 - skip link al contenido principal;
 - un único heading principal y jerarquía `h1` → `h2` → `h3`;
 - landmarks de banner, main, navegación y footer;
-- foco programático razonable sobre el `h1` al resolver la navegación directa;
+- foco programático razonable sobre el `h1` después de resolver la navegación directa desde la proyección pública;
 - enlace de vuelta al mapa operable con teclado;
 - nueva pestaña anunciada en el nombre accesible de la acción compacta;
 - tipo con forma, símbolo y texto;
