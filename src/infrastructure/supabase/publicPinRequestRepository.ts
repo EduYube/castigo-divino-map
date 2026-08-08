@@ -55,12 +55,18 @@ export class SupabasePublicPinRequestRepository implements PublicPinRequestRepos
     const publishableKey = options.publishableKey.trim();
     const isLocalProject = LOCAL_PROJECT_URL_PATTERN.test(projectUrl);
     const validProjectUrl =
-      PROJECT_URL_PATTERN.test(projectUrl) || (options.allowLocalProject === true && isLocalProject);
+      PROJECT_URL_PATTERN.test(projectUrl) ||
+      (options.allowLocalProject === true && isLocalProject);
     const validPublishableKey = PUBLISHABLE_KEY_PATTERN.test(publishableKey);
     const validLocalAnonKey =
       options.allowLocalProject === true && isLocalProject && isLegacyAnonKey(publishableKey);
 
-    if (!projectUrl || !publishableKey || !validProjectUrl || (!validPublishableKey && !validLocalAnonKey)) {
+    if (
+      !projectUrl ||
+      !publishableKey ||
+      !validProjectUrl ||
+      (!validPublishableKey && !validLocalAnonKey)
+    ) {
       throw new PublicPinRequestRepositoryError(
         'configuration',
         'La configuración pública de Supabase no permite enviar solicitudes.',
@@ -91,20 +97,14 @@ export class SupabasePublicPinRequestRepository implements PublicPinRequestRepos
         },
       );
     } catch (error) {
-      throw new PublicPinRequestRepositoryError(
-        'network',
-        'No se pudo contactar con Supabase.',
-        { cause: error },
-      );
+      throw new PublicPinRequestRepositoryError('network', 'No se pudo contactar con Supabase.', {
+        cause: error,
+      });
     }
 
     if (!response.ok) {
       const kind =
-        response.status === 429
-          ? 'rate-limited'
-          : response.status >= 500
-            ? 'server'
-            : 'rejected';
+        response.status === 429 ? 'rate-limited' : response.status >= 500 ? 'server' : 'rejected';
 
       throw new PublicPinRequestRepositoryError(
         kind,
