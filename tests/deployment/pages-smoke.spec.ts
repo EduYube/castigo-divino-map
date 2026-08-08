@@ -53,6 +53,18 @@ test('loads a complete shared URL from the repository subdirectory', async ({ pa
   await expect(page.getByText('Contenido de fans no oficial', { exact: true })).toBeVisible();
   await expect(page.getByRole('contentinfo')).toContainText('Cartografía: Mike Schley');
 
+  const requestOpen = page.getByRole('button', { name: 'Proponer un pin' });
+  await expect(requestOpen).toBeVisible();
+  await expect(requestOpen).toHaveAttribute('aria-expanded', 'false');
+  await requestOpen.click();
+  const requestForm = page.locator('[data-public-pin-request-form]');
+  await expect(requestForm).toBeVisible();
+  await expect(requestForm.getByLabel('Tipo de pin').locator('option')).toHaveCount(3);
+  await expect(requestForm.getByLabel(/categor/i)).toHaveCount(0);
+  await expect(requestForm.getByLabel(/etiquet/i)).toHaveCount(0);
+  await expect(requestForm.getByLabel(/campañ/i)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Cerrar el formulario de solicitud' }).click();
+
   const expectedPathname = new URL(baseURL ?? page.url()).pathname;
   expect(new URL(page.url()).pathname).toBe(expectedPathname);
   expect(generatedResourceRequests(requests).length).toBeGreaterThanOrEqual(2);
@@ -118,6 +130,7 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
     'data-active-place-id',
     'place-demo-pass',
   );
+  await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
   await expect(page.getByText('La imagen no forma parte de la aplicación')).toBeVisible();
   await expect(page.getByRole('contentinfo')).toContainText('Wizards of the Coast LLC');
 
