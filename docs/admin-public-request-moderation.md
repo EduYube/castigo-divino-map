@@ -31,7 +31,7 @@ PostgreSQL sigue siendo la frontera definitiva de autorización.
 - No se añade `service_role`, secreto, credencial privilegiada ni persistencia de tokens nueva.
 - Los errores SQL se normalizan en el adaptador del navegador; constraints, nombres internos y datos de otras solicitudes no se presentan al usuario.
 
-La creación del rol dedicado es idempotente para soportar reconstrucciones locales repetidas. La migración vuelve a endurecer sus atributos y retira el `CREATE` temporal sobre `public` antes de confirmar la transacción.
+La creación del rol dedicado es idempotente para soportar reconstrucciones locales repetidas. Si el rol ya existe, la migración verifica que siga siendo `NOLOGIN`, no privilegiado, sin `BYPASSRLS` y con herencia habilitada. Para transferir el ownership de la RPC en PostgreSQL 17, el usuario de migración recibe membresía temporal en ese rol y el rol recibe `CREATE` temporal sobre `public`; ambas concesiones se revocan antes del commit.
 
 ## Estados y auditoría
 
@@ -100,15 +100,15 @@ Tras convertir, el runtime recarga el catálogo administrativo de entidades y ab
 
 ## Volumen de la bandeja
 
-Beta 0.2 mantiene el contrato actual de cargar todas las solicitudes disponibles y aplicar filtro/orden en cliente. Esto simplifica la bandeja y conserva el comportamiento acordado, pero no es el diseño final para historiales grandes: la implementación actual pagina en bloques amplios y una futura evolución deberá mover filtro y paginación acotada al servidor.
+Beta 0.2 mantiene el contrato de cargar todas las solicitudes disponibles y aplicar filtro/orden en cliente. Para evitar que una inserción concurrente invalide o desplace páginas ya leídas, el adaptador recorre el histórico con keyset pagination estable sobre `(created_at desc, id asc)`, sin `offset` ni `count=exact`.
 
-Ese límite es de rendimiento, no una frontera de autorización ni de integridad de moderación. Antes de exponer un volumen sostenido de solicitudes anónimas conviene sustituir el recorrido completo por páginas/cursor server-side y eliminar la dependencia de un total exacto estable entre páginas.
+La carga completa sigue siendo un límite de rendimiento para historiales grandes, no una frontera de autorización ni de integridad. Antes de exponer un volumen sostenido de solicitudes anónimas conviene evolucionar la UI a páginas acotadas y mover el filtro por estado al servidor, reutilizando el cursor ya introducido en el adaptador.
 
 ## Pruebas
 
 La cobertura de MAP-027 se reparte en cuatro niveles:
 
-- unitarios de filtrado/orden y del controlador de moderación, incluido que señales de acceso repetidas sean no-op;
+- unitarios de filtrado/orden, del controlador de moderación y del cursor de lectura, incluido que señales de acceso repetidas sean no-op;
 - E2E de visibilidad administrativa, detalles, filtros, persistencia de notas durante rerenders, confirmaciones, rechazo, conversión, editor, red, concurrencia de cliente, sesión, móvil y accesibilidad;
 - pgTAP para grants/RLS, propietario endurecido de la RPC, prohibición de `UPDATE` directo de moderación, auditoría, rechazo, conversión, ausencia de categorías/tags y barrera de publicación;
 - una prueba de dos sesiones PostgreSQL que compiten por la misma solicitud y verifica que solo una crea el borrador.
