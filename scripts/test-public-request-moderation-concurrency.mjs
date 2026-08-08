@@ -159,10 +159,15 @@ try {
   first = startSession();
   first.child.stdin.write(`begin;
     ${adminPrelude()}
-    select id from public.public_requests where id = '${requestId}' for update;
-    \\echo MAP027_FIRST_LOCKED
+    select public.admin_moderate_public_request(
+      '${requestId}',
+      '${expectedUpdatedAt}'::timestamptz,
+      'convert',
+      null
+    ) /* map027-first-moderation */;
+    \\echo MAP027_FIRST_CONVERTED_UNCOMMITTED
 `);
-  await waitForMarker(first, 'MAP027_FIRST_LOCKED');
+  await waitForMarker(first, 'MAP027_FIRST_CONVERTED_UNCOMMITTED');
 
   second = startSession();
   second.child.stdin.write(`begin;
@@ -182,13 +187,7 @@ try {
   await waitForBlockedQuery('/* map027-second-moderation */', second);
   console.log('ok - concurrent moderation waits for the authoritative request row lock');
 
-  first.child.stdin.end(`select public.admin_moderate_public_request(
-      '${requestId}',
-      '${expectedUpdatedAt}'::timestamptz,
-      'convert',
-      null
-    );
-    commit;
+  first.child.stdin.end(`commit;
     \\q
 `);
 
