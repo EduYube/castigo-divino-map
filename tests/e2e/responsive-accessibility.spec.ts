@@ -186,7 +186,9 @@ test('activates matching and dimmed markers with Enter and Space and restores fo
   await expect(harbor).toHaveClass(/campaign-marker-icon--active/);
   await expect(harbor).toHaveClass(/campaign-marker-icon--dimmed/);
 
-  const closeButton = panel.getByRole('button', { name: 'Cerrar la ficha del lugar' });
+  const closeButton = panel.getByRole('button', {
+    name: 'Cerrar la ficha de Puerto de demostración',
+  });
 
   await closeButton.focus();
   await page.keyboard.press('Enter');
