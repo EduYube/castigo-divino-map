@@ -11,7 +11,7 @@ import {
 export interface PlaceSearchController {
   getQuery(): string;
   setQuery(query: string, options?: PlaceSearchStateUpdateOptions): void;
-  setBeta02Catalog(catalog: PublicCatalogSnapshotV2 | null): void;
+  setCatalogState(catalog: CampaignCatalog, beta02Catalog: PublicCatalogSnapshotV2 | null): void;
   clear(): void;
   destroy(): void;
 }
@@ -163,11 +163,12 @@ export function mountPlaceSearch(
 ): PlaceSearchController {
   const elements = resolveElements(root);
   let query = '';
+  let catalog = options.catalog;
   let beta02Catalog: PublicCatalogSnapshotV2 | null = null;
 
   const render = (): void => {
     const normalizedQuery = normalizePlaceSearchQuery(query);
-    const searchResults = searchPublicAtlas(options.catalog, beta02Catalog, query);
+    const searchResults = searchPublicAtlas(catalog, beta02Catalog, query);
 
     elements.clearButton.disabled = query.length === 0;
     elements.results.replaceChildren(
@@ -284,8 +285,12 @@ export function mountPlaceSearch(
       return query;
     },
     setQuery,
-    setBeta02Catalog(catalog: PublicCatalogSnapshotV2 | null): void {
-      beta02Catalog = catalog;
+    setCatalogState(
+      nextCatalog: CampaignCatalog,
+      nextBeta02Catalog: PublicCatalogSnapshotV2 | null,
+    ): void {
+      catalog = nextCatalog;
+      beta02Catalog = nextBeta02Catalog;
       render();
     },
     clear: handleClear,
