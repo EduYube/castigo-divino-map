@@ -241,8 +241,7 @@ test('opens full details in a new tab without changing the map tab', async ({ co
     'connected',
   );
 
-  await page.getByTestId('coincident-pin').click();
-  await page.getByTestId('coincident-pin-option').first().click();
+  await page.locator('[data-testid="place-marker"][data-place-id="place-demo-harbor"]').click();
   const panel = page.getByTestId('place-details');
   const originalUrl = page.url();
 
