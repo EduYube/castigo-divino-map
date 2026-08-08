@@ -3,10 +3,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 const bundledSnapshot = JSON.parse(
-  readFileSync(
-    new URL('../../public/data/public-catalog.snapshot.json', import.meta.url),
-    'utf8',
-  ),
+  readFileSync(new URL('../../public/data/public-catalog.snapshot.json', import.meta.url), 'utf8'),
 ) as Record<string, unknown>;
 const beta01Fixture = JSON.parse(
   readFileSync(new URL('../../scripts/fixtures/beta01-public-rows.json', import.meta.url), 'utf8'),
