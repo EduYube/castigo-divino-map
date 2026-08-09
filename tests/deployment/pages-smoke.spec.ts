@@ -45,10 +45,15 @@ test('loads the Beta 0.2 public experience from the repository subdirectory', as
   await expect(page).toHaveTitle(/Atlas de los Nuevos Dioses/i);
   await expect(page.getByRole('banner')).toBeVisible();
   await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
-  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
-    'data-backend-state',
-    'connected',
-  );
+
+  const backendStatus = page.locator('[data-backend-status]');
+  if (process.env.PAGES_URL) {
+    await expect(backendStatus).toHaveAttribute('data-backend-state', 'connected');
+  } else {
+    await expect(backendStatus).toHaveAttribute('data-backend-state', 'degraded');
+    await expect(backendStatus).toHaveAttribute('data-backend-reason', 'configuration-missing');
+  }
+
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
   await expect(page.getByRole('checkbox', { name: /Lugar destacado/ })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Paso de montaña/ })).toBeChecked();
