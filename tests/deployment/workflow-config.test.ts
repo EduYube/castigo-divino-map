@@ -34,6 +34,12 @@ describe('GitHub Pages deployment contracts', () => {
     expect(workflow).toContain('pages: write');
     expect(workflow).toContain('id-token: write');
     expect(workflow).toContain('PAGES_URL: ${{ needs.deploy.outputs.page_url }}');
+    expect(workflow).toContain(
+      "vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co'",
+    );
+    expect(workflow).toContain(
+      "vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0'",
+    );
     expect(workflow).not.toContain('Sword-Coast-Map_LowRes.jpg');
   });
 
