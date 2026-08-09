@@ -1,3 +1,7 @@
+.place-details__return {
+  display: none;
+}
+
 @media (max-width: 48rem) {
   .map-workspace {
     position: relative;
