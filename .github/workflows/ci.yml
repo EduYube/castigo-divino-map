@@ -53,6 +53,9 @@ jobs:
       - name: Audit production artifact
         run: npm run verify:build
 
+      - name: Report production build metrics
+        run: npm run report:build
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
 
