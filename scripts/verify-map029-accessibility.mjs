@@ -16,7 +16,9 @@ function parseHex(value) {
   if (!/^[0-9a-f]{6}$/i.test(normalized)) {
     throw new Error(`Expected a six-digit hex color, received ${value}.`);
   }
-  return [0, 2, 4].map((offset) => Number.parseInt(normalized.slice(offset, offset + 2), 16) / 255);
+  return [0, 2, 4].map(
+    (offset) => Number.parseInt(normalized.slice(offset, offset + 2), 16) / 255,
+  );
 }
 
 function relativeLuminance(value) {
@@ -45,19 +47,42 @@ const accentStrong = extractCssHex(
   /--accent-strong:\s*(#[0-9a-f]{6})\s*;/i,
   '--accent-strong',
 );
-const focusRing = extractCssHex(/outline:\s*3px\s+solid\s+(#[0-9a-f]{6})\s*;/i, 'focus ring');
+const focusRing = extractCssHex(
+  /outline:\s*3px\s+solid\s+(#[0-9a-f]{6})\s*;/i,
+  'focus ring',
+);
 
 const pairs = [
-  { label: 'primary text', foreground: ink, background: primarySurface, minimum: 4.5 },
-  { label: 'muted text', foreground: muted, background: primarySurface, minimum: 4.5 },
-  { label: 'accent text', foreground: accent, background: primarySurface, minimum: 4.5 },
+  {
+    label: 'primary text',
+    foreground: ink,
+    background: primarySurface,
+    minimum: 4.5,
+  },
+  {
+    label: 'muted text',
+    foreground: muted,
+    background: primarySurface,
+    minimum: 4.5,
+  },
+  {
+    label: 'accent text',
+    foreground: accent,
+    background: primarySurface,
+    minimum: 4.5,
+  },
   {
     label: 'strong accent text',
     foreground: accentStrong,
     background: primarySurface,
     minimum: 4.5,
   },
-  { label: 'focus ring', foreground: focusRing, background: primarySurface, minimum: 3 },
+  {
+    label: 'focus ring',
+    foreground: focusRing,
+    background: primarySurface,
+    minimum: 3,
+  },
 ];
 
 const measurements = pairs.map((pair) => ({
