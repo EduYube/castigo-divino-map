@@ -1,8 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const criticalAccessibilitySuite = /responsive-accessibility\.spec\.ts/;
-const map033MobileSuite = /map033-mobile\.spec\.ts/;
-const criticalMobileSuite = /(responsive-accessibility|map033-mobile)\.spec\.ts/;
+const mobileOnlySuite = /(map033-mobile|map037-mobile-details)\.spec\.ts/;
+const criticalMobileSuite =
+  /(responsive-accessibility|map033-mobile|map037-mobile-details)\.spec\.ts/;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -22,7 +23,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: map033MobileSuite,
+      testIgnore: mobileOnlySuite,
       use: { ...devices['Desktop Chrome'] },
     },
     {
