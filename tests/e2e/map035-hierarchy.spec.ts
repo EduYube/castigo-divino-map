@@ -86,7 +86,7 @@ for (const viewport of VIEWPORTS) {
         filtersTop: filters?.top ?? null,
         helpSummaryHeight: helpSummary?.height ?? null,
         helpInitiallyOpen: help?.open ?? null,
-        legendInitiallyVisible: Boolean(legend?.offsetParent),
+        legendInitiallyVisible: Boolean(help?.open && legend?.getClientRects().length),
         mapTop: map?.top ?? null,
         mapBottom: map?.bottom ?? null,
         mapHeight: map?.height ?? null,
