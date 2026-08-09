@@ -152,9 +152,22 @@ body .atlas-main {
   }
 
   .map-experience > .map-experience__heading {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr) 9rem;
+    align-items: center;
     gap: 0.55rem;
+  }
+
+  .map-experience > .map-experience__heading > .map-help {
+    justify-self: stretch;
+  }
+
+  .map-experience > .map-experience__heading > .map-help[open] {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .map-experience > .map-experience__heading > .map-help[open] > .map-help__summary {
+    margin-left: 0;
   }
 
   .atlas-main > .map-introduction {
