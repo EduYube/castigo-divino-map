@@ -142,7 +142,9 @@ async function openConnected(page: Page, backend: TestBackend): Promise<void> {
   const status = page.locator('[data-backend-status]');
   await expect(status).toHaveAttribute('data-backend-state', 'connected');
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
-  await expect.poll(() => backend.requestCount()).toBe(Object.keys(PUBLIC_CATALOG_TABLE_QUERIES).length);
+  await expect
+    .poll(() => backend.requestCount())
+    .toBe(Object.keys(PUBLIC_CATALOG_TABLE_QUERIES).length);
 }
 
 async function expectDegradedWithFallback(page: Page, reason: string): Promise<void> {
