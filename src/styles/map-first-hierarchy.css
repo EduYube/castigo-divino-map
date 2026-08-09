@@ -296,15 +296,7 @@ body .atlas-main {
 
 @media (max-width: 22rem) {
   .map-experience > .map-experience__heading {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .map-experience > .map-experience__heading > :first-child {
-    grid-column: 1 / -1;
-  }
-
-  .map-experience > .map-experience__heading > .map-help:not([open]) {
-    grid-column: 2;
+    grid-template-columns: minmax(0, 1fr) 8rem;
   }
 }
 
@@ -314,17 +306,9 @@ body .atlas-main {
   }
 
   .map-experience > .map-experience__heading {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) 10rem;
     gap: 0.25rem;
     padding-block: 0.25rem;
-  }
-
-  .map-experience > .map-experience__heading > :first-child {
-    grid-column: 1 / -1;
-  }
-
-  .map-experience > .map-experience__heading > .map-help:not([open]) {
-    grid-column: 2;
   }
 
   .map-experience > .map-experience__heading .eyebrow {
