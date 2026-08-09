@@ -141,11 +141,39 @@ function mountPublicExperience(
       const sheetHeight = compactDetailsPanel.getBoundingClientRect().height;
       const edgePadding = 20;
       mapController.map.invalidateSize({ animate: false, pan: false });
-      mapController.map.panInside([pin.coordinate[0], pin.coordinate[1]], {
-        animate: false,
-        paddingTopLeft: [edgePadding, edgePadding],
-        paddingBottomRight: [edgePadding, Math.ceil(sheetHeight + edgePadding)],
-      });
+
+      const mapSize = mapController.map.getSize();
+      const pinPoint = mapController.map.latLngToContainerPoint([
+        pin.coordinate[0],
+        pin.coordinate[1],
+      ]);
+      const visibleRight = Math.max(edgePadding, mapSize.x - edgePadding);
+      const visibleBottom = Math.max(
+        edgePadding,
+        mapSize.y - Math.ceil(sheetHeight) - edgePadding,
+      );
+      let offsetX = 0;
+      let offsetY = 0;
+
+      if (pinPoint.x < edgePadding) {
+        offsetX = pinPoint.x - edgePadding;
+      } else if (pinPoint.x > visibleRight) {
+        offsetX = pinPoint.x - visibleRight;
+      }
+
+      if (pinPoint.y < edgePadding) {
+        offsetY = pinPoint.y - edgePadding;
+      } else if (pinPoint.y > visibleBottom) {
+        offsetY = pinPoint.y - visibleBottom;
+      }
+
+      if (offsetX !== 0 || offsetY !== 0) {
+        const roundAwayFromZero = (value: number): number =>
+          value > 0 ? Math.ceil(value) : Math.floor(value);
+        mapController.map.panBy([roundAwayFromZero(offsetX), roundAwayFromZero(offsetY)], {
+          animate: false,
+        });
+      }
     });
   };
 
