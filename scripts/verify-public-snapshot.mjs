@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
+import { assertGeographicSearchCoverage } from '../src/data-access/geographicCoverageContract.js';
 import {
   buildPublicSnapshotContent,
   checksum,
@@ -30,21 +31,33 @@ const committedChecksum = checksum(committedContent);
 if (snapshot.checksum !== committedChecksum || snapshot.sourceRevision !== committedChecksum) {
   throw new Error('The committed public snapshot checksum/sourceRevision is invalid.');
 }
+assertGeographicSearchCoverage(committedContent, 'the committed public snapshot');
 
-if (verifyRemote || verifyMigrationFixture) {
-  const raw = verifyRemote ? await loadRemotePublicRows() : await loadFixtureRows(FIXTURE_PATH);
+if (verifyRemote) {
+  const raw = await loadRemotePublicRows();
   const expectedContent = buildPublicSnapshotContent(raw);
   const expectedChecksum = checksum(expectedContent);
-  const sourceLabel = verifyRemote ? 'Supabase published data' : 'the MAP-028 migration fixture';
+  assertGeographicSearchCoverage(expectedContent, 'Supabase published data');
 
   if (expectedChecksum !== committedChecksum) {
     throw new Error(
-      `Public snapshot drift: committed ${committedChecksum}, ${sourceLabel} ${expectedChecksum}.`,
+      `Public snapshot drift: committed ${committedChecksum}, Supabase published data ${expectedChecksum}.`,
     );
   }
 
   if (JSON.stringify(committedContent) !== JSON.stringify(expectedContent)) {
-    throw new Error(`Public snapshot order/content differs from ${sourceLabel}.`);
+    throw new Error('Public snapshot order/content differs from Supabase published data.');
+  }
+}
+
+if (verifyMigrationFixture) {
+  const expectedContent = buildPublicSnapshotContent(await loadFixtureRows(FIXTURE_PATH));
+  const committedLegacyContent = { ...committedContent, geographicNames: [] };
+
+  if (JSON.stringify(committedLegacyContent) !== JSON.stringify(expectedContent)) {
+    throw new Error(
+      'Public snapshot legacy projection differs from the historical MAP-028 migration fixture.',
+    );
   }
 }
 
@@ -136,10 +149,10 @@ for (const forbidden of [
 }
 
 const verificationTarget = verifyRemote
-  ? 'Supabase published data'
+  ? 'Supabase published data plus the MAP-032 geographic coverage gate'
   : verifyMigrationFixture
-    ? 'the MAP-028 migration fixture'
-    : 'its canonical public content and publication filters';
+    ? 'the historical MAP-028 migration fixture plus the MAP-032 geographic coverage gate'
+    : 'its canonical public content, publication filters and MAP-032 geographic coverage gate';
 console.log(
   `Verified Beta 0.2 public snapshot against ${verificationTarget}: ${committedChecksum}.`,
 );

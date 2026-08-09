@@ -94,11 +94,15 @@ select is(
   2::bigint,
   'anon sees the public sighting and departure for a public character'
 );
-select is((select count(*) from public.geographic_names), 2::bigint, 'anon sees only valid published geographic names');
+select is(
+  (select count(*) from public.geographic_names),
+  17::bigint,
+  'anon sees only valid published geographic names, including the MAP-032 baseline'
+);
 select is(
   (select count(*) from public.geographic_name_aliases),
-  1::bigint,
-  'anon sees aliases only for published geographic names'
+  6::bigint,
+  'anon sees aliases only for published geographic names, including the MAP-032 baseline'
 );
 
 select ok(pg_temp.statement_fails('select * from public.public_requests'), 'anon cannot enumerate requests');
