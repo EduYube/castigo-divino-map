@@ -237,7 +237,9 @@ test('searches a representative settlement and region sample without campaign pi
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
 });
 
-test('locates Waterdeep from the bundled snapshot when Supabase is unavailable', async ({ page }) => {
+test('locates Waterdeep from the bundled snapshot when Supabase is unavailable', async ({
+  page,
+}) => {
   await mockMap(page);
   await page.route('**/rest/v1/**', async (route) => {
     await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
