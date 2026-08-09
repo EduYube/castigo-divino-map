@@ -3,6 +3,14 @@ import { readFile } from 'node:fs/promises';
 const mainCss = await readFile('src/styles/main.css', 'utf8');
 const accessibilityCss = await readFile('src/styles/accessibility.css', 'utf8');
 
+function extractCssHex(pattern, label) {
+  const match = pattern.exec(mainCss);
+  if (!match?.[1]) {
+    throw new Error(`Unable to resolve ${label} from src/styles/main.css.`);
+  }
+  return match[1];
+}
+
 function parseHex(value) {
   const normalized = value.replace('#', '');
   if (!/^[0-9a-f]{6}$/i.test(normalized)) {
@@ -26,12 +34,30 @@ function contrastRatio(foreground, background) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+const primarySurface = extractCssHex(
+  /linear-gradient\(180deg,\s*(#[0-9a-f]{6})\s+0%/i,
+  'the primary body surface',
+);
+const ink = extractCssHex(/--ink:\s*(#[0-9a-f]{6})\s*;/i, '--ink');
+const muted = extractCssHex(/--muted:\s*(#[0-9a-f]{6})\s*;/i, '--muted');
+const accent = extractCssHex(/--accent:\s*(#[0-9a-f]{6})\s*;/i, '--accent');
+const accentStrong = extractCssHex(
+  /--accent-strong:\s*(#[0-9a-f]{6})\s*;/i,
+  '--accent-strong',
+);
+const focusRing = extractCssHex(/outline:\s*3px\s+solid\s+(#[0-9a-f]{6})\s*;/i, 'focus ring');
+
 const pairs = [
-  { label: 'primary text', foreground: '#f7f1e3', background: '#182019', minimum: 4.5 },
-  { label: 'muted text', foreground: '#b9c0b7', background: '#182019', minimum: 4.5 },
-  { label: 'accent text', foreground: '#d7b96f', background: '#182019', minimum: 4.5 },
-  { label: 'release badge', foreground: '#172018', background: '#d7b96f', minimum: 4.5 },
-  { label: 'focus ring', foreground: '#fff1a8', background: '#182019', minimum: 3 },
+  { label: 'primary text', foreground: ink, background: primarySurface, minimum: 4.5 },
+  { label: 'muted text', foreground: muted, background: primarySurface, minimum: 4.5 },
+  { label: 'accent text', foreground: accent, background: primarySurface, minimum: 4.5 },
+  {
+    label: 'strong accent text',
+    foreground: accentStrong,
+    background: primarySurface,
+    minimum: 4.5,
+  },
+  { label: 'focus ring', foreground: focusRing, background: primarySurface, minimum: 3 },
 ];
 
 const measurements = pairs.map((pair) => ({
@@ -65,5 +91,7 @@ if (!accessibilityCss.includes('@media (forced-colors: active)')) {
 
 console.log('MAP-029 accessibility static checks passed.');
 for (const measurement of measurements) {
-  console.log(`${measurement.label}: ${measurement.ratio.toFixed(2)}:1`);
+  console.log(
+    `${measurement.label}: ${measurement.foreground} on ${measurement.background} = ${measurement.ratio.toFixed(2)}:1`,
+  );
 }
