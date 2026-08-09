@@ -35,8 +35,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check formatting
-        run: npm run format:check
+      - name: Render MAP-032 Prettier diff
+        run: |
+          npm run format
+          git diff -- src/data-access/geographicCoverageContract.js src/data-access/geographicCoverageContract.test.ts public/data/public-catalog.snapshot.json tests/deployment/map032-geographic-search.spec.ts tests/e2e/map032-geographic-index.spec.ts
+          exit 1
 
       - name: Audit tracked files for privileged credentials
         run: npm run verify:security
