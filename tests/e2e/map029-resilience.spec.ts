@@ -43,6 +43,7 @@ type BackendMode =
 
 interface TestBackend {
   setMode(mode: BackendMode): void;
+  setEntityName(name: string): void;
   requestCount(): number;
 }
 
@@ -66,6 +67,7 @@ function projectFixtureRows(table: string): readonly Record<string, unknown>[] {
 async function configureBackend(page: Page): Promise<TestBackend> {
   let mode: BackendMode = 'success';
   let requests = 0;
+  let entityNameOverride: string | null = null;
 
   await page.addInitScript((projectUrl) => {
     window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
@@ -115,7 +117,14 @@ async function configureBackend(page: Page): Promise<TestBackend> {
 
     const match = /\/rest\/v1\/([^?]+)/.exec(route.request().url());
     const table = match?.[1] ?? '';
-    const rows = projectFixtureRows(table);
+    let rows = projectFixtureRows(table);
+
+    if (table === 'map_entities' && entityNameOverride) {
+      rows = rows.map((row, index) =>
+        index === 0 ? { ...row, name: entityNameOverride } : row,
+      );
+    }
+
     const contentRange = rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
     const headers = mode === 'missing-content-range' ? {} : { 'Content-Range': contentRange };
 
@@ -130,6 +139,9 @@ async function configureBackend(page: Page): Promise<TestBackend> {
   return {
     setMode(nextMode): void {
       mode = nextMode;
+    },
+    setEntityName(name): void {
+      entityNameOverride = name;
     },
     requestCount(): number {
       return requests;
@@ -167,6 +179,25 @@ test('performs one initial public request per contract table and does not poll w
 
   await page.waitForTimeout(300);
   expect(backend.requestCount()).toBe(settledCount);
+});
+
+test('renders stored HTML-like public data as inert text instead of executable markup', async ({
+  page,
+}) => {
+  const backend = await configureBackend(page);
+  const maliciousName = '<img src=x onerror="window.__map029Xss=1">';
+  backend.setEntityName(maliciousName);
+
+  await openConnected(page, backend);
+  await page.getByTestId('place-marker').first().click();
+
+  await expect(page.getByTestId('place-details')).toContainText(maliciousName);
+  await expect(page.locator('img[src="x"]')).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { __map029Xss?: number }).__map029Xss ?? 0,
+    ),
+  ).toBe(0);
 });
 
 for (const scenario of [
