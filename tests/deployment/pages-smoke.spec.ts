@@ -54,7 +54,10 @@ test('loads the Beta 0.2 public experience from the repository subdirectory', as
       .poll(async () => {
         const state = await backendStatus.getAttribute('data-backend-state');
         const reason = await backendStatus.getAttribute('data-backend-reason');
-        return state === 'connected' || (state === 'degraded' && reason === 'configuration-missing');
+        return (
+          state === 'connected' ||
+          (state === 'degraded' && reason === 'configuration-missing')
+        );
       })
       .toBe(true);
   }
