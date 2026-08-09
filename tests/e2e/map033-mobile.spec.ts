@@ -69,6 +69,10 @@ for (const viewport of PORTRAIT_VIEWPORTS) {
     await page.setViewportSize(viewport);
     await openReadyMap(page);
 
+    const header = page.locator('.site-header');
+    const brand = header.locator('.brand');
+    const backendStatus = header.locator('.backend-status');
+    const adminButton = header.locator('.admin-auth-entry__button');
     const searchToggle = page.locator('[data-place-search-toggle]');
     const filtersToggle = page.locator('[data-place-filters-toggle]');
     const map = page.locator('[data-map-canvas]');
@@ -76,12 +80,18 @@ for (const viewport of PORTRAIT_VIEWPORTS) {
     const experience = page.locator('.map-experience');
     const introduction = page.locator('.map-introduction');
 
+    await expect(backendStatus).toBeVisible();
     await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
     await expect(filtersToggle).toHaveAttribute('aria-expanded', 'false');
+    await expectTouchTarget(brand);
+    await expectTouchTarget(adminButton);
     await expectTouchTarget(searchToggle);
     await expectTouchTarget(filtersToggle);
     await expectNoHorizontalOverflow(page);
 
+    const headerBox = await header.boundingBox();
+    const brandBox = await brand.boundingBox();
+    const backendStatusBox = await backendStatus.boundingBox();
     const searchBox = await searchToggle.boundingBox();
     const filtersBox = await filtersToggle.boundingBox();
     const mapBox = await map.boundingBox();
@@ -89,6 +99,9 @@ for (const viewport of PORTRAIT_VIEWPORTS) {
     const experienceBox = await experience.boundingBox();
     const introductionBox = await introduction.boundingBox();
 
+    expect(headerBox).not.toBeNull();
+    expect(brandBox).not.toBeNull();
+    expect(backendStatusBox).not.toBeNull();
     expect(searchBox).not.toBeNull();
     expect(filtersBox).not.toBeNull();
     expect(mapBox).not.toBeNull();
@@ -97,6 +110,18 @@ for (const viewport of PORTRAIT_VIEWPORTS) {
     expect(introductionBox).not.toBeNull();
 
     await captureReference(page, testInfo, `${viewport.width}x${viewport.height}`);
+
+    if (headerBox) {
+      expect(headerBox.height).toBeLessThan(208);
+    }
+
+    if (brandBox) {
+      expect(brandBox.width).toBeGreaterThanOrEqual(112);
+    }
+
+    if (backendStatusBox) {
+      expect(backendStatusBox.height).toBeLessThan(96);
+    }
 
     if (searchBox && filtersBox) {
       expect(Math.abs(searchBox.y - filtersBox.y)).toBeLessThanOrEqual(2);
@@ -160,10 +185,22 @@ test('keeps a useful map surface in short mobile landscape', async ({ page }, te
   await page.setViewportSize(viewport);
   await openReadyMap(page);
 
+  const headerBox = await page.locator('.site-header').boundingBox();
+  const backendStatusBox = await page.locator('.backend-status').boundingBox();
   const mapBox = await page.locator('[data-map-canvas]').boundingBox();
 
+  expect(headerBox).not.toBeNull();
+  expect(backendStatusBox).not.toBeNull();
   expect(mapBox).not.toBeNull();
   await captureReference(page, testInfo, '667x375-landscape');
+
+  if (headerBox) {
+    expect(headerBox.height).toBeLessThan(144);
+  }
+
+  if (backendStatusBox) {
+    expect(backendStatusBox.height).toBeLessThan(80);
+  }
 
   if (mapBox) {
     expect(mapBox.y).toBeLessThan(viewport.height * 0.92);
