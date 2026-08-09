@@ -6,6 +6,9 @@ import {
 const SESSION_VERSION = 1;
 const HOSTED_PROJECT_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
 const PUBLISHABLE_KEY_PATTERN = /^sb_publishable_[A-Za-z0-9_-]{10,}$/;
+const PASSWORD_ALLOWED_SYMBOLS = `!@#$%^&*()_+-=[]{};'\\:"|<>?,./\`~`;
+const PASSWORD_REQUIREMENTS_MESSAGE =
+  'La contraseña debe incluir al menos una minúscula, una mayúscula, un número y un símbolo.';
 
 interface StoredAuthSessionV1 {
   readonly version: 1;
@@ -119,6 +122,15 @@ export function parseAdminAuthEmailCallback(
     email: claims.email,
     type: params.get('type'),
   };
+}
+
+export function meetsAdminPasswordCharacterRequirements(password: string): boolean {
+  return (
+    /[a-z]/.test(password) &&
+    /[A-Z]/.test(password) &&
+    /[0-9]/.test(password) &&
+    Array.from(password).some((character) => PASSWORD_ALLOWED_SYMBOLS.includes(character))
+  );
 }
 
 function toStoredSession(session: AuthCallbackSession): StoredAuthSessionV1 {
@@ -241,6 +253,37 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
+function passwordUpdateErrorMessage(status: number, payload: unknown): string {
+  const errorCode = isRecord(payload)
+    ? typeof payload.code === 'string'
+      ? payload.code
+      : typeof payload.error_code === 'string'
+        ? payload.error_code
+        : null
+    : null;
+  const message = isRecord(payload)
+    ? typeof payload.message === 'string'
+      ? payload.message
+      : typeof payload.msg === 'string'
+        ? payload.msg
+        : null
+    : null;
+
+  if (errorCode === 'weak_password' || message?.includes('Password should contain')) {
+    return PASSWORD_REQUIREMENTS_MESSAGE;
+  }
+
+  if (status === 401 || status === 403) {
+    return 'El enlace de recuperación ha caducado o ya no es válido. Solicita un enlace nuevo.';
+  }
+
+  if (status === 429) {
+    return 'Supabase ha aplicado un límite temporal. Espera antes de volver a intentarlo.';
+  }
+
+  return 'Supabase no pudo actualizar la contraseña. Revisa los requisitos y vuelve a intentarlo mientras esta ventana siga abierta.';
+}
+
 function mountRecoveryDialog(
   root: ParentNode,
   session: AuthCallbackSession,
@@ -251,6 +294,7 @@ function mountRecoveryDialog(
   const title = createElement('h2', 'admin-auth-dialog__title');
   const closeButton = createElement('button', 'admin-auth-dialog__close');
   const description = createElement('p', 'admin-auth-dialog__description');
+  const passwordRequirements = createElement('p', 'admin-auth-dialog__description');
   const form = createElement('form', 'admin-auth__form');
   const status = createElement('p', 'admin-auth__status');
   const submitButton = createElement('button', 'admin-auth__submit');
@@ -269,13 +313,17 @@ function mountRecoveryDialog(
 
   description.textContent =
     'El enlace de recuperación ya ha verificado tu identidad. Define ahora una contraseña para futuros accesos administrativos.';
+  passwordRequirements.id = 'admin-recovery-password-requirements';
+  passwordRequirements.textContent = PASSWORD_REQUIREMENTS_MESSAGE;
+  passwordInput.setAttribute('aria-describedby', passwordRequirements.id);
+  confirmationInput.setAttribute('aria-describedby', passwordRequirements.id);
   status.setAttribute('role', 'status');
   status.setAttribute('aria-live', 'polite');
   status.setAttribute('aria-atomic', 'true');
   submitButton.type = 'submit';
   submitButton.textContent = 'Guardar contraseña';
   form.append(status, submitButton);
-  dialog.append(dialogHeader, description, form);
+  dialog.append(dialogHeader, description, passwordRequirements, form);
   root.append(dialog);
 
   const close = (): void => {
@@ -299,6 +347,12 @@ function mountRecoveryDialog(
 
     const password = passwordInput.value;
     const confirmation = confirmationInput.value;
+
+    if (!meetsAdminPasswordCharacterRequirements(password)) {
+      status.textContent = PASSWORD_REQUIREMENTS_MESSAGE;
+      passwordInput.focus();
+      return;
+    }
 
     if (password !== confirmation) {
       status.textContent = 'Las contraseñas no coinciden.';
@@ -329,8 +383,8 @@ function mountRecoveryDialog(
         });
 
         if (!updateResponse.ok) {
-          status.textContent =
-            'Supabase no pudo actualizar la contraseña. Solicita un enlace de recuperación nuevo e inténtalo de nuevo.';
+          const updatePayload = await readJson(updateResponse);
+          status.textContent = passwordUpdateErrorMessage(updateResponse.status, updatePayload);
           return;
         }
 
@@ -363,7 +417,7 @@ function mountRecoveryDialog(
         window.location.reload();
       } catch {
         status.textContent =
-          'No se pudo completar la recuperación por un problema de red. Solicita un enlace nuevo antes de reintentarlo.';
+          'No se pudo completar la recuperación por un problema de red. Puedes reintentarlo mientras esta ventana siga abierta.';
       } finally {
         passwordInput.value = '';
         confirmationInput.value = '';
