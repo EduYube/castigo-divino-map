@@ -70,6 +70,24 @@
   gap: 1rem;
 }
 
+.map-experience > .place-search .place-search__clear {
+  min-height: 2.8125rem;
+}
+
+@media (min-width: 48.0625rem) {
+  .map-experience > .place-search > .collapsible-control__header,
+  .map-experience > .place-filters > .collapsible-control__header {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 0.55rem;
+  }
+
+  .map-experience > .place-search > .collapsible-control__header .collapsible-control__toggle,
+  .map-experience > .place-filters > .collapsible-control__header .collapsible-control__toggle {
+    width: 100%;
+  }
+}
+
 @media (max-width: 48rem) {
   .place-filters[data-collapsible-expanded='false'] .place-filters__title {
     display: none;
