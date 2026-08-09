@@ -60,7 +60,11 @@
         "y": 820
       },
       "categoryId": "category-settlement",
-      "tagIds": ["coastal", "demo-data", "trade-route"]
+      "tagIds": [
+        "coastal",
+        "demo-data",
+        "trade-route"
+      ]
     },
     {
       "id": "place-demo-pass",
@@ -84,7 +88,11 @@
         "y": 1240.25
       },
       "categoryId": "category-landmark",
-      "tagIds": ["demo-data", "mountain-pass", "trade-route"]
+      "tagIds": [
+        "demo-data",
+        "mountain-pass",
+        "trade-route"
+      ]
     }
   ],
   "dispositions": [],
@@ -97,7 +105,10 @@
       "title": "Información pública de demostración",
       "body": "Este puerto ficticio sirve para comprobar fichas, búsquedas y filtros sin representar hechos secretos ni confirmados de la campaña.",
       "sortOrder": 0,
-      "tagIds": ["coastal", "demo-data"]
+      "tagIds": [
+        "coastal",
+        "demo-data"
+      ]
     },
     {
       "id": "note-demo-pass-travel",
@@ -106,12 +117,247 @@
       "title": "Referencia pública de viaje",
       "body": "Este paso ficticio demuestra cómo una nota pública puede relacionar un lugar con etiquetas de viaje y terreno.",
       "sortOrder": 0,
-      "tagIds": ["demo-data", "mountain-pass", "trade-route"]
+      "tagIds": [
+        "demo-data",
+        "mountain-pass",
+        "trade-route"
+      ]
     }
   ],
-  "geographicNames": [],
+  "geographicNames": [
+    {
+      "id": "geo-baldurs-gate",
+      "slug": "baldurs-gate",
+      "name": "Baldur's Gate",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1889,
+        "y": 824
+      },
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-daggerford",
+      "slug": "daggerford",
+      "name": "Daggerford",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1742,
+        "y": 1386
+      },
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-evermoors",
+      "slug": "the-evermoors",
+      "name": "The Evermoors",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-evermoors",
+          "geographicNameId": "geo-evermoors",
+          "language": "en",
+          "value": "Evermoors"
+        }
+      ],
+      "coordinates": {
+        "x": 1890,
+        "y": 1921
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-fields-of-the-dead",
+      "slug": "the-fields-of-the-dead",
+      "name": "The Fields of the Dead",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-fields-of-the-dead",
+          "geographicNameId": "geo-fields-of-the-dead",
+          "language": "en",
+          "value": "Fields of the Dead"
+        }
+      ],
+      "coordinates": {
+        "x": 2016,
+        "y": 959
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-forest-of-wyrms",
+      "slug": "forest-of-wyrms",
+      "name": "Forest of Wyrms",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2165,
+        "y": 1084
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-high-forest",
+      "slug": "the-high-forest",
+      "name": "The High Forest",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-high-forest",
+          "geographicNameId": "geo-high-forest",
+          "language": "en",
+          "value": "High Forest"
+        }
+      ],
+      "coordinates": {
+        "x": 2098,
+        "y": 1809
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-high-moor",
+      "slug": "the-high-moor",
+      "name": "The High Moor",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-high-moor",
+          "geographicNameId": "geo-high-moor",
+          "language": "en",
+          "value": "High Moor"
+        }
+      ],
+      "coordinates": {
+        "x": 2010,
+        "y": 1279
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-luskan",
+      "slug": "luskan",
+      "name": "Luskan",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1416,
+        "y": 2011
+      },
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-mirabar",
+      "slug": "mirabar",
+      "name": "Mirabar",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1562,
+        "y": 2093
+      },
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-neverwinter",
+      "slug": "neverwinter",
+      "name": "Neverwinter",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1433,
+        "y": 1853
+      },
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-silverymoon",
+      "slug": "silverymoon",
+      "name": "Silverymoon",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1998,
+        "y": 1969
+      },
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-star-mountains",
+      "slug": "star-mountains",
+      "name": "Star Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2000,
+        "y": 1746
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-sword-mountains",
+      "slug": "sword-mountains",
+      "name": "Sword Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1610,
+        "y": 1569
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-trollbark-forest",
+      "slug": "trollbark-forest",
+      "name": "Trollbark Forest",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1800,
+        "y": 1201
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-waterdeep",
+      "slug": "waterdeep",
+      "name": "Waterdeep",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-waterdeep-city-of-splendors",
+          "geographicNameId": "geo-waterdeep",
+          "language": "en",
+          "value": "City of Splendors"
+        }
+      ],
+      "coordinates": {
+        "x": 1626,
+        "y": 1465
+      },
+      "recommendedZoom": 0.75,
+      "entityId": null
+    }
+  ],
   "characterLocationEvents": [],
-  "generatedAt": "2026-08-08T20:37:53.485Z",
-  "sourceRevision": "sha256:27c51790408f662898d6aea09fb1845f6aa9029ed9c0e08802d3effeaaff6683",
-  "checksum": "sha256:27c51790408f662898d6aea09fb1845f6aa9029ed9c0e08802d3effeaaff6683"
+  "generatedAt": "2026-08-09T16:15:00.000Z",
+  "sourceRevision": "sha256:c587a2875d09b5829947293ee9d4272568dbbbab2e06740916ed19c7f82ace38",
+  "checksum": "sha256:c587a2875d09b5829947293ee9d4272568dbbbab2e06740916ed19c7f82ace38"
 }
