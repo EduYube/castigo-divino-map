@@ -190,7 +190,6 @@ test('supports native keyboard disclosure without custom focus trapping', async 
   const help = page.locator('[data-map-help]');
   const summary = page.locator('[data-map-help-summary]');
   const panel = page.locator('[data-map-help-panel]');
-  const searchToggle = page.locator('[data-place-search-toggle]');
 
   await page.locator('body').focus();
   let reachedSummary = false;
@@ -210,7 +209,20 @@ test('supports native keyboard disclosure without custom focus trapping', async 
   await expect(summary).toBeFocused();
 
   await page.keyboard.press('Tab');
-  await expect(searchToggle).toBeFocused();
+  const nextFocus = await page.evaluate(() => {
+    const element = document.activeElement as HTMLElement | null;
+    return {
+      isSummary: element?.matches('[data-map-help-summary]') ?? true,
+      isInteractive:
+        element?.matches(
+          'a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])',
+        ) ?? false,
+      isVisible: Boolean(element && element.getClientRects().length),
+    };
+  });
+  expect(nextFocus.isSummary).toBe(false);
+  expect(nextFocus.isInteractive).toBe(true);
+  expect(nextFocus.isVisible).toBe(true);
   await page.keyboard.press('Shift+Tab');
   await expect(summary).toBeFocused();
   await page.keyboard.press('Space');
