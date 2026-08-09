@@ -254,11 +254,7 @@ function mountRecoveryDialog(
   const form = createElement('form', 'admin-auth__form');
   const status = createElement('p', 'admin-auth__status');
   const submitButton = createElement('button', 'admin-auth__submit');
-  const passwordInput = appendPasswordField(
-    form,
-    'admin-recovery-password',
-    'Nueva contraseña',
-  );
+  const passwordInput = appendPasswordField(form, 'admin-recovery-password', 'Nueva contraseña');
   const confirmationInput = appendPasswordField(
     form,
     'admin-recovery-password-confirmation',
@@ -350,9 +346,7 @@ function mountRecoveryDialog(
           },
         );
         const loginPayload = (await readJson(loginResponse)) as PasswordAuthPayload;
-        const freshSession = loginResponse.ok
-          ? parsePasswordSessionPayload(loginPayload)
-          : null;
+        const freshSession = loginResponse.ok ? parsePasswordSessionPayload(loginPayload) : null;
 
         if (!freshSession) {
           status.textContent =
