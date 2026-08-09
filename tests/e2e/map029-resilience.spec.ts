@@ -200,10 +200,7 @@ test('recovers after a rate limit once retry is requested and the backend is hea
   await expectDegradedWithFallback(page, 'rate-limited');
 
   backend.setMode('success');
-  await page
-    .locator('[data-backend-status]')
-    .getByRole('button', { name: 'Reintentar' })
-    .click();
+  await page.locator('[data-backend-status]').getByRole('button', { name: 'Reintentar' }).click();
 
   await expect(page.locator('[data-backend-status]')).toHaveAttribute(
     'data-backend-state',
