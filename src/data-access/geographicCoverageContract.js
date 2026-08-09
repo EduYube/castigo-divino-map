@@ -88,6 +88,9 @@ export function assertGeographicSearchCoverage(content, sourceLabel = 'public ca
     waterdeep.coordinates.y !== 1465 ||
     waterdeep.recommendedZoom !== 0.75
   ) {
-    fail(sourceLabel, 'Waterdeep must keep the MAP-032 measured coordinate and MAP-021 zoom contract.');
+    fail(
+      sourceLabel,
+      'Waterdeep must keep the MAP-032 measured coordinate and MAP-021 zoom contract.',
+    );
   }
 }
