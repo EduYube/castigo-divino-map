@@ -128,7 +128,7 @@ async function configureBackend(page: Page): Promise<void> {
   await page.addInitScript((projectUrl) => {
     window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
       projectUrl,
-      publishableKey: 'sb_publishable_map037_test_key',
+      publishableKey: 'map037-public-test-key',
       timeoutMs: 400,
       retryDelaysMs: [0, 0, 0],
     };
@@ -206,7 +206,9 @@ async function expectSheetPreservesMapContext(page: Page): Promise<void> {
 }
 
 for (const viewport of MOBILE_VIEWPORTS) {
-  test(`keeps map context, focus and scroll stable at ${viewport.label}`, async ({ page }, testInfo) => {
+  test(`keeps map context, focus and scroll stable at ${viewport.label}`, async ({
+    page,
+  }, testInfo) => {
     await page.setViewportSize(viewport);
     await openReadyMap(page);
 
@@ -267,7 +269,9 @@ test('changes the active pin without leaving the mobile map workspace', async ({
   await page.getByRole('button', { name: /Demonstration Harbor/ }).click();
 
   await expect(panel).toBeVisible();
-  await expect(panel.getByRole('heading', { level: 3, name: 'Demonstration Harbor' })).toBeFocused();
+  await expect(
+    panel.getByRole('heading', { level: 3, name: 'Demonstration Harbor' }),
+  ).toBeFocused();
   await expect(panel).toHaveAttribute('data-entity-type', 'location');
   await expect(page.locator('.campaign-marker-icon[aria-pressed="true"]')).toHaveAttribute(
     'data-testid',
