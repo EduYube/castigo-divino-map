@@ -1,7 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-const MAP_URL =
-  'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
+const MAP_URL = 'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const NOTICE_NAME = 'Uso responsable del mapa';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329">
@@ -27,10 +26,7 @@ async function openMap(page: Page): Promise<void> {
     });
   });
   await page.goto('/');
-  await expect(page.getByTestId('map-shell')).toHaveAttribute(
-    'data-map-state',
-    'ready',
-  );
+  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
 }
 
 async function capture(
@@ -59,9 +55,7 @@ for (const viewport of VIEWPORTS) {
 
     await expect(notice).toBeVisible();
     await expect(notice).toContainText('se carga de forma remota');
-    await expect(notice).toContainText(
-      'no almacenan, transforman ni publican copias o derivados',
-    );
+    await expect(notice).toContainText('no almacenan, transforman ni publican copias o derivados');
     await expect(notice.locator('h1, h2, h3, .eyebrow')).toHaveCount(0);
     await expect(page.locator('.map-notice')).toHaveCount(0);
     await expect(footer).toContainText('contenido de fans no oficial');
