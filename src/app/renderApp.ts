@@ -14,25 +14,11 @@ export function renderApp(): string {
     </header>
 
     <main id="main-content" class="atlas-main">
-      <section class="map-introduction" aria-labelledby="atlas-title">
-        <div>
-          <p class="eyebrow">Cartografía interactiva · Beta 0.2</p>
-          <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
-          <p class="map-introduction__lead">
-            Explora el catálogo público de la campaña, localiza lugares y personajes y abre fichas
-            compactas o completas, con respaldo degradable cuando el backend no está disponible.
-          </p>
-        </div>
-        <p class="map-introduction__source">
-          Imagen oficial remota de baja resolución · 3600 × 2329 píxeles
-        </p>
-      </section>
-
-      <section class="map-experience" aria-labelledby="map-heading">
+      <section class="map-experience" aria-labelledby="atlas-title">
         <div class="map-experience__heading">
           <div>
-            <p class="eyebrow">Mapa navegable</p>
-            <h2 id="map-heading">Faerûn</h2>
+            <p class="eyebrow">Mapa interactivo de Faerûn · Beta 0.2</p>
+            <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
           </div>
           <p id="map-instructions" class="map-instructions">
             Busca y filtra lugares. Recorre controles, resultados y pines con Tab, y actívalos con
@@ -44,7 +30,7 @@ export function renderApp(): string {
         <section class="place-search" data-place-search role="search" aria-label="Buscar lugares">
           <div class="collapsible-control__header">
             <div class="collapsible-control__heading-copy">
-              <h3 id="place-search-title" class="collapsible-control__title">Búsqueda</h3>
+              <h2 id="place-search-title" class="collapsible-control__title">Búsqueda</h2>
               <p
                 class="collapsible-control__summary"
                 data-place-search-summary
@@ -131,7 +117,7 @@ export function renderApp(): string {
         >
           <div class="collapsible-control__header">
             <div class="collapsible-control__heading-copy">
-              <h3 id="place-filters-title" class="place-filters__title">Filtrar lugares</h3>
+              <h2 id="place-filters-title" class="place-filters__title">Filtrar lugares</h2>
               <p
                 class="collapsible-control__summary"
                 data-place-filters-summary
@@ -206,31 +192,6 @@ export function renderApp(): string {
           </div>
         </section>
 
-        <aside class="pin-legend" data-pin-legend aria-labelledby="pin-legend-title">
-          <strong id="pin-legend-title" class="pin-legend__title">Leyenda de pines</strong>
-          <div class="pin-legend__group" aria-label="Tipos de entidad">
-            <span class="pin-legend__item">
-              <span class="pin-legend__shape pin-legend__shape--character" aria-hidden="true"><span>●</span></span>
-              Personaje
-            </span>
-            <span class="pin-legend__item">
-              <span class="pin-legend__shape pin-legend__shape--location" aria-hidden="true"><span>◆</span></span>
-              Emplazamiento
-            </span>
-          </div>
-          <div class="pin-legend__group" aria-label="Disposición por jugador">
-            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--ally" aria-hidden="true">+</span>Aliado</span>
-            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--enemy" aria-hidden="true">−</span>Enemigo</span>
-            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--neutral" aria-hidden="true">•</span>Neutral</span>
-            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--unknown" aria-hidden="true">?</span>Sin dato visible</span>
-          </div>
-          <p id="pin-legend-note" class="pin-legend__note">
-            La disposición es por jugador: varios símbolos en un pin representan perspectivas
-            distintas. El color es complementario; forma, símbolo, borde y texto conservan el
-            significado en alto contraste.
-          </p>
-        </aside>
-
         <div class="map-workspace" data-map-workspace>
           <div
             class="map-shell"
@@ -281,6 +242,41 @@ export function renderApp(): string {
             <div class="place-details__content" data-place-details-content></div>
           </aside>
         </div>
+
+        <aside class="pin-legend" data-pin-legend aria-labelledby="pin-legend-title">
+          <strong id="pin-legend-title" class="pin-legend__title">Leyenda de pines</strong>
+          <div class="pin-legend__group" aria-label="Tipos de entidad">
+            <span class="pin-legend__item">
+              <span class="pin-legend__shape pin-legend__shape--character" aria-hidden="true"><span>●</span></span>
+              Personaje
+            </span>
+            <span class="pin-legend__item">
+              <span class="pin-legend__shape pin-legend__shape--location" aria-hidden="true"><span>◆</span></span>
+              Emplazamiento
+            </span>
+          </div>
+          <div class="pin-legend__group" aria-label="Disposición por jugador">
+            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--ally" aria-hidden="true">+</span>Aliado</span>
+            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--enemy" aria-hidden="true">−</span>Enemigo</span>
+            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--neutral" aria-hidden="true">•</span>Neutral</span>
+            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--unknown" aria-hidden="true">?</span>Sin dato visible</span>
+          </div>
+          <p id="pin-legend-note" class="pin-legend__note">
+            La disposición es por jugador: varios símbolos en un pin representan perspectivas
+            distintas. El color es complementario; forma, símbolo, borde y texto conservan el
+            significado en alto contraste.
+          </p>
+        </aside>
+      </section>
+
+      <section class="map-introduction" aria-label="Acerca del Atlas">
+        <p class="map-introduction__lead">
+          Explora el catálogo público de la campaña, localiza lugares y personajes y abre fichas
+          compactas o completas, con respaldo degradable cuando el backend no está disponible.
+        </p>
+        <p class="map-introduction__source">
+          Imagen oficial remota de baja resolución · 3600 × 2329 píxeles
+        </p>
       </section>
 
       <aside class="map-instructions" aria-label="Uso responsable del mapa">
