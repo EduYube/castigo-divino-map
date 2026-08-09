@@ -1,19 +1,20 @@
 .pin-visual {
   position: relative;
   display: grid;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 1.9rem;
+  height: 1.9rem;
   place-items: center;
   color: #172018;
   background: #f0d58a;
-  border: 3px solid #142019;
+  border: 2px solid #142019;
   box-shadow:
-    0 0 0 2px rgba(247, 241, 227, 0.92),
-    0 8px 18px rgba(0, 0, 0, 0.45);
+    0 0 0 1px rgba(247, 241, 227, 0.92),
+    0 5px 12px rgba(0, 0, 0, 0.4);
   transition:
     transform 140ms ease,
     box-shadow 140ms ease,
     opacity 140ms ease;
+  pointer-events: none;
 }
 
 .pin-visual--character {
@@ -21,14 +22,16 @@
 }
 
 .pin-visual--location {
-  border-radius: 0.45rem;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 0.3rem;
   transform: rotate(45deg);
 }
 
 .pin-visual__type-symbol {
   display: grid;
   place-items: center;
-  font-size: 1rem;
+  font-size: 0.78rem;
   font-weight: 900;
   line-height: 1;
 }
@@ -41,12 +44,12 @@
 
 .pin-visual__dispositions {
   position: absolute;
-  right: -0.4rem;
-  bottom: -0.45rem;
+  right: -0.25rem;
+  bottom: -0.28rem;
   display: flex;
-  max-width: 3.4rem;
-  gap: 0.08rem;
-  padding: 0.08rem;
+  max-width: 2.6rem;
+  gap: 0.04rem;
+  padding: 0.04rem;
   overflow: hidden;
   background: #121914;
   border: 1px solid #f7f1e3;
@@ -55,12 +58,12 @@
 
 .pin-disposition {
   display: grid;
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 0.75rem;
+  height: 0.75rem;
   flex: 0 0 auto;
   place-items: center;
   color: #111;
-  font-size: 0.72rem;
+  font-size: 0.58rem;
   font-weight: 950;
   line-height: 1;
   background: #fff;
@@ -89,9 +92,9 @@
 
 .pin-visual--active {
   box-shadow:
-    0 0 0 4px #fff2bd,
-    0 0 0 8px rgba(20, 32, 25, 0.88),
-    0 12px 24px rgba(0, 0, 0, 0.54);
+    0 0 0 2px #fff2bd,
+    0 0 0 5px rgba(20, 32, 25, 0.88),
+    0 8px 16px rgba(0, 0, 0, 0.5);
 }
 
 .pin-visual--dimmed {
@@ -100,23 +103,23 @@
 }
 
 .pin-visual--coincident {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 0.65rem;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.45rem;
   transform: none;
 }
 
 .pin-visual__count {
   position: absolute;
-  top: -0.45rem;
-  right: -0.45rem;
+  top: -0.32rem;
+  right: -0.32rem;
   display: grid;
-  min-width: 1.45rem;
-  height: 1.45rem;
+  min-width: 1.05rem;
+  height: 1.05rem;
   place-items: center;
-  padding-inline: 0.2rem;
+  padding-inline: 0.12rem;
   color: #fff;
-  font-size: 0.72rem;
+  font-size: 0.58rem;
   font-weight: 900;
   background: #111713;
   border: 2px solid #fff2bd;
@@ -125,29 +128,29 @@
 
 .campaign-marker-icon:hover .pin-visual,
 .campaign-marker-icon:focus-visible .pin-visual {
-  transform: translateY(-2px) scale(1.06);
+  transform: translateY(-1px) scale(1.05);
 }
 
 .campaign-marker-icon:hover .pin-visual--location,
 .campaign-marker-icon:focus-visible .pin-visual--location {
-  transform: translateY(-2px) rotate(45deg) scale(1.06);
+  transform: translateY(-1px) rotate(45deg) scale(1.05);
 }
 
 .campaign-marker-icon:hover .pin-visual--coincident,
 .campaign-marker-icon:focus-visible .pin-visual--coincident {
-  transform: translateY(-2px) scale(1.04);
+  transform: translateY(-1px) scale(1.04);
 }
 
 .campaign-marker-icon--active .pin-visual {
-  transform: translateY(-3px) scale(1.13);
+  transform: translateY(-2px) scale(1.1);
 }
 
 .campaign-marker-icon--active .pin-visual--location {
-  transform: translateY(-3px) rotate(45deg) scale(1.13);
+  transform: translateY(-2px) rotate(45deg) scale(1.1);
 }
 
 .campaign-marker-icon--active .pin-visual--coincident {
-  transform: translateY(-3px) scale(1.09);
+  transform: translateY(-2px) scale(1.08);
 }
 
 .pin-coincident-list {
