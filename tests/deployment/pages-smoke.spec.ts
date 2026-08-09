@@ -22,7 +22,10 @@ function generatedResourceRequests(requests: readonly Request[]): readonly Reque
   return requests.filter((request) => /\.(?:css|js)(?:\?|$)/.test(request.url()));
 }
 
-test('loads a complete shared URL from the repository subdirectory', async ({ page, baseURL }) => {
+test('loads the Beta 0.2 public experience from the repository subdirectory', async ({
+  page,
+  baseURL,
+}) => {
   const failedResponses: string[] = [];
   const requests: Request[] = [];
 
@@ -41,6 +44,11 @@ test('loads a complete shared URL from the repository subdirectory', async ({ pa
   expect(response?.ok()).toBe(true);
   await expect(page).toHaveTitle(/Atlas de los Nuevos Dioses/i);
   await expect(page.getByRole('banner')).toBeVisible();
+  await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'connected',
+  );
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
   await expect(page.getByRole('checkbox', { name: /Lugar destacado/ })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Paso de montaña/ })).toBeChecked();
@@ -52,6 +60,17 @@ test('loads a complete shared URL from the repository subdirectory', async ({ pa
   );
   await expect(page.getByText('Contenido de fans no oficial', { exact: true })).toBeVisible();
   await expect(page.getByRole('contentinfo')).toContainText('Cartografía: Mike Schley');
+
+  const detailsPanel = page.getByTestId('place-details');
+  const popupPromise = page.waitForEvent('popup');
+  await detailsPanel
+    .getByRole('link', { name: /Abrir ficha completa de Paso de demostración/ })
+    .click();
+  const detailsPage = await popupPromise;
+  await expect(detailsPage.getByRole('heading', { level: 1, name: 'Paso de demostración' })).toBeVisible();
+  await expect(detailsPage.getByRole('heading', { level: 2, name: 'Notas públicas' })).toBeVisible();
+  expect(new URL(detailsPage.url()).searchParams.get('entity')).toBe('paso-de-demostracion');
+  await detailsPage.close();
 
   const requestOpen = page.getByRole('button', { name: 'Proponer un pin' });
   await expect(requestOpen).toBeVisible();
@@ -80,6 +99,7 @@ test('loads a complete shared URL from the repository subdirectory', async ({ pa
   expect(failedResponses).toEqual([]);
 
   await page.reload();
+  await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-place-id',
@@ -115,6 +135,7 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
     includeHidden: true,
   });
 
+  await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'error');
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
   await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
@@ -151,4 +172,25 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
   await expect(
     page.locator('[data-testid="place-marker"][data-place-id="place-demo-pass"]'),
   ).toBeFocused();
+});
+
+test('keeps Beta 0.2 usable from the public snapshot when Supabase returns 503', async ({
+  page,
+}) => {
+  await mockOfficialMap(page);
+  await page.route('**/rest/v1/**', async (route) => {
+    await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+  });
+
+  const response = await page.goto('?q=puerto');
+  expect(response?.ok()).toBe(true);
+
+  const backendStatus = page.locator('[data-backend-status]');
+  await expect(backendStatus).toHaveAttribute('data-backend-state', 'degraded');
+  await expect(backendStatus).toContainText('Modo de respaldo');
+  await expect(backendStatus.getByRole('button', { name: 'Reintentar' })).toBeVisible();
+  await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('place-marker')).toHaveCount(2);
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('puerto');
+  await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
 });
