@@ -36,7 +36,12 @@ jobs:
         run: npm ci
 
       - name: Check formatting
-        run: npm run format:check
+        run: |
+          npm run format:check || {
+            npx prettier --write tests/e2e/map033-mobile.spec.ts
+            git diff -- tests/e2e/map033-mobile.spec.ts
+            exit 1
+          }
 
       - name: Audit tracked files for privileged credentials
         run: npm run verify:security
