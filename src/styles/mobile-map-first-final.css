@@ -1,0 +1,14 @@
+@media (max-width: 48rem) and (orientation: landscape) and (max-height: 32rem) {
+  .map-experience > .map-experience__heading {
+    padding-block: 0.4rem;
+  }
+
+  .map-experience__heading .eyebrow,
+  .map-experience__heading .map-instructions {
+    display: none;
+  }
+
+  .map-experience__heading h2 {
+    font-size: 1.25rem;
+  }
+}
