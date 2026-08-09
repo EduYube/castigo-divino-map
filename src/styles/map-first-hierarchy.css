@@ -57,6 +57,14 @@ body .atlas-main {
   border-left: 0;
 }
 
+.map-experience:has(> .place-search[data-collapsible-expanded='true'])
+  > .place-filters[data-collapsible-expanded='false'],
+.map-experience:has(> .place-filters[data-collapsible-expanded='true'])
+  > .place-search[data-collapsible-expanded='false'] {
+  grid-column: 1 / -1;
+  border-left: 0;
+}
+
 .map-experience > .place-search[data-collapsible-expanded='false'],
 .map-experience > .place-filters[data-collapsible-expanded='false'] {
   gap: 0.35rem;
