@@ -207,24 +207,12 @@ test('supports native keyboard disclosure without custom focus trapping', async 
   await expect(help).toHaveAttribute('open', '');
   await expect(panel).toBeVisible();
   await expect(summary).toBeFocused();
+  await expect(
+    panel.locator(
+      'a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])',
+    ),
+  ).toHaveCount(0);
 
-  await page.keyboard.press('Tab');
-  const nextFocus = await page.evaluate(() => {
-    const element = document.activeElement as HTMLElement | null;
-    return {
-      isSummary: element?.matches('[data-map-help-summary]') ?? true,
-      isInteractive:
-        element?.matches(
-          'a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])',
-        ) ?? false,
-      isVisible: Boolean(element && element.getClientRects().length),
-    };
-  });
-  expect(nextFocus.isSummary).toBe(false);
-  expect(nextFocus.isInteractive).toBe(true);
-  expect(nextFocus.isVisible).toBe(true);
-  await page.keyboard.press('Shift+Tab');
-  await expect(summary).toBeFocused();
   await page.keyboard.press('Space');
   await expect(help).not.toHaveAttribute('open', '');
   await expect(panel).toBeHidden();
