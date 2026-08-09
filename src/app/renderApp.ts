@@ -20,10 +20,79 @@ export function renderApp(): string {
             <p class="eyebrow">Mapa interactivo de Faerûn · Beta 0.2</p>
             <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
           </div>
-          <p id="map-instructions" class="map-instructions">
-            Busca y filtra lugares. Recorre controles, resultados y pines con Tab, y actívalos con
-            Enter o la barra espaciadora. Un pin con contador agrupa entidades en la misma
-            coordenada y abre una lista accesible. Los pines atenuados siguen siendo operables.
+          <details class="map-help" data-map-help>
+            <summary class="map-help__summary" data-map-help-summary>
+              Ayuda y leyenda del mapa
+            </summary>
+            <div class="map-help__panel" data-map-help-panel>
+              <section class="map-help__section" aria-labelledby="map-help-usage-title">
+                <h2 id="map-help-usage-title" class="map-help__section-title">Cómo usar el mapa</h2>
+                <ol class="map-help__steps">
+                  <li>
+                    <strong>Buscar.</strong> Abre Búsqueda y escribe un nombre geográfico, personaje,
+                    emplazamiento, alias público o título de nota. Selecciona un resultado para
+                    localizarlo.
+                  </li>
+                  <li>
+                    <strong>Filtrar.</strong> Abre Filtrar lugares y limita el catálogo por categorías
+                    o etiquetas. Puedes limpiar los filtros para recuperar todos los lugares.
+                  </li>
+                  <li>
+                    <strong>Abrir un pin.</strong> Activa un marcador con ratón, toque, Enter o barra
+                    espaciadora para abrir su ficha compacta. Un contador indica varias entidades en
+                    la misma coordenada y abre una lista para elegir entre ellas. Los pines atenuados
+                    siguen siendo operables.
+                  </li>
+                </ol>
+              </section>
+
+              <section class="map-help__legend" data-pin-legend aria-labelledby="pin-legend-title">
+                <h2 id="pin-legend-title" class="map-help__legend-title pin-legend__title">
+                  Leyenda de pines
+                </h2>
+                <div class="pin-legend__group" aria-label="Tipos de entidad">
+                  <span class="pin-legend__item">
+                    <span class="pin-legend__shape pin-legend__shape--character" aria-hidden="true"><span>●</span></span>
+                    Personaje
+                  </span>
+                  <span class="pin-legend__item">
+                    <span class="pin-legend__shape pin-legend__shape--location" aria-hidden="true"><span>◆</span></span>
+                    Emplazamiento
+                  </span>
+                </div>
+                <div class="pin-legend__group" aria-label="Disposición por jugador">
+                  <span class="pin-legend__item"><span class="pin-disposition pin-disposition--ally" aria-hidden="true">+</span>Aliado</span>
+                  <span class="pin-legend__item"><span class="pin-disposition pin-disposition--enemy" aria-hidden="true">−</span>Enemigo</span>
+                  <span class="pin-legend__item"><span class="pin-disposition pin-disposition--neutral" aria-hidden="true">•</span>Neutral</span>
+                  <span class="pin-legend__item"><span class="pin-disposition pin-disposition--unknown" aria-hidden="true">?</span>Sin dato visible</span>
+                </div>
+                <p class="pin-legend__note">
+                  La disposición es por jugador: varios símbolos en un pin representan perspectivas
+                  distintas. El color es complementario; forma, símbolo, borde y texto conservan el
+                  significado en alto contraste.
+                </p>
+              </section>
+
+              <section class="map-help__section" aria-labelledby="map-help-keyboard-title">
+                <h2 id="map-help-keyboard-title" class="map-help__section-title">
+                  Teclado y tecnologías asistivas
+                </h2>
+                <p>
+                  Recorre controles, resultados y pines con Tab y activa los controles con Enter o
+                  barra espaciadora. La forma, los símbolos, los bordes y los nombres accesibles
+                  transmiten la misma información sin depender del color ni del hover.
+                </p>
+              </section>
+            </div>
+          </details>
+          <p id="map-instructions" class="visually-hidden">
+            Usa Búsqueda para localizar nombres, personajes y emplazamientos, y Filtrar lugares para
+            limitar el catálogo. Recorre controles, resultados y pines con Tab y actívalos con Enter
+            o la barra espaciadora. Activar un pin abre su ficha compacta. Un pin con contador agrupa
+            entidades en la misma coordenada y abre una lista accesible. Los pines atenuados siguen
+            siendo operables. Un círculo indica personaje y un rombo, emplazamiento. Los símbolos
+            más, menos, punto e interrogación indican aliado, enemigo, neutral y sin dato visible. La
+            disposición se expresa por jugador y el color es solo una señal complementaria.
           </p>
         </div>
 
@@ -206,7 +275,7 @@ export function renderApp(): string {
               data-map-canvas
               role="region"
               aria-label="Mapa navegable de la Costa de la Espada y el noroeste de Faerûn"
-              aria-describedby="map-instructions place-filters-status pin-legend-note map-search-status"
+              aria-describedby="map-instructions place-filters-status map-search-status"
             ></div>
             <p class="map-status" data-map-status role="status" aria-atomic="true">
               Cargando la cartografía oficial de Faerûn…
@@ -243,31 +312,6 @@ export function renderApp(): string {
             <div class="place-details__content" data-place-details-content></div>
           </aside>
         </div>
-
-        <aside class="pin-legend" data-pin-legend aria-labelledby="pin-legend-title">
-          <strong id="pin-legend-title" class="pin-legend__title">Leyenda de pines</strong>
-          <div class="pin-legend__group" aria-label="Tipos de entidad">
-            <span class="pin-legend__item">
-              <span class="pin-legend__shape pin-legend__shape--character" aria-hidden="true"><span>●</span></span>
-              Personaje
-            </span>
-            <span class="pin-legend__item">
-              <span class="pin-legend__shape pin-legend__shape--location" aria-hidden="true"><span>◆</span></span>
-              Emplazamiento
-            </span>
-          </div>
-          <div class="pin-legend__group" aria-label="Disposición por jugador">
-            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--ally" aria-hidden="true">+</span>Aliado</span>
-            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--enemy" aria-hidden="true">−</span>Enemigo</span>
-            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--neutral" aria-hidden="true">•</span>Neutral</span>
-            <span class="pin-legend__item"><span class="pin-disposition pin-disposition--unknown" aria-hidden="true">?</span>Sin dato visible</span>
-          </div>
-          <p id="pin-legend-note" class="pin-legend__note">
-            La disposición es por jugador: varios símbolos en un pin representan perspectivas
-            distintas. El color es complementario; forma, símbolo, borde y texto conservan el
-            significado en alto contraste.
-          </p>
-        </aside>
       </section>
 
       <section class="map-introduction" aria-label="Acerca del Atlas">
