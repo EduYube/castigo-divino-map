@@ -130,7 +130,11 @@ function mountPublicExperience(
     }
 
     window.requestAnimationFrame(() => {
-      if (!mobileCompactDetailsMedia.matches || !compactDetailsPanel || compactDetailsPanel.hidden) {
+      if (
+        !mobileCompactDetailsMedia.matches ||
+        !compactDetailsPanel ||
+        compactDetailsPanel.hidden
+      ) {
         return;
       }
 
