@@ -148,14 +148,11 @@ async function configureBackend(page: Page): Promise<TestBackend> {
   };
 }
 
-async function openConnected(page: Page, backend: TestBackend): Promise<void> {
+async function openConnected(page: Page): Promise<void> {
   await page.goto('/');
   const status = page.locator('[data-backend-status]');
   await expect(status).toHaveAttribute('data-backend-state', 'connected');
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
-  await expect
-    .poll(() => backend.requestCount())
-    .toBe(Object.keys(PUBLIC_CATALOG_TABLE_QUERIES).length);
 }
 
 async function expectDegradedWithFallback(page: Page, reason: string): Promise<void> {
@@ -171,8 +168,11 @@ test('performs one initial public request per contract table and does not poll w
   page,
 }) => {
   const backend = await configureBackend(page);
-  await openConnected(page, backend);
+  await openConnected(page);
 
+  await expect
+    .poll(() => backend.requestCount())
+    .toBe(Object.keys(PUBLIC_CATALOG_TABLE_QUERIES).length);
   const settledCount = backend.requestCount();
   expect(settledCount).toBe(Object.keys(PUBLIC_CATALOG_TABLE_QUERIES).length);
 
@@ -187,7 +187,7 @@ test('renders stored HTML-like public data as inert text instead of executable m
   const maliciousName = '<img src=x onerror="window.__map029Xss=1">';
   backend.setEntityName(maliciousName);
 
-  await openConnected(page, backend);
+  await openConnected(page);
   await page.getByTestId('place-marker').first().click();
 
   await expect(page.getByTestId('place-details')).toContainText(maliciousName);
@@ -207,7 +207,7 @@ for (const scenario of [
 ]) {
   test(`keeps the atlas usable when Supabase fails as ${scenario.mode}`, async ({ page }) => {
     const backend = await configureBackend(page);
-    await openConnected(page, backend);
+    await openConnected(page);
     const beforeFailure = backend.requestCount();
 
     backend.setMode(scenario.mode);
@@ -222,7 +222,7 @@ test('recovers after a rate limit once retry is requested and the backend is hea
   page,
 }) => {
   const backend = await configureBackend(page);
-  await openConnected(page, backend);
+  await openConnected(page);
   backend.setMode('rate-limited');
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expectDegradedWithFallback(page, 'rate-limited');
