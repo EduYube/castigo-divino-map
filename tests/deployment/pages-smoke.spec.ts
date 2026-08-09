@@ -172,7 +172,12 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
     'place-demo-pass',
   );
   await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
-  await expect(page.getByText('La imagen no forma parte de la aplicación')).toBeVisible();
+  const responsibleUse = page.getByRole('complementary', { name: 'Uso responsable del mapa' });
+  await expect(responsibleUse).toBeVisible();
+  await expect(responsibleUse).toContainText('se carga de forma remota');
+  await expect(responsibleUse).toContainText(
+    'no almacenan, transforman ni publican copias o derivados',
+  );
   await expect(page.getByRole('contentinfo')).toContainText('Wizards of the Coast LLC');
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);

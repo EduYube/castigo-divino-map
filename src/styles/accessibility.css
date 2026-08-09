@@ -25,6 +25,10 @@ svg {
   overflow-wrap: anywhere;
 }
 
+.atlas-main > .map-instructions {
+  font-size: max(0.9rem, 14px);
+}
+
 .visually-hidden {
   position: absolute !important;
   width: 1px !important;
