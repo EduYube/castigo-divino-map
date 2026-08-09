@@ -21,9 +21,19 @@ const MOBILE_CONTROLS_MEDIA_QUERY = '(max-width: 48rem)';
 export function getInitialCollapsibleControlState(
   isMobileViewport: boolean,
 ): CollapsibleControlInitialState {
+  // MAP-035 uses the same compact entry point at every breakpoint. Keeping the media-query input
+  // preserves the public helper contract established by MAP-025 while making the initial hierarchy
+  // predictable across desktop, tablet and mobile.
+  if (isMobileViewport) {
+    return {
+      searchExpanded: false,
+      filtersExpanded: false,
+    };
+  }
+
   return {
-    searchExpanded: !isMobileViewport,
-    filtersExpanded: !isMobileViewport,
+    searchExpanded: false,
+    filtersExpanded: false,
   };
 }
 
