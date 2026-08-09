@@ -66,7 +66,9 @@ async function capture(
 }
 
 for (const viewport of VIEWPORTS) {
-  test(`keeps complete help compact and usable at ${viewport.label}`, async ({ page }, testInfo) => {
+  test(`keeps complete help compact and usable at ${viewport.label}`, async ({
+    page,
+  }, testInfo) => {
     await page.setViewportSize(viewport);
     await openReadyMap(page);
 
@@ -90,7 +92,9 @@ for (const viewport of VIEWPORTS) {
     await expect(hiddenInstructions).toContainText('Activar un pin abre su ficha compacta');
     await expect(hiddenInstructions).toContainText('círculo indica personaje');
     await expect(hiddenInstructions).toContainText('rombo, emplazamiento');
-    await expect(hiddenInstructions).toContainText('aliado, enemigo, neutral y sin dato visible');
+    await expect(hiddenInstructions).toContainText(
+      'aliado, enemigo, neutral y sin dato visible',
+    );
     await expect(map).toHaveAttribute('aria-describedby', /map-instructions/);
 
     const closedMetrics = await page.evaluate(({ width, height, label }) => {
@@ -150,7 +154,9 @@ for (const viewport of VIEWPORTS) {
       };
     }, viewport);
 
-    console.log(`MAP036_OPEN_METRICS ${JSON.stringify({ label: viewport.label, ...openMetrics })}`);
+    console.log(
+      `MAP036_OPEN_METRICS ${JSON.stringify({ label: viewport.label, ...openMetrics })}`,
+    );
     await testInfo.attach(`MAP-036 open metrics ${viewport.label}`, {
       body: JSON.stringify(openMetrics, null, 2),
       contentType: 'application/json',
