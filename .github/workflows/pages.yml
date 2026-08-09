@@ -56,8 +56,8 @@ jobs:
 
       - name: Verify public snapshot against Supabase
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
         run: npm run snapshot:verify:remote
 
       - name: Check formatting for manual recovery
@@ -74,8 +74,8 @@ jobs:
 
       - name: Build application for GitHub Pages
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
         run: npm run build:pages
 
       - name: Audit production artifact
