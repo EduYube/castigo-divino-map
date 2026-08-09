@@ -64,11 +64,15 @@ for (const viewport of VIEWPORTS) {
     const mapExperience = page.locator('.map-experience');
 
     await expect(notice).toBeVisible();
-    await expect(notice).toContainText('se carga de forma remota directamente desde Wizards of the Coast');
-    await expect(notice).toContainText('no almacenan, transforman ni publican copias o derivados');
+    await expect(notice).toContainText(
+      'se carga de forma remota directamente desde Wizards of the Coast',
+    );
+    await expect(notice).toContainText(
+      'no almacenan, transforman ni publican copias o derivados',
+    );
     await expect(notice.locator('h1, h2, h3, .eyebrow')).toHaveCount(0);
     await expect(page.locator('.map-notice')).toHaveCount(0);
-    await expect(footer).toContainText('Contenido de fans no oficial');
+    await expect(footer).toContainText('contenido de fans no oficial');
     await expect(footer).toContainText('©Wizards of the Coast LLC');
     await expectNoHorizontalOverflow(page);
 
