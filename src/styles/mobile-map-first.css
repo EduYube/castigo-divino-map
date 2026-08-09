@@ -149,15 +149,6 @@
     font-size: 1.5rem;
   }
 
-  .map-instructions {
-    display: -webkit-box;
-    overflow: hidden;
-    font-size: 0.77rem;
-    line-height: 1.35;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
   .map-experience > .place-search,
   .map-experience > .place-filters {
     min-width: 0;
@@ -225,14 +216,6 @@
   .map-workspace {
     order: 4;
     grid-column: 1 / -1;
-  }
-
-  .pin-legend {
-    order: 5;
-    grid-column: 1 / -1;
-    padding: 0.7rem 0.8rem;
-    border-top: 1px solid var(--line);
-    border-bottom: 0;
   }
 
   .map-shell > .map-canvas {
@@ -308,10 +291,6 @@
 
   .map-experience > .map-experience__heading {
     padding-block: 0.55rem;
-  }
-
-  .map-instructions {
-    -webkit-line-clamp: 1;
   }
 
   .map-shell > .map-canvas {

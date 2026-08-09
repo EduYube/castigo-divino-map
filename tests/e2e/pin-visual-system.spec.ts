@@ -202,6 +202,9 @@ test('distinguishes character and location pins by shape and exposes per-player 
   await expect(page.locator('[data-pin-id="entity-search-only"]')).toHaveCount(0);
 
   const legend = page.locator('[data-pin-legend]');
+  await expect(legend).toBeHidden();
+  await page.locator('[data-map-help-summary]').click();
+  await expect(legend).toBeVisible();
   await expect(legend).toContainText('Personaje');
   await expect(legend).toContainText('Emplazamiento');
   await expect(legend).toContainText('Aliado');
@@ -310,6 +313,8 @@ test('remains usable at 320 px, keeps touch targets large and honors forced colo
   await page.emulateMedia({ reducedMotion: 'reduce', forcedColors: 'active' });
   await openPinVisualMap(page);
 
+  await expect(page.locator('[data-pin-legend]')).toBeHidden();
+
   const character = page.locator('[data-testid="entity-pin"][data-pin-id="entity-scout"]');
   const box = await character.boundingBox();
   expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
@@ -334,5 +339,4 @@ test('remains usable at 320 px, keeps touch targets large and honors forced colo
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
   expect(horizontalOverflow).toBe(false);
-  await expect(page.locator('[data-pin-legend]')).toBeVisible();
 });

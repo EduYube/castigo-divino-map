@@ -1,0 +1,209 @@
+.map-help {
+  min-width: 0;
+  margin: 0;
+}
+
+.map-help__summary {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 2.75rem;
+  margin-left: auto;
+  padding: 0.55rem 0.85rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 760;
+  line-height: 1.25;
+  list-style: none;
+  cursor: pointer;
+  background: rgba(247, 241, 227, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  touch-action: manipulation;
+}
+
+.map-help__summary::-webkit-details-marker {
+  display: none;
+}
+
+.map-help__summary::marker {
+  content: '';
+}
+
+.map-help__summary::before {
+  display: grid;
+  width: 1.45rem;
+  height: 1.45rem;
+  flex: 0 0 auto;
+  place-items: center;
+  content: '?';
+  color: #172018;
+  font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.map-help__summary::after {
+  content: '▾';
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.map-help[open] > .map-help__summary::after {
+  content: '▴';
+}
+
+.map-help__summary:hover {
+  background: rgba(247, 241, 227, 0.14);
+}
+
+.map-help__summary:focus-visible {
+  outline: 3px solid #f6da8a;
+  outline-offset: 3px;
+}
+
+.map-help__panel {
+  display: grid;
+  max-height: min(26rem, 62svh);
+  gap: 1rem;
+  margin-top: 0.65rem;
+  padding: 0.9rem;
+  overflow: auto;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  background: rgba(12, 18, 14, 0.95);
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  scrollbar-gutter: stable;
+}
+
+.map-help__section,
+.map-help__legend {
+  min-width: 0;
+}
+
+.map-help__section > :last-child,
+.map-help__legend > :last-child {
+  margin-bottom: 0;
+}
+
+.map-help__section-title,
+.map-help__legend-title {
+  margin: 0 0 0.55rem;
+  color: var(--accent-strong);
+  font-family: inherit;
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.map-help__steps {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding-left: 1.3rem;
+}
+
+.map-help__steps strong {
+  color: var(--ink);
+}
+
+.map-help__legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 1rem;
+  padding: 0.85rem;
+  background: rgba(247, 241, 227, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.map-help__legend .pin-legend__title,
+.map-help__legend .pin-legend__note {
+  grid-column: 1 / -1;
+}
+
+.map-help__legend .pin-disposition {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+@media (max-width: 52rem) {
+  .map-help__summary {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 40rem) {
+  .map-help__panel {
+    max-height: min(22rem, 56svh);
+    padding: 0.8rem;
+  }
+
+  .map-help__legend {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .map-help__legend .pin-legend__title,
+  .map-help__legend .pin-legend__note {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 22rem),
+  (max-width: 48rem) and (orientation: landscape) and (max-height: 32rem) {
+  .map-help:not([open]) > .map-help__summary {
+    display: block;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.5rem;
+    overflow: hidden;
+    line-height: 1.2;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .map-help:not([open]) > .map-help__summary::before {
+    display: inline-grid;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+  }
+
+  .map-help:not([open]) > .map-help__summary::after {
+    display: none;
+  }
+}
+
+@media (max-width: 48rem) and (orientation: landscape) and (max-height: 32rem) {
+  .map-help__summary {
+    min-height: 2.75rem;
+    padding-block: 0.4rem;
+  }
+
+  .map-help__panel {
+    max-height: 64svh;
+  }
+}
+
+@media (forced-colors: active) {
+  .map-help__summary,
+  .map-help__panel,
+  .map-help__legend {
+    color: CanvasText;
+    background: Canvas;
+    border-color: CanvasText;
+  }
+
+  .map-help__summary::before {
+    color: ButtonText;
+    background: ButtonFace;
+    border: 1px solid ButtonText;
+  }
+}
