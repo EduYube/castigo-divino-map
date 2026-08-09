@@ -1,3 +1,14 @@
+@media (max-width: 48rem) {
+  .atlas-main > .map-instructions {
+    order: 3;
+    display: block;
+    overflow: visible;
+    font-size: max(0.9rem, 14px);
+    line-height: 1.5;
+    -webkit-line-clamp: unset;
+  }
+}
+
 @media (max-width: 48rem) and (orientation: landscape) and (max-height: 32rem) {
   .map-experience > .map-experience__heading {
     padding-block: 0.4rem;
