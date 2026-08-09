@@ -124,7 +124,8 @@ async function configureBackend(page: Page): Promise<TestBackend> {
     }
 
     const contentRange = rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
-    const headers = mode === 'missing-content-range' ? {} : { 'Content-Range': contentRange };
+    const headers: Record<string, string> =
+      mode === 'missing-content-range' ? {} : { 'Content-Range': contentRange };
 
     await route.fulfill({
       status: 200,
