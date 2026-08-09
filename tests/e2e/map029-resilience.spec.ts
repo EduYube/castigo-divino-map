@@ -200,7 +200,7 @@ test('renders stored HTML-like public data as inert text instead of executable m
 for (const scenario of [
   { mode: 'http-error' as const, reason: 'http-error' },
   { mode: 'rate-limited' as const, reason: 'rate-limited' },
-  { mode: 'invalid-json' as const, reason: 'invalid-json' },
+  { mode: 'invalid-json' as const, reason: 'invalid-response' },
   { mode: 'missing-content-range' as const, reason: 'partial-response' },
   { mode: 'slow' as const, reason: 'request-timeout' },
   { mode: 'connection-rejected' as const, reason: 'network-unavailable' },
