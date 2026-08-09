@@ -1,5 +1,6 @@
 @import './mobile-map-first.css';
 @import './mobile-map-first-final.css';
+@import './map-first-hierarchy.css';
 
 .collapsible-control__header {
   display: grid;
