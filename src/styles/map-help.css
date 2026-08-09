@@ -156,6 +156,31 @@
   }
 }
 
+@media (max-width: 22rem),
+  (max-width: 48rem) and (orientation: landscape) and (max-height: 32rem) {
+  .map-help:not([open]) > .map-help__summary {
+    display: block;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.5rem;
+    overflow: hidden;
+    line-height: 1.2;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .map-help:not([open]) > .map-help__summary::before {
+    display: inline-grid;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+  }
+
+  .map-help:not([open]) > .map-help__summary::after {
+    display: none;
+  }
+}
+
 @media (max-width: 48rem) and (orientation: landscape) and (max-height: 32rem) {
   .map-help__summary {
     min-height: 2.75rem;
