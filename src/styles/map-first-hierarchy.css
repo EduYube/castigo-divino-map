@@ -14,8 +14,7 @@ body .atlas-main {
   grid-template-areas:
     'heading heading'
     'search map'
-    'filters map'
-    'legend legend';
+    'filters map';
   align-items: start;
 }
 
@@ -43,11 +42,6 @@ body .atlas-main {
   font-size: 0.7rem;
 }
 
-.map-experience > .map-experience__heading .map-instructions {
-  font-size: 0.84rem;
-  line-height: 1.45;
-}
-
 .map-experience > .place-search {
   grid-area: search;
 }
@@ -61,12 +55,6 @@ body .atlas-main {
 .map-experience > .map-workspace {
   grid-area: map;
   align-self: start;
-}
-
-.map-experience > .pin-legend {
-  grid-area: legend;
-  border-top: 1px solid var(--line);
-  border-bottom: 0;
 }
 
 .map-experience > .place-search,
@@ -230,12 +218,6 @@ body .atlas-main {
     order: 4;
   }
 
-  .map-experience > .pin-legend {
-    grid-area: auto;
-    grid-column: 1 / -1;
-    order: 5;
-  }
-
   .atlas-main > .map-introduction {
     order: 2;
   }
@@ -256,15 +238,6 @@ body .atlas-main {
   .map-experience > .map-experience__heading .eyebrow {
     margin-bottom: 0.2rem;
     font-size: 0.62rem;
-  }
-
-  .map-experience > .map-experience__heading .map-instructions {
-    display: -webkit-box;
-    overflow: hidden;
-    font-size: 0.74rem;
-    line-height: 1.3;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
   }
 
   .map-experience > .place-search,
@@ -317,8 +290,7 @@ body .atlas-main {
     padding-block: 0.35rem;
   }
 
-  .map-experience > .map-experience__heading .eyebrow,
-  .map-experience > .map-experience__heading .map-instructions {
+  .map-experience > .map-experience__heading .eyebrow {
     display: none;
   }
 
