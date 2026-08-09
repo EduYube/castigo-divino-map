@@ -50,10 +50,7 @@ async function capture(
 }
 
 for (const viewport of VIEWPORTS) {
-  test(`compact notice ${viewport.width}x${viewport.height}`, async (
-    { page },
-    testInfo,
-  ) => {
+  test(`${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
     await openMap(page);
 
