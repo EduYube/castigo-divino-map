@@ -23,7 +23,11 @@ const VIEWPORTS = [
 
 async function openReadyMap(page: Page): Promise<void> {
   await page.route(OFFICIAL_MAP_URL, async (route) => {
-    await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: TEST_MAP });
+    await route.fulfill({
+      status: 200,
+      contentType: 'image/svg+xml',
+      body: TEST_MAP,
+    });
   });
   await page.goto('/');
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
@@ -36,7 +40,7 @@ async function capture(page: Page, testInfo: TestInfo, label: string): Promise<v
 }
 
 for (const viewport of VIEWPORTS) {
-  test(`records hierarchy metrics for ${viewport.label}`, async ({ page }, testInfo) => {
+  test(`keeps the map dominant at ${viewport.label}`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
     await openReadyMap(page);
 
@@ -55,7 +59,9 @@ for (const viewport of VIEWPORTS) {
       const search = rect('.place-search');
       const filters = rect('.place-filters');
       const legend = rect('.pin-legend');
-      const visibleMapHeight = map ? Math.max(0, Math.min(height, map.bottom) - Math.max(0, map.top)) : 0;
+      const visibleMapHeight = map
+        ? Math.max(0, Math.min(height, map.bottom) - Math.max(0, map.top))
+        : 0;
       const candidates = [header, introduction, heading, search, filters, legend].filter(
         (box): box is NonNullable<typeof box> => Boolean(box),
       );
@@ -73,7 +79,10 @@ for (const viewport of VIEWPORTS) {
         viewport: { width, height },
         headerHeight: header?.height ?? null,
         introductionHeight: introduction?.height ?? null,
+        introductionTop: introduction?.top ?? null,
+        legendTop: legend?.top ?? null,
         mapTop: map?.top ?? null,
+        mapBottom: map?.bottom ?? null,
         mapHeight: map?.height ?? null,
         firstViewportMapPixels: visibleMapHeight,
         firstViewportMapPercent: Number(((visibleMapHeight / height) * 100).toFixed(1)),
@@ -91,11 +100,41 @@ for (const viewport of VIEWPORTS) {
 
     expect(metrics.horizontalOverflow).toBeLessThanOrEqual(0);
     expect(metrics.mapTop).not.toBeNull();
-    expect(metrics.firstViewportMapPixels).toBeGreaterThan(0);
+    expect(metrics.mapBottom).not.toBeNull();
+    expect(metrics.firstViewportMapPixels).toBeGreaterThan(viewport.height * 0.2);
+    expect(metrics.blocksBeforeMap).toBeLessThanOrEqual(4);
+    expect(metrics.searchActionsBeforeTyping).toBe(1);
+
+    if (metrics.mapTop !== null) {
+      const maxMapTopRatio = viewport.height <= 400 ? 0.82 : 0.62;
+      expect(metrics.mapTop).toBeLessThan(viewport.height * maxMapTopRatio);
+    }
+
+    if (
+      metrics.mapBottom !== null &&
+      metrics.introductionTop !== null &&
+      metrics.legendTop !== null
+    ) {
+      expect(metrics.introductionTop).toBeGreaterThanOrEqual(metrics.mapBottom - 1);
+      expect(metrics.legendTop).toBeGreaterThanOrEqual(metrics.mapBottom - 1);
+    }
+
+    await expect(page.locator('[data-place-search-toggle]')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    await expect(page.locator('[data-place-filters-toggle]')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'El Atlas de los Nuevos Dioses',
+    );
+    await expect(page.getByRole('heading', { name: 'Faerûn', exact: true })).toHaveCount(0);
     await expect(page.locator('.atlas-main > .map-instructions')).toContainText(
       'Uso responsable del mapa',
     );
 
-    await capture(page, testInfo, `${viewport.width}x${viewport.height}-baseline`);
+    await capture(page, testInfo, `${viewport.width}x${viewport.height}`);
   });
 }
