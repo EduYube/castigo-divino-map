@@ -294,13 +294,37 @@ body .atlas-main {
   }
 }
 
+@media (max-width: 22rem) {
+  .map-experience > .map-experience__heading {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .map-experience > .map-experience__heading > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .map-experience > .map-experience__heading > .map-help:not([open]) {
+    grid-column: 2;
+  }
+}
+
 @media (max-width: 48rem) and (orientation: landscape) and (max-height: 32rem) {
   body .atlas-main {
     padding-top: 0.4rem;
   }
 
   .map-experience > .map-experience__heading {
-    padding-block: 0.35rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding-block: 0.25rem;
+  }
+
+  .map-experience > .map-experience__heading > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .map-experience > .map-experience__heading > .map-help:not([open]) {
+    grid-column: 2;
   }
 
   .map-experience > .map-experience__heading .eyebrow {
