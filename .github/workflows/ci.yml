@@ -41,6 +41,9 @@ jobs:
       - name: Audit tracked files for privileged credentials
         run: npm run verify:security
 
+      - name: Verify accessibility invariants
+        run: npm run verify:accessibility
+
       - name: Lint
         run: npm run lint
 
@@ -52,6 +55,9 @@ jobs:
 
       - name: Audit production artifact
         run: npm run verify:build
+
+      - name: Report production build metrics
+        run: npm run report:build
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
