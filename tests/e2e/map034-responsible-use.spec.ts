@@ -51,6 +51,7 @@ for (const viewport of VIEWPORTS) {
     await openMap(page);
 
     const notice = page.getByRole('complementary', { name: NOTICE_NAME });
+    const mapExperience = page.locator('.map-experience');
     const footer = page.locator('.site-footer');
 
     await expect(notice).toBeVisible();
@@ -62,21 +63,30 @@ for (const viewport of VIEWPORTS) {
     await expect(footer).toContainText('©Wizards of the Coast LLC');
 
     const box = await notice.boundingBox();
+    const mapBox = await mapExperience.boundingBox();
     const geometry = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
     }));
-    const fontSize = await notice.evaluate((element) =>
-      Number.parseFloat(getComputedStyle(element).fontSize),
-    );
+    const noticeLayout = await notice.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        clientHeight: element.clientHeight,
+        fontSize: Number.parseFloat(style.fontSize),
+        scrollHeight: element.scrollHeight,
+      };
+    });
 
     expect(box).not.toBeNull();
-    expect(fontSize).toBeGreaterThanOrEqual(14);
+    expect(mapBox).not.toBeNull();
+    expect(noticeLayout.fontSize).toBeGreaterThanOrEqual(14);
+    expect(noticeLayout.scrollHeight).toBeLessThanOrEqual(noticeLayout.clientHeight + 1);
     expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
 
-    if (box) {
+    if (box && mapBox) {
       const maxHeight = viewport.width <= 430 ? 120 : 80;
       expect(box.height).toBeLessThanOrEqual(maxHeight);
+      expect(box.y).toBeGreaterThanOrEqual(mapBox.y + mapBox.height);
     }
 
     await capture(page, testInfo, viewport.width, viewport.height);
