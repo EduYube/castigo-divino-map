@@ -36,10 +36,7 @@ jobs:
         run: npm ci
 
       - name: Check formatting
-        run: |
-          npm run format
-          git diff -- src/app/compactPinDetails.ts src/main.ts tests/e2e/map037-mobile-details.spec.ts
-          git diff --quiet -- src/app/compactPinDetails.ts src/main.ts tests/e2e/map037-mobile-details.spec.ts
+        run: npm run format:check
 
       - name: Audit tracked files for privileged credentials
         run: npm run verify:security
