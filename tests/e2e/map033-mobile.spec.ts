@@ -73,6 +73,8 @@ for (const viewport of PORTRAIT_VIEWPORTS) {
     const filtersToggle = page.locator('[data-place-filters-toggle]');
     const map = page.locator('[data-map-canvas]');
     const legend = page.locator('[data-pin-legend]');
+    const experience = page.locator('.map-experience');
+    const introduction = page.locator('.map-introduction');
 
     await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
     await expect(filtersToggle).toHaveAttribute('aria-expanded', 'false');
@@ -84,14 +86,24 @@ for (const viewport of PORTRAIT_VIEWPORTS) {
     const filtersBox = await filtersToggle.boundingBox();
     const mapBox = await map.boundingBox();
     const legendBox = await legend.boundingBox();
+    const experienceBox = await experience.boundingBox();
+    const introductionBox = await introduction.boundingBox();
 
     expect(searchBox).not.toBeNull();
     expect(filtersBox).not.toBeNull();
     expect(mapBox).not.toBeNull();
     expect(legendBox).not.toBeNull();
+    expect(experienceBox).not.toBeNull();
+    expect(introductionBox).not.toBeNull();
+
+    await captureReference(page, testInfo, `${viewport.width}x${viewport.height}`);
 
     if (searchBox && filtersBox) {
       expect(Math.abs(searchBox.y - filtersBox.y)).toBeLessThanOrEqual(2);
+    }
+
+    if (experienceBox && introductionBox) {
+      expect(experienceBox.y).toBeLessThan(introductionBox.y);
     }
 
     if (mapBox) {
@@ -102,8 +114,6 @@ for (const viewport of PORTRAIT_VIEWPORTS) {
     if (mapBox && legendBox) {
       expect(legendBox.y).toBeGreaterThanOrEqual(mapBox.y + mapBox.height - 1);
     }
-
-    await captureReference(page, testInfo, `${viewport.width}x${viewport.height}`);
   });
 }
 
@@ -153,6 +163,8 @@ test('keeps a useful map surface in short mobile landscape', async ({ page }, te
   const mapBox = await page.locator('[data-map-canvas]').boundingBox();
 
   expect(mapBox).not.toBeNull();
+  await captureReference(page, testInfo, '667x375-landscape');
+
   if (mapBox) {
     expect(mapBox.y).toBeLessThan(viewport.height * 0.92);
     expect(mapBox.height).toBeGreaterThanOrEqual(viewport.height * 0.6);
@@ -167,7 +179,6 @@ test('keeps a useful map surface in short mobile landscape', async ({ page }, te
     'false',
   );
   await expectNoHorizontalOverflow(page);
-  await captureReference(page, testInfo, '667x375-landscape');
 });
 
 test('runs the MAP-033 suite with Android Chromium and iOS WebKit emulation', async ({
@@ -177,9 +188,9 @@ test('runs the MAP-033 suite with Android Chromium and iOS WebKit emulation', as
 
   await page.goto('/');
   const userAgent = await page.evaluate(() => navigator.userAgent);
-  const maxTouchPoints = await page.evaluate(() => navigator.maxTouchPoints);
+  const supportsSmallViewportUnits = await page.evaluate(() => CSS.supports('height', '100svh'));
 
-  expect(maxTouchPoints).toBeGreaterThan(0);
+  expect(supportsSmallViewportUnits).toBe(true);
 
   if (testInfo.project.name === 'mobile-chromium') {
     expect(userAgent).toContain('Android');
