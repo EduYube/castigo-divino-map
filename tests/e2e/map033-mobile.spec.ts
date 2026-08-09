@@ -141,7 +141,7 @@ for (const viewport of PORTRAIT_VIEWPORTS) {
     }
 
     if (mapBox) {
-      expect(mapBox.y).toBeLessThan(viewport.height * 0.72);
+      expect(mapBox.y).toBeLessThan(viewport.height * 0.68);
       expect(mapBox.height).toBeGreaterThanOrEqual(360);
     }
   });
@@ -211,7 +211,7 @@ test('keeps a useful map surface in short mobile landscape', async ({ page }, te
   }
 
   if (mapBox) {
-    expect(mapBox.y).toBeLessThan(viewport.height * 0.98);
+    expect(mapBox.y).toBeLessThan(viewport.height * 0.92);
     expect(mapBox.height).toBeGreaterThanOrEqual(viewport.height * 0.6);
   }
 
