@@ -283,15 +283,11 @@ export function renderApp(): string {
         </div>
       </section>
 
-      <aside class="map-notice" aria-labelledby="map-notice-title">
-        <div>
-          <p class="eyebrow">Uso responsable</p>
-          <h2 id="map-notice-title">La imagen no forma parte de la aplicación</h2>
-        </div>
-        <p>
-          El mapa se solicita directamente a Wizards of the Coast. Este repositorio, su build y
-          sus pruebas no almacenan, transforman ni publican copias o derivados del recurso.
-        </p>
+      <aside class="map-instructions" aria-label="Uso responsable del mapa">
+        <strong>Uso responsable del mapa.</strong>
+        La cartografía se carga de forma remota directamente desde Wizards of the Coast. Este
+        repositorio, su build y sus pruebas no almacenan, transforman ni publican copias o derivados
+        del recurso.
       </aside>
     </main>
 
