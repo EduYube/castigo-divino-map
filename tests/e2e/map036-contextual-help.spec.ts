@@ -89,19 +89,14 @@ for (const viewport of VIEWPORTS) {
 
     await expect(hiddenInstructions).toContainText('Usa Búsqueda');
     await expect(hiddenInstructions).toContainText('Filtrar lugares');
-    await expect(hiddenInstructions).toContainText(
-      'Activar un pin abre su ficha compacta',
-    );
+    await expect(hiddenInstructions).toContainText('Activar un pin abre su ficha compacta');
     await expect(hiddenInstructions).toContainText('círculo indica personaje');
     await expect(hiddenInstructions).toContainText('rombo, emplazamiento');
-    await expect(hiddenInstructions).toContainText(
-      'aliado, enemigo, neutral y sin dato visible',
-    );
+    await expect(hiddenInstructions).toContainText('aliado, enemigo, neutral y sin dato visible');
     await expect(map).toHaveAttribute('aria-describedby', /map-instructions/);
 
     const closedMetrics = await page.evaluate(({ width, height, label }) => {
-      const summaryElement =
-        document.querySelector<HTMLElement>('[data-map-help-summary]');
+      const summaryElement = document.querySelector<HTMLElement>('[data-map-help-summary]');
       const mapElement = document.querySelector<HTMLElement>('[data-map-canvas]');
       const summaryBox = summaryElement?.getBoundingClientRect();
       const mapBox = mapElement?.getBoundingClientRect();
@@ -142,8 +137,7 @@ for (const viewport of VIEWPORTS) {
     await expectNoHorizontalOverflow(page);
 
     const openMetrics = await page.evaluate(({ height }) => {
-      const panelElement =
-        document.querySelector<HTMLElement>('[data-map-help-panel]');
+      const panelElement = document.querySelector<HTMLElement>('[data-map-help-panel]');
       const mapElement = document.querySelector<HTMLElement>('[data-map-canvas]');
       const panelBox = panelElement?.getBoundingClientRect();
       const mapBox = mapElement?.getBoundingClientRect();
@@ -152,17 +146,13 @@ for (const viewport of VIEWPORTS) {
         panelHeight: panelBox?.height ?? null,
         panelBottom: panelBox?.bottom ?? null,
         mapTop: mapBox?.top ?? null,
-        panelViewportRatio: panelBox
-          ? Number((panelBox.height / height).toFixed(3))
-          : null,
+        panelViewportRatio: panelBox ? Number((panelBox.height / height).toFixed(3)) : null,
         horizontalOverflow:
           document.documentElement.scrollWidth - document.documentElement.clientWidth,
       };
     }, viewport);
 
-    console.log(
-      `MAP036_OPEN_METRICS ${JSON.stringify({ label: viewport.label, ...openMetrics })}`,
-    );
+    console.log(`MAP036_OPEN_METRICS ${JSON.stringify({ label: viewport.label, ...openMetrics })}`);
     await testInfo.attach(`MAP-036 open metrics ${viewport.label}`, {
       body: JSON.stringify(openMetrics, null, 2),
       contentType: 'application/json',
@@ -170,9 +160,9 @@ for (const viewport of VIEWPORTS) {
 
     expect(openMetrics.horizontalOverflow).toBeLessThanOrEqual(0);
     expect(openMetrics.panelHeight ?? 0).toBeGreaterThan(0);
-    expect(
-      openMetrics.panelHeight ?? Number.POSITIVE_INFINITY,
-    ).toBeLessThanOrEqual(viewport.height * 0.7);
+    expect(openMetrics.panelHeight ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
+      viewport.height * 0.7,
+    );
     if (openMetrics.panelBottom !== null && openMetrics.mapTop !== null) {
       expect(openMetrics.mapTop).toBeGreaterThanOrEqual(openMetrics.panelBottom - 2);
     }
@@ -193,9 +183,7 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-test('supports native keyboard disclosure without custom focus trapping', async ({
-  page,
-}) => {
+test('supports native keyboard disclosure without custom focus trapping', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openReadyMap(page);
 
@@ -208,9 +196,7 @@ test('supports native keyboard disclosure without custom focus trapping', async 
   let reachedSummary = false;
   for (let attempt = 0; attempt < 16; attempt += 1) {
     await page.keyboard.press('Tab');
-    if (
-      await summary.evaluate((element) => element === document.activeElement)
-    ) {
+    if (await summary.evaluate((element) => element === document.activeElement)) {
       reachedSummary = true;
       break;
     }
