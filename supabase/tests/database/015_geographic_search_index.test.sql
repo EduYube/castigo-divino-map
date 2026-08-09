@@ -117,12 +117,27 @@ select is(
   (
     select count(*)
     from public.geographic_names
-    where id like 'geo-%'
-      and id not like 'geo-alias-%'
+    where id in (
+      'geo-baldurs-gate',
+      'geo-daggerford',
+      'geo-evermoors',
+      'geo-fields-of-the-dead',
+      'geo-forest-of-wyrms',
+      'geo-high-forest',
+      'geo-high-moor',
+      'geo-luskan',
+      'geo-mirabar',
+      'geo-neverwinter',
+      'geo-silverymoon',
+      'geo-star-mountains',
+      'geo-sword-mountains',
+      'geo-trollbark-forest',
+      'geo-waterdeep'
+    )
       and entity_id is not null
   ),
   0::bigint,
-  'the geographic baseline remains separate from campaign pin entities'
+  'the MAP-032 geographic baseline remains separate from campaign pin entities'
 );
 
 set local role anon;
