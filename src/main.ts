@@ -148,10 +148,7 @@ function mountPublicExperience(
         pin.coordinate[1],
       ]);
       const visibleRight = Math.max(edgePadding, mapSize.x - edgePadding);
-      const visibleBottom = Math.max(
-        edgePadding,
-        mapSize.y - Math.ceil(sheetHeight) - edgePadding,
-      );
+      const visibleBottom = Math.max(edgePadding, mapSize.y - Math.ceil(sheetHeight) - edgePadding);
       let offsetX = 0;
       let offsetY = 0;
 
