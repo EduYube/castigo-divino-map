@@ -10,7 +10,7 @@ const TEST_MAP = `
 `;
 
 const DENSE_ENTITIES = Array.from({ length: 16 }, (_, index) => ({
-  id: `density-pin-${index}`,
+  id: `entity-density-pin-${index}`,
   slug: `density-pin-${index}`,
   entity_type: index % 2 === 0 ? 'location' : 'character',
   visibility: 'pin',
@@ -103,7 +103,9 @@ test('keeps 16 nearby markers visually compact while preserving their full Leafl
 }) => {
   await openDensityMap(page);
 
-  const pins = page.locator('[data-testid="entity-pin"][data-pin-id^="density-pin-"]');
+  const pins = page.locator(
+    '[data-testid="entity-pin"][data-pin-id^="entity-density-pin-"]',
+  );
   await expect(pins).toHaveCount(16);
 
   const metrics = await pins.evaluateAll((elements) =>
@@ -163,8 +165,8 @@ test('keeps type, disposition, keyboard focus and selection usable inside the de
 }) => {
   await openDensityMap(page);
 
-  const location = page.locator('[data-pin-id="density-pin-4"]');
-  const character = page.locator('[data-pin-id="density-pin-5"]');
+  const location = page.locator('[data-pin-id="entity-density-pin-4"]');
+  const character = page.locator('[data-pin-id="entity-density-pin-5"]');
 
   await expect(location.locator('.pin-visual')).toHaveClass(/pin-visual--location/);
   await expect(character.locator('.pin-visual')).toHaveClass(/pin-visual--character/);
@@ -179,6 +181,6 @@ test('keeps type, disposition, keyboard focus and selection usable inside the de
   await expect(page.getByTestId('place-details')).toBeVisible();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-entity-id',
-    'density-pin-5',
+    'entity-density-pin-5',
   );
 });
