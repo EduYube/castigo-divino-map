@@ -60,7 +60,9 @@ function resolveElements(root: ParentNode): CompactPinDetailsElements {
 }
 
 function isMobileSheet(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia(MOBILE_SHEET_MEDIA_QUERY).matches;
+  return (
+    typeof window.matchMedia === 'function' && window.matchMedia(MOBILE_SHEET_MEDIA_QUERY).matches
+  );
 }
 
 function appendTextElement<K extends keyof HTMLElementTagNameMap>(
