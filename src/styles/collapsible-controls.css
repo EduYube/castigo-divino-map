@@ -68,6 +68,12 @@
   gap: 1rem;
 }
 
+@media (max-width: 48rem) {
+  .place-filters[data-collapsible-expanded='false'] .place-filters__title {
+    display: none;
+  }
+}
+
 @media (max-width: 36rem) {
   .collapsible-control__header {
     grid-template-columns: minmax(0, 1fr);
