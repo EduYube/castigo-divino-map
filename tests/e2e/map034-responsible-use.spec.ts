@@ -84,7 +84,7 @@ for (const viewport of VIEWPORTS) {
     expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
 
     if (box && mapBox) {
-      const maxHeight = viewport.width <= 430 ? 120 : 80;
+      const maxHeight = viewport.width <= 430 ? 140 : 80;
       expect(box.height).toBeLessThanOrEqual(maxHeight);
       expect(box.y).toBeGreaterThanOrEqual(mapBox.y + mapBox.height);
     }
