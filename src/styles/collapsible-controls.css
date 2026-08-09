@@ -1,3 +1,5 @@
+@import './mobile-map-first.css';
+
 .collapsible-control__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
