@@ -41,6 +41,7 @@ import './styles/backend-status.css';
 import './styles/admin-auth.css';
 import './styles/accessibility.css';
 
+const MOBILE_COMPACT_DETAILS_QUERY = '(max-width: 48rem)';
 const appElement = document.querySelector<HTMLDivElement>('#app');
 
 if (!appElement) {
@@ -121,6 +122,29 @@ function mountPublicExperience(
   });
   mountPublicPinRequest(app, mapController.map);
 
+  const compactDetailsPanel = app.querySelector<HTMLElement>('[data-place-details]');
+  const mobileCompactDetailsMedia = window.matchMedia(MOBILE_COMPACT_DETAILS_QUERY);
+  const keepPinVisibleWithCompactDetails = (pin: AtlasPinMarkerModel): void => {
+    if (!mobileCompactDetailsMedia.matches) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      if (!mobileCompactDetailsMedia.matches || !compactDetailsPanel || compactDetailsPanel.hidden) {
+        return;
+      }
+
+      const sheetHeight = compactDetailsPanel.getBoundingClientRect().height;
+      const edgePadding = 20;
+      mapController.map.invalidateSize({ animate: false, pan: false });
+      mapController.map.panInside([pin.coordinate[0], pin.coordinate[1]], {
+        animate: false,
+        paddingTopLeft: [edgePadding, edgePadding],
+        paddingBottomRight: [edgePadding, Math.ceil(sheetHeight + edgePadding)],
+      });
+    });
+  };
+
   const clearSupplementalMapSelection = (pin: AtlasPinMarkerModel): void => {
     mapController.setMarkers(renderedMarkers.filter(({ id }) => id !== pin.id));
     mapController.setMarkers(renderedMarkers);
@@ -164,6 +188,7 @@ function mountPublicExperience(
     }
 
     compactDetailsController.show(details, { focus });
+    keepPinVisibleWithCompactDetails(pin);
     return true;
   }
 
