@@ -65,9 +65,7 @@ test('collapses search without changing query, URL or history and reports zero r
   const query = 'Un lugar que no existe';
   const input = page.getByRole('searchbox', { name: 'Buscar lugares' });
   await input.fill(query);
-  await expect
-    .poll(() => new URL(page.url()).searchParams.get('q'))
-    .toBe(query);
+  await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe(query);
   const urlBeforeCollapse = page.url();
   const historyBeforeCollapse = await page.evaluate(() => window.history.length);
 
