@@ -67,8 +67,12 @@ test('loads the Beta 0.2 public experience from the repository subdirectory', as
     .getByRole('link', { name: /Abrir ficha completa de Paso de demostración/ })
     .click();
   const detailsPage = await popupPromise;
-  await expect(detailsPage.getByRole('heading', { level: 1, name: 'Paso de demostración' })).toBeVisible();
-  await expect(detailsPage.getByRole('heading', { level: 2, name: 'Notas públicas' })).toBeVisible();
+  await expect(
+    detailsPage.getByRole('heading', { level: 1, name: 'Paso de demostración' }),
+  ).toBeVisible();
+  await expect(
+    detailsPage.getByRole('heading', { level: 2, name: 'Notas públicas' }),
+  ).toBeVisible();
   expect(new URL(detailsPage.url()).searchParams.get('entity')).toBe('paso-de-demostracion');
   await detailsPage.close();
 
