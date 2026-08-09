@@ -1,170 +1,156 @@
-# Despliegue y recuperación de la Beta 0.1
+# Despliegue y rollback de Beta 0.2
 
-## URL objetivo y estado actual
+## Objetivo
 
-La Beta 0.1 se publicará en:
+Publicar **El Atlas de los Nuevos Dioses — Beta 0.2** en GitHub Pages desde un SHA de `master` completamente validado, con la proyección pública de Supabase sincronizada con el snapshot versionado y con un procedimiento de recuperación que no reescriba `master` ni destruya datos.
+
+URL pública:
 
 `https://eduyube.github.io/castigo-divino-map/`
 
-A 2026-08-04 la URL todavía no está activa. La implementación está integrada, pero el repositorio necesita una activación administrativa inicial:
+## Arquitectura de publicación
 
-**Settings → Pages → Build and deployment → Source → GitHub Actions**
+La publicación separa calidad y despliegue:
 
-Después debe reejecutarse **Deploy Beta 0.1 to GitHub Pages** sobre `master`.
+1. `.github/workflows/ci.yml` valida PRs hacia `master` y pushes a `master`.
+2. El job web ejecuta formato, auditoría de credenciales, accesibilidad, lint, unitarios, build Pages, auditoría de `dist`, métricas, E2E y smoke local.
+3. El job Supabase reconstruye una base local, aplica migraciones, ejecuta lint, pgTAP/RLS y concurrencia.
+4. `.github/workflows/pages.yml` recibe el `workflow_run` de CI sobre `master` y solo continúa cuando su conclusión es `success`.
+5. Pages resuelve y checkout el SHA validado, verifica el snapshot contra Supabase, reconstruye `dist`, vuelve a auditarlo y ejecuta smoke local.
+6. `actions/deploy-pages` publica exclusivamente `dist` en el entorno `github-pages`.
+7. El job `smoke` ejecuta `tests/deployment/pages-smoke.spec.ts` contra la URL publicada.
+8. El job `report` registra el estado `github-pages/deployment` sobre el SHA exacto desplegado.
 
-La URL usa el subdirectorio estable del repositorio. Los estados compartidos se añaden mediante `place`, `q`, `category` y `tag`, por ejemplo:
+La concurrencia de Pages usa `cancel-in-progress: false`: un despliegue iniciado no se cancela por una ejecución posterior.
 
-`https://eduyube.github.io/castigo-divino-map/?place=paso-de-demostracion&q=paso&category=lugares-destacados&tag=mountain-pass`
+## Configuración pública de Supabase
 
-## Arquitectura de despliegue
+El frontend necesita únicamente:
 
-La publicación separa la puerta de calidad del despliegue:
+- `VITE_SUPABASE_URL`;
+- `VITE_SUPABASE_PUBLISHABLE_KEY` con formato `sb_publishable_*`.
 
-1. `.github/workflows/ci.yml` valida pull requests hacia `master` y cada commit integrado en `master`.
-2. CI instala con `npm ci`, comprueba formato y lint, ejecuta Vitest, genera el build de Pages, audita `dist`, ejecuta la matriz Playwright y prueba el mismo build con `vite preview` bajo `/castigo-divino-map/`.
-3. `.github/workflows/pages.yml` recibe el evento `workflow_run` únicamente cuando CI termina sobre `master`.
-4. El job `build` solo continúa si la conclusión es `success`. Reconstruye el commit validado, vuelve a auditar `dist`, ejecuta el smoke local y sube exclusivamente `dist` mediante `actions/upload-pages-artifact`.
-5. El job `deploy` usa el entorno `github-pages`, `actions/configure-pages` y `actions/deploy-pages`.
-6. El job `smoke` prueba la URL devuelta por el despliegue y registra la URL validada en el resumen del workflow.
-7. El job `report` publica sobre el SHA el estado `github-pages/deployment`, con enlace al run exacto y éxito solo cuando `build`, `deploy` y `smoke` terminan correctamente.
+Son valores públicos de navegador, no secretos. El workflow permite Repository Variables como override y conserva como fallback los valores públicos del proyecto de producción. No deben incorporarse al frontend ni al artefacto:
 
-La ejecución manual está permitida únicamente desde `master`. Como no existe un `workflow_run` previo que pueda reutilizarse, la ruta manual repite formato, lint, Vitest y la matriz e2e antes de desplegar.
+- `service_role`;
+- `sb_secret_*`;
+- tokens de gestión;
+- contraseñas de base de datos;
+- connection strings con password;
+- credenciales personales de administradores.
 
-## Activación inicial de GitHub Pages
+`npm run verify:security` audita los ficheros versionados y `npm run verify:build` vuelve a auditar el artefacto de producción.
 
-La activación del sitio se realiza una sola vez por una persona con permisos administrativos:
+## Snapshot público
 
-1. Abrir **Settings** del repositorio.
-2. Seleccionar **Pages**.
-3. En **Build and deployment**, elegir **Source: GitHub Actions**.
-4. Guardar la configuración cuando GitHub lo solicite.
-5. Ejecutar manualmente el workflow de Pages sobre `master`.
+Archivo:
 
-El conector utilizado para MAP-011 no expone la configuración de Pages. El `GITHUB_TOKEN` de Actions tampoco puede crear o habilitar el sitio porque esa operación exige permisos administrativos adicionales. El workflow mantiene `actions/configure-pages` con la activación implícita deshabilitada y falla de forma explícita cuando el sitio no existe.
+`public/data/public-catalog.snapshot.json`
 
-## Evidencia del primer intento
-
-El run `30940902156`, activado automáticamente después de una CI satisfactoria sobre `master`, obtuvo estos resultados:
-
-- `Build and upload production artifact`: correcto;
-- instalación reproducible: correcta;
-- build de Pages: correcto;
-- auditoría de `dist`: correcta;
-- smoke local: correcto;
-- subida exclusiva de `dist`: correcta;
-- `Deploy GitHub Pages`: falló en `actions/configure-pages@v6`;
-- `actions/deploy-pages`: no ejecutado;
-- smoke de la URL pública: no ejecutado;
-- estado `github-pages/deployment`: fallo, enlazado al run.
-
-El mensaje de GitHub fue `Get Pages site failed`, indicando que el repositorio no tenía Pages habilitado y configurado para construir mediante GitHub Actions.
-
-## Ruta base de Vite
-
-`vite.config.ts` mantiene `/` para desarrollo y builds ordinarios. El modo `pages` deriva el nombre del repositorio desde `GITHUB_REPOSITORY`; para preview local usa como alternativa segura `npm_package_name`.
+El snapshot usa `schemaVersion: 2` y un SHA-256 del contenido público canónico. El gate previo al despliegue es:
 
 ```bash
-npm run build:pages
-npm run verify:build
-npm run preview:pages
+npm run snapshot:verify:remote
 ```
 
-El resultado usa `/castigo-divino-map/` para JavaScript y CSS. La aplicación no introduce router ni rutas internas: el pathname se conserva y el estado continúa en la query string.
+Ese comando compara contenido y checksum contra la Data API pública de Supabase. Un drift bloquea el despliegue antes del build.
 
-## Contenido del artefacto
+El snapshot excluye estados editoriales, solicitudes públicas, remitentes, motivos, notas de moderación y cualquier dato administrativo. No se regenera solo para cambiar `generatedAt`: si el contenido público de Supabase no cambia y la igualdad remota sigue siendo exacta, se conserva el snapshot versionado existente.
 
-`verify-production-build.mjs` falla cuando:
+## Estado de Supabase para MAP-030
 
-- falta `dist/index.html`, JavaScript o CSS;
-- `index.html` referencia recursos fuera de `/castigo-divino-map/assets/`;
-- un recurso referenciado no existe en `dist`;
-- aparece una imagen raster o un nombre compatible con una copia o mosaico del mapa;
-- desaparece la referencia a la URL oficial remota;
-- un archivo textual coincide con patrones conocidos de credenciales privadas.
+Producción:
 
-El workflow de Pages sube exclusivamente `dist`, con retención mínima del artefacto de transporte. No publica dependencias, cachés, trazas, informes Playwright ni artefactos de pruebas.
+- proyecto: `atlas-nuevos-dioses-prod`;
+- project id: `ehpouvbzmvwbkkoypgfa`;
+- las migraciones alojadas llegan hasta:
+  - `20260808172454_add_public_request_moderation`;
+  - `20260809003008_migrate_beta01_public_catalog`.
 
-## Permisos y concurrencia
+MAP-030 no define una migración nueva. Antes de publicar se compara el historial alojado con las migraciones ya aprobadas del repositorio. Si no existe una migración pendiente, no se reaplica ninguna ni se ejecuta `seed.sql`.
 
-Los permisos predeterminados son `contents: read`.
+Cualquier DDL nuevo, cambio de RLS/Auth/roles/grants o migración destructiva descubierto durante un release debe tratarse como cambio sensible y no puede introducirse silenciosamente dentro de MAP-030.
 
-- El job `deploy` recibe `pages: write` e `id-token: write`.
-- El job `report` recibe `statuses: write`.
-- Ningún otro job recibe permisos de escritura.
+## Smoke publicado de Beta 0.2
 
-El entorno `github-pages` expone la URL del paso de despliegue. El grupo de concurrencia es `pages` con `cancel-in-progress: false`: una ejecución posterior espera en lugar de cancelar un despliegue que ya haya comenzado.
+`tests/deployment/pages-smoke.spec.ts` valida sobre la URL real:
 
-## Smoke tests
+- badge visible `Beta 0.2`;
+- backend conectado a Supabase;
+- búsqueda, filtros, mapa y pines;
+- ficha compacta y apertura de ficha completa;
+- URL estable y navegación atrás/adelante;
+- panel de solicitudes públicas sin categorías/tags/código de campaña;
+- atribución y fuente cartográfica remota;
+- assets bajo `/castigo-divino-map/`;
+- experiencia a 320 px cuando falla la imagen remota;
+- fallback desde el snapshot cuando Supabase devuelve HTTP 503.
 
-El smoke de preview y el posterior al despliegue comprueban:
+La suite E2E completa mantiene además los escenarios de 429, timeout, conexión rechazada, JSON inválido, respuesta parcial, recuperación por retry, XSS, administración, responsive y accesibilidad.
 
-- respuesta correcta y recursos JavaScript/CSS bajo el subdirectorio;
-- cabecera, búsqueda, filtros, mapa, marcadores, ficha y aviso legal;
-- restauración y recarga de una URL completa;
-- política de atrás y adelante;
-- solicitud exclusiva de la URL oficial del mapa;
-- superficie neutra y funcionalidad cuando el recurso remoto falla;
-- ausencia de overflow horizontal a 320 px;
-- foco básico, cierre de ficha y retorno al marcador;
-- atribución legal visible.
+## Baseline anterior a la publicación final
 
-El mapa se intercepta con un SVG neutro generado en memoria para las pruebas controladas. El smoke no descarga ni almacena el JPEG oficial.
+El último estado publicado y validado antes de iniciar MAP-030 es:
 
-El preview ha superado los dos escenarios. La misma suite queda pendiente de ejecutar contra `PAGES_URL` cuando el sitio esté habilitado.
+- SHA de `master`: `3f4052027a511da63b84886498b25edc12ca3b43`;
+- Pages run: `31290640876`;
+- `github-pages/deployment = success`;
+- smoke publicado: `success`.
 
-## Despliegue manual
+Este SHA es la referencia de frontend para comparar y, si fuese necesario, construir un revert explícito.
 
-1. Confirmar que **Settings → Pages → Source** está configurado como **GitHub Actions**.
-2. Abrir **Actions → Deploy Beta 0.1 to GitHub Pages**.
-3. Seleccionar **Run workflow** sobre `master`.
-4. Confirmar que `Build and upload production artifact`, `Deploy GitHub Pages`, `Validate published Beta 0.1` y `Record deployment status` terminan en verde.
-5. Abrir la URL registrada en el entorno `github-pages` o en el resumen del workflow.
-6. Confirmar que el commit muestra `github-pages/deployment` en estado correcto.
+## Rollback coordinado
 
-La ejecución manual no permite desplegar una rama de trabajo y no omite la calidad completa.
+### Regresión solo de frontend
 
-## Rollback
+1. Identificar el merge que introdujo la regresión y el último SHA seguro.
+2. Crear una rama nueva desde el `master` actual.
+3. Ejecutar `git revert` sobre el cambio de release o el commit defectuoso; no usar force-push ni reescribir historial.
+4. Abrir una PR y exigir los dos jobs de CI verdes.
+5. Fusionar con protección por SHA.
+6. Esperar el workflow automático de Pages.
+7. Verificar build, deploy, smoke publicado y `github-pages/deployment` sobre el nuevo SHA de revert.
 
-### Identificar la última versión correcta
+### Fallo transitorio de Pages
 
-1. Abrir el historial del entorno `github-pages` o el workflow de Pages.
-2. Localizar la última ejecución verde y anotar el SHA validado por el job `build`.
-3. Confirmar que su job `smoke` terminó correctamente.
-4. Confirmar el estado `github-pages/deployment` sobre ese SHA.
+Si el código correcto ya está en `master` y el fallo es exclusivamente de infraestructura, reejecutar el workflow de Pages sobre `master`. La ruta manual reconstruye y vuelve a validar; no debe publicar un artefacto antiguo descargado manualmente.
 
-### Revertir una regresión
+### Frontend y base de datos desalineados
 
-1. Crear una rama desde `master`.
-2. Revertir el merge o los commits que introdujeron la regresión mediante `git revert`; no reescribir `master`.
-3. Abrir una pull request y esperar a CI verde.
-4. Fusionar la PR. El commit de revert validado se desplegará automáticamente.
-5. Confirmar el smoke posterior y que `dist` no contiene el mapa.
+MAP-030 no añade DDL. Las migraciones de Beta 0.2 se diseñaron hacia delante y el frontend publicado debe ser compatible con el estado alojado aprobado.
 
-### Redesplegar una versión ya integrada
+Si una incidencia futura deja frontend y DB desalineados:
 
-Cuando el código correcto ya está en `master` y el fallo fue transitorio, reejecutar el workflow de Pages manualmente sobre `master`. No se debe construir desde una rama ni descargar un artefacto antiguo no verificable.
+1. detener nuevas publicaciones editoriales si pudieran agravar el problema;
+2. determinar si el último frontend seguro es compatible con el esquema actual;
+3. preferir un revert de frontend mediante PR cuando el esquema siga siendo compatible;
+4. si el esquema requiere corrección, aplicar una migración correctiva forward-only revisada;
+5. no borrar tablas/filas, resetear producción ni manipular el historial de migraciones para simular un rollback.
 
-## Diagnóstico
+### Catálogo migrado y snapshot
 
-- **Build:** revisar TypeScript, Vite y la base calculada. Reproducir con `npm ci && npm run build:pages`.
-- **Auditoría:** ejecutar `npm run verify:build` y corregir la ruta, el contenido o la posible credencial indicada.
-- **Upload:** confirmar que existe `dist` y que `actions/upload-pages-artifact` recibe solo ese directorio.
-- **Configure Pages / 404 de la API:** habilitar **Source: GitHub Actions** desde Settings con permisos administrativos.
-- **Deploy:** revisar permisos `pages: write`, `id-token: write`, entorno `github-pages` y configuración de Pages.
-- **Smoke:** usar la URL exacta emitida por `deploy-pages`; revisar 404 de assets, pathname y consola del navegador.
-- **Status:** consultar `github-pages/deployment` sobre el SHA y seguir su enlace al run exacto.
-- **Pages no disponible:** conservar CI verde, no publicar en un host alternativo no aprobado y reejecutar cuando el servicio se recupere.
-- **Mapa oficial no disponible:** mantener la publicación y la superficie neutra; no crear una copia local. Revisar la fuente y la licencia antes de cualquier sustitución.
+La migración de catálogo de MAP-028 dispone de rollback lógico por archivado (`supabase/rollback/map-028_archive_beta01_catalog.sql`). Ese mecanismo retira el contenido de la proyección pública sin borrado físico ni liberación de IDs/slugs reservados.
 
-## Retirada temporal
+Tras cualquier corrección de contenido:
 
-Si aparece contenido privado, una credencial o un recurso sin licencia:
+1. regenerar el snapshot desde la fuente persistente aprobada cuando el contenido público cambie;
+2. verificar checksum local;
+3. verificar igualdad remota;
+4. versionar el snapshot en una PR;
+5. desplegar solo después de CI verde.
 
-1. detener nuevas integraciones;
-2. revertir inmediatamente el commit mediante PR;
-3. fusionar y validar el redespliegue;
-4. si es necesario, deshabilitar temporalmente Pages desde la configuración del repositorio;
-5. revocar cualquier credencial expuesta, aunque el commit haya sido eliminado de la versión visible;
-6. verificar que la versión restaurada tampoco contiene una copia local del mapa.
+## Criterio de release completado
 
-GitHub y esta documentación siguen siendo la fuente de verdad del procedimiento.
+Beta 0.2 solo se considera publicada cuando existe evidencia sobre el SHA final de `master` de que:
+
+- CI está verde;
+- Pages reconstruyó ese SHA;
+- `snapshot:verify:remote` pasó;
+- build y auditoría pasaron;
+- deploy terminó correctamente;
+- smoke contra la URL publicada pasó;
+- `github-pages/deployment = success`;
+- Supabase permanece en el estado esperado;
+- `docs/project-status.md` registra la publicación, límites, rollback y evidencia final.
+
+La evidencia concreta del release se conserva en [`map-030-release.md`](map-030-release.md).
