@@ -74,6 +74,15 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Upload MAP-037 mobile sheet references
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: map-037-mobile-sheet-references-${{ github.run_id }}
+          path: test-results/**/map037-*.png
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Smoke test the Pages build locally
         run: npm run test:e2e:pages
 
