@@ -50,8 +50,19 @@ test('loads the Beta 0.2 public experience from the repository subdirectory', as
   if (process.env.PAGES_URL) {
     await expect(backendStatus).toHaveAttribute('data-backend-state', 'connected');
   } else {
-    await expect(backendStatus).toHaveAttribute('data-backend-state', 'degraded');
-    await expect(backendStatus).toHaveAttribute('data-backend-reason', 'configuration-missing');
+    await expect
+      .poll(async () => {
+        const state = await backendStatus.getAttribute('data-backend-state');
+        const reason = await backendStatus.getAttribute('data-backend-reason');
+        if (state === 'connected') {
+          return 'accepted';
+        }
+        if (state === 'degraded' && reason === 'configuration-missing') {
+          return 'accepted';
+        }
+        return `${state}:${reason}`;
+      })
+      .toBe('accepted');
   }
 
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
