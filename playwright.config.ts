@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const criticalAccessibilitySuite = /responsive-accessibility\.spec\.ts/;
+const map033MobileSuite = /map033-mobile\.spec\.ts/;
+const criticalMobileSuite = /(responsive-accessibility|map033-mobile)\.spec\.ts/;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -9,6 +11,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? 'github' : 'list',
+  preserveOutput: 'always',
   expect: {
     timeout: process.env.CI ? 15_000 : 5_000,
   },
@@ -19,6 +22,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: map033MobileSuite,
       use: { ...devices['Desktop Chrome'] },
     },
     {
@@ -27,8 +31,13 @@ export default defineConfig({
       use: { ...devices['Desktop Firefox'] },
     },
     {
+      name: 'mobile-chromium',
+      testMatch: criticalMobileSuite,
+      use: { ...devices['Pixel 5'] },
+    },
+    {
       name: 'mobile-webkit',
-      testMatch: criticalAccessibilitySuite,
+      testMatch: criticalMobileSuite,
       use: { ...devices['iPhone 13'] },
     },
   ],
