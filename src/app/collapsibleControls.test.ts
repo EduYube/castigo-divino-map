@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { getInitialCollapsibleControlState } from './collapsibleControls';
 
 describe('getInitialCollapsibleControlState', () => {
-  it('starts search and filters collapsed on desktop', () => {
+  it('starts search and filters expanded on desktop', () => {
     expect(getInitialCollapsibleControlState(false)).toEqual({
-      searchExpanded: false,
-      filtersExpanded: false,
+      searchExpanded: true,
+      filtersExpanded: true,
     });
   });
 
