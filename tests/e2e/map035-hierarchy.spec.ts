@@ -58,17 +58,19 @@ for (const viewport of VIEWPORTS) {
       const heading = rect('.map-experience__heading');
       const search = rect('.place-search');
       const filters = rect('.place-filters');
-      const legend = rect('.pin-legend');
+      const helpSummary = rect('[data-map-help-summary]');
       const visibleMapHeight = map
         ? Math.max(0, Math.min(height, map.bottom) - Math.max(0, map.top))
         : 0;
-      const candidates = [header, introduction, heading, search, filters, legend].filter(
+      const candidates = [header, introduction, heading, search, filters].filter(
         (box): box is NonNullable<typeof box> => Boolean(box),
       );
       const blocksBeforeMap = map
         ? candidates.filter((box) => box.top < map.top && box.bottom <= map.top + 1).length
         : 0;
       const searchbox = document.querySelector<HTMLInputElement>('[data-place-search-input]');
+      const help = document.querySelector<HTMLDetailsElement>('[data-map-help]');
+      const legend = document.querySelector<HTMLElement>('[data-pin-legend]');
       const geometry = {
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -80,9 +82,11 @@ for (const viewport of VIEWPORTS) {
         headerHeight: header?.height ?? null,
         introductionHeight: introduction?.height ?? null,
         introductionTop: introduction?.top ?? null,
-        legendTop: legend?.top ?? null,
         searchTop: search?.top ?? null,
         filtersTop: filters?.top ?? null,
+        helpSummaryHeight: helpSummary?.height ?? null,
+        helpInitiallyOpen: help?.open ?? null,
+        legendInitiallyVisible: Boolean(legend?.offsetParent),
         mapTop: map?.top ?? null,
         mapBottom: map?.bottom ?? null,
         mapHeight: map?.height ?? null,
@@ -90,6 +94,7 @@ for (const viewport of VIEWPORTS) {
         firstViewportMapPercent: Number(((visibleMapHeight / height) * 100).toFixed(1)),
         blocksBeforeMap,
         searchActionsBeforeTyping: searchbox?.offsetParent ? 0 : 1,
+        actionsToFullHelp: 1,
         horizontalOverflow: geometry.scrollWidth - geometry.clientWidth,
       };
     }, viewport);
@@ -108,9 +113,13 @@ for (const viewport of VIEWPORTS) {
     expect(metrics.firstViewportMapPixels).toBeGreaterThan(viewport.height * 0.2);
     expect(metrics.blocksBeforeMap).toBeLessThanOrEqual(4);
     expect(metrics.searchActionsBeforeTyping).toBe(usesMobileControls ? 1 : 0);
+    expect(metrics.actionsToFullHelp).toBe(1);
+    expect(metrics.helpInitiallyOpen).toBe(false);
+    expect(metrics.legendInitiallyVisible).toBe(false);
+    expect(metrics.helpSummaryHeight ?? 0).toBeGreaterThanOrEqual(43.9);
 
     if (metrics.mapTop !== null) {
-      const maxMapTopRatio = viewport.height <= 400 ? 0.82 : 0.62;
+      const maxMapTopRatio = viewport.height <= 400 ? 0.88 : 0.64;
       expect(metrics.mapTop).toBeLessThan(viewport.height * maxMapTopRatio);
     }
 
@@ -118,13 +127,8 @@ for (const viewport of VIEWPORTS) {
       expect(Math.abs(metrics.searchTop - metrics.mapTop)).toBeLessThanOrEqual(2);
     }
 
-    if (
-      metrics.mapBottom !== null &&
-      metrics.introductionTop !== null &&
-      metrics.legendTop !== null
-    ) {
+    if (metrics.mapBottom !== null && metrics.introductionTop !== null) {
       expect(metrics.introductionTop).toBeGreaterThanOrEqual(metrics.mapBottom - 1);
-      expect(metrics.legendTop).toBeGreaterThanOrEqual(metrics.mapBottom - 1);
     }
 
     await expect(page.locator('[data-place-search-toggle]')).toHaveAttribute(
@@ -142,6 +146,8 @@ for (const viewport of VIEWPORTS) {
     await expect(page.locator('.atlas-main > .map-instructions')).toContainText(
       'Uso responsable del mapa',
     );
+    await expect(page.locator('[data-map-help-summary]')).toBeVisible();
+    await expect(page.locator('[data-pin-legend]')).toBeHidden();
 
     await capture(page, testInfo, `${viewport.width}x${viewport.height}`);
   });
