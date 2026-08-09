@@ -8,7 +8,7 @@ export function renderApp(): string {
         <span>Castigo Divino</span>
       </a>
       <div class="site-header__badges" aria-label="Estado de la aplicación">
-        <span class="release-badge">Beta 0.1</span>
+        <span class="release-badge">Beta 0.2</span>
         <span class="fan-badge">Contenido de fans no oficial</span>
       </div>
     </header>
@@ -16,11 +16,11 @@ export function renderApp(): string {
     <main id="main-content" class="atlas-main">
       <section class="map-introduction" aria-labelledby="atlas-title">
         <div>
-          <p class="eyebrow">Cartografía interactiva · MAP-023</p>
+          <p class="eyebrow">Cartografía interactiva · Beta 0.2</p>
           <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
           <p class="map-introduction__lead">
-            Explora lugares públicos de la campaña, localiza personajes y abre fichas compactas
-            para reconocer su tipo, categoría, etiquetas y disposiciones sin abandonar el mapa.
+            Explora el catálogo público de la campaña, localiza lugares y personajes y abre fichas
+            compactas o completas, con respaldo degradable cuando el backend no está disponible.
           </p>
         </div>
         <p class="map-introduction__source">
