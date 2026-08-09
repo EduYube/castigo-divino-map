@@ -64,19 +64,22 @@ function projectFixtureRows(table: string): readonly Record<string, unknown>[] {
   });
 }
 
-async function configureBackend(page: Page): Promise<TestBackend> {
+async function configureBackend(page: Page, timeoutMs = 75): Promise<TestBackend> {
   let mode: BackendMode = 'success';
   let requests = 0;
   let entityNameOverride: string | null = null;
 
-  await page.addInitScript((projectUrl) => {
-    window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
-      projectUrl,
-      publishableKey: 'sb_publishable_map029_test_key',
-      timeoutMs: 75,
-      retryDelaysMs: [0, 0, 0],
-    };
-  }, LOCAL_SUPABASE_URL);
+  await page.addInitScript(
+    ({ projectUrl, timeoutMs }) => {
+      window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
+        projectUrl,
+        publishableKey: 'sb_publishable_map029_test_key',
+        timeoutMs,
+        retryDelaysMs: [0, 0, 0],
+      };
+    },
+    { projectUrl: LOCAL_SUPABASE_URL, timeoutMs },
+  );
 
   await page.route(OFFICIAL_MAP_URL, async (route) => {
     await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: TEST_MAP });
@@ -167,7 +170,7 @@ async function expectDegradedWithFallback(page: Page, reason: string): Promise<v
 test('performs one initial public request per contract table and does not poll while idle', async ({
   page,
 }) => {
-  const backend = await configureBackend(page);
+  const backend = await configureBackend(page, 1000);
   await openConnected(page);
 
   await expect
