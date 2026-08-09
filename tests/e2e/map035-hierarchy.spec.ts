@@ -81,6 +81,8 @@ for (const viewport of VIEWPORTS) {
         introductionHeight: introduction?.height ?? null,
         introductionTop: introduction?.top ?? null,
         legendTop: legend?.top ?? null,
+        searchTop: search?.top ?? null,
+        filtersTop: filters?.top ?? null,
         mapTop: map?.top ?? null,
         mapBottom: map?.bottom ?? null,
         mapHeight: map?.height ?? null,
@@ -98,16 +100,22 @@ for (const viewport of VIEWPORTS) {
       contentType: 'application/json',
     });
 
+    const usesMobileControls = viewport.width <= 768;
+
     expect(metrics.horizontalOverflow).toBeLessThanOrEqual(0);
     expect(metrics.mapTop).not.toBeNull();
     expect(metrics.mapBottom).not.toBeNull();
     expect(metrics.firstViewportMapPixels).toBeGreaterThan(viewport.height * 0.2);
     expect(metrics.blocksBeforeMap).toBeLessThanOrEqual(4);
-    expect(metrics.searchActionsBeforeTyping).toBe(1);
+    expect(metrics.searchActionsBeforeTyping).toBe(usesMobileControls ? 1 : 0);
 
     if (metrics.mapTop !== null) {
       const maxMapTopRatio = viewport.height <= 400 ? 0.82 : 0.62;
       expect(metrics.mapTop).toBeLessThan(viewport.height * maxMapTopRatio);
+    }
+
+    if (!usesMobileControls && metrics.mapTop !== null && metrics.searchTop !== null) {
+      expect(Math.abs(metrics.searchTop - metrics.mapTop)).toBeLessThanOrEqual(2);
     }
 
     if (
@@ -121,11 +129,11 @@ for (const viewport of VIEWPORTS) {
 
     await expect(page.locator('[data-place-search-toggle]')).toHaveAttribute(
       'aria-expanded',
-      'false',
+      usesMobileControls ? 'false' : 'true',
     );
     await expect(page.locator('[data-place-filters-toggle]')).toHaveAttribute(
       'aria-expanded',
-      'false',
+      usesMobileControls ? 'false' : 'true',
     );
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'El Atlas de los Nuevos Dioses',
