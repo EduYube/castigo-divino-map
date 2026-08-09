@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "preview:pages": "vite preview --mode pages",
     "verify:build": "node verify-production-build.mjs",
+    "report:build": "node scripts/report-map029-build.mjs",
     "verify:security": "node scripts/verify-supabase-security.mjs",
     "snapshot:generate": "node scripts/generate-public-snapshot.mjs",
     "snapshot:verify": "node scripts/verify-public-snapshot.mjs",
