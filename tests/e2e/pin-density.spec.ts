@@ -103,9 +103,7 @@ test('keeps 16 nearby markers visually compact while preserving their full Leafl
 }) => {
   await openDensityMap(page);
 
-  const pins = page.locator(
-    '[data-testid="entity-pin"][data-pin-id^="entity-density-pin-"]',
-  );
+  const pins = page.locator('[data-testid="entity-pin"][data-pin-id^="entity-density-pin-"]');
   await expect(pins).toHaveCount(16);
 
   const metrics = await pins.evaluateAll((elements) =>
