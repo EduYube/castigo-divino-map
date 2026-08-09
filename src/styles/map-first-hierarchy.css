@@ -197,13 +197,43 @@ body .atlas-main {
 
   .atlas-main > .map-experience {
     order: 1;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'heading'
-      'search'
-      'filters'
-      'map'
-      'legend';
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: none;
+  }
+
+  .map-experience > .map-experience__heading {
+    grid-area: auto;
+    grid-column: 1 / -1;
+    order: 1;
+  }
+
+  .map-experience > .place-search {
+    grid-area: auto;
+    grid-column: 1;
+    order: 2;
+  }
+
+  .map-experience > .place-filters {
+    grid-area: auto;
+    grid-column: 2;
+    order: 3;
+  }
+
+  .map-experience > .place-search[data-collapsible-expanded='true'],
+  .map-experience > .place-filters[data-collapsible-expanded='true'] {
+    grid-column: 1 / -1;
+  }
+
+  .map-experience > .map-workspace {
+    grid-area: auto;
+    grid-column: 1 / -1;
+    order: 4;
+  }
+
+  .map-experience > .pin-legend {
+    grid-area: auto;
+    grid-column: 1 / -1;
+    order: 5;
   }
 
   .atlas-main > .map-introduction {
