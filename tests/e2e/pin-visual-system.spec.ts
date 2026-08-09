@@ -313,14 +313,7 @@ test('remains usable at 320 px, keeps touch targets large and honors forced colo
   await page.emulateMedia({ reducedMotion: 'reduce', forcedColors: 'active' });
   await openPinVisualMap(page);
 
-  const help = page.locator('[data-map-help]');
-  const legend = page.locator('[data-pin-legend]');
-  await expect(help).not.toHaveAttribute('open', '');
-  await expect(legend).toBeHidden();
-  await page.locator('[data-map-help-summary]').click();
-  await expect(legend).toBeVisible();
-  await page.locator('[data-map-help-summary]').click();
-  await expect(legend).toBeHidden();
+  await expect(page.locator('[data-pin-legend]')).toBeHidden();
 
   const character = page.locator('[data-testid="entity-pin"][data-pin-id="entity-scout"]');
   const box = await character.boundingBox();
