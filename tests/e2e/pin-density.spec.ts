@@ -23,6 +23,10 @@ const DENSE_ENTITIES = Array.from({ length: 16 }, (_, index) => ({
   category_id: 'category-density',
 }));
 
+function getDensityDisposition(index: number): string {
+  return ['ally', 'enemy', 'neutral'][index % 3] ?? 'neutral';
+}
+
 const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
   categories: [
     {
@@ -47,7 +51,7 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
   entity_player_dispositions: DENSE_ENTITIES.map((entity, index) => ({
     entity_id: entity.id,
     player_id: 'player-density',
-    disposition: index % 3 === 0 ? 'ally' : index % 3 === 1 ? 'enemy' : 'neutral',
+    disposition: getDensityDisposition(index),
   })),
   character_location_relations: [],
   public_notes: [],
@@ -118,16 +122,18 @@ test('keeps 16 nearby markers visually compact while preserving their full Leafl
       const top = Math.min(...partRects.map((rect) => rect.top));
       const bottom = Math.max(...partRects.map((rect) => rect.bottom));
       const visualRect = visual.getBoundingClientRect();
+      const hitCenterX = hitRect.left + hitRect.width / 2;
+      const hitCenterY = hitRect.top + hitRect.height / 2;
+      const visualCenterX = visualRect.left + visualRect.width / 2;
+      const visualCenterY = visualRect.top + visualRect.height / 2;
 
       return {
         hitWidth: hitRect.width,
         hitHeight: hitRect.height,
         footprintWidth: right - left,
         footprintHeight: bottom - top,
-        centerDeltaX:
-          Math.abs(visualRect.left + visualRect.width / 2 - (hitRect.left + hitRect.width / 2)),
-        centerDeltaY:
-          Math.abs(visualRect.top + visualRect.height / 2 - (hitRect.top + hitRect.height / 2)),
+        centerDeltaX: Math.abs(visualCenterX - hitCenterX),
+        centerDeltaY: Math.abs(visualCenterY - hitCenterY),
       };
     }),
   );
