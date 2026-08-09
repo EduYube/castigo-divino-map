@@ -41,6 +41,9 @@ jobs:
       - name: Audit tracked files for privileged credentials
         run: npm run verify:security
 
+      - name: Verify accessibility invariants
+        run: npm run verify:accessibility
+
       - name: Lint
         run: npm run lint
 
