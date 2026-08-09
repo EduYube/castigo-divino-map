@@ -42,19 +42,19 @@ function filtersRegion(page: Page) {
   return page.locator('[data-place-filters-region]');
 }
 
-test('starts compact on desktop with valid independent ARIA relationships', async ({ page }) => {
+test('starts expanded on desktop with valid independent ARIA relationships', async ({ page }) => {
   await openReadyMap(page);
 
-  await expect(searchToggle(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(searchToggle(page)).toHaveAttribute('aria-expanded', 'true');
   await expect(searchToggle(page)).toHaveAttribute('aria-controls', 'place-search-region');
-  await expect(filtersToggle(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(filtersToggle(page)).toHaveAttribute('aria-expanded', 'true');
   await expect(filtersToggle(page)).toHaveAttribute('aria-controls', 'place-filters-region');
   await expect(searchRegion(page)).toHaveAttribute('id', 'place-search-region');
   await expect(filtersRegion(page)).toHaveAttribute('id', 'place-filters-region');
   await expect(searchRegion(page)).toHaveAttribute('role', 'region');
   await expect(filtersRegion(page)).toHaveAttribute('role', 'region');
-  await expect(searchRegion(page)).toBeHidden();
-  await expect(filtersRegion(page)).toBeHidden();
+  await expect(searchRegion(page)).toBeVisible();
+  await expect(filtersRegion(page)).toBeVisible();
 });
 
 test('collapses search without changing query, URL or history and reports zero results', async ({
@@ -62,7 +62,6 @@ test('collapses search without changing query, URL or history and reports zero r
 }) => {
   await openReadyMap(page);
 
-  await searchToggle(page).click();
   const query = 'Un lugar que no existe';
   const input = page.getByRole('searchbox', { name: 'Buscar lugares' });
   await input.fill(query);
@@ -88,7 +87,6 @@ test('collapses search without changing query, URL or history and reports zero r
 test('collapses filters without changing selections, URL or history', async ({ page }) => {
   await openReadyMap(page);
 
-  await filtersToggle(page).click();
   const landmark = page.getByRole('checkbox', { name: /Lugar destacado/ });
   const mountainPass = page.getByRole('checkbox', { name: /Paso de montaña/ });
   await landmark.check();
@@ -188,12 +186,6 @@ test('keeps keyboard focus on toggles and skips hidden interactive content', asy
   await search.focus();
   await page.keyboard.press('Enter');
   await expect(search).toBeFocused();
-  await expect(search).toHaveAttribute('aria-expanded', 'true');
-  await expect(input).toBeVisible();
-
-  await input.focus();
-  await search.click();
-  await expect(search).toBeFocused();
   await expect(search).toHaveAttribute('aria-expanded', 'false');
   await expect(input).toBeHidden();
 
@@ -202,13 +194,12 @@ test('keeps keyboard focus on toggles and skips hidden interactive content', asy
 
   await filters.press('Enter');
   await expect(filters).toBeFocused();
-  await expect(filters).toHaveAttribute('aria-expanded', 'true');
-  await expect(page.getByRole('checkbox', { name: /Asentamiento/ })).toBeVisible();
-
-  await filters.press('Enter');
-  await expect(filters).toBeFocused();
   await expect(filters).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByRole('checkbox', { name: /Asentamiento/ })).toBeHidden();
+
+  await filters.press('Space');
+  await expect(filters).toBeFocused();
+  await expect(filters).toHaveAttribute('aria-expanded', 'true');
 });
 
 test('back and forward restore functional state without reopening collapsed controls', async ({
@@ -216,10 +207,14 @@ test('back and forward restore functional state without reopening collapsed cont
 }) => {
   await openReadyMap(page);
 
-  await searchToggle(page).click();
-  await filtersToggle(page).click();
-  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
-  const landmark = page.getByRole('checkbox', { name: /Lugar destacado/ });
+  const searchbox = page.getByRole('searchbox', {
+    name: 'Buscar lugares',
+    includeHidden: true,
+  });
+  const landmark = page.getByRole('checkbox', {
+    name: /Lugar destacado/,
+    includeHidden: true,
+  });
 
   await searchbox.fill('paso');
   await landmark.check();
@@ -250,7 +245,7 @@ test('remains operable with reduced motion and forced colors', async ({ page }) 
   await toggle.press('Enter');
 
   await expect(toggle).toBeFocused();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   const computed = await toggle.evaluate((element) => {
     const style = getComputedStyle(element);
     const transitionDuration = style.transitionDuration;
