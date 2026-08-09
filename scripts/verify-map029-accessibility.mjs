@@ -16,9 +16,7 @@ function parseHex(value) {
   if (!/^[0-9a-f]{6}$/i.test(normalized)) {
     throw new Error(`Expected a six-digit hex color, received ${value}.`);
   }
-  return [0, 2, 4].map(
-    (offset) => Number.parseInt(normalized.slice(offset, offset + 2), 16) / 255,
-  );
+  return [0, 2, 4].map((offset) => Number.parseInt(normalized.slice(offset, offset + 2), 16) / 255);
 }
 
 function relativeLuminance(value) {
@@ -43,14 +41,8 @@ const primarySurface = extractCssHex(
 const ink = extractCssHex(/--ink:\s*(#[0-9a-f]{6})\s*;/i, '--ink');
 const muted = extractCssHex(/--muted:\s*(#[0-9a-f]{6})\s*;/i, '--muted');
 const accent = extractCssHex(/--accent:\s*(#[0-9a-f]{6})\s*;/i, '--accent');
-const accentStrong = extractCssHex(
-  /--accent-strong:\s*(#[0-9a-f]{6})\s*;/i,
-  '--accent-strong',
-);
-const focusRing = extractCssHex(
-  /outline:\s*3px\s+solid\s+(#[0-9a-f]{6})\s*;/i,
-  'focus ring',
-);
+const accentStrong = extractCssHex(/--accent-strong:\s*(#[0-9a-f]{6})\s*;/i, '--accent-strong');
+const focusRing = extractCssHex(/outline:\s*3px\s+solid\s+(#[0-9a-f]{6})\s*;/i, 'focus ring');
 
 const pairs = [
   {
