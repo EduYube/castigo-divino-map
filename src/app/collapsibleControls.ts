@@ -19,8 +19,10 @@ interface CollapsibleSectionOptions {
 const MOBILE_CONTROLS_MEDIA_QUERY = '(max-width: 48rem)';
 
 export function getInitialCollapsibleControlState(
-  _isMobileViewport: boolean,
+  isMobileViewport: boolean,
 ): CollapsibleControlInitialState {
+  void isMobileViewport;
+
   return {
     searchExpanded: false,
     filtersExpanded: false,
