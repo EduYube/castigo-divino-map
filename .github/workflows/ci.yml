@@ -106,4 +106,4 @@ jobs:
 
       - name: Stop local Supabase database
         if: always()
-        run: npm run supabase:stop
+        run: npx supabase stop --no-backup
