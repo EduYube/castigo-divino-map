@@ -128,7 +128,7 @@ async function configureBackend(page: Page): Promise<void> {
   await page.addInitScript((projectUrl) => {
     window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
       projectUrl,
-      publishableKey: 'map037-public-test-key',
+      publishableKey: 'sb_publishable_map037_test_key',
       timeoutMs: 400,
       retryDelaysMs: [0, 0, 0],
     };
