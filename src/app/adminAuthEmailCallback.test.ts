@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest';
 
-import { parseAdminAuthEmailCallback } from './adminAuthEmailCallback';
+import {
+  meetsAdminPasswordCharacterRequirements,
+  parseAdminAuthEmailCallback,
+} from './adminAuthEmailCallback';
 
 function encodeBase64Url(value: string): string {
   return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
@@ -61,4 +64,17 @@ describe('parseAdminAuthEmailCallback', () => {
       ),
     ).toBeNull();
   });
+});
+
+describe('meetsAdminPasswordCharacterRequirements', () => {
+  test('accepts a password containing lowercase, uppercase, digit and symbol', () => {
+    expect(meetsAdminPasswordCharacterRequirements('AtlasSeguro1!')).toBe(true);
+  });
+
+  test.each(['atlasseguro1!', 'ATLASSEGURO1!', 'AtlasSeguro!', 'AtlasSeguro1'])(
+    'rejects a password missing one required character class: %s',
+    (password) => {
+      expect(meetsAdminPasswordCharacterRequirements(password)).toBe(false);
+    },
+  );
 });
