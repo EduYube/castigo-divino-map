@@ -21,7 +21,10 @@ interface CompactPinDetailsElements {
   readonly panel: HTMLElement;
   readonly content: HTMLElement;
   readonly closeButton: HTMLButtonElement;
+  readonly returnButton: HTMLButtonElement;
 }
+
+const MOBILE_SHEET_MEDIA_QUERY = '(max-width: 48rem)';
 
 function getRequiredElement<T extends HTMLElement>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector);
@@ -33,13 +36,31 @@ function getRequiredElement<T extends HTMLElement>(root: ParentNode, selector: s
   return element;
 }
 
+function createReturnButton(closeButton: HTMLButtonElement): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'place-details__return';
+  button.dataset.placeDetailsReturn = '';
+  button.textContent = 'Volver al pin';
+  button.setAttribute('aria-label', 'Volver al pin seleccionado');
+  closeButton.before(button);
+  return button;
+}
+
 function resolveElements(root: ParentNode): CompactPinDetailsElements {
+  const closeButton = getRequiredElement<HTMLButtonElement>(root, '[data-place-details-close]');
+
   return {
     workspace: getRequiredElement(root, '[data-map-workspace]'),
     panel: getRequiredElement(root, '[data-place-details]'),
     content: getRequiredElement(root, '[data-place-details-content]'),
-    closeButton: getRequiredElement<HTMLButtonElement>(root, '[data-place-details-close]'),
+    closeButton,
+    returnButton: createReturnButton(closeButton),
   };
+}
+
+function isMobileSheet(): boolean {
+  return typeof window.matchMedia === 'function' && window.matchMedia(MOBILE_SHEET_MEDIA_QUERY).matches;
 }
 
 function appendTextElement<K extends keyof HTMLElementTagNameMap>(
@@ -245,8 +266,23 @@ export function mountCompactPinDetails(
 ): CompactPinDetailsController {
   const elements = resolveElements(root);
   const handleClose = (): void => options.onClose();
+  const handleReturnToPin = (): void => {
+    elements.workspace
+      .querySelector<HTMLElement>('.campaign-marker-icon[aria-pressed="true"]')
+      ?.focus({ preventScroll: true });
+  };
+  const handleKeyDown = (event: KeyboardEvent): void => {
+    if (event.key !== 'Escape' || elements.panel.hidden || !isMobileSheet()) {
+      return;
+    }
+
+    event.preventDefault();
+    options.onClose();
+  };
 
   elements.closeButton.addEventListener('click', handleClose);
+  elements.returnButton.addEventListener('click', handleReturnToPin);
+  elements.workspace.addEventListener('keydown', handleKeyDown);
 
   return {
     show(details, showOptions = {}): void {
@@ -269,9 +305,15 @@ export function mountCompactPinDetails(
       else delete elements.panel.dataset.entityId;
       elements.workspace.dataset.detailsOpen = 'true';
       elements.closeButton.setAttribute('aria-label', `Cerrar la ficha de ${details.name}`);
+      elements.closeButton.setAttribute('aria-keyshortcuts', 'Escape');
+      elements.returnButton.setAttribute('aria-label', `Volver al pin de ${details.name}`);
+
+      if (!canReuseContent) {
+        elements.panel.scrollTop = 0;
+      }
 
       if (showOptions.focus !== false) {
-        title.focus({ preventScroll: false });
+        title.focus({ preventScroll: isMobileSheet() });
       }
     },
     hide(): void {
@@ -283,10 +325,15 @@ export function mountCompactPinDetails(
       delete elements.panel.dataset.detailSource;
       delete elements.workspace.dataset.detailsOpen;
       elements.closeButton.setAttribute('aria-label', 'Cerrar la ficha compacta');
+      elements.closeButton.removeAttribute('aria-keyshortcuts');
+      elements.returnButton.setAttribute('aria-label', 'Volver al pin seleccionado');
       elements.content.replaceChildren();
     },
     destroy(): void {
       elements.closeButton.removeEventListener('click', handleClose);
+      elements.returnButton.removeEventListener('click', handleReturnToPin);
+      elements.workspace.removeEventListener('keydown', handleKeyDown);
+      elements.returnButton.remove();
     },
   };
 }
