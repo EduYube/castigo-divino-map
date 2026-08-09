@@ -1,0 +1,186 @@
+{
+  "categories": [
+    {
+      "id": "category-landmark",
+      "slug": "lugares-destacados",
+      "name": "Lugar destacado",
+      "description": "Accidentes geográficos y puntos de referencia públicos del mapa.",
+      "publication_status": "published"
+    },
+    {
+      "id": "category-settlement",
+      "slug": "asentamientos",
+      "name": "Asentamiento",
+      "description": "Ciudades, villas y otros núcleos habitados conocidos públicamente.",
+      "publication_status": "published"
+    }
+  ],
+  "tags": [
+    {
+      "id": "coastal",
+      "name": "Costero",
+      "description": "Lugar situado junto a la costa o relacionado con navegación marítima.",
+      "publication_status": "published"
+    },
+    {
+      "id": "demo-data",
+      "name": "Dato de demostración",
+      "description": "Contenido neutro creado únicamente para demostrar el modelo de datos.",
+      "publication_status": "published"
+    },
+    {
+      "id": "mountain-pass",
+      "name": "Paso de montaña",
+      "description": "Ruta pública que atraviesa una zona montañosa.",
+      "publication_status": "published"
+    },
+    {
+      "id": "trade-route",
+      "name": "Ruta comercial",
+      "description": "Lugar relacionado públicamente con una ruta de intercambio o viaje.",
+      "publication_status": "published"
+    }
+  ],
+  "players": [],
+  "entities": [
+    {
+      "id": "place-demo-harbor",
+      "slug": "puerto-de-demostracion",
+      "entity_type": "location",
+      "visibility": "pin",
+      "name": "Puerto de demostración",
+      "name_language": "en",
+      "summary": "",
+      "description": "",
+      "x": 1080.5,
+      "y": 820,
+      "category_id": "category-settlement",
+      "publication_status": "published"
+    },
+    {
+      "id": "place-demo-pass",
+      "slug": "paso-de-demostracion",
+      "entity_type": "location",
+      "visibility": "pin",
+      "name": "Paso de demostración",
+      "name_language": "en",
+      "summary": "",
+      "description": "",
+      "x": 2240,
+      "y": 1240.25,
+      "category_id": "category-landmark",
+      "publication_status": "published"
+    }
+  ],
+  "entityAliases": [
+    {
+      "id": "alias-demo-harbor-puerto-ejemplo",
+      "entity_id": "place-demo-harbor",
+      "language": "en",
+      "value": "Puerto de ejemplo",
+      "publication_status": "published"
+    },
+    {
+      "id": "alias-demo-pass-desfiladero-ejemplo",
+      "entity_id": "place-demo-pass",
+      "language": "en",
+      "value": "Desfiladero de ejemplo",
+      "publication_status": "published"
+    }
+  ],
+  "entityTags": [
+    {
+      "id": "entity-tag-demo-harbor-coastal",
+      "entity_id": "place-demo-harbor",
+      "tag_id": "coastal",
+      "publication_status": "published"
+    },
+    {
+      "id": "entity-tag-demo-harbor-demo-data",
+      "entity_id": "place-demo-harbor",
+      "tag_id": "demo-data",
+      "publication_status": "published"
+    },
+    {
+      "id": "entity-tag-demo-harbor-trade-route",
+      "entity_id": "place-demo-harbor",
+      "tag_id": "trade-route",
+      "publication_status": "published"
+    },
+    {
+      "id": "entity-tag-demo-pass-demo-data",
+      "entity_id": "place-demo-pass",
+      "tag_id": "demo-data",
+      "publication_status": "published"
+    },
+    {
+      "id": "entity-tag-demo-pass-mountain-pass",
+      "entity_id": "place-demo-pass",
+      "tag_id": "mountain-pass",
+      "publication_status": "published"
+    },
+    {
+      "id": "entity-tag-demo-pass-trade-route",
+      "entity_id": "place-demo-pass",
+      "tag_id": "trade-route",
+      "publication_status": "published"
+    }
+  ],
+  "dispositions": [],
+  "characterLocationRelations": [],
+  "notes": [
+    {
+      "id": "note-demo-harbor-overview",
+      "slug": "puerto-de-demostracion-resumen",
+      "entity_id": "place-demo-harbor",
+      "title": "Información pública de demostración",
+      "body": "Este puerto ficticio sirve para comprobar fichas, búsquedas y filtros sin representar hechos secretos ni confirmados de la campaña.",
+      "sort_order": 0,
+      "publication_status": "published"
+    },
+    {
+      "id": "note-demo-pass-travel",
+      "slug": "paso-de-demostracion-viaje",
+      "entity_id": "place-demo-pass",
+      "title": "Referencia pública de viaje",
+      "body": "Este paso ficticio demuestra cómo una nota pública puede relacionar un lugar con etiquetas de viaje y terreno.",
+      "sort_order": 0,
+      "publication_status": "published"
+    }
+  ],
+  "noteTags": [
+    {
+      "id": "note-tag-demo-harbor-overview-coastal",
+      "note_id": "note-demo-harbor-overview",
+      "tag_id": "coastal",
+      "publication_status": "published"
+    },
+    {
+      "id": "note-tag-demo-harbor-overview-demo-data",
+      "note_id": "note-demo-harbor-overview",
+      "tag_id": "demo-data",
+      "publication_status": "published"
+    },
+    {
+      "id": "note-tag-demo-pass-travel-demo-data",
+      "note_id": "note-demo-pass-travel",
+      "tag_id": "demo-data",
+      "publication_status": "published"
+    },
+    {
+      "id": "note-tag-demo-pass-travel-mountain-pass",
+      "note_id": "note-demo-pass-travel",
+      "tag_id": "mountain-pass",
+      "publication_status": "published"
+    },
+    {
+      "id": "note-tag-demo-pass-travel-trade-route",
+      "note_id": "note-demo-pass-travel",
+      "tag_id": "trade-route",
+      "publication_status": "published"
+    }
+  ],
+  "geographicNames": [],
+  "geographicAliases": [],
+  "locationEvents": []
+}

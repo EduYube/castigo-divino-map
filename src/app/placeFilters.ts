@@ -4,6 +4,7 @@ import type { CampaignCatalog, CampaignCategory, TagId } from '../data/model';
 export interface PlaceFiltersController {
   getState(): PublicPlaceFilterState;
   setState(state: PublicPlaceFilterState, options?: PlaceFiltersStateUpdateOptions): void;
+  setCatalog(catalog: CampaignCatalog): void;
   clear(): void;
   setMatchSummary(matchCount: number, activePlaceMatches: boolean | null): void;
   destroy(): void;
@@ -107,46 +108,13 @@ export function mountPlaceFilters(
   const elements = resolveElements(root);
   const selectedCategoryIds = new Set<CampaignCategory['id']>();
   const selectedTagIds = new Set<TagId>();
-
-  const categoryPlaceCounts = new Map(
-    options.catalog.categories.map((category) => [
-      category.id,
-      options.catalog.places.filter(({ categoryId }) => categoryId === category.id).length,
-    ]),
-  );
-  const tagPlaceCounts = new Map(
-    options.catalog.tags.map((tag) => [
-      tag.id,
-      options.catalog.places.filter((place) =>
-        getPublicPlaceFilterTagIds(options.catalog, place).includes(tag.id),
-      ).length,
-    ]),
-  );
-
-  elements.categories.replaceChildren(
-    ...options.catalog.categories.map((category) =>
-      createFilterOption(
-        'category',
-        category.id,
-        category.name,
-        category.description,
-        categoryPlaceCounts.get(category.id) ?? 0,
-      ),
-    ),
-  );
-  elements.tags.replaceChildren(
-    ...options.catalog.tags.map((tag) =>
-      createFilterOption('tag', tag.id, tag.name, tag.description, tagPlaceCounts.get(tag.id) ?? 0),
-    ),
-  );
+  let catalog = options.catalog;
 
   const getState = (): PublicPlaceFilterState => ({
-    selectedCategoryIds: options.catalog.categories
+    selectedCategoryIds: catalog.categories
       .filter(({ id }) => selectedCategoryIds.has(id))
       .map(({ id }) => id),
-    selectedTagIds: options.catalog.tags
-      .filter(({ id }) => selectedTagIds.has(id))
-      .map(({ id }) => id),
+    selectedTagIds: catalog.tags.filter(({ id }) => selectedTagIds.has(id)).map(({ id }) => id),
   });
 
   const renderCollapsedSummary = (): void => {
@@ -184,6 +152,47 @@ export function mountPlaceFilters(
     });
   };
 
+  const renderOptions = (): void => {
+    const categoryPlaceCounts = new Map(
+      catalog.categories.map((category) => [
+        category.id,
+        catalog.places.filter(({ categoryId }) => categoryId === category.id).length,
+      ]),
+    );
+    const tagPlaceCounts = new Map(
+      catalog.tags.map((tag) => [
+        tag.id,
+        catalog.places.filter((place) =>
+          getPublicPlaceFilterTagIds(catalog, place).includes(tag.id),
+        ).length,
+      ]),
+    );
+
+    elements.categories.replaceChildren(
+      ...catalog.categories.map((category) =>
+        createFilterOption(
+          'category',
+          category.id,
+          category.name,
+          category.description,
+          categoryPlaceCounts.get(category.id) ?? 0,
+        ),
+      ),
+    );
+    elements.tags.replaceChildren(
+      ...catalog.tags.map((tag) =>
+        createFilterOption(
+          'tag',
+          tag.id,
+          tag.name,
+          tag.description,
+          tagPlaceCounts.get(tag.id) ?? 0,
+        ),
+      ),
+    );
+    synchronizeControls();
+  };
+
   const setState = (
     state: PublicPlaceFilterState,
     stateOptions: PlaceFiltersStateUpdateOptions = {},
@@ -193,12 +202,12 @@ export function mountPlaceFilters(
 
     selectedCategoryIds.clear();
     selectedTagIds.clear();
-    options.catalog.categories.forEach(({ id }) => {
+    catalog.categories.forEach(({ id }) => {
       if (nextCategoryIds.has(id)) {
         selectedCategoryIds.add(id);
       }
     });
-    options.catalog.tags.forEach(({ id }) => {
+    catalog.tags.forEach(({ id }) => {
       if (nextTagIds.has(id)) {
         selectedTagIds.add(id);
       }
@@ -209,6 +218,25 @@ export function mountPlaceFilters(
     if (stateOptions.notify !== false) {
       options.onChange();
     }
+  };
+
+  const setCatalog = (nextCatalog: CampaignCatalog): void => {
+    catalog = nextCatalog;
+    const validCategoryIds = new Set(catalog.categories.map(({ id }) => id));
+    const validTagIds = new Set(catalog.tags.map(({ id }) => id));
+
+    selectedCategoryIds.forEach((id) => {
+      if (!validCategoryIds.has(id)) {
+        selectedCategoryIds.delete(id);
+      }
+    });
+    selectedTagIds.forEach((id) => {
+      if (!validTagIds.has(id)) {
+        selectedTagIds.delete(id);
+      }
+    });
+    renderOptions();
+    renderCollapsedSummary();
   };
 
   const handleChange = (event: Event): void => {
@@ -255,7 +283,7 @@ export function mountPlaceFilters(
     elements.clearButton.focus();
   };
 
-  synchronizeControls();
+  renderOptions();
   renderCollapsedSummary();
   elements.root.addEventListener('change', handleChange);
   elements.clearButton.addEventListener('click', handleClear);
@@ -263,6 +291,7 @@ export function mountPlaceFilters(
   return {
     getState,
     setState,
+    setCatalog,
     clear,
     setMatchSummary(matchCount: number, activePlaceMatches: boolean | null): void {
       elements.root.dataset.matchCount = String(matchCount);

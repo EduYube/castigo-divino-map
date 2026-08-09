@@ -6,6 +6,7 @@ import {
   type PublicCatalogEnvelope,
   type PublicCatalogRepository,
 } from '../../data-access/publicCatalog';
+import { parsePublicCatalogSnapshotV2 } from '../supabase/publicCatalogCodec';
 
 export const PUBLIC_SNAPSHOT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -50,9 +51,7 @@ export async function parsePublicCatalogSnapshotV1(
     throw new PublicDataRepositoryError(
       'invalid-snapshot',
       'El snapshot público no es un objeto.',
-      {
-        source: 'snapshot',
-      },
+      { source: 'snapshot' },
     );
   }
 
@@ -125,6 +124,37 @@ export async function parsePublicCatalogSnapshotV1(
   };
 }
 
+async function parseBundledSnapshot(
+  value: unknown,
+  now: () => number,
+): Promise<PublicCatalogEnvelope> {
+  if (isRecord(value) && value.schemaVersion === 2) {
+    try {
+      const parsed = await parsePublicCatalogSnapshotV2(value, now);
+      return {
+        ...parsed,
+        source: 'bundled-snapshot',
+        metadata: {
+          ...parsed.metadata,
+          stale: now() - Date.parse(parsed.metadata.generatedAt) > PUBLIC_SNAPSHOT_MAX_AGE_MS,
+        },
+      };
+    } catch (error) {
+      if (error instanceof PublicDataRepositoryError) {
+        throw new PublicDataRepositoryError(error.code, error.message, {
+          source: 'snapshot',
+          recoverable: error.recoverable,
+          status: error.status,
+          cause: error,
+        });
+      }
+      throw error;
+    }
+  }
+
+  return parsePublicCatalogSnapshotV1(value, now);
+}
+
 export class BundledPublicCatalogRepository implements PublicCatalogRepository {
   readonly #url: string;
   readonly #fetchImplementation: typeof fetch;
@@ -182,10 +212,14 @@ export class BundledPublicCatalogRepository implements PublicCatalogRepository {
       );
     }
 
-    return parsePublicCatalogSnapshotV1(payload, this.#now);
+    return parseBundledSnapshot(payload, this.#now);
   }
 }
 
+/**
+ * Compatibility helper retained for tests and controlled rollback only.
+ * Production runtime no longer registers this repository after MAP-028.
+ */
 export class StaticPublicCatalogRepository implements PublicCatalogRepository {
   readonly #catalog: CampaignCatalog;
   readonly #sourceRevision: string;

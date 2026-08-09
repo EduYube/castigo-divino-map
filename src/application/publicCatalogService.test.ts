@@ -65,7 +65,7 @@ function repository(load: PublicCatalogRepository['load']): PublicCatalogReposit
 }
 
 describe('ResilientPublicCatalogService', () => {
-  test('keeps the Beta 0.1 snapshot visible while reporting a valid remote backend', async () => {
+  test('promotes a valid remote catalog to the visible source while keeping the snapshot as fallback', async () => {
     const service = new ResilientPublicCatalogService({
       fallbackRepositories: [repository(async () => FALLBACK_ENVELOPE)],
       remoteRepository: repository(async () => REMOTE_ENVELOPE),
@@ -79,9 +79,10 @@ describe('ResilientPublicCatalogService', () => {
 
     expect(initial.source).toBe('bundled-snapshot');
     expect(connected.backend.state).toBe('connected');
-    expect(connected.source).toBe('bundled-snapshot');
+    expect(connected.source).toBe('supabase');
     expect(connected.remoteSource).toBe('supabase');
-    expect(connected.data?.contract).toBe('beta01');
+    expect(connected.data?.contract).toBe('beta02');
+    expect(connected.degradation.usingFallback).toBe(false);
   });
 
   test('classifies an aborted slow request as a recoverable timeout', async () => {

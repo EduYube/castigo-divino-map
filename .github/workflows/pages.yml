@@ -1,4 +1,4 @@
-name: Deploy Beta 0.1 to GitHub Pages
+name: Deploy public atlas to GitHub Pages
 
 on:
   workflow_run:
@@ -53,6 +53,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Verify public snapshot against Supabase
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: npm run snapshot:verify:remote
 
       - name: Check formatting for manual recovery
         if: github.event_name == 'workflow_dispatch'
@@ -124,10 +130,10 @@ jobs:
       - name: Record published URL
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
-        run: echo "Published Beta 0.1 at ${PAGE_URL}" >> "${GITHUB_STEP_SUMMARY}"
+        run: echo "Published public atlas at ${PAGE_URL}" >> "${GITHUB_STEP_SUMMARY}"
 
   smoke:
-    name: Validate published Beta 0.1
+    name: Validate published atlas
     needs:
       - build
       - deploy

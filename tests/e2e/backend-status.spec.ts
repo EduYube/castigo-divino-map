@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs';
+
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
+
+import { PUBLIC_CATALOG_TABLE_QUERIES } from '../../src/data-access/publicCatalogQueryContract.js';
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
@@ -9,12 +13,51 @@ const TEST_MAP = `
     <rect width="3600" height="2329" fill="#d9d5ca" />
   </svg>
 `;
+const BETA01_FIXTURE = JSON.parse(
+  readFileSync(new URL('../../scripts/fixtures/beta01-public-rows.json', import.meta.url), 'utf8'),
+) as Record<string, unknown>;
+const FIXTURE_KEYS_BY_TABLE: Readonly<Record<string, string>> = {
+  categories: 'categories',
+  tags: 'tags',
+  players: 'players',
+  map_entities: 'entities',
+  entity_aliases: 'entityAliases',
+  entity_tags: 'entityTags',
+  entity_player_dispositions: 'dispositions',
+  character_location_relations: 'characterLocationRelations',
+  public_notes: 'notes',
+  public_note_tags: 'noteTags',
+  geographic_names: 'geographicNames',
+  geographic_name_aliases: 'geographicAliases',
+  character_location_events: 'locationEvents',
+};
 
 type BackendMode = 'success' | 'failure';
 
 interface PublicDataTestBackend {
   setMode(mode: BackendMode): void;
   getRequestCount(): number;
+}
+
+function projectFixtureRows(table: string): readonly Record<string, unknown>[] {
+  const query = Object.values(PUBLIC_CATALOG_TABLE_QUERIES).find(({ name }) => name === table);
+  const fixtureKey = FIXTURE_KEYS_BY_TABLE[table];
+  const fixtureRows = fixtureKey ? BETA01_FIXTURE[fixtureKey] : undefined;
+
+  if (!query || !Array.isArray(fixtureRows)) {
+    return [];
+  }
+
+  const fields = query.select.split(',');
+
+  return fixtureRows.map((entry) => {
+    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
+      throw new Error(`Expected fixture row object for ${table}.`);
+    }
+
+    const row = entry as Record<string, unknown>;
+    return Object.fromEntries(fields.map((field) => [field, row[field]]));
+  });
 }
 
 async function configurePublicDataTest(page: Page): Promise<PublicDataTestBackend> {
@@ -40,11 +83,16 @@ async function configurePublicDataTest(page: Page): Promise<PublicDataTestBacken
       return;
     }
 
+    const match = /\/rest\/v1\/([^?]+)/.exec(route.request().url());
+    const table = match?.[1] ?? '';
+    const rows = projectFixtureRows(table);
+    const contentRange = rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
+
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      headers: { 'Content-Range': '*/0' },
-      body: '[]',
+      headers: { 'Content-Range': contentRange },
+      body: JSON.stringify(rows),
     });
   });
 
@@ -62,7 +110,7 @@ async function expectConnected(status: Locator, backend: PublicDataTestBackend):
   await expect(status).toHaveAttribute('data-backend-state', 'connected');
   await expect(status).toHaveAttribute('data-backend-reason', 'none');
   await expect(status).toHaveAttribute('data-backend-attempt', '1');
-  await expect.poll(() => backend.getRequestCount()).toBeGreaterThanOrEqual(12);
+  await expect.poll(() => backend.getRequestCount()).toBeGreaterThanOrEqual(13);
 }
 
 test('falls back and recovers without changing search, filters, selection or URL', async ({

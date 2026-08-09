@@ -17,9 +17,10 @@
     "verify:security": "node scripts/verify-supabase-security.mjs",
     "snapshot:generate": "node scripts/generate-public-snapshot.mjs",
     "snapshot:verify": "node scripts/verify-public-snapshot.mjs",
+    "snapshot:verify:migration": "node scripts/verify-public-snapshot.mjs --migration-fixture",
     "lint": "eslint .",
-    "format": "prettier --write \"src/**/*.{ts,json}\" \"public/**/*.json\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
-    "format:check": "prettier --check --end-of-line auto \"src/**/*.{ts,json}\" \"public/**/*.json\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\" \"public/**/*.json\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
+    "format:check": "prettier --check --end-of-line auto \"src/**/*.{ts,js,json}\" \"public/**/*.json\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:data": "npm run snapshot:verify && vitest run src/data/validate.test.ts src/infrastructure/snapshot/publicCatalogSnapshot.test.ts",
@@ -38,8 +39,11 @@
     "supabase:db:test:upgrade": "node scripts/test-supabase-upgrade.mjs",
     "supabase:db:test:concurrency": "node scripts/test-supabase-concurrency.mjs && node scripts/test-public-request-moderation-concurrency.mjs",
     "supabase:db:lint": "supabase db lint --local --fail-on warning",
-    "supabase:db:validate": "npm run supabase:db:test:upgrade && npm run supabase:db:reset && npm run supabase:db:lint && npm run supabase:db:test && npm run supabase:db:test:concurrency",
-    "supabase:types": "supabase gen types typescript --local --schema public > src/database.types.ts"
+    "supabase:db:validate": "npm run supabase:db:test:upgrade && npm run supabase:db:reset && npm run supabase:db:test:map028 && npm run supabase:db:lint && npm run supabase:db:test && npm run supabase:db:test:concurrency",
+    "supabase:types": "supabase gen types typescript --local --schema public > src/database.types.ts",
+    "snapshot:generate:fixture": "node scripts/generate-public-snapshot.mjs --fixture",
+    "snapshot:verify:remote": "node scripts/verify-public-snapshot.mjs --remote",
+    "supabase:db:test:map028": "node scripts/test-map028-data-migration.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4"

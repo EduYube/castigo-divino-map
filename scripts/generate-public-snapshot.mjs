@@ -1,58 +1,34 @@
-import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { readFile, writeFile } from 'node:fs/promises';
 
-const SOURCE_PATH = 'src/data/catalog.json';
-const SNAPSHOT_PATH = 'public/data/public-catalog.snapshot.json';
+import {
+  buildPublicSnapshotContent,
+  checksum,
+  FIXTURE_PATH,
+  loadFixtureRows,
+  loadRemotePublicRows,
+  SNAPSHOT_PATH,
+  snapshotContent,
+  toSnapshot,
+} from './public-snapshot-lib.mjs';
 
-function canonicalize(value) {
-  if (Array.isArray(value)) {
-    return value.map(canonicalize);
-  }
-
-  if (typeof value === 'object' && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, entryValue]) => [key, canonicalize(entryValue)]),
-    );
-  }
-
-  return value;
-}
-
-function checksum(value) {
-  return `sha256:${createHash('sha256')
-    .update(JSON.stringify(canonicalize(value)))
-    .digest('hex')}`;
-}
-
-const catalog = JSON.parse(await readFile(SOURCE_PATH, 'utf8'));
-const sourceRevision = checksum(catalog);
+const useFixture = process.argv.includes('--fixture');
+const raw = useFixture ? await loadFixtureRows(FIXTURE_PATH) : await loadRemotePublicRows();
+const content = buildPublicSnapshotContent(raw);
+const nextChecksum = checksum(content);
 let generatedAt = new Date().toISOString();
 
 try {
-  const currentSnapshot = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'));
-
-  if (
-    currentSnapshot.sourceRevision === sourceRevision &&
-    typeof currentSnapshot.generatedAt === 'string'
-  ) {
-    generatedAt = currentSnapshot.generatedAt;
+  const current = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'));
+  if (current.checksum === nextChecksum && checksum(snapshotContent(current)) === nextChecksum) {
+    generatedAt = current.generatedAt;
   }
 } catch {
-  // The first generation intentionally uses the current UTC time.
+  // A missing or invalid previous snapshot simply gets a fresh generatedAt value.
 }
 
-const content = {
-  schemaVersion: 1,
-  contract: 'beta01',
-  generatedAt,
-  sourceRevision,
-  catalog,
-};
-const snapshot = { ...content, checksum: checksum(content) };
+const snapshot = toSnapshot(content, generatedAt);
+await writeFile(SNAPSHOT_PATH, `${JSON.stringify(snapshot, null, 2)}\n`);
 
-await mkdir(dirname(SNAPSHOT_PATH), { recursive: true });
-await writeFile(SNAPSHOT_PATH, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
-console.log(`Generated ${SNAPSHOT_PATH} from ${SOURCE_PATH} (${sourceRevision}).`);
+console.log(
+  `Generated Beta 0.2 public snapshot from ${useFixture ? 'the MAP-028 CI fixture' : 'Supabase published data'}: ${snapshot.checksum}.`,
+);

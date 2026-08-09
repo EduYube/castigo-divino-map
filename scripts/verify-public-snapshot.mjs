@@ -1,66 +1,145 @@
-import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
-const SOURCE_PATH = 'src/data/catalog.json';
-const SNAPSHOT_PATH = 'public/data/public-catalog.snapshot.json';
+import {
+  buildPublicSnapshotContent,
+  checksum,
+  FIXTURE_PATH,
+  loadFixtureRows,
+  loadRemotePublicRows,
+  SNAPSHOT_PATH,
+  snapshotContent,
+} from './public-snapshot-lib.mjs';
 
-function fail(message) {
-  throw new Error(`Public snapshot verification failed: ${message}`);
+const verifyRemote = process.argv.includes('--remote');
+const verifyMigrationFixture = process.argv.includes('--migration-fixture');
+const snapshot = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'));
+
+if (verifyRemote && verifyMigrationFixture) {
+  throw new Error('Choose either --remote or --migration-fixture, not both.');
 }
 
-function canonicalize(value) {
-  if (Array.isArray(value)) {
-    return value.map(canonicalize);
-  }
+if (snapshot.schemaVersion !== 2) {
+  throw new Error('The committed public snapshot must use schemaVersion 2.');
+}
+if (!Number.isFinite(Date.parse(snapshot.generatedAt))) {
+  throw new Error('The committed public snapshot has an invalid generatedAt value.');
+}
 
-  if (typeof value === 'object' && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, entryValue]) => [key, canonicalize(entryValue)]),
+const committedContent = snapshotContent(snapshot);
+const committedChecksum = checksum(committedContent);
+if (snapshot.checksum !== committedChecksum || snapshot.sourceRevision !== committedChecksum) {
+  throw new Error('The committed public snapshot checksum/sourceRevision is invalid.');
+}
+
+if (verifyRemote || verifyMigrationFixture) {
+  const raw = verifyRemote ? await loadRemotePublicRows() : await loadFixtureRows(FIXTURE_PATH);
+  const expectedContent = buildPublicSnapshotContent(raw);
+  const expectedChecksum = checksum(expectedContent);
+  const sourceLabel = verifyRemote ? 'Supabase published data' : 'the MAP-028 migration fixture';
+
+  if (expectedChecksum !== committedChecksum) {
+    throw new Error(
+      `Public snapshot drift: committed ${committedChecksum}, ${sourceLabel} ${expectedChecksum}.`,
     );
   }
 
-  return value;
+  if (JSON.stringify(committedContent) !== JSON.stringify(expectedContent)) {
+    throw new Error(`Public snapshot order/content differs from ${sourceLabel}.`);
+  }
 }
 
-function checksum(value) {
-  return `sha256:${createHash('sha256')
-    .update(JSON.stringify(canonicalize(value)))
-    .digest('hex')}`;
-}
-
-const catalog = JSON.parse(await readFile(SOURCE_PATH, 'utf8'));
-const snapshot = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'));
-
-if (snapshot.schemaVersion !== 1 || snapshot.contract !== 'beta01') {
-  fail('the committed snapshot does not use the Beta 0.1 compatibility contract');
-}
-
-if (!snapshot.generatedAt || !Number.isFinite(Date.parse(snapshot.generatedAt))) {
-  fail('generatedAt is missing or invalid');
-}
-
-const expectedSourceRevision = checksum(catalog);
-
-if (snapshot.sourceRevision !== expectedSourceRevision) {
-  fail('sourceRevision does not match src/data/catalog.json; run npm run snapshot:generate');
-}
-
-if (JSON.stringify(snapshot.catalog) !== JSON.stringify(catalog)) {
-  fail('catalog content does not match src/data/catalog.json; run npm run snapshot:generate');
-}
-
-const expectedChecksum = checksum({
-  schemaVersion: 1,
-  contract: 'beta01',
-  generatedAt: snapshot.generatedAt,
-  sourceRevision: snapshot.sourceRevision,
-  catalog: snapshot.catalog,
+const migrationFixture = await loadFixtureRows(FIXTURE_PATH);
+const expectedFixtureContent = buildPublicSnapshotContent(migrationFixture);
+const contaminatedFixture = structuredClone(migrationFixture);
+contaminatedFixture.categories.push({
+  id: 'category-draft-synthetic',
+  slug: 'draft-synthetic',
+  name: 'Draft synthetic',
+  description: 'Must never reach the public snapshot.',
+  publication_status: 'draft',
 });
+contaminatedFixture.tags.push({
+  id: 'tag-archived-synthetic',
+  name: 'Archived synthetic',
+  description: 'Must never reach the public snapshot.',
+  publication_status: 'archived',
+});
+contaminatedFixture.entities.push({
+  id: 'entity-draft-synthetic',
+  slug: 'draft-synthetic',
+  entity_type: 'location',
+  visibility: 'pin',
+  name: 'Draft synthetic',
+  name_language: 'en',
+  summary: 'Protected draft content',
+  description: 'Protected draft content',
+  x: 1,
+  y: 1,
+  category_id: 'category-settlement',
+  publication_status: 'draft',
+});
+contaminatedFixture.entityAliases.push({
+  id: 'alias-draft-synthetic',
+  entity_id: 'place-demo-harbor',
+  language: 'en',
+  value: 'Protected alias',
+  publication_status: 'draft',
+});
+contaminatedFixture.entityTags.push({
+  id: 'entity-tag-draft-synthetic',
+  entity_id: 'place-demo-harbor',
+  tag_id: 'coastal',
+  publication_status: 'draft',
+});
+contaminatedFixture.notes.push({
+  id: 'note-draft-synthetic',
+  slug: 'draft-synthetic',
+  entity_id: 'place-demo-harbor',
+  title: 'Protected draft note',
+  body: 'Must never reach the public snapshot.',
+  sort_order: 99,
+  publication_status: 'draft',
+});
+contaminatedFixture.noteTags.push({
+  id: 'note-tag-draft-synthetic',
+  note_id: 'note-demo-harbor-overview',
+  tag_id: 'coastal',
+  publication_status: 'draft',
+});
+contaminatedFixture.publicRequests = [
+  {
+    sender_name: 'Private sender',
+    reason: 'Administrative input must be ignored.',
+    moderation_note: 'Protected moderation data',
+    request_status: 'pending',
+  },
+];
 
-if (snapshot.checksum !== expectedChecksum) {
-  fail('checksum does not match the committed snapshot content');
+const contaminatedContent = buildPublicSnapshotContent(contaminatedFixture);
+if (JSON.stringify(contaminatedContent) !== JSON.stringify(expectedFixtureContent)) {
+  throw new Error('Draft, archived or administrative fixture data changed the public projection.');
 }
 
-console.log(`Verified ${SNAPSHOT_PATH} (${snapshot.sourceRevision}).`);
+const serialized = JSON.stringify(snapshot);
+for (const forbidden of [
+  '"publication_status"',
+  '"request_status"',
+  '"moderation_note"',
+  '"sender_name"',
+  '"reason"',
+  '"public_requests"',
+  '"publicRequests"',
+]) {
+  if (serialized.includes(forbidden)) {
+    throw new Error(`Public snapshot leaked a non-public field or domain marker: ${forbidden}.`);
+  }
+}
+
+const verificationTarget = verifyRemote
+  ? 'Supabase published data'
+  : verifyMigrationFixture
+    ? 'the MAP-028 migration fixture'
+    : 'its canonical public content and publication filters';
+console.log(
+  `Verified Beta 0.2 public snapshot against ${verificationTarget}: ${committedChecksum}.`,
+);
