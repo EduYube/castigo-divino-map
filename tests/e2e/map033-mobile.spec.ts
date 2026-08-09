@@ -48,8 +48,9 @@ async function expectTouchTarget(locator: Locator): Promise<void> {
   expect(box).not.toBeNull();
   if (!box) return;
 
-  expect(box.width).toBeGreaterThanOrEqual(44);
-  expect(box.height).toBeGreaterThanOrEqual(44);
+  // Firefox can report a 44 CSS px target a tiny subpixel below 44.
+  expect(box.width).toBeGreaterThanOrEqual(43.9);
+  expect(box.height).toBeGreaterThanOrEqual(43.9);
 }
 
 async function captureReference(page: Page, testInfo: TestInfo, label: string): Promise<void> {
