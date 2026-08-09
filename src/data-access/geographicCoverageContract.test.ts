@@ -32,9 +32,9 @@ describe('geographic search coverage contract', () => {
   });
 
   it('rejects an empty geographic index', () => {
-    expect(() =>
-      assertGeographicSearchCoverage({ geographicNames: [] }, 'empty snapshot'),
-    ).toThrow(/expected at least 15 published geographic names/i);
+    expect(() => assertGeographicSearchCoverage({ geographicNames: [] }, 'empty snapshot')).toThrow(
+      /expected at least 15 published geographic names/i,
+    );
   });
 
   it('rejects a baseline with a required geographic identity missing', () => {
