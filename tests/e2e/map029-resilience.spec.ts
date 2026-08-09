@@ -120,9 +120,7 @@ async function configureBackend(page: Page): Promise<TestBackend> {
     let rows = projectFixtureRows(table);
 
     if (table === 'map_entities' && entityNameOverride) {
-      rows = rows.map((row, index) =>
-        index === 0 ? { ...row, name: entityNameOverride } : row,
-      );
+      rows = rows.map((row, index) => (index === 0 ? { ...row, name: entityNameOverride } : row));
     }
 
     const contentRange = rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
@@ -194,9 +192,7 @@ test('renders stored HTML-like public data as inert text instead of executable m
   await expect(page.getByTestId('place-details')).toContainText(maliciousName);
   await expect(page.locator('img[src="x"]')).toHaveCount(0);
   expect(
-    await page.evaluate(
-      () => (window as unknown as { __map029Xss?: number }).__map029Xss ?? 0,
-    ),
+    await page.evaluate(() => (window as unknown as { __map029Xss?: number }).__map029Xss ?? 0),
   ).toBe(0);
 });
 
