@@ -24,7 +24,9 @@ test('publishes the MAP-021 Waterdeep geographic search contract', async ({ page
       .poll(async () => {
         const state = await backendStatus.getAttribute('data-backend-state');
         const reason = await backendStatus.getAttribute('data-backend-reason');
-        return state === 'connected' || (state === 'degraded' && reason === 'configuration-missing');
+        return (
+          state === 'connected' || (state === 'degraded' && reason === 'configuration-missing')
+        );
       })
       .toBe(true);
   }
