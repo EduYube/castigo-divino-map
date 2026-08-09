@@ -1,4 +1,7 @@
-import { AUTH_SESSION_STORAGE_KEY, BrowserAuthSessionStorage } from '../infrastructure/supabase/authSessionStorage';
+import {
+  AUTH_SESSION_STORAGE_KEY,
+  BrowserAuthSessionStorage,
+} from '../infrastructure/supabase/authSessionStorage';
 
 const SESSION_VERSION = 1;
 const HOSTED_PROJECT_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
@@ -78,7 +81,10 @@ function parsePositiveNumber(value: string | null): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-export function parseAdminAuthEmailCallback(url: URL, nowMs = Date.now()): AuthCallbackSession | null {
+export function parseAdminAuthEmailCallback(
+  url: URL,
+  nowMs = Date.now(),
+): AuthCallbackSession | null {
   const fragment = url.hash.startsWith('#') ? url.hash.slice(1) : url.hash;
   const params = new URLSearchParams(fragment);
   const accessToken = params.get('access_token');
@@ -97,7 +103,9 @@ export function parseAdminAuthEmailCallback(url: URL, nowMs = Date.now()): AuthC
   const explicitExpiresAt = parsePositiveNumber(params.get('expires_at'));
   const expiresIn = parsePositiveNumber(params.get('expires_in'));
   const expiresAt =
-    explicitExpiresAt ?? claims.expiresAt ?? (expiresIn ? Math.floor(nowMs / 1000) + expiresIn : null);
+    explicitExpiresAt ??
+    claims.expiresAt ??
+    (expiresIn ? Math.floor(nowMs / 1000) + expiresIn : null);
 
   if (!expiresAt) {
     return null;
@@ -130,11 +138,19 @@ function scrubAuthFragment(url: URL): void {
   window.history.replaceState(window.history.state, '', cleanUrl);
 }
 
-function resolveConfiguration(): { readonly projectUrl: string; readonly publishableKey: string } | null {
-  const projectUrl = String(import.meta.env.VITE_SUPABASE_URL ?? '').trim().replace(/\/$/, '');
+function resolveConfiguration(): {
+  readonly projectUrl: string;
+  readonly publishableKey: string;
+} | null {
+  const projectUrl = String(import.meta.env.VITE_SUPABASE_URL ?? '')
+    .trim()
+    .replace(/\/$/, '');
   const publishableKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '').trim();
 
-  if (!HOSTED_PROJECT_URL_PATTERN.test(projectUrl) || !PUBLISHABLE_KEY_PATTERN.test(publishableKey)) {
+  if (
+    !HOSTED_PROJECT_URL_PATTERN.test(projectUrl) ||
+    !PUBLISHABLE_KEY_PATTERN.test(publishableKey)
+  ) {
     return null;
   }
 
@@ -238,7 +254,11 @@ function mountRecoveryDialog(
   const form = createElement('form', 'admin-auth__form');
   const status = createElement('p', 'admin-auth__status');
   const submitButton = createElement('button', 'admin-auth__submit');
-  const passwordInput = appendPasswordField(form, 'admin-recovery-password', 'Nueva contraseña');
+  const passwordInput = appendPasswordField(
+    form,
+    'admin-recovery-password',
+    'Nueva contraseña',
+  );
   const confirmationInput = appendPasswordField(
     form,
     'admin-recovery-password-confirmation',
@@ -330,7 +350,9 @@ function mountRecoveryDialog(
           },
         );
         const loginPayload = (await readJson(loginResponse)) as PasswordAuthPayload;
-        const freshSession = loginResponse.ok ? parsePasswordSessionPayload(loginPayload) : null;
+        const freshSession = loginResponse.ok
+          ? parsePasswordSessionPayload(loginPayload)
+          : null;
 
         if (!freshSession) {
           status.textContent =
