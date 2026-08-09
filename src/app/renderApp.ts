@@ -104,6 +104,7 @@ export function renderApp(): string {
               data-place-search-results
               aria-label="Resultados de búsqueda de lugares"
               aria-describedby="place-search-status"
+              tabindex="-1"
               hidden
             ></ul>
           </div>
