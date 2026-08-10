@@ -60,3 +60,4 @@ La evidencia final procede exclusivamente de páginas oficiales de Wizards/D&D l
 - El manifiesto MAP-040 contiene las 213 identidades revisadas y falla si MAP-039 gana o pierde una identidad sin una revisión explícita.
 - El contrato de cobertura rechaza aliases `es` no verificados o aliases verificados con identidad/ID incorrectos.
 - La migración es reejecutable y falla ante conflictos semánticos en lugar de sobrescribirlos.
+- El snapshot público regenerado desde el catálogo MAP-040 usa `sourceRevision`/`checksum` `sha256:449a77629b63392db19d6fd9af70b2aea812e54f17324ca3eb0e057104e9e26a`.
