@@ -278,11 +278,19 @@ test('keeps the request flow accessible and overflow-free at 320 px with keyboar
   await openButton.focus();
   await page.keyboard.press('Enter');
 
+  const panel = page.locator('[data-public-pin-request-panel]');
   const form = page.locator('[data-public-pin-request-form]');
+  const privacy = page.locator('#public-pin-request-privacy');
   const heading = page.getByRole('heading', { name: 'Proponer un nuevo pin' });
   await expect(heading).toBeFocused();
   await expect(form).toBeVisible();
-  await expect(form).toContainText('Otros visitantes no pueden leer estos datos');
+  await expect(privacy).toContainText('Otros visitantes no pueden leer estos datos');
+  await expect(panel.locator('#public-pin-request-privacy')).toHaveCount(1);
+  await expect(form.locator('#public-pin-request-privacy')).toHaveCount(0);
+  await expect(form).toHaveAttribute(
+    'aria-describedby',
+    'public-pin-request-privacy public-pin-request-status',
+  );
   await expectNoHorizontalOverflow(page);
 
   const closeButton = page.getByRole('button', { name: 'Cerrar el formulario de solicitud' });
