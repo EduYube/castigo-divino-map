@@ -10,9 +10,10 @@ select is(
     select count(*)
     from public.geographic_names
     where publication_status = 'published'::public.publication_status
+      and id not in ('geo-silver-crossing', 'geo-bramble-fort')
   ),
   213::bigint,
-  'MAP-039 publishes the complete audited 213-name raster inventory'
+  'MAP-039 publishes the complete audited 213-name raster inventory apart from local-only seed fixtures'
 );
 
 select is(
