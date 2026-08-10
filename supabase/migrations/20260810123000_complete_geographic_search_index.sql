@@ -250,8 +250,8 @@ begin
   )
   into expected_names
   from (
-    select regexp_split_to_array(row_value, '\\|') as parts
-    from regexp_split_to_table(trim(expected_rows), E'\\n') as rows(row_value)
+    select string_to_array(row_value, '|') as parts
+    from string_to_table(trim(expected_rows), E'\n') as rows(row_value)
   ) parsed;
 
   if jsonb_array_length(expected_names) <> 213 then
