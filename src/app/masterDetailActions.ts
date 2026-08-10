@@ -27,6 +27,7 @@ export function mountMasterDetailActions(
 
   let frame: number | null = null;
   let destroyed = false;
+  let renderedSignature = '';
 
   const resolveAudience = (entityId: EntityId): MapEntityAudience => {
     if (options.getMasterEntityIds().has(entityId)) return 'master';
@@ -37,12 +38,12 @@ export function mountMasterDetailActions(
   const removeInjected = (): void => {
     content.querySelector<HTMLElement>('[data-master-detail-badge]')?.remove();
     content.querySelector<HTMLElement>('[data-master-audience-action]')?.remove();
+    renderedSignature = '';
   };
 
   const render = (): void => {
     frame = null;
     if (destroyed) return;
-    removeInjected();
 
     const state = controller.getState();
     const entityIdValue = panel.dataset.entityId;
@@ -53,11 +54,18 @@ export function mountMasterDetailActions(
       !state.backendConnected ||
       state.phase === 'blocked'
     ) {
+      if (renderedSignature) removeInjected();
       return;
     }
 
     const entityId = entityIdValue;
     const audience = resolveAudience(entityId);
+    const signature = `${entityId}:${audience}:${state.phase}`;
+    const existingAction = content.querySelector<HTMLElement>('[data-master-audience-action]');
+    if (renderedSignature === signature && existingAction) return;
+    removeInjected();
+    renderedSignature = signature;
+
     if (audience === 'master') {
       const badge = document.createElement('p');
       badge.className = 'compact-details__master-badge';
