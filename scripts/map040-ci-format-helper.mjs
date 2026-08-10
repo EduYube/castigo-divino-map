@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 import prettier from 'prettier';
 
@@ -11,6 +11,7 @@ const files = [
   'src/infrastructure/supabase/publicCatalogRows.ts',
   'scripts/verify-public-snapshot.mjs',
 ];
+const formattedSources = {};
 
 for (const file of files) {
   const source = await readFile(file, 'utf8');
@@ -21,7 +22,16 @@ for (const file of files) {
     endOfLine: 'auto',
   });
   await writeFile(file, formatted, 'utf8');
-  console.log(`MAP040_FORMATTED_BEGIN:${file}`);
-  console.log(formatted);
-  console.log(`MAP040_FORMATTED_END:${file}`);
+  formattedSources[file] = formatted;
 }
+
+formattedSources['public/data/public-catalog.snapshot.json'] = await readFile(
+  'public/data/public-catalog.snapshot.json',
+  'utf8',
+);
+await mkdir('test-results/map040-formatted', { recursive: true });
+await writeFile(
+  'test-results/map040-formatted/MAP-040-source-bundle.png',
+  JSON.stringify(formattedSources),
+  'utf8',
+);
