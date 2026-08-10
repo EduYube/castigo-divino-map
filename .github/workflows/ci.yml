@@ -4,9 +4,6 @@ on:
   pull_request:
     branches:
       - master
-  push:
-    branches:
-      - master
   workflow_dispatch:
 
 permissions:
@@ -20,7 +17,7 @@ jobs:
   validate:
     name: Build, quality and tests
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
@@ -35,84 +32,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check formatting
-        run: npm run format:check
+      - name: Format MAP-044 files
+        run: >-
+          npx prettier --write
+          src/application/masterModeController.test.ts
+          src/data/masterCatalogView.test.ts
+          src/data/publicCatalogRevocations.test.ts
+          src/data/publicCatalogRevocations.ts
+          src/infrastructure/supabase/adminMapEntityConvertedDraft.test.ts
+          src/infrastructure/supabase/adminMapEntityRepository.test.ts
+          tests/e2e/master-mode.spec.ts
+          verify-production-build.mjs
 
-      - name: Audit tracked files for privileged credentials
-        run: npm run verify:security
-
-      - name: Verify accessibility invariants
-        run: npm run verify:accessibility
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Run unit tests
-        run: npm run test
-
-      - name: Build application for GitHub Pages
-        run: npm run build:pages
-
-      - name: Audit production artifact
-        run: npm run verify:build
-
-      - name: Report production build metrics
-        run: npm run report:build
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
-
-      - name: Run end-to-end tests
-        run: npm run test:e2e
-
-      - name: Upload MAP-033 mobile visual references
-        if: always()
+      - name: Upload formatted sources
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: map-033-mobile-references-${{ github.run_id }}
-          path: test-results/**/*.png
-          if-no-files-found: warn
-          retention-days: 14
+          name: map-044-review-formatted-${{ github.run_id }}
+          path: |
+            src/application/masterModeController.test.ts
+            src/data/masterCatalogView.test.ts
+            src/data/publicCatalogRevocations.test.ts
+            src/data/publicCatalogRevocations.ts
+            src/infrastructure/supabase/adminMapEntityConvertedDraft.test.ts
+            src/infrastructure/supabase/adminMapEntityRepository.test.ts
+            tests/e2e/master-mode.spec.ts
+            verify-production-build.mjs
+          retention-days: 1
 
-      - name: Upload MAP-037 mobile sheet references
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: map-037-mobile-sheet-references-${{ github.run_id }}
-          path: test-results/**/attachments/MAP-037-*.png
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Smoke test the Pages build locally
-        run: npm run test:e2e:pages
-
-  database:
-    name: Supabase migrations, lint and RLS tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Record pinned Supabase CLI version
-        run: npx supabase --version
-
-      - name: Start local Supabase database
-        run: npx supabase db start
-
-      - name: Rebuild, lint and test database
-        run: npm run supabase:db:validate
-
-      - name: Stop local Supabase database
-        if: always()
-        run: npx supabase stop --no-backup
+      - name: Keep diagnostic PR unmergeable
+        run: exit 1
