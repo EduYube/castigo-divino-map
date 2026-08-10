@@ -53,6 +53,7 @@ const detailPayload = {
     slug: 'map019',
     entity_type: 'character',
     visibility: 'pin',
+    audience: 'master',
     name: 'MAP-019',
     summary: '',
     description: '',
@@ -105,6 +106,7 @@ function draft(): AdminMapEntityDraft {
     slug: 'map019',
     entityType: 'character',
     visibility: 'pin',
+    audience: 'master',
     name: 'MAP-019',
     summary: '',
     description: '',
@@ -124,6 +126,7 @@ function detail(): AdminMapEntityDetail {
       slug: 'map019',
       entityType: 'character',
       visibility: 'pin',
+      audience: 'master',
       name: 'MAP-019',
       summary: '',
       description: '',
@@ -158,7 +161,8 @@ function detail(): AdminMapEntityDetail {
 
 describe('SupabaseAdminMapEntityRepository', () => {
   it('loads editor snapshots with a just-in-time administrative JWT', async () => {
-    const fetchImplementation = vi.fn<typeof fetch>(async (_input, init) => {
+    const fetchImplementation = vi.fn<typeof fetch>(async (input, init) => {
+      expect(new URL(String(input)).pathname).toMatch(/\/rpc\/admin_get_map_entity_editor_v2$/);
       const headers = new Headers(init?.headers);
       expect(headers.get('authorization')).toBe(`Bearer ${ACCESS_TOKEN}`);
       expect(headers.get('apikey')).toBe(PUBLISHABLE_KEY);
@@ -175,20 +179,21 @@ describe('SupabaseAdminMapEntityRepository', () => {
     await expect(
       repository.load('entity-map019', { signal: new AbortController().signal }),
     ).resolves.toMatchObject({
-      record: { id: 'entity-map019', entityType: 'character' },
+      record: { id: 'entity-map019', entityType: 'character', audience: 'master' },
       relationsRevision: 'revision-1',
     });
   });
 
-  it('sends entity and relation locks through the atomic save RPC', async () => {
+  it('sends entity, audience and relation locks through the atomic save RPC', async () => {
     const original = detail();
     const fetchImplementation = vi.fn<typeof fetch>(async (input, init) => {
-      expect(new URL(String(input)).pathname).toMatch(/\/rpc\/admin_save_map_entity$/);
+      expect(new URL(String(input)).pathname).toMatch(/\/rpc\/admin_save_map_entity_v2$/);
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
       expect(body).toMatchObject({
         p_id: 'entity-map019',
         p_expected_updated_at: original.record.updatedAt,
         p_expected_relations_revision: original.relationsRevision,
+        p_audience: 'master',
         p_tag_ids: ['notable'],
       });
       return jsonResponse(detailPayload);
@@ -203,7 +208,7 @@ describe('SupabaseAdminMapEntityRepository', () => {
 
     await expect(
       repository.save(original, draft(), { signal: new AbortController().signal }),
-    ).resolves.toMatchObject({ record: { id: 'entity-map019' } });
+    ).resolves.toMatchObject({ record: { id: 'entity-map019', audience: 'master' } });
   });
 
   it('normalizes stale writes and invalid relations without leaking PostgreSQL messages', async () => {
