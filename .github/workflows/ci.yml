@@ -35,11 +35,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Show exact Prettier diff for MAP-037
-        run: |
-          npx prettier --write src/main.ts
-          git diff -- src/main.ts
-          exit 1
+      - name: Check formatting
+        run: npm run format:check
 
       - name: Audit tracked files for privileged credentials
         run: npm run verify:security
