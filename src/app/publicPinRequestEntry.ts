@@ -6,6 +6,8 @@ import {
   type PublicPinRequestController,
 } from './publicPinRequest';
 
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
 function getRequiredElement<T extends Element>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector);
 
@@ -16,6 +18,20 @@ function getRequiredElement<T extends Element>(root: ParentNode, selector: strin
   return element;
 }
 
+function navigateToMountedPanel(root: ParentNode): void {
+  const heading = getRequiredElement<HTMLElement>(root, '[data-public-pin-request-heading]');
+  const prefersReducedMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
+
+  window.requestAnimationFrame(() => {
+    heading.scrollIntoView({
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      block: 'start',
+      inline: 'nearest',
+    });
+    heading.focus({ preventScroll: true });
+  });
+}
+
 export function mountPublicPinRequest(
   root: ParentNode,
   map: LeafletMap,
@@ -23,24 +39,25 @@ export function mountPublicPinRequest(
   const mapHeading = getRequiredElement<HTMLElement>(root, '.map-experience__heading');
   const openButton = document.createElement('button');
   let controller: PublicPinRequestController | null = null;
+  let mountedOpenButton: HTMLButtonElement | null = null;
 
   openButton.type = 'button';
   openButton.className = 'public-pin-request__open';
   openButton.dataset.publicPinRequestOpen = '';
   openButton.setAttribute('aria-expanded', 'false');
+  openButton.setAttribute('aria-controls', 'public-pin-request-panel');
   openButton.textContent = 'Proponer un pin';
   mapHeading.append(openButton);
+
+  const handleMountedOpen = (): void => navigateToMountedPanel(root);
 
   const handleFirstOpen = (): void => {
     openButton.removeEventListener('click', handleFirstOpen);
     openButton.remove();
     controller = mountPublicPinRequestController(root, map);
 
-    const mountedOpenButton = getRequiredElement<HTMLButtonElement>(
-      root,
-      '[data-public-pin-request-open]',
-    );
-
+    mountedOpenButton = getRequiredElement<HTMLButtonElement>(root, '[data-public-pin-request-open]');
+    mountedOpenButton.addEventListener('click', handleMountedOpen);
     mountedOpenButton.click();
   };
 
@@ -50,6 +67,7 @@ export function mountPublicPinRequest(
     destroy(): void {
       openButton.removeEventListener('click', handleFirstOpen);
       openButton.remove();
+      mountedOpenButton?.removeEventListener('click', handleMountedOpen);
       controller?.destroy();
     },
   };
