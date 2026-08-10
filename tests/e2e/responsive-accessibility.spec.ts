@@ -152,6 +152,7 @@ test('preserves a logical keyboard flow for search and filters', async ({ page }
   const clearFilters = page.getByRole('button', { name: 'Limpiar filtros' });
 
   await searchbox.fill('demostracion');
+  await searchbox.press('Escape');
   await searchbox.focus();
   await page.keyboard.press('Tab');
   await expect(clearSearch).toBeFocused();
