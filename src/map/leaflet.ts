@@ -26,6 +26,7 @@ export interface FaerunMapController {
   readonly map: LeafletMap;
   setMarkers(markers: readonly AtlasPinMarkerModel[]): void;
   setActivePlace(placeId: PlaceId | null): void;
+  clearSupplementalPinSelection(): void;
   setMatchingPlaces(placeIds: ReadonlySet<PlaceId>): void;
   locatePlace(placeId: PlaceId): void;
   locateSearchTarget(target: MapSearchTarget): void;
@@ -598,6 +599,10 @@ export function mountFaerunMap(
     setActivePlace(placeId: PlaceId | null): void {
       activePlaceId = placeId;
       if (placeId !== null) activeSupplementalPinId = null;
+      refreshMarkerPresentation();
+    },
+    clearSupplementalPinSelection(): void {
+      activeSupplementalPinId = null;
       refreshMarkerPresentation();
     },
     setMatchingPlaces(placeIds: ReadonlySet<PlaceId>): void {
