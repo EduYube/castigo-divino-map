@@ -1,5 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 
+import { assertGeographicSearchExtentCoverage } from '../src/data-access/geographicSearchExtentContract.js';
+
 import {
   buildPublicSnapshotContent,
   checksum,
@@ -14,6 +16,11 @@ import {
 const useFixture = process.argv.includes('--fixture');
 const raw = useFixture ? await loadFixtureRows(FIXTURE_PATH) : await loadRemotePublicRows();
 const content = buildPublicSnapshotContent(raw);
+
+if (!useFixture) {
+  assertGeographicSearchExtentCoverage(content, 'Supabase published data');
+}
+
 const nextChecksum = checksum(content);
 let generatedAt = new Date().toISOString();
 

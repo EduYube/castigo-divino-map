@@ -10,6 +10,7 @@ import {
   type CoordinatePinGroup,
 } from '../domain/pinVisualSystem';
 import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './config';
+import { clearMapSearchFocus, locateMapSearchTarget } from './searchFocus';
 
 export type MapLoadState = 'loading' | 'ready' | 'error';
 
@@ -18,6 +19,12 @@ export interface MapSearchTarget {
     readonly x: number;
     readonly y: number;
   };
+  readonly searchExtent: {
+    readonly minX: number;
+    readonly maxX: number;
+    readonly minY: number;
+    readonly maxY: number;
+  } | null;
   readonly recommendedZoom: number | null;
   readonly label: string;
 }
@@ -296,6 +303,7 @@ export function mountFaerunMap(
     searchHighlight?.removeFrom(map);
     searchHighlight = null;
     delete elements.shell.dataset.searchHighlight;
+    delete elements.shell.dataset.searchHighlightKind;
     delete elements.shell.dataset.searchHighlightLabel;
   };
 
@@ -310,8 +318,9 @@ export function mountFaerunMap(
       zIndexOffset: 2000,
     }).addTo(map);
     elements.shell.dataset.searchHighlight = 'true';
+    elements.shell.dataset.searchHighlightKind = 'point';
     elements.shell.dataset.searchHighlightLabel = target.label;
-    elements.searchStatus.textContent = `Mapa centrado en ${target.label}. La posición está resaltada temporalmente con un símbolo circular.`;
+    elements.searchStatus.textContent = `Mapa centrado en ${target.label}; posición resaltada.`;
     searchHighlightTimeout = window.setTimeout(clearSearchHighlight, SEARCH_HIGHLIGHT_DURATION_MS);
   };
 
@@ -335,6 +344,7 @@ export function mountFaerunMap(
     if (!marker) return;
 
     clearSearchHighlight();
+    clearMapSearchFocus(map);
     const targetZoom = Math.min(
       FAERUN_MAP_CONFIG.maxZoom,
       Math.max(map.getZoom(), map.getMinZoom() + 1),
@@ -614,6 +624,15 @@ export function mountFaerunMap(
       if (pinId) locatePin(pinId);
     },
     locateSearchTarget(target: MapSearchTarget): void {
+      clearSearchHighlight();
+      clearMapSearchFocus(map);
+
+      if (target.searchExtent) {
+        locateMapSearchTarget(map, root, target);
+        synchronizeView();
+        return;
+      }
+
       const coordinate = L.latLng(target.coordinates.y, target.coordinates.x);
       const fallbackZoom = Math.min(
         FAERUN_MAP_CONFIG.maxZoom,
@@ -637,6 +656,7 @@ export function mountFaerunMap(
       if (destroyed) return;
       destroyed = true;
       clearSearchHighlight();
+      clearMapSearchFocus(map);
       clearRenderedMarkers();
       imageOverlay.off('load', handleImageLoad);
       imageOverlay.off('error', handleImageError);

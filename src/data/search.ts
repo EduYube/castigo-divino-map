@@ -3,6 +3,7 @@ import type {
   PublicCatalogSnapshotV2,
   PublicCoordinate,
   PublicMapEntity,
+  PublicSearchExtent,
 } from './beta02-model';
 import type { CampaignCatalog, CampaignPlace, PlaceId } from './model';
 import { normalizeSearchTerm } from './validate';
@@ -28,6 +29,7 @@ export interface AtlasSearchResult {
   readonly matchedText: string;
   readonly matchRank: PlaceSearchMatchRank;
   readonly coordinates: PublicCoordinate;
+  readonly searchExtent: PublicSearchExtent | null;
   readonly recommendedZoom: number | null;
   readonly legacyPlaceId: PlaceId | null;
   readonly linkedEntityId: EntityId | null;
@@ -51,18 +53,9 @@ function getMatchRank(
   normalizedText: string,
   normalizedQuery: string,
 ): PlaceSearchMatchRank | undefined {
-  if (normalizedText === normalizedQuery) {
-    return 0;
-  }
-
-  if (normalizedText.startsWith(normalizedQuery)) {
-    return 1;
-  }
-
-  if (normalizedText.includes(normalizedQuery)) {
-    return 2;
-  }
-
+  if (normalizedText === normalizedQuery) return 0;
+  if (normalizedText.startsWith(normalizedQuery)) return 1;
+  if (normalizedText.includes(normalizedQuery)) return 2;
   return undefined;
 }
 
@@ -99,7 +92,6 @@ function findBestCandidate(
   return candidates
     .map((candidate) => {
       const matchRank = getMatchRank(candidate.normalizedText, normalizedQuery);
-
       return matchRank === undefined ? undefined : { ...candidate, matchRank };
     })
     .filter(
@@ -116,10 +108,7 @@ function findLegacyPlaceForEntity(
   catalog: CampaignCatalog,
   entity: PublicMapEntity,
 ): CampaignPlace | undefined {
-  if (entity.entityType !== 'location') {
-    return undefined;
-  }
-
+  if (entity.entityType !== 'location') return undefined;
   return catalog.places.find((place) => place.id === entity.id || place.slug === entity.slug);
 }
 
@@ -145,9 +134,7 @@ function entityCandidates(
     ),
   ];
 
-  if (!legacyPlace) {
-    return candidates;
-  }
+  if (!legacyPlace) return candidates;
 
   if (normalizeSearchTerm(legacyPlace.name) !== normalizeSearchTerm(entity.name)) {
     candidates.push(createCandidate('alias', legacyPlace.name, 1, candidates.length));
@@ -185,6 +172,7 @@ function toAtlasSearchResult(result: RankedAtlasSearchResult): AtlasSearchResult
     matchedText: result.matchedText,
     matchRank: result.matchRank,
     coordinates: result.coordinates,
+    searchExtent: result.searchExtent,
     recommendedZoom: result.recommendedZoom,
     legacyPlaceId: result.legacyPlaceId,
     linkedEntityId: result.linkedEntityId,
@@ -200,19 +188,12 @@ export function searchPublicPlaces(
   query: string,
 ): readonly PlaceSearchResult[] {
   const normalizedQuery = normalizePlaceSearchQuery(query);
-
-  if (!normalizedQuery) {
-    return [];
-  }
+  if (!normalizedQuery) return [];
 
   return catalog.places
     .map((place, catalogIndex) => {
       const bestMatch = findBestCandidate(legacyPlaceCandidates(catalog, place), normalizedQuery);
-
-      if (!bestMatch) {
-        return undefined;
-      }
-
+      if (!bestMatch) return undefined;
       return {
         catalogIndex,
         result: {
@@ -245,10 +226,7 @@ export function searchPublicAtlas(
   query: string,
 ): readonly AtlasSearchResult[] {
   const normalizedQuery = normalizePlaceSearchQuery(query);
-
-  if (!normalizedQuery) {
-    return [];
-  }
+  if (!normalizedQuery) return [];
 
   const results: RankedAtlasSearchResult[] = [];
   const representedLegacyPlaces = new Set<PlaceId>();
@@ -281,6 +259,7 @@ export function searchPublicAtlas(
       matchedText: bestMatch.matchedText,
       matchRank: bestMatch.matchRank,
       coordinates: geographicName.coordinates,
+      searchExtent: geographicName.searchExtent ?? null,
       recommendedZoom: geographicName.recommendedZoom,
       legacyPlaceId: legacyPlace?.id ?? null,
       linkedEntityId: geographicName.entityId,
@@ -292,16 +271,12 @@ export function searchPublicAtlas(
 
   beta02Catalog?.entities.forEach((entity) => {
     const legacyPlace = findLegacyPlaceForEntity(catalog, entity);
-
-    if (legacyPlace) {
-      representedLegacyPlaces.add(legacyPlace.id);
-    }
+    if (legacyPlace) representedLegacyPlaces.add(legacyPlace.id);
 
     const bestMatch = findBestCandidate(
       entityCandidates(catalog, entity, legacyPlace),
       normalizedQuery,
     );
-
     if (!bestMatch) {
       stableIndex += 1;
       return;
@@ -315,6 +290,7 @@ export function searchPublicAtlas(
       matchedText: bestMatch.matchedText,
       matchRank: bestMatch.matchRank,
       coordinates: entity.coordinates,
+      searchExtent: null,
       recommendedZoom: null,
       legacyPlaceId: legacyPlace?.id ?? null,
       linkedEntityId: entity.id,
@@ -325,12 +301,9 @@ export function searchPublicAtlas(
   });
 
   catalog.places.forEach((place) => {
-    if (representedLegacyPlaces.has(place.id)) {
-      return;
-    }
+    if (representedLegacyPlaces.has(place.id)) return;
 
     const bestMatch = findBestCandidate(legacyPlaceCandidates(catalog, place), normalizedQuery);
-
     if (!bestMatch) {
       stableIndex += 1;
       return;
@@ -344,6 +317,7 @@ export function searchPublicAtlas(
       matchedText: bestMatch.matchedText,
       matchRank: bestMatch.matchRank,
       coordinates: place.coordinates,
+      searchExtent: null,
       recommendedZoom: null,
       legacyPlaceId: place.id,
       linkedEntityId: null,

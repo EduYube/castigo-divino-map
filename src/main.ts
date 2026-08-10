@@ -281,6 +281,7 @@ function mountPublicExperience(
       selection.clear();
       mapController.locateSearchTarget({
         coordinates: result.coordinates,
+        searchExtent: result.searchExtent,
         recommendedZoom: result.recommendedZoom,
         label: describeSearchTarget(result),
       });
@@ -303,16 +304,12 @@ function mountPublicExperience(
   }
 
   function writePublicStateToHistory(mode: 'push' | 'replace'): void {
-    if (isRestoringFromHistory) {
-      return;
-    }
+    if (isRestoringFromHistory) return;
 
     const currentUrl = new URL(window.location.href);
     const nextUrl = createCanonicalPublicAppUrl(catalog, currentUrl, getCurrentPublicState());
 
-    if (nextUrl.href === currentUrl.href) {
-      return;
-    }
+    if (nextUrl.href === currentUrl.href) return;
 
     if (mode === 'push') {
       window.history.pushState(window.history.state, '', nextUrl);
@@ -345,27 +342,19 @@ function mountPublicExperience(
     updateMatchingPlaces();
 
     if (!activePlaceId) {
-      if (!activeSupplementalPin) {
-        compactDetailsController.hide();
-      }
+      if (!activeSupplementalPin) compactDetailsController.hide();
       return;
     }
 
     activeSupplementalPin = null;
 
-    if (options.locate) {
-      mapController.locatePlace(activePlaceId);
-    }
+    if (options.locate) mapController.locatePlace(activePlaceId);
 
-    if (!showLegacyPlaceDetails(activePlaceId, options.focusDetails)) {
-      selection.clear();
-    }
+    if (!showLegacyPlaceDetails(activePlaceId, options.focusDetails)) selection.clear();
   }
 
   function applyCatalogState(nextCatalogState: PublicCatalogState): void {
-    if (isSameCatalogState(catalogState, nextCatalogState)) {
-      return;
-    }
+    if (isSameCatalogState(catalogState, nextCatalogState)) return;
 
     catalogState = nextCatalogState;
     const previousActivePlaceId = selection.getActivePlaceId();
@@ -451,9 +440,7 @@ function mountPublicExperience(
   }
 
   selection.subscribe((activePlaceId) => {
-    if (isRestoringFromHistory) {
-      return;
-    }
+    if (isRestoringFromHistory) return;
 
     renderActivePlace(activePlaceId, {
       focusDetails: true,

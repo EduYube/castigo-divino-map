@@ -243,6 +243,18 @@
   animation: geographic-search-pulse 700ms ease-out 2;
 }
 
+.geographic-search-area-pane,
+.geographic-search-area-highlight {
+  pointer-events: none !important;
+}
+
+.geographic-search-area-highlight {
+  stroke: #fff1a8;
+  stroke-dasharray: 10 8;
+  fill: #fff1a8;
+  vector-effect: non-scaling-stroke;
+}
+
 @keyframes geographic-search-pulse {
   from {
     transform: scale(0.82);
@@ -297,5 +309,13 @@
     background: Canvas;
     border-color: Highlight;
     box-shadow: 0 0 0 3px CanvasText;
+  }
+
+  .geographic-search-area-highlight {
+    stroke: Highlight;
+    fill: transparent;
+    stroke-width: 4;
+    stroke-dasharray: 10 8;
+    forced-color-adjust: auto;
   }
 }

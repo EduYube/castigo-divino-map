@@ -63,7 +63,8 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
   },
   geographicNames: {
     name: 'geographic_names',
-    select: 'id,slug,name,language,x,y,recommended_zoom,entity_id',
+    select:
+      'id,slug,name,language,x,y,recommended_zoom,entity_id,search_min_x,search_max_x,search_min_y,search_max_y',
     order: 'id.asc',
     published: true,
   },

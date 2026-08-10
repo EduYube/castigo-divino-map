@@ -9,6 +9,7 @@ import {
   relationSnapshotRows,
   type PublicCatalogTablePayloadsWithCharacterLocations,
 } from './publicCharacterLocationRelations';
+import { parseGeographicNameWithExtent } from './geographicSearchExtentRows';
 import {
   groupValues,
   parseCategory,
@@ -17,7 +18,6 @@ import {
   parseEntityAlias,
   parseEntityTag,
   parseGeographicAlias,
-  parseGeographicName,
   parseLocationEvent,
   parseNote,
   parseNoteTag,
@@ -318,7 +318,7 @@ function buildPublicCatalogContentV2(
   );
   const notes = payloads.notes.map((row, index) => parseNote(row, index, tagsByNote));
   const geographicNames = payloads.geographicNames.map((row, index) =>
-    parseGeographicName(row, index, aliasesByName),
+    parseGeographicNameWithExtent(row, index, aliasesByName),
   );
   const characterLocationEvents = payloads.locationEvents.map(parseLocationEvent);
   const content: PublicCatalogContentV2 = {
@@ -461,11 +461,30 @@ function snapshotPayloads(
       const path = `snapshot.geographicNames[${index}]`;
       assertAllowedProperties(
         name,
-        ['id', 'slug', 'name', 'language', 'aliases', 'coordinates', 'recommendedZoom', 'entityId'],
+        [
+          'id',
+          'slug',
+          'name',
+          'language',
+          'aliases',
+          'coordinates',
+          'searchExtent',
+          'recommendedZoom',
+          'entityId',
+        ],
         path,
       );
       const coordinates = expectRecord(name.coordinates, `${path}.coordinates`);
       assertAllowedProperties(coordinates, ['x', 'y'], `${path}.coordinates`);
+      const searchExtent =
+        name.searchExtent == null ? null : expectRecord(name.searchExtent, `${path}.searchExtent`);
+      if (searchExtent) {
+        assertAllowedProperties(
+          searchExtent,
+          ['minX', 'maxX', 'minY', 'maxY'],
+          `${path}.searchExtent`,
+        );
+      }
       expectRecords(name.aliases, `${path}.aliases`).forEach((alias, aliasIndex) => {
         const aliasPath = `${path}.aliases[${aliasIndex}]`;
         assertAllowedProperties(alias, ['id', 'geographicNameId', 'language', 'value'], aliasPath);
@@ -491,6 +510,10 @@ function snapshotPayloads(
         y: coordinates.y,
         recommended_zoom: name.recommendedZoom,
         entity_id: name.entityId,
+        search_min_x: searchExtent?.minX ?? null,
+        search_max_x: searchExtent?.maxX ?? null,
+        search_min_y: searchExtent?.minY ?? null,
+        search_max_y: searchExtent?.maxY ?? null,
       };
     },
   );

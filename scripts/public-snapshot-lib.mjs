@@ -61,6 +61,34 @@ function requireUnique(values, label) {
   }
 }
 
+function geographicSearchExtent(row) {
+  const values = [row.search_min_x, row.search_max_x, row.search_min_y, row.search_max_y];
+  if (values.every((value) => value === null || value === undefined)) return null;
+  if (values.some((value) => value === null || value === undefined)) {
+    throw new Error(`geographicNames.${row.id}.searchExtent must provide all four bounds or none.`);
+  }
+
+  const [minX, maxX, minY, maxY] = values;
+  if (
+    !values.every(Number.isFinite) ||
+    minX < 0 ||
+    maxX > 3600 ||
+    minY < 0 ||
+    maxY > 2329 ||
+    minX >= maxX ||
+    minY >= maxY
+  ) {
+    throw new Error(
+      `geographicNames.${row.id}.searchExtent is outside the MAP-041 bounds contract.`,
+    );
+  }
+  if (row.x < minX || row.x > maxX || row.y < minY || row.y > maxY) {
+    throw new Error(`geographicNames.${row.id}.searchExtent does not contain its canonical point.`);
+  }
+
+  return { minX, maxX, minY, maxY };
+}
+
 export function buildPublicSnapshotContent(raw) {
   const categories = publishedRows(raw.categories ?? [], 'categories').map(
     ({ id, slug, name, description }) => ({ id, slug, name, description }),
@@ -174,25 +202,24 @@ export function buildPublicSnapshotContent(raw) {
     geographicAliasRows,
     ({ geographic_name_id }) => geographic_name_id,
   );
-  const geographicNames = publicGeographicRows.map(
-    ({ id, slug, name, language, x, y, recommended_zoom, entity_id }) => ({
-      id,
-      slug,
-      name,
-      language,
-      aliases: (aliasesByGeographicName.get(id) ?? []).map(
-        ({ id: aliasId, language: aliasLanguage, value }) => ({
-          id: aliasId,
-          geographicNameId: id,
-          language: aliasLanguage,
-          value,
-        }),
-      ),
-      coordinates: { x, y },
-      recommendedZoom: recommended_zoom,
-      entityId: entity_id,
-    }),
-  );
+  const geographicNames = publicGeographicRows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    language: row.language,
+    aliases: (aliasesByGeographicName.get(row.id) ?? []).map(
+      ({ id: aliasId, language: aliasLanguage, value }) => ({
+        id: aliasId,
+        geographicNameId: row.id,
+        language: aliasLanguage,
+        value,
+      }),
+    ),
+    coordinates: { x: row.x, y: row.y },
+    searchExtent: geographicSearchExtent(row),
+    recommendedZoom: row.recommended_zoom,
+    entityId: row.entity_id,
+  }));
   const locationEvents = publishedRows(raw.locationEvents ?? [], 'locationEvents')
     .filter(
       ({ character_id, location_entity_id, geographic_name_id }) =>
