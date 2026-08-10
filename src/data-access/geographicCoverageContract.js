@@ -27,9 +27,7 @@ function isValidCoordinate(value, maximum) {
   return Number.isFinite(value) && value >= 0 && value <= maximum;
 }
 
-export function assertGeographicCoverageManifest(
-  manifest = GEOGRAPHIC_COVERAGE_MANIFEST,
-) {
+export function assertGeographicCoverageManifest(manifest = GEOGRAPHIC_COVERAGE_MANIFEST) {
   if (!Array.isArray(manifest)) {
     manifestFail('the manifest must be an array.');
   }
@@ -131,7 +129,10 @@ export function assertGeographicSearchCoverage(content, sourceLabel = 'public ca
       !isValidCoordinate(entry.coordinates.x, OFFICIAL_MAP_PIXEL_BOUNDS.width) ||
       !isValidCoordinate(entry.coordinates.y, OFFICIAL_MAP_PIXEL_BOUNDS.height)
     ) {
-      fail(sourceLabel, `${expected.id} must use finite coordinates inside the official map bounds.`);
+      fail(
+        sourceLabel,
+        `${expected.id} must use finite coordinates inside the official map bounds.`,
+      );
     }
 
     const expectedZoom = GEOGRAPHIC_ZOOM_POLICY[expected.zoomClass];

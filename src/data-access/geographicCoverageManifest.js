@@ -282,6 +282,4 @@ export const GEOGRAPHIC_COVERAGE_MANIFEST = Object.freeze(
 
 export const GEOGRAPHIC_COVERAGE_MANIFEST_COUNT = GEOGRAPHIC_COVERAGE_MANIFEST.length;
 
-export const MAP032_STABLE_IDS = Object.freeze(
-  Object.keys(LOCKED_MAP032_COORDINATES_BY_ID),
-);
+export const MAP032_STABLE_IDS = Object.freeze(Object.keys(LOCKED_MAP032_COORDINATES_BY_ID));

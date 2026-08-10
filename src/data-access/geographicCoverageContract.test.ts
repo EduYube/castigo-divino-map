@@ -88,9 +88,7 @@ describe('MAP-039 geographic search coverage contract', () => {
 
   it('rejects zoom drift from the scale policy', () => {
     const content = createValidContent();
-    const shiningPlains = content.geographicNames.find(
-      ({ id }) => id === 'geo-the-shining-plains',
-    );
+    const shiningPlains = content.geographicNames.find(({ id }) => id === 'geo-the-shining-plains');
     if (!shiningPlains) throw new Error('The Shining Plains fixture missing');
     shiningPlains.recommendedZoom = 0.75;
 

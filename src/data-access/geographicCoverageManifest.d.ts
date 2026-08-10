@@ -1,12 +1,5 @@
 export type GeographicCoverageKind =
-  | 'settlement'
-  | 'landmark'
-  | 'region'
-  | 'forest'
-  | 'mountain'
-  | 'water'
-  | 'island'
-  | 'route';
+  'settlement' | 'landmark' | 'region' | 'forest' | 'mountain' | 'water' | 'island' | 'route';
 
 export type GeographicZoomClass = 'point' | 'area';
 
