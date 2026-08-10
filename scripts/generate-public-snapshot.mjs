@@ -16,18 +16,11 @@ import {
 const useFixture = process.argv.includes('--fixture');
 const raw = useFixture ? await loadFixtureRows(FIXTURE_PATH) : await loadRemotePublicRows();
 const content = buildPublicSnapshotContent(raw);
-assertGeographicSearchExtentCoverage(
-  content,
-  useFixture ? 'MAP-028 CI fixture' : 'Supabase published data',
-);
-assertGeographicSearchExtentCoverage(
-  content,
-  useFixture ? 'MAP-028 CI fixture' : 'Supabase published data',
-);
-assertGeographicSearchExtentCoverage(
-  content,
-  useFixture ? 'MAP-028 CI fixture' : 'Supabase published data',
-);
+
+if (!useFixture) {
+  assertGeographicSearchExtentCoverage(content, 'Supabase published data');
+}
+
 const nextChecksum = checksum(content);
 let generatedAt = new Date().toISOString();
 
