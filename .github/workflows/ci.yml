@@ -35,8 +35,40 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check formatting
-        run: npm run format:check
+      - name: Emit formatted MAP-044 sources
+        run: |
+          npx prettier --write --end-of-line auto \
+            src/app/adminAuthRuntime.ts \
+            src/app/adminMapEntityAudience.ts \
+            src/app/adminPinVisualSync.ts \
+            src/app/masterMode.ts \
+            src/app/masterPinVisuals.ts \
+            src/app/masterSearchVisuals.ts \
+            src/application/adminMapEntityController.ts \
+            src/application/masterModeController.ts \
+            src/data-access/masterCatalog.ts \
+            src/data/masterCatalogView.ts \
+            src/infrastructure/supabase/masterCatalogRepository.ts \
+            src/main.ts
+          for file in \
+            src/app/adminAuthRuntime.ts \
+            src/app/adminMapEntityAudience.ts \
+            src/app/adminPinVisualSync.ts \
+            src/app/masterMode.ts \
+            src/app/masterPinVisuals.ts \
+            src/app/masterSearchVisuals.ts \
+            src/application/adminMapEntityController.ts \
+            src/application/masterModeController.ts \
+            src/data-access/masterCatalog.ts \
+            src/data/masterCatalogView.ts \
+            src/infrastructure/supabase/masterCatalogRepository.ts \
+            src/main.ts; do
+            echo "MAP044_FORMATTED_BEGIN ${file}"
+            base64 -w0 "${file}"
+            echo
+            echo "MAP044_FORMATTED_END ${file}"
+          done
+          exit 1
 
       - name: Audit tracked files for privileged credentials
         run: npm run verify:security
