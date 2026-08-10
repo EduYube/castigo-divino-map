@@ -29,7 +29,7 @@ begin
 end;
 $$;
 
-select plan(30);
+select plan(29);
 
 select is(
   (select column_default from information_schema.columns
