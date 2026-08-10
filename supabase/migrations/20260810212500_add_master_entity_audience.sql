@@ -89,26 +89,6 @@ using (
   )
 );
 
-drop policy if exists character_locations_public_select on public.character_locations;
-create policy character_locations_public_select
-on public.character_locations
-for select
-to anon, authenticated
-using (
-  publication_status = 'published'
-  and exists (
-    select 1
-    from public.map_entities as character
-    join public.map_entities as location
-      on location.id = character_locations.location_id
-    where character.id = character_locations.character_id
-      and character.publication_status = 'published'
-      and character.audience = 'public'
-      and location.publication_status = 'published'
-      and location.audience = 'public'
-  )
-);
-
 drop policy if exists geographic_names_public_select on public.geographic_names;
 create policy geographic_names_public_select
 on public.geographic_names
