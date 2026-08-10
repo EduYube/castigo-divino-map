@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 const OFFICIAL_MAP_URL =
@@ -9,68 +11,56 @@ const TEST_MAP = `
   </svg>
 `;
 
-const GEOGRAPHIC_ROWS = [
-  {
-    id: 'geo-the-dalelands',
-    slug: 'the-dalelands',
-    name: 'The Dalelands',
-    language: 'en',
-    x: 3180,
-    y: 1009,
-    recommended_zoom: 0.5,
-    entity_id: null,
-  },
-  {
-    id: 'geo-thunder-peaks',
-    slug: 'thunder-peaks',
-    name: 'Thunder Peaks',
-    language: 'en',
-    x: 3100,
-    y: 859,
-    recommended_zoom: 0.5,
-    entity_id: null,
-  },
-  {
-    id: 'geo-the-shining-plains',
-    slug: 'the-shining-plains',
-    name: 'The Shining Plains',
-    language: 'en',
-    x: 2860,
-    y: 219,
-    recommended_zoom: 0.5,
-    entity_id: null,
-  },
-  {
-    id: 'geo-the-high-ice',
-    slug: 'the-high-ice',
-    name: 'The High Ice',
-    language: 'en',
-    x: 2760,
-    y: 2054,
-    recommended_zoom: 0.5,
-    entity_id: null,
-  },
-  {
-    id: 'geo-omans-isle',
-    slug: 'omans-isle',
-    name: 'Omans Isle',
-    language: 'en',
-    x: 1090,
-    y: 899,
-    recommended_zoom: 0.5,
-    entity_id: null,
-  },
-  {
-    id: 'geo-star-mountains',
-    slug: 'star-mountains',
-    name: 'Star Mounts',
-    language: 'en',
-    x: 2000,
-    y: 1746,
-    recommended_zoom: 0.5,
-    entity_id: null,
-  },
-] as const;
+interface SnapshotGeographicAlias {
+  id: string;
+  geographicNameId: string;
+  language: string;
+  value: string;
+}
+
+interface SnapshotGeographicName {
+  id: string;
+  slug: string;
+  name: string;
+  language: string;
+  aliases: SnapshotGeographicAlias[];
+  coordinates: { x: number; y: number };
+  recommendedZoom: number | null;
+  entityId: string | null;
+}
+
+interface SnapshotPayload {
+  content: {
+    geographicNames: SnapshotGeographicName[];
+  };
+}
+
+const SNAPSHOT = JSON.parse(
+  readFileSync(
+    new URL('../../public/data/public-catalog.snapshot.json', import.meta.url),
+    'utf8',
+  ),
+) as SnapshotPayload;
+
+const GEOGRAPHIC_ROWS = SNAPSHOT.content.geographicNames.map((entry) => ({
+  id: entry.id,
+  slug: entry.slug,
+  name: entry.name,
+  language: entry.language,
+  x: entry.coordinates.x,
+  y: entry.coordinates.y,
+  recommended_zoom: entry.recommendedZoom,
+  entity_id: entry.entityId,
+}));
+
+const GEOGRAPHIC_ALIAS_ROWS = SNAPSHOT.content.geographicNames.flatMap((entry) =>
+  entry.aliases.map((alias) => ({
+    id: alias.id,
+    geographic_name_id: alias.geographicNameId,
+    language: alias.language,
+    value: alias.value,
+  })),
+);
 
 const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
   categories: [],
@@ -84,14 +74,7 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
   public_notes: [],
   public_note_tags: [],
   geographic_names: GEOGRAPHIC_ROWS,
-  geographic_name_aliases: [
-    {
-      id: 'geo-alias-star-mountains-legacy',
-      geographic_name_id: 'geo-star-mountains',
-      language: 'en',
-      value: 'Star Mountains',
-    },
-  ],
+  geographic_name_aliases: GEOGRAPHIC_ALIAS_ROWS,
   character_location_events: [],
 };
 
