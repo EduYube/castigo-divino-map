@@ -1,0 +1,39 @@
+name: MAP-039 snapshot format helper
+
+on:
+  push:
+    branches:
+      - agent/map-039-complete-geographic-index
+
+permissions:
+  contents: write
+
+jobs:
+  format-snapshot:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-039-complete-geographic-index
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Format and verify snapshot
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
+        run: |
+          npx prettier --write public/data/public-catalog.snapshot.json
+          npm run snapshot:verify:remote
+      - name: Commit formatted snapshot if changed
+        run: |
+          if git diff --quiet -- public/data/public-catalog.snapshot.json; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/public-catalog.snapshot.json
+          git commit -m "style(MAP-039): format regenerated public snapshot"
+          git push origin HEAD:agent/map-039-complete-geographic-index
