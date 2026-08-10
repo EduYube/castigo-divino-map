@@ -1,9 +1,9 @@
 name: MAP-043 format diagnostic
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/map-043-public-pin-form-layout
+      - master
 
 permissions:
   contents: read
