@@ -10,7 +10,7 @@ En pantallas de hasta `48rem` la ficha compacta se presenta como un **bottom she
 
 No se usa `dialog` ni `aria-modal` porque el mapa debe seguir siendo operable mientras la ficha está abierta. La ficha conserva `role="region"` y su heading enfocable, por lo que mantiene la semántica histórica de MAP-023 sin introducir un focus trap.
 
-La superficie del sheet se limita al 48 % de la altura del mapa. De este modo siempre queda visible más de la mitad de la cartografía. El panel usa scroll interno y `overscroll-behavior: contain`, de modo que consultar contenido largo no hace crecer el documento ni obliga a recorrer una sección colocada debajo del mapa.
+En orientación vertical la superficie del sheet se limita al 40 % de la altura del mapa, de modo que el centro cartográfico permanece fuera del área cubierta incluso en motores que restringen el reajuste programático de Leaflet. En paisaje corto el límite se mantiene en el 48 % para conservar una altura útil de lectura sin llegar a cubrir la mayoría de la cartografía. El panel usa scroll interno y `overscroll-behavior: contain`, de modo que consultar contenido largo no hace crecer el documento ni obliga a recorrer una sección colocada debajo del mapa.
 
 Entre `48rem` y `70rem` se conserva el comportamiento apilado previo; desktop mantiene el panel lateral. MAP-037 solo especializa el flujo móvil crítico.
 
@@ -20,7 +20,7 @@ Al abrir una ficha en móvil:
 
 1. el título recibe foco con `preventScroll`, evitando que el documento salte hacia otra posición;
 2. el mapa conserva su tamaño y sigue siendo interactivo;
-3. Leaflet reajusta el pin activo con padding inferior equivalente a la altura real del sheet para que la selección permanezca en la zona cartográfica no cubierta;
+3. el layout reserva por diseño una zona cartográfica visible y Leaflet complementa esa reserva reajustando el pin activo cuando su posición real invade el área del sheet;
 4. cambiar de pin sustituye el contenido de la misma ficha y reinicia únicamente su scroll interno;
 5. cerrar devuelve el foco al marcador activo mediante los contratos existentes de MAP-023;
 6. `Volver al pin` permite devolver el foco al marcador sin cerrar la ficha;
