@@ -319,6 +319,10 @@ export function mountCompactPinDetails(
       }
     },
     hide(): void {
+      const preserveViewport = isMobileSheet();
+      const scrollX = preserveViewport ? window.scrollX : 0;
+      const scrollY = preserveViewport ? window.scrollY : 0;
+
       elements.panel.hidden = true;
       delete elements.panel.dataset.activePinId;
       delete elements.panel.dataset.activePlaceId;
@@ -330,6 +334,11 @@ export function mountCompactPinDetails(
       elements.closeButton.removeAttribute('aria-keyshortcuts');
       elements.returnButton.setAttribute('aria-label', 'Volver al pin seleccionado');
       elements.content.replaceChildren();
+
+      if (preserveViewport) {
+        void elements.workspace.offsetHeight;
+        window.scrollTo(scrollX, scrollY);
+      }
     },
     destroy(): void {
       elements.closeButton.removeEventListener('click', handleClose);
