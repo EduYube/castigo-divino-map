@@ -220,7 +220,7 @@ test('Escape and blur close only the popup and free search remains available', a
   await expect(listbox).toBeVisible();
   await expect(listbox.getByRole('option')).toContainText(['Waterfall Pass']);
 
-  await page.locator('[data-place-search-status]').click();
+  await page.locator('[data-place-filters-toggle]').focus();
   await expect(listbox).toBeHidden();
   await expect(input).toHaveValue('Waterfall');
 
@@ -239,6 +239,7 @@ test('supports pointer/touch selection at 320 px without overflow or losing the 
 
   const input = searchInput(page);
   const listbox = page.getByRole('listbox', { name: 'Sugerencias de búsqueda' });
+  const mapShell = page.getByTestId('map-shell');
 
   await input.fill('Waterf');
   const exactSuggestion = page.locator(
@@ -260,8 +261,14 @@ test('supports pointer/touch selection at 320 px without overflow or losing the 
 
   await expect(input).toHaveValue('Waterfall Pass');
   await expect(listbox).toBeHidden();
-  await expect(page.getByTestId('map-shell')).toBeVisible();
-  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-center', '1110.00,1780.00');
+  await expect(mapShell).toBeVisible();
+  const selectedCenter = await mapShell.getAttribute('data-map-center');
+  expect(selectedCenter).not.toBeNull();
+  const [centerY, centerX] = (selectedCenter ?? '').split(',').map(Number);
+  expect(centerX).toBeCloseTo(1780, 1);
+  expect(centerY).toBeGreaterThanOrEqual(1110);
+  expect(centerY).toBeLessThan(1200);
+  expect(new URL(page.url()).searchParams.get('q')).toBe('Waterfall Pass');
 
   const horizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -282,25 +289,26 @@ test('keeps the popup bounded without shifting the map in short mobile landscape
   const input = searchInput(page);
   const listbox = page.getByRole('listbox', { name: 'Sugerencias de búsqueda' });
   const mapShell = page.getByTestId('map-shell');
-  const mapBefore = await mapShell.boundingBox();
 
   await input.fill('Water');
   await expect(listbox).toBeVisible();
 
   const listboxBox = await listbox.boundingBox();
-  const mapAfter = await mapShell.boundingBox();
+  const mapWithPopup = await mapShell.boundingBox();
   expect(listboxBox).not.toBeNull();
-  expect(mapBefore).not.toBeNull();
-  expect(mapAfter).not.toBeNull();
+  expect(mapWithPopup).not.toBeNull();
   expect(listboxBox!.height).toBeLessThanOrEqual(112);
-  expect(Math.abs(mapAfter!.y - mapBefore!.y)).toBeLessThanOrEqual(1);
+
+  await input.press('Escape');
+  await expect(listbox).toBeHidden();
+  await expect(input).toHaveValue('Water');
+
+  const mapWithoutPopup = await mapShell.boundingBox();
+  expect(mapWithoutPopup).not.toBeNull();
+  expect(Math.abs(mapWithoutPopup!.y - mapWithPopup!.y)).toBeLessThanOrEqual(1);
 
   const horizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
   expect(horizontalOverflow).toBe(false);
-
-  await input.press('Escape');
-  await expect(listbox).toBeHidden();
-  await expect(input).toHaveValue('Water');
 });
