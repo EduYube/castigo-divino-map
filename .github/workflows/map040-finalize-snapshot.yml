@@ -1,0 +1,107 @@
+name: MAP-040 snapshot finalizer
+
+on:
+  push:
+    branches:
+      - agent/map-040-spanish-geographic-names
+    paths:
+      - .github/workflows/map040-finalize-snapshot.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout MAP-040 branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/map-040-spanish-geographic-names
+          fetch-depth: 0
+
+      - name: Finalize committed snapshot and remove temporary tooling
+        shell: bash
+        run: |
+          node <<'NODE'
+          const crypto = require('node:crypto');
+          const fs = require('node:fs');
+
+          const path = 'public/data/public-catalog.snapshot.json';
+          const snapshot = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const verified = [
+            ['geo-baldurs-gate', 'geo-alias-baldurs-gate-es', 'Puerta de Baldur'],
+            ['geo-candlekeep', 'geo-alias-candlekeep-es', 'Candelero'],
+            ['geo-icewind-dale', 'geo-alias-icewind-dale-es', 'Valle del Viento Helado'],
+            ['geo-moonshae-isles', 'geo-alias-moonshae-isles-es', 'Islas Lunshaes'],
+            ['geo-neverwinter', 'geo-alias-neverwinter-es', 'Nuncainvierno'],
+            ['geo-silverymoon', 'geo-alias-silverymoon-es', 'Luna Plateada'],
+            ['geo-sword-coast', 'geo-alias-sword-coast-es', 'Costa de la Espada'],
+            ['geo-waterdeep', 'geo-alias-waterdeep-es', 'Aguas Profundas'],
+          ];
+
+          for (const [geographicNameId, id, value] of verified) {
+            const geographicName = snapshot.geographicNames.find((entry) => entry.id === geographicNameId);
+            if (!geographicName) throw new Error(`Missing ${geographicNameId}`);
+            const existing = geographicName.aliases.find((alias) => alias.id === id);
+            if (existing) {
+              if (
+                existing.geographicNameId !== geographicNameId ||
+                existing.language !== 'es' ||
+                existing.value !== value
+              ) {
+                throw new Error(`Conflicting ${id}`);
+              }
+            } else {
+              geographicName.aliases.push({ id, geographicNameId, language: 'es', value });
+            }
+            geographicName.aliases.sort((a, b) => a.id.localeCompare(b.id));
+          }
+
+          const canonicalize = (value) => {
+            if (Array.isArray(value)) return value.map(canonicalize);
+            if (value && typeof value === 'object') {
+              return Object.fromEntries(
+                Object.keys(value)
+                  .sort()
+                  .map((key) => [key, canonicalize(value[key])]),
+              );
+            }
+            return value;
+          };
+          const {
+            generatedAt: _generatedAt,
+            sourceRevision: _sourceRevision,
+            checksum: _checksum,
+            ...content
+          } = snapshot;
+          const digest = `sha256:${crypto
+            .createHash('sha256')
+            .update(JSON.stringify(canonicalize(content)))
+            .digest('hex')}`;
+          snapshot.generatedAt = new Date().toISOString();
+          snapshot.sourceRevision = digest;
+          snapshot.checksum = digest;
+          fs.writeFileSync(path, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
+
+          if (digest !== 'sha256:449a77629b63392db19d6fd9af70b2aea812e54f17324ca3eb0e057104e9e26a') {
+            throw new Error(`Unexpected MAP-040 snapshot checksum ${digest}`);
+          }
+
+          const packagePath = 'package.json';
+          const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+          delete pkg.scripts.postinstall;
+          fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8');
+          NODE
+
+          rm scripts/map040-ci-format-helper.mjs
+          rm .github/workflows/map040-finalize-snapshot.yml
+
+      - name: Commit final MAP-040 source state
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add public/data/public-catalog.snapshot.json package.json scripts/map040-ci-format-helper.mjs .github/workflows/map040-finalize-snapshot.yml
+          git commit -m "chore(map-040): finalize public snapshot"
+          git push origin HEAD:agent/map-040-spanish-geographic-names
