@@ -4,6 +4,7 @@ import type { EntityId } from '../data/beta02-model';
 
 export interface MasterDetailActionsOptions {
   readonly getMasterEntityIds: () => ReadonlySet<EntityId>;
+  readonly onAudienceChanged?: (entityId: EntityId, audience: MapEntityAudience) => Promise<void>;
 }
 
 export interface MasterDetailActionsController {
