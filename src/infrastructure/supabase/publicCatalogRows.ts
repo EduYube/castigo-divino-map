@@ -299,7 +299,7 @@ export function parseGeographicAlias(
       `${path}.geographic_name_id`,
       IDENTIFIER_PATTERNS.geographicName,
     ) as PublicGeographicNameAlias['geographicNameId'],
-    language: expectEnum(row.language, `${path}.language`, ['en'] as const),
+    language: expectEnum(row.language, `${path}.language`, ['en', 'es'] as const),
     value: expectString(row.value, `${path}.value`),
   };
 }
