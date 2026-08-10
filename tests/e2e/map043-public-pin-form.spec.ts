@@ -37,7 +37,11 @@ async function configureRequestRuntime(page: Page): Promise<void> {
 async function recordScrollIntoView(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const originalScrollIntoView = Element.prototype.scrollIntoView;
-    const calls: Array<{ id: string; behavior: ScrollBehavior | null; block: ScrollLogicalPosition | null }> = [];
+    const calls: Array<{
+      id: string;
+      behavior: ScrollBehavior | null;
+      block: ScrollLogicalPosition | null;
+    }> = [];
     (
       window as unknown as {
         __MAP043_SCROLL_CALLS__: typeof calls;
@@ -188,7 +192,9 @@ test('uses immediate scrolling when reduced motion is requested', async ({ page 
   );
 });
 
-test('uses the full map-experience width on desktop without compressing the form', async ({ page }) => {
+test('uses the full map-experience width on desktop without compressing the form', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await openReadyMap(page);
   const panel = await openPanel(page);
@@ -217,12 +223,22 @@ test('uses the full map-experience width on desktop without compressing the form
   expect(senderBox).not.toBeNull();
   expect(proposedBox).not.toBeNull();
   expect(typeBox).not.toBeNull();
-  if (!experienceBox || !panelBox || !formBox || !privacyBox || !senderBox || !proposedBox || !typeBox) {
+  if (
+    !experienceBox ||
+    !panelBox ||
+    !formBox ||
+    !privacyBox ||
+    !senderBox ||
+    !proposedBox ||
+    !typeBox
+  ) {
     return;
   }
 
   expect(panelBox.x).toBeGreaterThanOrEqual(experienceBox.x - 1);
-  expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(experienceBox.x + experienceBox.width + 1);
+  expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(
+    experienceBox.x + experienceBox.width + 1,
+  );
   expect(panelBox.width).toBeGreaterThan(experienceBox.width * 0.97);
   expect(privacyBox.width).toBeGreaterThan(formBox.width * 0.95);
   expect(senderBox.width).toBeGreaterThan(formBox.width * 0.4);
@@ -241,7 +257,9 @@ const responsiveViewports = [
 ] as const;
 
 for (const viewport of responsiveViewports) {
-  test(`keeps a one-column usable form at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+  test(`keeps a one-column usable form at ${viewport.width}x${viewport.height}`, async ({
+    page,
+  }) => {
     await page.setViewportSize(viewport);
     await openReadyMap(page);
     const panel = await openPanel(page);
@@ -317,7 +335,9 @@ test('preserves entered data and the provisional marker across map interaction a
   await expect(form.getByLabel('Nombre o apodo')).toHaveValue('Cronista de prueba');
   await expect(form.getByLabel('Nombre propuesto del pin')).toHaveValue('Campamento del Alba');
   await expect(form.getByLabel('Tipo de pin')).toHaveValue('location');
-  await expect(form.getByLabel('Descripción')).toHaveValue('Un campamento temporal junto al camino.');
+  await expect(form.getByLabel('Descripción')).toHaveValue(
+    'Un campamento temporal junto al camino.',
+  );
   await expect(form.getByLabel('Motivo de la solicitud')).toHaveValue(
     'Mantener el contexto de la sesión.',
   );
@@ -332,7 +352,10 @@ test('preserves entered data and the provisional marker across map interaction a
   await expectNoHorizontalOverflow(page);
 });
 
-test('preserves visible boundaries and focus treatment in forced colors', async ({ page, browserName }) => {
+test('preserves visible boundaries and focus treatment in forced colors', async ({
+  page,
+  browserName,
+}) => {
   test.skip(browserName !== 'chromium', 'Forced-colors emulation is validated in Chromium.');
   await page.setViewportSize({ width: 768, height: 1024 });
   await page.emulateMedia({ forcedColors: 'active' });
