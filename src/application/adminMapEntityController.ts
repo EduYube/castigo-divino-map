@@ -241,6 +241,46 @@ export class AdminMapEntityController {
     }
   }
 
+  async changeAudience(entityId: string, audience: MapEntityAudience): Promise<boolean> {
+    if (!this.#canMutate() || this.#state.phase === 'mutating') {
+      this.#publishBlocked();
+      return false;
+    }
+    const operation = this.#beginOperation();
+    this.#publish({ ...this.#state, phase: 'mutating', issue: null });
+    try {
+      const detail = await this.#repository.load(entityId, { signal: operation.signal });
+      if (!this.#isCurrent(operation.generation)) return false;
+      if (getMapEntityAudience(detail.record) === audience) {
+        this.#publish({ ...this.#state, phase: 'ready', issue: null });
+        return true;
+      }
+      const saved = await this.#repository.save(
+        detail,
+        { ...detailToDraft(detail), audience },
+        { signal: operation.signal },
+      );
+      if (!this.#isCurrent(operation.generation)) return false;
+      const editorMatches = this.#state.editorDetail?.record.id === saved.record.id;
+      this.#publish({
+        ...this.#state,
+        records: this.#state.records.map((record) =>
+          record.id === saved.record.id ? saved.record : record,
+        ),
+        editorDetail: editorMatches ? saved : this.#state.editorDetail,
+        phase: 'ready',
+        issue: null,
+        pendingAudience: editorMatches
+          ? getMapEntityAudience(saved.record)
+          : this.#state.pendingAudience,
+      });
+      return true;
+    } catch (error) {
+      this.#handleFailure(error, operation.generation);
+      return false;
+    }
+  }
+
   async archive(record: AdminMapEntityRecord): Promise<boolean> {
     if (!this.#canMutate() || this.#state.phase === 'mutating') {
       this.#publishBlocked();
