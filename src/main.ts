@@ -124,7 +124,7 @@ function mountPublicExperience(
 
   const compactDetailsPanel = app.querySelector<HTMLElement>('[data-place-details]');
   const mobileCompactDetailsMedia = window.matchMedia(MOBILE_COMPACT_DETAILS_QUERY);
-  const keepPinVisibleWithCompactDetails = (pin: AtlasPinMarkerModel): void => {
+  const keepPinVisibleWithCompactDetails = (): void => {
     if (!mobileCompactDetailsMedia.matches) {
       return;
     }
@@ -138,33 +138,45 @@ function mountPublicExperience(
         return;
       }
 
-      const sheetHeight = compactDetailsPanel.getBoundingClientRect().height;
+      const activeMarker = app.querySelector<HTMLElement>(
+        '.campaign-marker-icon[aria-pressed="true"]',
+      );
+      if (!activeMarker) {
+        return;
+      }
+
       const edgePadding = 20;
       mapController.map.invalidateSize({ animate: false, pan: false });
 
-      const mapSize = mapController.map.getSize();
-      const pinPoint = mapController.map.latLngToContainerPoint([
-        pin.coordinate[0],
-        pin.coordinate[1],
-      ]);
-      const visibleRight = Math.max(edgePadding, mapSize.x - edgePadding);
-      const visibleBottom = Math.max(edgePadding, mapSize.y - Math.ceil(sheetHeight) - edgePadding);
-      let offsetX = 0;
-      let offsetY = 0;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const mapRect = mapController.map.getContainer().getBoundingClientRect();
+        const panelRect = compactDetailsPanel.getBoundingClientRect();
+        const markerRect = activeMarker.getBoundingClientRect();
+        const markerCenterX = markerRect.left + markerRect.width / 2;
+        const markerCenterY = markerRect.top + markerRect.height / 2;
+        const visibleLeft = mapRect.left + edgePadding;
+        const visibleRight = mapRect.right - edgePadding;
+        const visibleTop = mapRect.top + edgePadding;
+        const visibleBottom = Math.min(mapRect.bottom - edgePadding, panelRect.top - edgePadding);
+        let offsetX = 0;
+        let offsetY = 0;
 
-      if (pinPoint.x < edgePadding) {
-        offsetX = pinPoint.x - edgePadding;
-      } else if (pinPoint.x > visibleRight) {
-        offsetX = pinPoint.x - visibleRight;
-      }
+        if (markerCenterX < visibleLeft) {
+          offsetX = markerCenterX - visibleLeft;
+        } else if (markerCenterX > visibleRight) {
+          offsetX = markerCenterX - visibleRight;
+        }
 
-      if (pinPoint.y < edgePadding) {
-        offsetY = pinPoint.y - edgePadding;
-      } else if (pinPoint.y > visibleBottom) {
-        offsetY = pinPoint.y - visibleBottom;
-      }
+        if (markerCenterY < visibleTop) {
+          offsetY = markerCenterY - visibleTop;
+        } else if (markerCenterY > visibleBottom) {
+          offsetY = markerCenterY - visibleBottom;
+        }
 
-      if (offsetX !== 0 || offsetY !== 0) {
+        if (offsetX === 0 && offsetY === 0) {
+          break;
+        }
+
         const roundAwayFromZero = (value: number): number =>
           value > 0 ? Math.ceil(value) : Math.floor(value);
         mapController.map.panBy([roundAwayFromZero(offsetX), roundAwayFromZero(offsetY)], {
@@ -217,7 +229,7 @@ function mountPublicExperience(
     }
 
     compactDetailsController.show(details, { focus });
-    keepPinVisibleWithCompactDetails(pin);
+    keepPinVisibleWithCompactDetails();
     return true;
   }
 
@@ -357,7 +369,6 @@ function mountPublicExperience(
     catalogState = nextCatalogState;
     const previousActivePlaceId = selection.getActivePlaceId();
     const validPlaceIds = new Set(nextCatalogState.compatibility.places.map(({ id }) => id));
-
     isRestoringFromHistory = true;
 
     try {
