@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 
 const DATABASE_CONTAINER = 'supabase_db_castigo-divino-map';
-const MIGRATION_PATH = 'supabase/migrations/20260810170000_add_geographic_search_extents.sql';
+const MIGRATION_PATH = 'supabase/migrations/20260810164932_add_geographic_search_extents.sql';
 
 function fail(message) {
   throw new Error(`MAP-041 data migration verification failed: ${message}`);
