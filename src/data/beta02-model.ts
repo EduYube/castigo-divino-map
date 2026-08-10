@@ -7,6 +7,7 @@ export type CharacterLocationEventId = `location-event-${string}` | `relation-${
 export type TagId = string;
 export type Slug = string;
 export type LanguageCode = 'en';
+export type GeographicNameAliasLanguageCode = LanguageCode | 'es';
 
 export type EntityType = 'character' | 'location';
 export type MapVisibility = 'pin' | 'search_only';
@@ -86,7 +87,7 @@ export interface PublicNote {
 export interface PublicGeographicNameAlias {
   readonly id: string;
   readonly geographicNameId: GeographicNameId;
-  readonly language: LanguageCode;
+  readonly language: GeographicNameAliasLanguageCode;
   readonly value: string;
 }
 
