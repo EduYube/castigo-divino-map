@@ -138,6 +138,15 @@
     max-width: 5.5rem;
     padding-inline: 0.5rem;
   }
+
+  .map-workspace[data-details-open='true'] > .map-shell,
+  .map-workspace[data-details-open='true'] .map-canvas {
+    min-height: clamp(12rem, 43dvh, 20rem);
+  }
+
+  .map-workspace[data-details-open='true'] .map-canvas {
+    height: clamp(12rem, 43dvh, 20rem);
+  }
 }
 
 @media (max-width: 48rem) and (orientation: landscape) and (max-height: 32rem) {
