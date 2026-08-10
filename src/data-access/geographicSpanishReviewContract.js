@@ -1,4 +1,5 @@
 import { assertGeographicSearchCoverage } from './geographicCoverageContract.js';
+import { GEOGRAPHIC_COVERAGE_MANIFEST } from './geographicCoverageManifest.js';
 import {
   GEOGRAPHIC_SPANISH_REVIEW_MANIFEST,
   MAP040_SPANISH_REVIEW_COUNT,
@@ -17,6 +18,28 @@ export function spanishGeographicAliasId(geographicNameId) {
   return `geo-alias-${geographicNameId.slice(4)}-es`;
 }
 
+export function assertGeographicSpanishReviewIdentitySet(
+  map039Entries = GEOGRAPHIC_COVERAGE_MANIFEST,
+) {
+  const reviewedIds = new Set(GEOGRAPHIC_SPANISH_REVIEW_MANIFEST.map(({ id }) => id));
+  const map039Ids = new Set(map039Entries.map(({ id }) => id));
+
+  if (reviewedIds.size !== MAP040_SPANISH_REVIEW_COUNT) {
+    fail('review manifest', `expected ${MAP040_SPANISH_REVIEW_COUNT} reviewed IDs, got ${reviewedIds.size}.`);
+  }
+
+  for (const id of map039Ids) {
+    if (!reviewedIds.has(id)) {
+      fail('review manifest', `${id} exists in MAP-039 but has not been audited by MAP-040.`);
+    }
+  }
+  for (const id of reviewedIds) {
+    if (!map039Ids.has(id)) {
+      fail('review manifest', `${id} is audited by MAP-040 but is absent from MAP-039.`);
+    }
+  }
+}
+
 export function assertGeographicSpanishReviewManifest() {
   if (GEOGRAPHIC_SPANISH_REVIEW_MANIFEST.length !== MAP040_SPANISH_REVIEW_COUNT) {
     fail(
@@ -24,6 +47,8 @@ export function assertGeographicSpanishReviewManifest() {
       `expected ${MAP040_SPANISH_REVIEW_COUNT} identities, got ${GEOGRAPHIC_SPANISH_REVIEW_MANIFEST.length}.`,
     );
   }
+
+  assertGeographicSpanishReviewIdentitySet();
 
   const total =
     MAP040_SPANISH_REVIEW_COUNTS.translated +
