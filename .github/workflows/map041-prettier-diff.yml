@@ -1,19 +1,21 @@
-name: MAP-041 Prettier Diff
+name: MAP-041 Branch Formatter
 
 on:
-  pull_request:
+  push:
     branches:
-      - master
+      - agent/map-041-geographic-search-extents
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  prettier-diff:
+  format:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout repository
+      - name: Checkout branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-041-geographic-search-extents
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
@@ -21,7 +23,15 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Show Prettier diff
+      - name: Apply Prettier
+        run: npx prettier --write --end-of-line auto "src/**/*.{ts,js,json}" "public/**/*.json" "tests/**/*.ts" "scripts/**/*.{mjs,mts}" "*.{js,mjs,ts,json,html}" ".github/**/*.yml"
+      - name: Commit formatting if needed
         run: |
-          npx prettier --write --end-of-line auto "src/**/*.{ts,js,json}" "public/**/*.json" "tests/**/*.ts" "scripts/**/*.{mjs,mts}" "*.{js,mjs,ts,json,html}" ".github/**/*.yml"
-          git diff --no-ext-diff --src-prefix=a/ --dst-prefix=b/
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "style(MAP-041): apply Prettier"
+          git push origin HEAD:agent/map-041-geographic-search-extents
