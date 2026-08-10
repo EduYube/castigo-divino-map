@@ -162,6 +162,7 @@ test('searches Waterdeep as a separate geographic identity and applies its recom
 
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   await searchbox.fill('Waterdeep');
+  await searchbox.press('Escape');
 
   const results = page.getByRole('list', { name: 'Resultados de búsqueda de lugares' });
   const geographic = results.getByRole('button', {
@@ -196,7 +197,9 @@ test('keeps an associated campaign card as a separate action from geographic sel
 }) => {
   await openGeographicSearch(page);
 
-  await page.getByRole('searchbox', { name: 'Buscar lugares' }).fill('Harbor District');
+  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await searchbox.fill('Harbor District');
+  await searchbox.press('Escape');
   const results = page.getByRole('list', { name: 'Resultados de búsqueda de lugares' });
   const geographic = results.getByRole('button', {
     name: /Harbor District.*Lugar geográfico/i,
@@ -241,12 +244,16 @@ test('operates an unlinked geographic result with the keyboard without stealing 
   await openGeographicSearch(page);
 
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  const clearSearch = page.getByRole('button', { name: 'Limpiar búsqueda' });
   await searchbox.fill('Sword Mountains');
-  await searchbox.press('ArrowDown');
+  await searchbox.press('Escape');
 
   const result = page.getByRole('button', {
     name: /Sword Mountains.*Lugar geográfico/i,
   });
+  await page.keyboard.press('Tab');
+  await expect(clearSearch).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(result).toBeFocused();
   await page.keyboard.press('Enter');
 
@@ -260,7 +267,9 @@ test('keeps the geographic highlight static when reduced motion is requested', a
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openGeographicSearch(page);
 
-  await page.getByRole('searchbox', { name: 'Buscar lugares' }).fill('City of Splendors');
+  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await searchbox.fill('City of Splendors');
+  await searchbox.press('Escape');
   await page
     .getByRole('button', { name: /Waterdeep.*Lugar geográfico.*Coincidencia por alias/i })
     .click();
@@ -268,6 +277,7 @@ test('keeps the geographic highlight static when reduced motion is requested', a
   const animationName = await page
     .locator('.geographic-search-highlight__symbol')
     .evaluate((element) => getComputedStyle(element).animationName);
+
   expect(animationName).toBe('none');
 });
 
