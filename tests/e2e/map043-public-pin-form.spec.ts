@@ -346,7 +346,7 @@ test('preserves entered data and the provisional marker across map interaction a
   await expect(page.locator('.public-request-position-marker')).toBeVisible();
   await expect(page.locator('[data-public-pin-request-panel]')).toHaveCount(1);
 
-  const choosePosition = page.locator('[data-public-pin-request-position-choose]');
+  const choosePosition = page.locator('[data-public-pin-request-choose-position]');
   await expect(choosePosition).toHaveCount(1);
   await choosePosition.click();
   await expect(mapCanvas).toHaveAttribute('data-public-request-selecting', 'true');
