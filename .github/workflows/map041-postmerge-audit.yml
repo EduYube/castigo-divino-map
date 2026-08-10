@@ -1,0 +1,39 @@
+name: MAP-041 Post-merge Audit
+
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      MERGE_SHA: 6ce7c7ac3a7c3ae470bb480819357c43b2d2c234
+    steps:
+      - name: Checkout audit branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-041-postmerge-audit
+      - name: Query post-merge workflow runs
+        run: |
+          gh api --paginate "repos/${REPO}/actions/runs?branch=master&per_page=100" \
+            --jq '[.workflow_runs[] | select(.head_sha == env.MERGE_SHA) | {id,name,event,status,conclusion,head_sha,run_number,created_at,updated_at,html_url}]' \
+            > map041-postmerge-audit.json
+          cat map041-postmerge-audit.json
+      - name: Commit audit snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add map041-postmerge-audit.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "chore(MAP-041): record post-merge workflow state"
+          git push origin HEAD:agent/map-041-postmerge-audit
