@@ -25,7 +25,10 @@ export function assertGeographicSpanishReviewIdentitySet(
   const map039Ids = new Set(map039Entries.map(({ id }) => id));
 
   if (reviewedIds.size !== MAP040_SPANISH_REVIEW_COUNT) {
-    fail('review manifest', `expected ${MAP040_SPANISH_REVIEW_COUNT} reviewed IDs, got ${reviewedIds.size}.`);
+    fail(
+      'review manifest',
+      `expected ${MAP040_SPANISH_REVIEW_COUNT} reviewed IDs, got ${reviewedIds.size}.`,
+    );
   }
 
   for (const id of map039Ids) {
@@ -56,7 +59,10 @@ export function assertGeographicSpanishReviewManifest() {
     MAP040_SPANISH_REVIEW_COUNTS.unverified;
 
   if (total !== MAP040_SPANISH_REVIEW_COUNT) {
-    fail('review manifest', `status counts add up to ${total}, not ${MAP040_SPANISH_REVIEW_COUNT}.`);
+    fail(
+      'review manifest',
+      `status counts add up to ${total}, not ${MAP040_SPANISH_REVIEW_COUNT}.`,
+    );
   }
 
   const waterdeep = GEOGRAPHIC_SPANISH_REVIEW_MANIFEST.find(({ id }) => id === 'geo-waterdeep');
@@ -81,13 +87,21 @@ export function assertGeographicSpanishSearchCoverage(content, label = 'catalog'
   for (const review of GEOGRAPHIC_SPANISH_REVIEW_MANIFEST) {
     for (const value of review.aliases) {
       const id = spanishGeographicAliasId(review.id);
-      expectedSpanishAliases.set(`${review.id}\u0000${value}`, { id, geographicNameId: review.id, value });
+      expectedSpanishAliases.set(`${review.id}\u0000${value}`, {
+        id,
+        geographicNameId: review.id,
+        value,
+      });
     }
   }
 
   const observedSpanishAliases = [];
   for (const geographicName of content.geographicNames) {
-    if (!geographicName || typeof geographicName !== 'object' || !Array.isArray(geographicName.aliases)) {
+    if (
+      !geographicName ||
+      typeof geographicName !== 'object' ||
+      !Array.isArray(geographicName.aliases)
+    ) {
       fail(label, `${geographicName?.id ?? 'unknown identity'} must expose aliases as an array.`);
     }
 
