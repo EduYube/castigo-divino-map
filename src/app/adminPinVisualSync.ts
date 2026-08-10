@@ -1,4 +1,4 @@
-import type { MapEntityType, PlayerDisposition } from '../domain/adminMapEntities';
+import type { MapEntityAudience, MapEntityType, PlayerDisposition } from '../domain/adminMapEntities';
 import {
   createPlayerDispositionVisuals,
   describePlayerDispositions,
@@ -14,6 +14,12 @@ export interface AdminPinVisualSyncController {
 function readEntityType(root: ParentNode): MapEntityType {
   const value = root.querySelector<HTMLSelectElement>('[name="entityType"]')?.value;
   return value === 'character' ? 'character' : 'location';
+}
+
+function readAudience(root: ParentNode): MapEntityAudience {
+  return root.querySelector<HTMLSelectElement>('[name="audience"]')?.value === 'master'
+    ? 'master'
+    : 'public';
 }
 
 function readDispositions(root: ParentNode): readonly PinPlayerDispositionInput[] {
@@ -36,16 +42,17 @@ function readDispositions(root: ParentNode): readonly PinPlayerDispositionInput[
 function populatePinVisual(
   visual: HTMLElement,
   entityType: MapEntityType,
+  audience: MapEntityAudience,
   dispositions: readonly PinPlayerDispositionInput[],
 ): void {
   const type = getPinTypeVisual(entityType);
-  const signature = `${entityType}:${dispositions
+  const signature = `${entityType}:${audience}:${dispositions
     .map(({ playerId, disposition }) => `${playerId}=${disposition ?? 'unknown'}`)
     .join(',')}`;
 
   if (visual.dataset.pinVisualSignature === signature) return;
   visual.dataset.pinVisualSignature = signature;
-  visual.className = `pin-visual ${type.className}`;
+  visual.className = `pin-visual ${type.className}${audience === 'master' ? ' pin-visual--master' : ''}`;
 
   const typeSymbol = document.createElement('span');
   typeSymbol.className = 'pin-visual__type-symbol';
@@ -72,20 +79,23 @@ function synchronize(root: ParentNode): void {
   if (!form) return;
 
   const entityType = readEntityType(form);
+  const audience = readAudience(form);
   const dispositions = readDispositions(form);
   const type = getPinTypeVisual(entityType);
   const dispositionDescription = describePlayerDispositions(dispositions);
+  const audienceDescription = audience === 'master' ? ' Contenido del Máster.' : '';
 
   const coordinateMarker = section.querySelector<HTMLElement>(
     '[data-testid="admin-coordinate-marker"]',
   );
   const coordinateVisual = coordinateMarker?.querySelector<HTMLElement>('.pin-visual');
   if (coordinateMarker && coordinateVisual) {
-    populatePinVisual(coordinateVisual, entityType, dispositions);
+    populatePinVisual(coordinateVisual, entityType, audience, dispositions);
     coordinateMarker.dataset.entityType = entityType;
+    coordinateMarker.dataset.audience = audience;
     coordinateMarker.setAttribute(
       'aria-label',
-      `Coordenada seleccionada. ${type.label}. Disposición por jugador: ${dispositionDescription}. Puedes arrastrarla con un puntero o editar X e Y en el formulario.`,
+      `Coordenada seleccionada. ${type.label}.${audienceDescription} Disposición por jugador: ${dispositionDescription}. Puedes arrastrarla con un puntero o editar X e Y en el formulario.`,
     );
   }
 
@@ -101,8 +111,9 @@ function synchronize(root: ParentNode): void {
     previewMarker.hidden = false;
     previewMarker.setAttribute('data-testid', 'admin-pin-preview');
     previewMarker.dataset.entityType = entityType;
-    previewMarker.title = `${type.label}. Disposición por jugador: ${dispositionDescription}.`;
-    populatePinVisual(visual, entityType, dispositions);
+    previewMarker.dataset.audience = audience;
+    previewMarker.title = `${type.label}.${audienceDescription} Disposición por jugador: ${dispositionDescription}.`;
+    populatePinVisual(visual, entityType, audience, dispositions);
   }
 }
 
