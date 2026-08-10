@@ -141,10 +141,7 @@ function toMasterCatalogEntity(row: typeof MASTER_ROW) {
   };
 }
 
-function masterCatalog(
-  audience: 'public' | 'master',
-  includeCoincidentMaster: boolean,
-) {
+function masterCatalog(audience: 'public' | 'master', includeCoincidentMaster: boolean) {
   const entities = audience === 'master' ? [toMasterCatalogEntity(MASTER_ROW)] : [];
   if (audience === 'master' && includeCoincidentMaster) {
     entities.push(toMasterCatalogEntity(COINCIDENT_MASTER_ROW));
@@ -359,9 +356,9 @@ for (const status of [401, 403] as const) {
     await expect(page.locator('[data-master-mode-toggle]')).toHaveCount(0);
     await expect(privateMarker).toHaveCount(0);
     await expect(page.getByText(MASTER_NAME, { exact: true })).toHaveCount(0);
-    await expect.poll(() =>
-      page.evaluate(() => window.sessionStorage.getItem('castigo-divino-map:auth:v1')),
-    ).toBeNull();
+    await expect
+      .poll(() => page.evaluate(() => window.sessionStorage.getItem('castigo-divino-map:auth:v1')))
+      .toBeNull();
   });
 }
 
@@ -406,9 +403,7 @@ test('public and master coincident pins expose count 2 only while Master Mode is
   await page.goto('/');
   await signIn(page);
 
-  const harbor = page.locator(
-    '[data-testid="place-marker"][data-place-id="place-demo-harbor"]',
-  );
+  const harbor = page.locator('[data-testid="place-marker"][data-place-id="place-demo-harbor"]');
   await expect(harbor).toHaveCount(1);
   await expect(page.getByTestId('coincident-pin')).toHaveCount(0);
 
