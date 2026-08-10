@@ -168,7 +168,7 @@ test('keyboard autocomplete selects the geographic identity and applies center, 
   await expect(input).toHaveValue('Thunder Peaks');
   const shell = page.getByTestId('map-shell');
   await expect(shell).toHaveAttribute('data-map-center', '859.00,3100.00');
-  await expect(shell).toHaveAttribute('data-map-zoom', '0.5');
+  await expect(shell).toHaveAttribute('data-map-zoom', '0.50');
   await expect(shell).toHaveAttribute('data-search-highlight', 'true');
   await expect(page.locator('[data-map-search-status]')).toContainText(
     'Mapa centrado en Thunder Peaks, lugar geográfico',
@@ -195,7 +195,7 @@ test('uses the bundled MAP-039 snapshot when Supabase is unavailable', async ({ 
 
   const shell = page.getByTestId('map-shell');
   await expect(shell).toHaveAttribute('data-map-center', '899.00,1090.00');
-  await expect(shell).toHaveAttribute('data-map-zoom', '0.5');
+  await expect(shell).toHaveAttribute('data-map-zoom', '0.50');
   await expect(shell).toHaveAttribute('data-search-highlight', 'true');
   await expect(page.getByTestId('place-details')).toBeHidden();
 });
