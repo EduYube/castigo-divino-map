@@ -2,6 +2,7 @@
 @import './mobile-map-first-final.css';
 @import './map-first-hierarchy.css';
 @import './map-help.css';
+@import './mobile-compact-pin-details.css';
 
 .collapsible-control__header {
   display: grid;

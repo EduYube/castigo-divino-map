@@ -41,6 +41,7 @@ import './styles/backend-status.css';
 import './styles/admin-auth.css';
 import './styles/accessibility.css';
 
+const MOBILE_COMPACT_DETAILS_QUERY = '(max-width: 48rem)';
 const appElement = document.querySelector<HTMLDivElement>('#app');
 
 if (!appElement) {
@@ -121,9 +122,75 @@ function mountPublicExperience(
   });
   mountPublicPinRequest(app, mapController.map);
 
-  const clearSupplementalMapSelection = (pin: AtlasPinMarkerModel): void => {
-    mapController.setMarkers(renderedMarkers.filter(({ id }) => id !== pin.id));
-    mapController.setMarkers(renderedMarkers);
+  const compactDetailsPanel = app.querySelector<HTMLElement>('[data-place-details]');
+  const mobileCompactDetailsMedia = window.matchMedia(MOBILE_COMPACT_DETAILS_QUERY);
+  const keepPinVisibleWithCompactDetails = (): void => {
+    if (!mobileCompactDetailsMedia.matches) {
+      return;
+    }
+
+    const adjustActiveMarker = (attemptsRemaining: number): void => {
+      window.requestAnimationFrame(() => {
+        if (
+          !mobileCompactDetailsMedia.matches ||
+          !compactDetailsPanel ||
+          compactDetailsPanel.hidden
+        ) {
+          return;
+        }
+
+        const activeMarker = app.querySelector<HTMLElement>(
+          '.campaign-marker-icon[aria-pressed="true"]',
+        );
+        if (!activeMarker) {
+          return;
+        }
+
+        const edgePadding = 20;
+        mapController.map.invalidateSize({ animate: false, pan: false });
+        const mapRect = mapController.map.getContainer().getBoundingClientRect();
+        const panelRect = compactDetailsPanel.getBoundingClientRect();
+        const markerRect = activeMarker.getBoundingClientRect();
+        const markerCenterX = markerRect.left + markerRect.width / 2;
+        const markerCenterY = markerRect.top + markerRect.height / 2;
+        const visibleLeft = mapRect.left + edgePadding;
+        const visibleRight = mapRect.right - edgePadding;
+        const visibleTop = mapRect.top + edgePadding;
+        const visibleBottom = Math.min(mapRect.bottom - edgePadding, panelRect.top - edgePadding);
+        let offsetX = 0;
+        let offsetY = 0;
+
+        if (markerCenterX < visibleLeft) {
+          offsetX = markerCenterX - visibleLeft;
+        } else if (markerCenterX > visibleRight) {
+          offsetX = markerCenterX - visibleRight;
+        }
+
+        if (markerCenterY < visibleTop) {
+          offsetY = markerCenterY - visibleTop;
+        } else if (markerCenterY > visibleBottom) {
+          offsetY = markerCenterY - visibleBottom;
+        }
+
+        if (offsetX !== 0 || offsetY !== 0) {
+          const roundAwayFromZero = (value: number): number =>
+            value > 0 ? Math.ceil(value) : Math.floor(value);
+          mapController.map.panBy([roundAwayFromZero(offsetX), roundAwayFromZero(offsetY)], {
+            animate: false,
+          });
+        }
+
+        if (attemptsRemaining > 1) {
+          adjustActiveMarker(attemptsRemaining - 1);
+        }
+      });
+    };
+
+    adjustActiveMarker(4);
+  };
+
+  const clearSupplementalMapSelection = (): void => {
+    mapController.clearSupplementalPinSelection();
   };
 
   const compactDetailsController = mountCompactPinDetails(app, {
@@ -144,7 +211,7 @@ function mountPublicExperience(
       }
 
       activeSupplementalPin = null;
-      clearSupplementalMapSelection(supplementalPin);
+      clearSupplementalMapSelection();
       window.requestAnimationFrame(() => focusPinControl(supplementalPin));
     },
     createFullDetailsUrl(details): string | null {
@@ -164,6 +231,7 @@ function mountPublicExperience(
     }
 
     compactDetailsController.show(details, { focus });
+    keepPinVisibleWithCompactDetails();
     return true;
   }
 
@@ -206,10 +274,9 @@ function mountPublicExperience(
       }
 
       if (activeSupplementalPin) {
-        const supplementalPin = activeSupplementalPin;
         activeSupplementalPin = null;
         compactDetailsController.hide();
-        clearSupplementalMapSelection(supplementalPin);
+        clearSupplementalMapSelection();
       }
       selection.clear();
       mapController.locateSearchTarget({
@@ -303,7 +370,6 @@ function mountPublicExperience(
     catalogState = nextCatalogState;
     const previousActivePlaceId = selection.getActivePlaceId();
     const validPlaceIds = new Set(nextCatalogState.compatibility.places.map(({ id }) => id));
-
     isRestoringFromHistory = true;
 
     try {
@@ -351,10 +417,9 @@ function mountPublicExperience(
 
     try {
       if (activeSupplementalPin) {
-        const supplementalPin = activeSupplementalPin;
         activeSupplementalPin = null;
         compactDetailsController.hide();
-        clearSupplementalMapSelection(supplementalPin);
+        clearSupplementalMapSelection();
       }
 
       placeSearchController.setQuery(parsed.state.query, { notify: false });

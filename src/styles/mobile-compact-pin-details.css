@@ -1,0 +1,185 @@
+.place-details__return {
+  display: none;
+}
+
+@media (max-width: 48rem) {
+  .map-workspace {
+    position: relative;
+    isolation: isolate;
+    overflow-anchor: none;
+  }
+
+  .map-workspace[data-details-open='true'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .map-workspace[data-details-open='true'] > .place-details {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1100;
+    width: 100%;
+    max-height: min(52dvh, 40%);
+    overflow: auto;
+    overflow-anchor: none;
+    overscroll-behavior: contain;
+    background:
+      linear-gradient(180deg, rgba(45, 58, 49, 0.99), rgba(24, 32, 27, 0.995)),
+      #1c251f;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+    border-radius: 1rem 1rem 0 0;
+    box-shadow: 0 -16px 42px rgba(0, 0, 0, 0.42);
+    scrollbar-gutter: auto;
+    touch-action: pan-y;
+  }
+
+  .place-details__toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 0.45rem;
+    min-height: 3.5rem;
+    padding: 0.4rem max(0.65rem, env(safe-area-inset-right)) 0.4rem
+      max(0.65rem, env(safe-area-inset-left));
+  }
+
+  .place-details__toolbar::before {
+    position: absolute;
+    top: 0.28rem;
+    left: 50%;
+    width: 2.5rem;
+    height: 0.2rem;
+    content: '';
+    background: var(--line);
+    border-radius: 999px;
+    transform: translateX(-50%);
+  }
+
+  .place-details__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .place-details__return {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.7rem;
+    color: var(--ink);
+    font-size: 0.78rem;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(247, 241, 227, 0.08);
+    border: 1px solid var(--line);
+    border-radius: 0.7rem;
+    touch-action: manipulation;
+  }
+
+  .place-details__return:hover {
+    color: #172018;
+    background: var(--accent-strong);
+  }
+
+  .place-details__content {
+    gap: 0.85rem;
+    padding: 0.8rem max(0.9rem, env(safe-area-inset-right))
+      max(1rem, env(safe-area-inset-bottom)) max(0.9rem, env(safe-area-inset-left));
+  }
+
+  .compact-details__title {
+    font-size: clamp(1.45rem, 6.5vw, 2rem);
+  }
+
+  .compact-details__type {
+    gap: 0.5rem;
+    font-size: 0.78rem;
+  }
+
+  .compact-details__type-shape {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .compact-details__section-title {
+    margin-bottom: 0.4rem;
+  }
+
+  .compact-details__dispositions {
+    gap: 0.35rem;
+  }
+
+  .compact-details__disposition {
+    min-height: 2.75rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .compact-details__full-boundary {
+    gap: 0.45rem;
+    padding-top: 0.75rem;
+  }
+}
+
+@media (max-width: 22rem) {
+  .place-details__toolbar {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .place-details__label {
+    font-size: 0.66rem;
+  }
+
+  .place-details__return {
+    max-width: 5.5rem;
+    padding-inline: 0.5rem;
+  }
+
+  .map-workspace[data-details-open='true'] > .map-shell,
+  .map-workspace[data-details-open='true'] .map-canvas {
+    min-height: clamp(12rem, 43dvh, 20rem);
+  }
+
+  .map-workspace[data-details-open='true'] .map-canvas {
+    height: clamp(12rem, 43dvh, 20rem);
+  }
+}
+
+@media (max-width: 48rem) and (orientation: landscape) and (max-height: 32rem) {
+  .map-workspace[data-details-open='true'] > .place-details {
+    max-height: min(52dvh, 48%);
+  }
+
+  .place-details__toolbar {
+    min-height: 3rem;
+    padding-block: 0.25rem;
+  }
+
+  .place-details__content {
+    gap: 0.65rem;
+    padding-top: 0.65rem;
+  }
+
+  .compact-details__title {
+    font-size: 1.35rem;
+  }
+}
+
+@media (forced-colors: active) and (max-width: 48rem) {
+  .map-workspace[data-details-open='true'] > .place-details,
+  .place-details__return {
+    color: CanvasText;
+    background: Canvas;
+    border-color: CanvasText;
+    forced-color-adjust: auto;
+  }
+
+  .place-details__toolbar::before {
+    background: CanvasText;
+  }
+}
