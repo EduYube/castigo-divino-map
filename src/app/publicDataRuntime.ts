@@ -15,6 +15,10 @@ import {
 import { BundledPublicCatalogRepository } from '../infrastructure/snapshot/publicCatalogSnapshot';
 import { BrowserPublicCatalogSessionCache } from '../infrastructure/snapshot/sessionCatalogCache';
 import { SupabasePublicCatalogRepository } from '../infrastructure/supabase/publicCatalogRepository';
+import {
+  ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT,
+  type AdminEntityAudienceChangedDetail,
+} from './adminEntityAudienceEvents';
 import { mountBackendStatus } from './backendStatus';
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -58,6 +62,12 @@ export interface PublicDataRuntime {
 
 function resolveTestConfig(): PublicDataTestConfig | undefined {
   return import.meta.env.DEV ? window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ : undefined;
+}
+
+function isAudienceChangedEvent(
+  event: Event,
+): event is CustomEvent<AdminEntityAudienceChangedDetail> {
+  return event instanceof CustomEvent && event.type === ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT;
 }
 
 function dispatchSafeStatusEvent(result: PublicCatalogLoadResult): void {
@@ -173,6 +183,23 @@ export async function bootstrapPublicDataRuntime(
     catalogListeners.forEach((listener) => listener(catalogState));
   };
 
+  const revokeEntity = (entityId: EntityId): void => {
+    if (revokedEntityIds.has(entityId)) return;
+    revokedEntityIds.add(entityId);
+    publishCatalogState(latestResult, true);
+  };
+
+  const clearEntityRevocation = (entityId: EntityId): void => {
+    if (!revokedEntityIds.delete(entityId)) return;
+    publishCatalogState(latestResult, true);
+  };
+
+  const handleAudienceChanged = (event: Event): void => {
+    if (!isAudienceChangedEvent(event)) return;
+    if (event.detail.audience === 'master') revokeEntity(event.detail.entityId);
+    else clearEntityRevocation(event.detail.entityId);
+  };
+
   const unsubscribe = service.subscribe((result) => {
     dispatchSafeStatusEvent(result);
     publishCatalogState(result);
@@ -213,6 +240,7 @@ export async function bootstrapPublicDataRuntime(
     }
   }, REFRESH_INTERVAL_MS);
 
+  window.addEventListener(ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT, handleAudienceChanged);
   window.addEventListener('online', handleOnline);
   window.addEventListener('offline', handleOffline);
   document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -233,17 +261,11 @@ export async function bootstrapPublicDataRuntime(
     refresh(): Promise<void> {
       return refresh(false);
     },
-    revokeEntity(entityId: EntityId): void {
-      if (revokedEntityIds.has(entityId)) return;
-      revokedEntityIds.add(entityId);
-      publishCatalogState(latestResult, true);
-    },
-    clearEntityRevocation(entityId: EntityId): void {
-      if (!revokedEntityIds.delete(entityId)) return;
-      publishCatalogState(latestResult, true);
-    },
+    revokeEntity,
+    clearEntityRevocation,
     destroy(): void {
       window.clearInterval(refreshInterval);
+      window.removeEventListener(ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT, handleAudienceChanged);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
