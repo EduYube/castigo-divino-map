@@ -1,5 +1,5 @@
 import { ResilientPublicCatalogService } from '../application/publicCatalogService';
-import type { PublicCatalogSnapshotV2 } from '../data/beta02-model';
+import type { EntityId, PublicCatalogSnapshotV2 } from '../data/beta02-model';
 import { toBeta01CompatibilityCatalog } from '../data/beta01Compatibility';
 import type { CampaignCatalog } from '../data/model';
 import {
@@ -8,6 +8,10 @@ import {
   type PublicCatalogLoadResult,
   type PublicDataIssue,
 } from '../data-access/publicCatalog';
+import {
+  applyEntityRevocationsToBeta01,
+  applyEntityRevocationsToBeta02,
+} from '../data/publicCatalogRevocations';
 import { BundledPublicCatalogRepository } from '../infrastructure/snapshot/publicCatalogSnapshot';
 import { BrowserPublicCatalogSessionCache } from '../infrastructure/snapshot/sessionCatalogCache';
 import { SupabasePublicCatalogRepository } from '../infrastructure/supabase/publicCatalogRepository';
@@ -47,6 +51,8 @@ export interface PublicDataRuntime {
   getCatalogState(): PublicCatalogState;
   subscribeCatalogState(listener: PublicCatalogStateListener): () => void;
   refresh(): Promise<void>;
+  revokeEntity(entityId: EntityId): void;
+  clearEntityRevocation(entityId: EntityId): void;
   destroy(): void;
 }
 
@@ -69,7 +75,10 @@ function dispatchSafeStatusEvent(result: PublicCatalogLoadResult): void {
   );
 }
 
-function toCatalogState(result: PublicCatalogLoadResult): PublicCatalogState {
+function toCatalogState(
+  result: PublicCatalogLoadResult,
+  revokedEntityIds: ReadonlySet<EntityId>,
+): PublicCatalogState {
   if (!result.data) {
     return {
       availability: 'unavailable',
@@ -84,15 +93,16 @@ function toCatalogState(result: PublicCatalogLoadResult): PublicCatalogState {
       availability: result.availability,
       checksum: result.metadata?.checksum ?? null,
       beta02: null,
-      compatibility: result.data.catalog,
+      compatibility: applyEntityRevocationsToBeta01(result.data.catalog, revokedEntityIds),
     };
   }
 
+  const beta02 = applyEntityRevocationsToBeta02(result.data.catalog, revokedEntityIds);
   return {
     availability: result.availability,
     checksum: result.metadata?.checksum ?? result.data.catalog.checksum,
-    beta02: result.data.catalog,
-    compatibility: toBeta01CompatibilityCatalog(result.data.catalog),
+    beta02,
+    compatibility: toBeta01CompatibilityCatalog(beta02),
   };
 }
 
@@ -145,14 +155,17 @@ export async function bootstrapPublicDataRuntime(
     retryDelaysMs: testConfig?.retryDelaysMs,
   });
   const initialResult = await service.initialize();
+  const revokedEntityIds = new Set<EntityId>();
   const catalogListeners = new Set<PublicCatalogStateListener>();
-  let catalogState = toCatalogState(initialResult);
+  let latestResult = initialResult;
+  let catalogState = toCatalogState(initialResult, revokedEntityIds);
   let lastRefreshAt = 0;
 
-  const publishCatalogState = (result: PublicCatalogLoadResult): void => {
-    const nextState = toCatalogState(result);
+  const publishCatalogState = (result: PublicCatalogLoadResult, force = false): void => {
+    latestResult = result;
+    const nextState = toCatalogState(result, revokedEntityIds);
 
-    if (isSameCatalogRevision(nextState, catalogState)) {
+    if (!force && isSameCatalogRevision(nextState, catalogState)) {
       return;
     }
 
@@ -220,11 +233,21 @@ export async function bootstrapPublicDataRuntime(
     refresh(): Promise<void> {
       return refresh(false);
     },
+    revokeEntity(entityId: EntityId): void {
+      if (revokedEntityIds.has(entityId)) return;
+      revokedEntityIds.add(entityId);
+      publishCatalogState(latestResult, true);
+    },
+    clearEntityRevocation(entityId: EntityId): void {
+      if (!revokedEntityIds.delete(entityId)) return;
+      publishCatalogState(latestResult, true);
+    },
     destroy(): void {
       window.clearInterval(refreshInterval);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      revokedEntityIds.clear();
       catalogListeners.clear();
       unsubscribe();
       service.dispose();
