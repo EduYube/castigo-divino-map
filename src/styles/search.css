@@ -75,6 +75,7 @@
   top: calc(100% + 0.4rem);
   right: 0;
   left: 0;
+  box-sizing: border-box;
   display: grid;
   gap: 0.35rem;
   max-height: min(16rem, 34vh);
