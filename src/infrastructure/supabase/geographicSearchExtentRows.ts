@@ -8,12 +8,7 @@ import { parseGeographicName } from './publicCatalogRows';
 
 const MAX_X = 3600;
 const MAX_Y = 2329;
-const EXTENT_COLUMNS = [
-  'search_min_x',
-  'search_max_x',
-  'search_min_y',
-  'search_max_y',
-] as const;
+const EXTENT_COLUMNS = ['search_min_x', 'search_max_x', 'search_min_y', 'search_max_y'] as const;
 
 function invalidResponse(message: string): never {
   throw new PublicDataRepositoryError('invalid-response', message, { source: 'supabase' });
