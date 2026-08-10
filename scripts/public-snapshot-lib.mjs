@@ -78,7 +78,9 @@ function geographicSearchExtent(row) {
     minX >= maxX ||
     minY >= maxY
   ) {
-    throw new Error(`geographicNames.${row.id}.searchExtent is outside the MAP-041 bounds contract.`);
+    throw new Error(
+      `geographicNames.${row.id}.searchExtent is outside the MAP-041 bounds contract.`,
+    );
   }
   if (row.x < minX || row.x > maxX || row.y < minY || row.y > maxY) {
     throw new Error(`geographicNames.${row.id}.searchExtent does not contain its canonical point.`);
