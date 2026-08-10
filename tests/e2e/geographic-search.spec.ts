@@ -177,10 +177,15 @@ test('searches Waterdeep as a separate geographic identity and applies its recom
   await geographic.click();
 
   const shell = page.getByTestId('map-shell');
+  const highlight = page.locator('.geographic-search-highlight');
   await expect(shell).toHaveAttribute('data-map-center', '1020.00,1690.00');
   await expect(shell).toHaveAttribute('data-map-zoom', '0.75');
   await expect(shell).toHaveAttribute('data-search-highlight', 'true');
-  await expect(page.locator('.geographic-search-highlight__symbol')).toBeVisible();
+  await expect(shell).toHaveAttribute('data-search-highlight-kind', 'point');
+  await expect(highlight).toBeVisible();
+  await expect(highlight).toHaveAttribute('aria-hidden', 'true');
+  await expect(highlight).toHaveCSS('pointer-events', 'none');
+  expect(await highlight.getAttribute('tabindex')).toBeNull();
   await expect(page.locator('[data-map-search-status]')).toContainText(
     'Mapa centrado en Waterdeep, lugar geográfico',
   );
@@ -189,7 +194,7 @@ test('searches Waterdeep as a separate geographic identity and applies its recom
 
   const url = new URL(page.url());
   expect(url.searchParams.get('q')).toBe('Waterdeep');
-  expect(url.searchParams.has('geo')).toBe(false);
+  expect(url.searchParams.get('geo')).toBe('geo-waterdeep');
 });
 
 test('keeps an associated campaign card as a separate action from geographic selection', async ({
@@ -260,7 +265,7 @@ test('operates an unlinked geographic result with the keyboard without stealing 
   await expect(result).toBeFocused();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-center', '940.00,1900.00');
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-zoom', '0.50');
-  await expect(page.locator('.geographic-search-highlight__symbol')).toBeVisible();
+  await expect(page.locator('.geographic-search-highlight')).toBeVisible();
 });
 
 test('keeps the geographic highlight static when reduced motion is requested', async ({ page }) => {
@@ -275,7 +280,7 @@ test('keeps the geographic highlight static when reduced motion is requested', a
     .click();
 
   const animationName = await page
-    .locator('.geographic-search-highlight__symbol')
+    .locator('.geographic-search-highlight')
     .evaluate((element) => getComputedStyle(element).animationName);
 
   expect(animationName).toBe('none');
@@ -301,7 +306,8 @@ test('remains usable at 320 px and restores the geographic query after reload', 
     name: /Waterdeep.*Lugar geográfico/i,
   });
   await geographic.click();
-  await expect(page.locator('.geographic-search-highlight__symbol')).toBeVisible();
+  await expect(page.locator('.geographic-search-highlight')).toBeVisible();
+  expect(new URL(page.url()).searchParams.get('geo')).toBe('geo-waterdeep');
 
   const horizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -311,6 +317,11 @@ test('remains usable at 320 px and restores the geographic query after reload', 
   await page.reload();
   await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(searchbox).toHaveValue('Waterdeep');
+  await expect(page.getByTestId('map-shell')).toHaveAttribute(
+    'data-search-highlight-kind',
+    'point',
+  );
+  await expect(page.locator('.geographic-search-highlight')).toBeVisible();
   await ensureSearchExpanded(page);
   await expect(
     page.getByRole('button', {

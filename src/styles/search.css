@@ -219,33 +219,18 @@
   line-height: 1.45;
 }
 
-.geographic-search-highlight {
-  background: transparent !important;
-  border: 0 !important;
-  pointer-events: none !important;
-}
-
-.geographic-search-highlight__symbol {
-  display: grid;
-  width: 56px;
-  height: 56px;
-  place-items: center;
-  color: #fff1a8;
-  font-size: 2.2rem;
-  font-weight: 900;
-  line-height: 1;
-  background: rgba(17, 23, 19, 0.78);
-  border: 4px dashed currentColor;
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 4px rgba(17, 23, 19, 0.9),
-    0 0 0 7px currentColor;
-  animation: geographic-search-pulse 700ms ease-out 2;
-}
-
+.geographic-search-focus-pane,
 .geographic-search-area-pane,
+.geographic-search-highlight,
 .geographic-search-area-highlight {
   pointer-events: none !important;
+}
+
+.geographic-search-highlight {
+  stroke: #fff1a8;
+  stroke-dasharray: 8 6;
+  fill: transparent;
+  vector-effect: non-scaling-stroke;
 }
 
 .geographic-search-area-highlight {
@@ -253,16 +238,6 @@
   stroke-dasharray: 10 8;
   fill: #fff1a8;
   vector-effect: non-scaling-stroke;
-}
-
-@keyframes geographic-search-pulse {
-  from {
-    transform: scale(0.82);
-  }
-
-  to {
-    transform: scale(1);
-  }
 }
 
 @media (max-width: 48rem) {
@@ -287,12 +262,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .geographic-search-highlight__symbol {
-    animation: none;
-  }
-}
-
 @media (forced-colors: active) {
   .place-search__suggestions,
   .place-search__suggestion {
@@ -304,18 +273,19 @@
     background: Highlight;
   }
 
-  .geographic-search-highlight__symbol {
-    color: Highlight;
-    background: Canvas;
-    border-color: Highlight;
-    box-shadow: 0 0 0 3px CanvasText;
-  }
-
+  .geographic-search-highlight,
   .geographic-search-area-highlight {
     stroke: Highlight;
     fill: transparent;
     stroke-width: 4;
-    stroke-dasharray: 10 8;
     forced-color-adjust: auto;
+  }
+
+  .geographic-search-highlight {
+    stroke-dasharray: 8 6;
+  }
+
+  .geographic-search-area-highlight {
+    stroke-dasharray: 10 8;
   }
 }

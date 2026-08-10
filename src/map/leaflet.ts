@@ -13,6 +13,7 @@ import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './
 import { clearMapSearchFocus, locateMapSearchTarget } from './searchFocus';
 
 export type MapLoadState = 'loading' | 'ready' | 'error';
+export type PinMatchingSemantics = 'search-and-filters' | 'filters-only';
 
 export interface MapSearchTarget {
   readonly coordinates: {
@@ -34,9 +35,10 @@ export interface FaerunMapController {
   setMarkers(markers: readonly AtlasPinMarkerModel[]): void;
   setActivePlace(placeId: PlaceId | null): void;
   clearSupplementalPinSelection(): void;
-  setMatchingPlaces(placeIds: ReadonlySet<PlaceId>): void;
+  setMatchingPlaces(placeIds: ReadonlySet<PlaceId>, semantics?: PinMatchingSemantics): void;
   locatePlace(placeId: PlaceId): void;
   locateSearchTarget(target: MapSearchTarget): void;
+  clearSearchFocus(): void;
   focusMarker(placeId: PlaceId): void;
   destroy(): void;
 }
@@ -65,8 +67,6 @@ const stateMessages: Record<Exclude<MapLoadState, 'ready'>, string> = {
   error:
     'No se ha podido cargar la cartografía oficial. Se muestra una superficie neutra y la navegación permanece disponible.',
 };
-
-const SEARCH_HIGHLIGHT_DURATION_MS = 3000;
 
 function getRequiredElement<T extends HTMLElement>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector);
@@ -155,15 +155,6 @@ function createCoincidentPinIcon(count: number): L.DivIcon {
   return L.divIcon({
     className: 'campaign-marker-icon campaign-marker-icon--coincident',
     html: `<span class="pin-visual pin-visual--coincident"><span class="pin-visual__type-symbol" aria-hidden="true">≡</span><span class="pin-visual__count" aria-hidden="true">${count}</span></span>`,
-    iconSize: [56, 56],
-    iconAnchor: [28, 28],
-  });
-}
-
-function createSearchHighlightIcon(): L.DivIcon {
-  return L.divIcon({
-    className: 'geographic-search-highlight',
-    html: '<span class="geographic-search-highlight__symbol" aria-hidden="true">◎</span>',
     iconSize: [56, 56],
     iconAnchor: [28, 28],
   });
@@ -290,39 +281,8 @@ export function mountFaerunMap(
   let activePlaceId: PlaceId | null = null;
   let activeSupplementalPinId: string | null = null;
   let matchingPlaceIds = new Set<PlaceId>();
-  let searchHighlight: Marker | null = null;
-  let searchHighlightTimeout: number | undefined;
+  let matchingSemantics: PinMatchingSemantics = 'search-and-filters';
   let destroyed = false;
-
-  const clearSearchHighlight = (): void => {
-    if (searchHighlightTimeout !== undefined) {
-      window.clearTimeout(searchHighlightTimeout);
-      searchHighlightTimeout = undefined;
-    }
-
-    searchHighlight?.removeFrom(map);
-    searchHighlight = null;
-    delete elements.shell.dataset.searchHighlight;
-    delete elements.shell.dataset.searchHighlightKind;
-    delete elements.shell.dataset.searchHighlightLabel;
-  };
-
-  const showSearchHighlight = (target: MapSearchTarget): void => {
-    clearSearchHighlight();
-    const coordinate = L.latLng(target.coordinates.y, target.coordinates.x);
-
-    searchHighlight = L.marker(coordinate, {
-      icon: createSearchHighlightIcon(),
-      interactive: false,
-      keyboard: false,
-      zIndexOffset: 2000,
-    }).addTo(map);
-    elements.shell.dataset.searchHighlight = 'true';
-    elements.shell.dataset.searchHighlightKind = 'point';
-    elements.shell.dataset.searchHighlightLabel = target.label;
-    elements.searchStatus.textContent = `Mapa centrado en ${target.label}; posición resaltada.`;
-    searchHighlightTimeout = window.setTimeout(clearSearchHighlight, SEARCH_HIGHLIGHT_DURATION_MS);
-  };
 
   const isPinActive = (pin: AtlasPinMarkerModel): boolean =>
     pin.legacyPlaceId !== null
@@ -343,7 +303,6 @@ export function mountFaerunMap(
     const marker = groupMarkerByPinId.get(pinId);
     if (!marker) return;
 
-    clearSearchHighlight();
     clearMapSearchFocus(map);
     const targetZoom = Math.min(
       FAERUN_MAP_CONFIG.maxZoom,
@@ -352,6 +311,28 @@ export function mountFaerunMap(
     map.setView(marker.getLatLng(), targetZoom, { animate: false });
     map.panInsideBounds(bounds, { animate: false });
     synchronizeViewDataset(map, elements.shell);
+  };
+
+  const describeFilterState = (filterState: FilterMatchState): string => {
+    if (matchingSemantics === 'filters-only') {
+      switch (filterState) {
+        case 'true':
+          return 'Disponible con los filtros explícitos actuales.';
+        case 'false':
+          return 'No coincide con los filtros explícitos actuales, pero sigue disponible.';
+        case 'mixed':
+          return 'Contiene pines con estados distintos respecto a los filtros explícitos; todos siguen disponibles.';
+      }
+    }
+
+    switch (filterState) {
+      case 'true':
+        return 'Coincide con la búsqueda y los filtros aplicables.';
+      case 'false':
+        return 'No coincide con la búsqueda y los filtros actuales, pero sigue disponible.';
+      case 'mixed':
+        return 'Contiene pines coincidentes con estados de filtro distintos; todos siguen disponibles.';
+    }
   };
 
   const updateGroupPresentation = (
@@ -375,13 +356,7 @@ export function mountFaerunMap(
         ? 'Lugar activo. '
         : 'Contiene el pin activo. '
       : '';
-    const filterDescription =
-      filterState === 'true'
-        ? 'Coincide con los filtros aplicables.'
-        : filterState === 'false'
-          ? 'No coincide con la búsqueda y los filtros actuales, pero sigue disponible.'
-          : 'Contiene pines coincidentes con estados de filtro distintos; todos siguen disponibles.';
-    const accessibleState = `${semanticDescription}${activeDescription}${filterDescription}`;
+    const accessibleState = `${semanticDescription}${activeDescription}${describeFilterState(filterState)}`;
 
     element.classList.toggle('campaign-marker-icon--active', isActive);
     element.classList.toggle('campaign-marker-icon--matching', filterState !== 'false');
@@ -392,6 +367,7 @@ export function mountFaerunMap(
     element.setAttribute('aria-description', accessibleState);
     element.dataset.accessibleState = accessibleState;
     element.dataset.filterMatch = filterState;
+    element.dataset.matchingSemantics = matchingSemantics;
     leafletMarker.setZIndexOffset(isActive ? 1000 : filterState === 'false' ? 0 : 200);
   };
 
@@ -615,8 +591,9 @@ export function mountFaerunMap(
       activeSupplementalPinId = null;
       refreshMarkerPresentation();
     },
-    setMatchingPlaces(placeIds: ReadonlySet<PlaceId>): void {
+    setMatchingPlaces(placeIds, semantics = 'search-and-filters'): void {
       matchingPlaceIds = new Set(placeIds);
+      matchingSemantics = semantics;
       refreshMarkerPresentation();
     },
     locatePlace(placeId: PlaceId): void {
@@ -624,29 +601,11 @@ export function mountFaerunMap(
       if (pinId) locatePin(pinId);
     },
     locateSearchTarget(target: MapSearchTarget): void {
-      clearSearchHighlight();
-      clearMapSearchFocus(map);
-
-      if (target.searchExtent) {
-        locateMapSearchTarget(map, root, target);
-        synchronizeView();
-        return;
-      }
-
-      const coordinate = L.latLng(target.coordinates.y, target.coordinates.x);
-      const fallbackZoom = Math.min(
-        FAERUN_MAP_CONFIG.maxZoom,
-        Math.max(map.getZoom(), map.getMinZoom() + 1),
-      );
-      const targetZoom =
-        target.recommendedZoom === null
-          ? fallbackZoom
-          : Math.min(FAERUN_MAP_CONFIG.maxZoom, Math.max(map.getMinZoom(), target.recommendedZoom));
-
-      map.setView(coordinate, targetZoom, { animate: false });
-      map.panInsideBounds(bounds, { animate: false });
+      locateMapSearchTarget(map, root, target);
       synchronizeView();
-      showSearchHighlight(target);
+    },
+    clearSearchFocus(): void {
+      clearMapSearchFocus(map);
     },
     focusMarker(placeId: PlaceId): void {
       const pinId = pinIdByLegacyPlaceId.get(placeId);
@@ -655,7 +614,6 @@ export function mountFaerunMap(
     destroy(): void {
       if (destroyed) return;
       destroyed = true;
-      clearSearchHighlight();
       clearMapSearchFocus(map);
       clearRenderedMarkers();
       imageOverlay.off('load', handleImageLoad);

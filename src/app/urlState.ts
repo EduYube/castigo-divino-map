@@ -1,8 +1,10 @@
+import type { GeographicNameId } from '../data/beta02-model';
 import type { CampaignCatalog, CampaignCategory, PlaceId, TagId } from '../data/model';
 
 export interface PublicAppUrlState {
   readonly activePlaceId: PlaceId | null;
   readonly query: string;
+  readonly geographicNameId: GeographicNameId | null;
   readonly selectedCategoryIds: readonly CampaignCategory['id'][];
   readonly selectedTagIds: readonly TagId[];
 }
@@ -16,6 +18,7 @@ export interface ParsedPublicAppUrlState {
 export const EMPTY_PUBLIC_APP_URL_STATE: PublicAppUrlState = {
   activePlaceId: null,
   query: '',
+  geographicNameId: null,
   selectedCategoryIds: [],
   selectedTagIds: [],
 };
@@ -23,12 +26,21 @@ export const EMPTY_PUBLIC_APP_URL_STATE: PublicAppUrlState = {
 const URL_PARAMETERS = {
   activePlace: 'place',
   query: 'q',
+  geographicName: 'geo',
   category: 'category',
   tag: 'tag',
 } as const;
 
 function normalizeQuery(query: string): string {
   return query.trim();
+}
+
+function normalizeGeographicNameId(value: GeographicNameId | null): GeographicNameId | null {
+  if (!value) return null;
+  const normalized = value.trim();
+  return normalized.startsWith('geo-') && normalized.length > 4
+    ? (normalized as GeographicNameId)
+    : null;
 }
 
 function findPlaceId(catalog: CampaignCatalog, value: string): PlaceId | null {
@@ -58,6 +70,15 @@ function getFirstNonEmptyValue(values: readonly string[]): string {
   return values.map(normalizeQuery).find(Boolean) ?? '';
 }
 
+function getFirstGeographicNameId(values: readonly string[]): GeographicNameId | null {
+  for (const value of values) {
+    const normalized = normalizeGeographicNameId(value.trim() as GeographicNameId);
+    if (normalized) return normalized;
+  }
+
+  return null;
+}
+
 export function normalizePublicAppUrlState(
   catalog: CampaignCatalog,
   state: PublicAppUrlState,
@@ -70,6 +91,7 @@ export function normalizePublicAppUrlState(
     activePlaceId:
       state.activePlaceId && validPlaceIds.has(state.activePlaceId) ? state.activePlaceId : null,
     query: normalizeQuery(state.query),
+    geographicNameId: normalizeGeographicNameId(state.geographicNameId),
     selectedCategoryIds: catalog.categories
       .filter(({ id }) => selectedCategoryIds.has(id))
       .map(({ id }) => id),
@@ -91,6 +113,10 @@ export function serializePublicAppUrlState(
 
   if (normalizedState.query) {
     parameters.append(URL_PARAMETERS.query, normalizedState.query);
+  }
+
+  if (normalizedState.geographicNameId) {
+    parameters.append(URL_PARAMETERS.geographicName, normalizedState.geographicNameId);
   }
 
   normalizedState.selectedCategoryIds.forEach((categoryId) => {
@@ -145,6 +171,9 @@ export function parsePublicAppUrlState(
       source.searchParams.getAll(URL_PARAMETERS.activePlace),
     ),
     query: getFirstNonEmptyValue(source.searchParams.getAll(URL_PARAMETERS.query)),
+    geographicNameId: getFirstGeographicNameId(
+      source.searchParams.getAll(URL_PARAMETERS.geographicName),
+    ),
     selectedCategoryIds: catalog.categories
       .filter(({ id }) => categoryValues.has(id))
       .map(({ id }) => id),
@@ -170,6 +199,7 @@ export function arePublicAppUrlStatesEqual(
   return (
     normalizedLeft.activePlaceId === normalizedRight.activePlaceId &&
     normalizedLeft.query === normalizedRight.query &&
+    normalizedLeft.geographicNameId === normalizedRight.geographicNameId &&
     normalizedLeft.selectedCategoryIds.length === normalizedRight.selectedCategoryIds.length &&
     normalizedLeft.selectedCategoryIds.every(
       (categoryId, index) => categoryId === normalizedRight.selectedCategoryIds[index],
