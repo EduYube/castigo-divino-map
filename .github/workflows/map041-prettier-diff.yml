@@ -1,9 +1,9 @@
 name: MAP-041 Branch Canonicalizer
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/map-041-geographic-search-extents
+      - master
 
 permissions:
   contents: write
