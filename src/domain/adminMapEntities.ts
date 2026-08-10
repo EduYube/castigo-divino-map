@@ -11,7 +11,11 @@ export interface AdminMapEntityRecord extends MapCoordinate {
   readonly slug: string;
   readonly entityType: MapEntityType;
   readonly visibility: MapVisibility;
-  readonly audience: MapEntityAudience;
+  /**
+   * Older in-memory fixtures predate MAP-044. Runtime repositories always return
+   * this field; absence is interpreted as the migration default (`public`).
+   */
+  readonly audience?: MapEntityAudience;
   readonly name: string;
   readonly summary: string;
   readonly description: string;
@@ -88,7 +92,8 @@ export interface AdminMapEntityDraft extends MapCoordinate {
   readonly slug: string;
   readonly entityType: MapEntityType;
   readonly visibility: MapVisibility;
-  readonly audience: MapEntityAudience;
+  /** See AdminMapEntityRecord.audience. Missing means the safe migration default. */
+  readonly audience?: MapEntityAudience;
   readonly name: string;
   readonly summary: string;
   readonly description: string;
@@ -96,6 +101,12 @@ export interface AdminMapEntityDraft extends MapCoordinate {
   readonly tagIds: readonly string[];
   readonly dispositions: readonly AdminDispositionDraft[];
   readonly publicationStatus: MapEntityPublicationStatus;
+}
+
+export function getMapEntityAudience(
+  value: Pick<AdminMapEntityRecord | AdminMapEntityDraft, 'audience'>,
+): MapEntityAudience {
+  return value.audience ?? 'public';
 }
 
 export function getSelectedTagIds(detail: AdminMapEntityDetail): readonly string[] {
@@ -110,7 +121,7 @@ export function detailToDraft(detail: AdminMapEntityDetail): AdminMapEntityDraft
     slug: detail.record.slug,
     entityType: detail.record.entityType,
     visibility: detail.record.visibility,
-    audience: detail.record.audience,
+    audience: getMapEntityAudience(detail.record),
     name: detail.record.name,
     summary: detail.record.summary,
     description: detail.record.description,
