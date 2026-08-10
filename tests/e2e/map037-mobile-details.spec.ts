@@ -52,8 +52,8 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
       name_language: 'en',
       summary: 'Resumen del puerto.',
       description: 'Descripción del puerto.',
-      x: 1080.5,
-      y: 820,
+      x: 1500,
+      y: 1300,
       category_id: 'category-settlement',
     },
     {
@@ -65,8 +65,8 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
       name_language: 'en',
       summary: 'Resumen del guardia.',
       description: 'Descripción del guardia.',
-      x: 1080.5,
-      y: 820,
+      x: 1500,
+      y: 1300,
       category_id: 'category-settlement',
     },
     {
@@ -190,19 +190,29 @@ async function expectTouchTarget(page: Page, selector: string): Promise<void> {
 async function expectSheetPreservesMapContext(page: Page): Promise<void> {
   const mapBox = await page.locator('[data-map-canvas]').boundingBox();
   const panelBox = await page.getByTestId('place-details').boundingBox();
-  const activeMarkerBox = await page
-    .locator('.campaign-marker-icon[aria-pressed="true"]')
-    .boundingBox();
 
   expect(mapBox).not.toBeNull();
   expect(panelBox).not.toBeNull();
-  expect(activeMarkerBox).not.toBeNull();
 
-  if (!mapBox || !panelBox || !activeMarkerBox) return;
+  if (!mapBox || !panelBox) return;
 
   expect(panelBox.height).toBeLessThanOrEqual(mapBox.height * 0.49);
   expect(panelBox.y).toBeGreaterThanOrEqual(mapBox.y + mapBox.height * 0.5);
-  expect(activeMarkerBox.y + activeMarkerBox.height / 2).toBeLessThan(panelBox.y - 4);
+
+  await expect
+    .poll(async () => {
+      const currentPanelBox = await page.getByTestId('place-details').boundingBox();
+      const activeMarkerBox = await page
+        .locator('.campaign-marker-icon[aria-pressed="true"]')
+        .boundingBox();
+
+      if (!currentPanelBox || !activeMarkerBox) {
+        return Number.POSITIVE_INFINITY;
+      }
+
+      return activeMarkerBox.y + activeMarkerBox.height / 2 - currentPanelBox.y;
+    })
+    .toBeLessThan(-4);
 }
 
 for (const viewport of MOBILE_VIEWPORTS) {
@@ -237,8 +247,12 @@ for (const viewport of MOBILE_VIEWPORTS) {
     const fullAction = panel.getByRole('link', {
       name: 'Abrir ficha completa de Scout en una pestaña nueva',
     });
-    await fullAction.scrollIntoViewIfNeeded();
+    expect(await panel.evaluate((element) => element.scrollTop)).toBe(0);
+    await panel.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
     await expect(fullAction).toBeVisible();
+    expect(await panel.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
     expect(Math.abs((await pageScrollY(page)) - scrollBeforeOpen)).toBeLessThanOrEqual(1);
 
     await returnButton.click();
