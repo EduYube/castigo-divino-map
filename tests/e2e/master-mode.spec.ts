@@ -10,6 +10,7 @@ const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
 const ADMIN_TOKEN = 'map044-admin-access-token';
 const ADMIN_ID = '00000000-0000-4000-8000-000000000001';
 const MASTER_ID = 'entity-master-e2e';
+const COINCIDENT_MASTER_ID = 'entity-master-coincident-e2e';
 const MASTER_NAME = 'MAP044 E2E SECRET';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
@@ -54,9 +55,25 @@ const MASTER_ROW = {
   updated_at: '2026-08-10T21:00:00.000Z',
 };
 
+const COINCIDENT_MASTER_ROW = {
+  ...MASTER_ROW,
+  id: COINCIDENT_MASTER_ID,
+  slug: 'map044-e2e-coincident-secret',
+  name: 'MAP044 E2E COINCIDENT SECRET',
+  summary: 'Private coincident E2E summary',
+  description: 'Private coincident E2E description',
+  x: 1080.5,
+  y: 820,
+};
+
+interface Map044BackendOptions {
+  readonly includeCoincidentMaster?: boolean;
+}
+
 interface Map044Backend {
   getAudience(): 'public' | 'master';
   getSaveCount(): number;
+  setMasterCatalogStatus(status: 200 | 401 | 403): void;
 }
 
 function projectRows(
@@ -107,27 +124,34 @@ function adminDetail(audience: 'public' | 'master') {
   };
 }
 
-function masterCatalog(audience: 'public' | 'master') {
+function toMasterCatalogEntity(row: typeof MASTER_ROW) {
   return {
-    entities:
-      audience === 'master'
-        ? [
-            {
-              id: MASTER_ID,
-              slug: MASTER_ROW.slug,
-              entity_type: MASTER_ROW.entity_type,
-              visibility: MASTER_ROW.visibility,
-              audience: 'master',
-              name: MASTER_NAME,
-              summary: MASTER_ROW.summary,
-              description: MASTER_ROW.description,
-              x: MASTER_ROW.x,
-              y: MASTER_ROW.y,
-              category_id: MASTER_ROW.category_id,
-              updated_at: MASTER_ROW.updated_at,
-            },
-          ]
-        : [],
+    id: row.id,
+    slug: row.slug,
+    entity_type: row.entity_type,
+    visibility: row.visibility,
+    audience: 'master',
+    name: row.name,
+    summary: row.summary,
+    description: row.description,
+    x: row.x,
+    y: row.y,
+    category_id: row.category_id,
+    updated_at: row.updated_at,
+  };
+}
+
+function masterCatalog(
+  audience: 'public' | 'master',
+  includeCoincidentMaster: boolean,
+) {
+  const entities = audience === 'master' ? [toMasterCatalogEntity(MASTER_ROW)] : [];
+  if (audience === 'master' && includeCoincidentMaster) {
+    entities.push(toMasterCatalogEntity(COINCIDENT_MASTER_ROW));
+  }
+
+  return {
+    entities,
     categories: [{ id: 'category-landmark', name: 'Lugar destacado' }],
     aliases:
       audience === 'master'
@@ -142,9 +166,14 @@ function masterCatalog(audience: 'public' | 'master') {
   };
 }
 
-async function configureMap044Backend(page: Page): Promise<Map044Backend> {
+async function configureMap044Backend(
+  page: Page,
+  options: Map044BackendOptions = {},
+): Promise<Map044Backend> {
   let audience: 'public' | 'master' = 'master';
   let saveCount = 0;
+  let masterCatalogStatus: 200 | 401 | 403 = 200;
+  const includeCoincidentMaster = options.includeCoincidentMaster === true;
 
   await page.addInitScript(
     ({ projectUrl }) => {
@@ -198,10 +227,18 @@ async function configureMap044Backend(page: Page): Promise<Map044Backend> {
       return;
     }
     if (adminRequest && resource === 'rpc/admin_get_master_catalog') {
+      if (masterCatalogStatus !== 200) {
+        await route.fulfill({
+          status: masterCatalogStatus,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'administrative authorization rejected' }),
+        });
+        return;
+      }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(masterCatalog(audience)),
+        body: JSON.stringify(masterCatalog(audience, includeCoincidentMaster)),
       });
       return;
     }
@@ -249,6 +286,9 @@ async function configureMap044Backend(page: Page): Promise<Map044Backend> {
   return {
     getAudience: () => audience,
     getSaveCount: () => saveCount,
+    setMasterCatalogStatus(status): void {
+      masterCatalogStatus = status;
+    },
   };
 }
 
@@ -296,6 +336,94 @@ test('visitor and admin OFF cannot see master data; ON loads it ephemerally and 
   await expect(page.locator('[data-master-mode-toggle]')).toHaveCount(0);
   await expect(privateMarker).toHaveCount(0);
   await expect(page.getByText(MASTER_NAME, { exact: true })).toHaveCount(0);
+});
+
+for (const status of [401, 403] as const) {
+  test(`a ${status} on a subsequent private catalog load purges prior master state and invalidates Auth`, async ({
+    page,
+  }) => {
+    const backend = await configureMap044Backend(page);
+    await page.goto('/');
+    await signIn(page);
+
+    const toggle = page.locator('[data-master-mode-toggle]');
+    await toggle.click();
+    const privateMarker = page.locator('.campaign-marker-icon[data-audience="master"]');
+    await expect(privateMarker).toHaveCount(1);
+
+    await toggle.click();
+    await expect(privateMarker).toHaveCount(0);
+    backend.setMasterCatalogStatus(status);
+    await toggle.click();
+
+    await expect(page.locator('[data-master-mode-toggle]')).toHaveCount(0);
+    await expect(privateMarker).toHaveCount(0);
+    await expect(page.getByText(MASTER_NAME, { exact: true })).toHaveCount(0);
+    await expect.poll(() =>
+      page.evaluate(() => window.sessionStorage.getItem('castigo-divino-map:auth:v1')),
+    ).toBeNull();
+  });
+}
+
+test('turning Master Mode OFF prevents Back/Forward from restoring a private selection', async ({
+  page,
+}) => {
+  await configureMap044Backend(page);
+  await page.goto('/');
+  await signIn(page);
+
+  const toggle = page.locator('[data-master-mode-toggle]');
+  await toggle.click();
+  await page.getByRole('searchbox', { name: 'Buscar lugares' }).fill('Xanathar oculto');
+  const masterResult = page.locator(`[data-search-result-id="${MASTER_ID}"]`);
+  await masterResult.click();
+  await expect(page.getByTestId('place-details')).toContainText(MASTER_NAME);
+
+  await toggle.click();
+  await expect(page.locator('.campaign-marker-icon[data-audience="master"]')).toHaveCount(0);
+  await expect(page.getByTestId('place-details')).not.toContainText(MASTER_NAME);
+
+  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await searchbox.fill('paso');
+  await page.locator('[data-search-result-id="place-demo-pass"]').click();
+  await expect(page).toHaveURL(/place=place-demo-pass/);
+
+  await page.goBack();
+  await expect(page.locator('.campaign-marker-icon[data-audience="master"]')).toHaveCount(0);
+  await expect(page.getByText(MASTER_NAME, { exact: true })).toHaveCount(0);
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+
+  await page.goForward();
+  await expect(page.locator('.campaign-marker-icon[data-audience="master"]')).toHaveCount(0);
+  await expect(page.getByText(MASTER_NAME, { exact: true })).toHaveCount(0);
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('public and master coincident pins expose count 2 only while Master Mode is ON', async ({
+  page,
+}) => {
+  await configureMap044Backend(page, { includeCoincidentMaster: true });
+  await page.goto('/');
+  await signIn(page);
+
+  const harbor = page.locator(
+    '[data-testid="place-marker"][data-place-id="place-demo-harbor"]',
+  );
+  await expect(harbor).toHaveCount(1);
+  await expect(page.getByTestId('coincident-pin')).toHaveCount(0);
+
+  const toggle = page.locator('[data-master-mode-toggle]');
+  await toggle.click();
+  const coincident = page.getByTestId('coincident-pin');
+  await expect(coincident).toHaveCount(1);
+  await expect(coincident).toHaveAttribute('data-pin-count', '2');
+  await expect(coincident).toHaveAttribute('data-audience', 'mixed');
+  await expect(coincident).toHaveAttribute('aria-label', /1 de contenido del Máster/i);
+
+  await toggle.click();
+  await expect(coincident).toHaveCount(0);
+  await expect(harbor).toHaveCount(1);
+  await expect(harbor).toHaveAttribute('data-audience', 'public');
 });
 
 test('detail audience transition requires confirmation, supports cancel and refreshes public/private projections', async ({
