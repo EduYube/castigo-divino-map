@@ -46,6 +46,7 @@ export type PublicCatalogStateListener = (state: PublicCatalogState) => void;
 export interface PublicDataRuntime {
   getCatalogState(): PublicCatalogState;
   subscribeCatalogState(listener: PublicCatalogStateListener): () => void;
+  refresh(): Promise<void>;
   destroy(): void;
 }
 
@@ -215,6 +216,9 @@ export async function bootstrapPublicDataRuntime(
       return (): void => {
         catalogListeners.delete(listener);
       };
+    },
+    refresh(): Promise<void> {
+      return refresh(false);
     },
     destroy(): void {
       window.clearInterval(refreshInterval);
