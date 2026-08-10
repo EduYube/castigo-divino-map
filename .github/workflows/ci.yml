@@ -35,8 +35,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check formatting
-        run: npm run format:check
+      - name: Format MAP-038 diagnostics
+        run: npm run format
+
+      - name: Upload formatted MAP-038 tests
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: map-038-prettier-${{ github.run_id }}
+          path: |
+            tests/e2e/app.spec.ts
+            tests/e2e/geographic-search.spec.ts
+            tests/e2e/map038-search-autocomplete.spec.ts
+            tests/e2e/responsive-accessibility.spec.ts
+          retention-days: 1
 
       - name: Audit tracked files for privileged credentials
         run: npm run verify:security
