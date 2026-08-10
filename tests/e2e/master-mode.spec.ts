@@ -290,10 +290,14 @@ async function configureMap044Backend(
 }
 
 async function signIn(page: Page): Promise<void> {
-  await page.getByLabel('Correo electrónico').fill('admin@example.invalid');
+  await page.getByRole('button', { name: 'Administrar' }).click();
+  await expect(page.getByRole('dialog', { name: 'Acceso administrativo' })).toBeVisible();
+  await page.getByLabel('Correo').fill('admin@example.invalid');
   await page.getByLabel('Contraseña').fill('correct horse battery staple');
   await page.getByRole('button', { name: 'Iniciar sesión' }).click();
-  await expect(page.locator('[data-admin-auth]')).toHaveAttribute('data-state', 'authorized');
+  await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+  await expect(page.getByRole('button', { name: 'Administración' })).toBeVisible();
 }
 
 test('visitor and admin OFF cannot see master data; ON loads it ephemerally and logout purges it', async ({
@@ -329,6 +333,7 @@ test('visitor and admin OFF cannot see master data; ON loads it ephemerally and 
 
   await toggle.click();
   await expect(privateMarker).toHaveCount(1);
+  await page.getByRole('button', { name: 'Administración' }).click();
   await page.getByRole('button', { name: 'Cerrar sesión' }).click();
   await expect(page.locator('[data-master-mode-toggle]')).toHaveCount(0);
   await expect(privateMarker).toHaveCount(0);
@@ -383,7 +388,7 @@ test('turning Master Mode OFF prevents Back/Forward from restoring a private sel
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   await searchbox.fill('paso');
   await page.locator('[data-search-result-id="place-demo-pass"]').click();
-  await expect(page).toHaveURL(/place=place-demo-pass/);
+  await expect(page).toHaveURL(/place=paso-de-demostracion/);
 
   await page.goBack();
   await expect(page.locator('.campaign-marker-icon[data-audience="master"]')).toHaveCount(0);
