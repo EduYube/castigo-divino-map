@@ -6,6 +6,7 @@
   .map-workspace {
     position: relative;
     isolation: isolate;
+    overflow-anchor: none;
   }
 
   .map-workspace[data-details-open='true'] {
