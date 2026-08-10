@@ -51,7 +51,7 @@ Esta muestra cubre regiones, bosques, llanuras, mar y archipiélagos sin general
 
 El CHECK `geographic_names_search_extent_check`, marcado como contrato `MAP-041-v1`, exige todos los bounds o ninguno, valores finitos, `minX < maxX`, `minY < maxY`, rango dentro de 3600 × 2329 y que la coordenada canónica permanezca dentro del rectángulo. Los codecs de Supabase, snapshot y runtime repiten esas invariantes y fallan de forma explícita ante datos inválidos.
 
-La migración `20260810170000_add_geographic_search_extents.sql` es reejecutable y fail-closed: valida el esquema existente, la identidad/nombre/coordenada/zoom canónicos de cada extent y rechaza bounds preexistentes diferentes en lugar de sobrescribirlos silenciosamente. No cambia Auth, RLS, grants, roles, policies, ownership ni secretos.
+La migración `20260810164932_add_geographic_search_extents.sql` es reejecutable y fail-closed: valida el esquema existente, la identidad/nombre/coordenada/zoom canónicos de cada extent y rechaza bounds preexistentes diferentes en lugar de sobrescribirlos silenciosamente. Su versión coincide con el historial alojado de Supabase. No cambia Auth, RLS, grants, roles, policies, ownership ni secretos.
 
 ## MAP-040 y geometría canónica
 
