@@ -317,7 +317,10 @@ test('remains usable at 320 px and restores the geographic query after reload', 
   await page.reload();
   await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(searchbox).toHaveValue('Waterdeep');
-  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-search-highlight-kind', 'point');
+  await expect(page.getByTestId('map-shell')).toHaveAttribute(
+    'data-search-highlight-kind',
+    'point',
+  );
   await expect(page.locator('.geographic-search-highlight')).toBeVisible();
   await ensureSearchExpanded(page);
   await expect(
