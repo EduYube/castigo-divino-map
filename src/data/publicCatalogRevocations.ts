@@ -1,8 +1,4 @@
-import type {
-  EntityId,
-  GeographicNameId,
-  PublicCatalogSnapshotV2,
-} from './beta02-model';
+import type { EntityId, GeographicNameId, PublicCatalogSnapshotV2 } from './beta02-model';
 import type { CampaignCatalog, PlaceId } from './model';
 
 export function applyEntityRevocationsToBeta02(
@@ -15,9 +11,7 @@ export function applyEntityRevocationsToBeta02(
   const geographicNames = catalog.geographicNames.filter(
     ({ entityId }) => entityId === null || !revokedEntityIds.has(entityId),
   );
-  const geographicNameIds = new Set<GeographicNameId>(
-    geographicNames.map(({ id }) => id),
-  );
+  const geographicNameIds = new Set<GeographicNameId>(geographicNames.map(({ id }) => id));
   const candidateEvents = catalog.characterLocationEvents.filter((event) => {
     if (revokedEntityIds.has(event.characterId)) return false;
     if (
@@ -42,9 +36,7 @@ export function applyEntityRevocationsToBeta02(
   return {
     ...catalog,
     entities,
-    dispositions: catalog.dispositions.filter(
-      ({ entityId }) => !revokedEntityIds.has(entityId),
-    ),
+    dispositions: catalog.dispositions.filter(({ entityId }) => !revokedEntityIds.has(entityId)),
     characterLocationRelations: catalog.characterLocationRelations.filter(
       ({ characterId, locationId }) =>
         !revokedEntityIds.has(characterId) && !revokedEntityIds.has(locationId),
@@ -62,8 +54,7 @@ export function applyEntityRevocationsToBeta01(
   if (revokedEntityIds.size === 0) return catalog;
 
   const revokedPlaceIds = new Set<PlaceId>(
-    [...revokedEntityIds]
-      .filter((id): id is PlaceId => id.startsWith('place-')),
+    [...revokedEntityIds].filter((id): id is PlaceId => id.startsWith('place-')),
   );
   if (revokedPlaceIds.size === 0) return catalog;
 
