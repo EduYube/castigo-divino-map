@@ -5,6 +5,20 @@ export interface MasterSearchVisualController {
   destroy(): void;
 }
 
+function synchronizeBadge(element: HTMLElement, master: boolean): void {
+  const existing = element.querySelector<HTMLElement>('[data-master-search-badge]');
+  if (!master) {
+    existing?.remove();
+    return;
+  }
+  if (existing) return;
+  const badge = document.createElement('span');
+  badge.className = 'place-search__result-audience';
+  badge.dataset.masterSearchBadge = '';
+  badge.textContent = 'Máster';
+  element.append(badge);
+}
+
 export function mountMasterSearchVisuals(root: ParentNode): MasterSearchVisualController {
   let masterEntityIds: ReadonlySet<EntityId> = new Set();
   let frame: number | null = null;
@@ -17,14 +31,11 @@ export function mountMasterSearchVisuals(root: ParentNode): MasterSearchVisualCo
     root.querySelectorAll<HTMLElement>('[data-search-result-id]').forEach((result) => {
       const id = result.dataset.searchResultId as EntityId | undefined;
       const master = Boolean(id && masterEntityIds.has(id));
-      result.dataset.audience = master ? 'master' : 'public';
-      result.querySelector<HTMLElement>('[data-master-search-badge]')?.remove();
+      if (result.dataset.audience !== (master ? 'master' : 'public')) {
+        result.dataset.audience = master ? 'master' : 'public';
+      }
+      synchronizeBadge(result, master);
       if (!master) return;
-      const badge = document.createElement('span');
-      badge.className = 'place-search__result-audience';
-      badge.dataset.masterSearchBadge = '';
-      badge.textContent = 'Máster';
-      result.append(badge);
       const label = result.getAttribute('aria-label') ?? result.textContent ?? '';
       if (!label.includes('Contenido del Máster')) {
         result.setAttribute('aria-label', `${label.trim()}. Contenido del Máster.`);
@@ -34,16 +45,15 @@ export function mountMasterSearchVisuals(root: ParentNode): MasterSearchVisualCo
     root.querySelectorAll<HTMLElement>('[data-search-suggestion-id]').forEach((suggestion) => {
       const id = suggestion.dataset.searchSuggestionId as EntityId | undefined;
       const master = Boolean(id && masterEntityIds.has(id));
-      suggestion.dataset.audience = master ? 'master' : 'public';
-      suggestion.querySelector<HTMLElement>('[data-master-search-badge]')?.remove();
+      if (suggestion.dataset.audience !== (master ? 'master' : 'public')) {
+        suggestion.dataset.audience = master ? 'master' : 'public';
+      }
+      synchronizeBadge(suggestion, master);
       if (!master) return;
-      const badge = document.createElement('span');
-      badge.className = 'place-search__result-audience';
-      badge.dataset.masterSearchBadge = '';
-      badge.textContent = 'Máster';
-      suggestion.append(badge);
       const label = suggestion.getAttribute('aria-label') ?? suggestion.textContent ?? '';
-      suggestion.setAttribute('aria-label', `${label.trim()}. Contenido del Máster.`);
+      if (!label.includes('Contenido del Máster')) {
+        suggestion.setAttribute('aria-label', `${label.trim()}. Contenido del Máster.`);
+      }
     });
   };
 
