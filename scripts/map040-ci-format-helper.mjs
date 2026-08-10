@@ -14,7 +14,9 @@ const files = [
 
 for (const file of files) {
   const source = await readFile(file, 'utf8');
+  const config = (await prettier.resolveConfig(file)) ?? {};
   const formatted = await prettier.format(source, {
+    ...config,
     filepath: file,
     endOfLine: 'auto',
   });
