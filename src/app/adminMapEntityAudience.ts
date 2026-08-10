@@ -1,5 +1,7 @@
 import type { AdminMapEntityController } from '../application/adminMapEntityController';
+import type { EntityId } from '../data/beta02-model';
 import type { MapEntityAudience } from '../domain/adminMapEntities';
+import { dispatchAdminEntityAudienceChanged } from './adminEntityAudienceEvents';
 
 export interface AdminMapEntityAudienceUiController {
   destroy(): void;
@@ -7,6 +9,10 @@ export interface AdminMapEntityAudienceUiController {
 
 const FIELD_ID = 'admin-map-entity-audience';
 const WRAPPER_SELECTOR = '[data-admin-map-entity-audience]';
+
+function isEntityId(value: string): value is EntityId {
+  return /^(?:entity|place)-/.test(value);
+}
 
 function createAudienceField(
   controller: AdminMapEntityController,
@@ -36,7 +42,7 @@ function createAudienceField(
   const updateHelp = (): void => {
     help.textContent =
       select.value === 'master'
-        ? 'Solo Máster: aunque esté publicada, esta entidad quedará fuera del catálogo público, búsqueda, autocompletado y próximo snapshot. Solo una sesión admin con Modo Máster activo podrá verla.'
+        ? 'Solo Máster: aunque esté publicada, esta entidad quedará fuera del catálogo público, búsqueda, autocompletado y próximo snapshot. Si ya fue pública, el cambio no puede borrar copias previamente entregadas; para secretos fuertes crea una entidad nueva que nunca haya sido pública.'
         : 'Público: si además está publicada y cumple las reglas editoriales, puede ser visible y buscable por jugadores y formar parte del snapshot público.';
   };
 
@@ -56,6 +62,7 @@ export function mountAdminMapEntityAudience(
 ): AdminMapEntityAudienceUiController {
   let destroyed = false;
   let scheduledFrame: number | null = null;
+  let previousAudiences: ReadonlyMap<string, MapEntityAudience> | null = null;
 
   const scheduleRender = (): void => {
     if (destroyed || scheduledFrame !== null) return;
@@ -96,12 +103,33 @@ export function mountAdminMapEntityAudience(
     });
   };
 
-  const unsubscribe = controller.subscribe(scheduleRender);
+  const unsubscribe = controller.subscribe((state) => {
+    scheduleRender();
+    if (!state.authorized || !state.backendConnected || state.phase === 'blocked') {
+      previousAudiences = null;
+      return;
+    }
+    if (state.phase !== 'ready') return;
+
+    const nextAudiences = new Map<string, MapEntityAudience>(
+      state.records.map((record) => [record.id, record.audience ?? 'public']),
+    );
+    if (previousAudiences) {
+      for (const [entityId, audience] of nextAudiences) {
+        const previous = previousAudiences.get(entityId);
+        if (previous && previous !== audience && isEntityId(entityId)) {
+          dispatchAdminEntityAudienceChanged(entityId, audience);
+        }
+      }
+    }
+    previousAudiences = nextAudiences;
+  });
   scheduleRender();
 
   return {
     destroy(): void {
       destroyed = true;
+      previousAudiences = null;
       unsubscribe();
       if (scheduledFrame !== null) window.cancelAnimationFrame(scheduledFrame);
       root.querySelector<HTMLElement>(WRAPPER_SELECTOR)?.remove();
