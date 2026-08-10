@@ -21,6 +21,7 @@ import {
   parsePublicAppUrlState,
   type PublicAppUrlState,
 } from './app/urlState';
+import type { GeographicNameId, PublicGeographicName } from './data/beta02-model';
 import { campaignCatalog } from './data/catalog';
 import { buildCompactPinDetailModel } from './data/compactPinDetails';
 import { deriveMatchingPublicPlaceIds } from './data/filters';
@@ -61,6 +62,10 @@ function describeSearchTarget(result: AtlasSearchResult): string {
   }
 }
 
+function describeGeographicNameTarget(geographicName: PublicGeographicName): string {
+  return `${geographicName.name}, lugar geográfico`;
+}
+
 function isSameCatalogState(left: PublicCatalogState, right: PublicCatalogState): boolean {
   return (
     left.availability === right.availability &&
@@ -79,6 +84,7 @@ function mountPublicExperience(
   let beta02Catalog = initialCatalogState.beta02;
   let renderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
   let activeSupplementalPin: AtlasPinMarkerModel | null = null;
+  let geographicNameId: GeographicNameId | null = null;
   const selection = createPlaceSelectionController();
   const mapSearchStatus = app.querySelector<HTMLElement>('[data-map-search-status]');
 
@@ -97,14 +103,26 @@ function mountPublicExperience(
   const mapController = mountFaerunMap(app, {
     markers: renderedMarkers,
     onPinActivate(pin): void {
+      const wasGeographicNavigation = geographicNameId !== null;
+      geographicNameId = null;
+      mapController.clearSearchFocus();
+
       if (pin.legacyPlaceId) {
+        const wasAlreadyActive = selection.getActivePlaceId() === pin.legacyPlaceId;
         activeSupplementalPin = null;
         selection.select(pin.legacyPlaceId);
+
+        if (wasAlreadyActive && wasGeographicNavigation) {
+          updateMatchingPlaces();
+          writePublicStateToHistory('push');
+        }
         return;
       }
 
       activeSupplementalPin = pin;
       selection.clear();
+      updateMatchingPlaces();
+      writePublicStateToHistory('push');
 
       if (!showCompactDetails(pin, true)) {
         activeSupplementalPin = null;
@@ -241,6 +259,20 @@ function mountPublicExperience(
     return marker ? showCompactDetails(marker, focus) : false;
   };
 
+  const resolveGeographicName = (id: GeographicNameId | null): PublicGeographicName | null => {
+    if (!id || !beta02Catalog) return null;
+    return beta02Catalog.geographicNames.find((geographicName) => geographicName.id === id) ?? null;
+  };
+
+  const locateGeographicName = (geographicName: PublicGeographicName): void => {
+    mapController.locateSearchTarget({
+      coordinates: geographicName.coordinates,
+      searchExtent: geographicName.searchExtent ?? null,
+      recommendedZoom: geographicName.recommendedZoom,
+      label: describeGeographicNameTarget(geographicName),
+    });
+  };
+
   const placeFiltersController = mountPlaceFilters(app, {
     catalog,
     onChange(): void {
@@ -251,10 +283,18 @@ function mountPublicExperience(
 
   const openLegacyPlace = (placeId: PlaceId): void => {
     const wasAlreadyActive = selection.getActivePlaceId() === placeId;
+    const wasGeographicNavigation = geographicNameId !== null;
 
+    geographicNameId = null;
+    mapController.clearSearchFocus();
     activeSupplementalPin = null;
     mapController.locatePlace(placeId);
     selection.select(placeId);
+
+    if (wasAlreadyActive && wasGeographicNavigation) {
+      updateMatchingPlaces();
+      writePublicStateToHistory('push');
+    }
 
     if (wasAlreadyActive && !showLegacyPlaceDetails(placeId, true)) {
       selection.clear();
@@ -264,6 +304,10 @@ function mountPublicExperience(
   const placeSearchController = mountPlaceSearch(app, {
     catalog,
     onQueryChange(): void {
+      if (geographicNameId !== null) {
+        geographicNameId = null;
+        mapController.clearSearchFocus();
+      }
       updateMatchingPlaces();
       writePublicStateToHistory('replace');
     },
@@ -278,13 +322,17 @@ function mountPublicExperience(
         compactDetailsController.hide();
         clearSupplementalMapSelection();
       }
+
+      geographicNameId = result.type === 'geographic' ? (result.id as GeographicNameId) : null;
       selection.clear();
+      updateMatchingPlaces();
       mapController.locateSearchTarget({
         coordinates: result.coordinates,
         searchExtent: result.searchExtent,
         recommendedZoom: result.recommendedZoom,
         label: describeSearchTarget(result),
       });
+      writePublicStateToHistory('push');
     },
     onOpenPlace(placeId): void {
       openLegacyPlace(placeId);
@@ -298,6 +346,7 @@ function mountPublicExperience(
     return {
       activePlaceId: selection.getActivePlaceId(),
       query: placeSearchController.getQuery(),
+      geographicNameId,
       selectedCategoryIds: filters.selectedCategoryIds,
       selectedTagIds: filters.selectedTagIds,
     };
@@ -319,15 +368,22 @@ function mountPublicExperience(
   }
 
   function updateMatchingPlaces(): void {
+    const isGeographicNavigation = geographicNameId !== null;
     const matchingPlaceIds = deriveMatchingPublicPlaceIds(
       catalog,
       placeSearchController.getQuery(),
       placeFiltersController.getState(),
+      {
+        searchIntent: isGeographicNavigation ? 'geographic-navigation' : 'entity-search',
+      },
     );
     const matchingPlaceIdSet = new Set(matchingPlaceIds);
     const activePlaceId = selection.getActivePlaceId();
 
-    mapController.setMatchingPlaces(matchingPlaceIdSet);
+    mapController.setMatchingPlaces(
+      matchingPlaceIdSet,
+      isGeographicNavigation ? 'filters-only' : 'search-and-filters',
+    );
     placeFiltersController.setMatchSummary(
       matchingPlaceIds.length,
       activePlaceId ? matchingPlaceIdSet.has(activePlaceId) : null,
@@ -358,6 +414,7 @@ function mountPublicExperience(
 
     catalogState = nextCatalogState;
     const previousActivePlaceId = selection.getActivePlaceId();
+    const previousGeographicNameId = geographicNameId;
     const validPlaceIds = new Set(nextCatalogState.compatibility.places.map(({ id }) => id));
     isRestoringFromHistory = true;
 
@@ -368,6 +425,10 @@ function mountPublicExperience(
       placeSearchController.setCatalogState(catalog, beta02Catalog);
       renderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
       mapController.setMarkers(renderedMarkers);
+      geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;
+      if (previousGeographicNameId && !geographicNameId) {
+        mapController.clearSearchFocus();
+      }
 
       const nextActivePlaceId =
         previousActivePlaceId && validPlaceIds.has(previousActivePlaceId)
@@ -375,6 +436,7 @@ function mountPublicExperience(
           : null;
 
       if (nextActivePlaceId) {
+        geographicNameId = null;
         renderActivePlace(nextActivePlaceId, { focusDetails: false, locate: false });
       } else {
         selection.clear();
@@ -401,6 +463,7 @@ function mountPublicExperience(
 
   function restorePublicStateFromUrl(sourceUrl: URL): void {
     const parsed = parsePublicAppUrlState(catalog, sourceUrl);
+    const requestedGeographicName = resolveGeographicName(parsed.state.geographicNameId);
 
     isRestoringFromHistory = true;
 
@@ -420,6 +483,8 @@ function mountPublicExperience(
         { notify: false },
       );
 
+      geographicNameId = parsed.state.activePlaceId ? null : (requestedGeographicName?.id ?? null);
+
       if (parsed.state.activePlaceId) {
         selection.select(parsed.state.activePlaceId);
       } else {
@@ -430,13 +495,17 @@ function mountPublicExperience(
         focusDetails: false,
         locate: Boolean(parsed.state.activePlaceId),
       });
+
+      if (!parsed.state.activePlaceId && requestedGeographicName) {
+        locateGeographicName(requestedGeographicName);
+      } else if (!parsed.state.activePlaceId) {
+        mapController.clearSearchFocus();
+      }
     } finally {
       isRestoringFromHistory = false;
     }
 
-    if (!parsed.isCanonical) {
-      window.history.replaceState(window.history.state, '', parsed.canonicalUrl);
-    }
+    writePublicStateToHistory('replace');
   }
 
   selection.subscribe((activePlaceId) => {
