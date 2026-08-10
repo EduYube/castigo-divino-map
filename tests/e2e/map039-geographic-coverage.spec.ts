@@ -30,16 +30,14 @@ interface SnapshotGeographicName {
 }
 
 interface SnapshotPayload {
-  content: {
-    geographicNames: SnapshotGeographicName[];
-  };
+  geographicNames: SnapshotGeographicName[];
 }
 
 const SNAPSHOT = JSON.parse(
   readFileSync(new URL('../../public/data/public-catalog.snapshot.json', import.meta.url), 'utf8'),
 ) as SnapshotPayload;
 
-const GEOGRAPHIC_ROWS = SNAPSHOT.content.geographicNames.map((entry) => ({
+const GEOGRAPHIC_ROWS = SNAPSHOT.geographicNames.map((entry) => ({
   id: entry.id,
   slug: entry.slug,
   name: entry.name,
@@ -50,7 +48,7 @@ const GEOGRAPHIC_ROWS = SNAPSHOT.content.geographicNames.map((entry) => ({
   entity_id: entry.entityId,
 }));
 
-const GEOGRAPHIC_ALIAS_ROWS = SNAPSHOT.content.geographicNames.flatMap((entry) =>
+const GEOGRAPHIC_ALIAS_ROWS = SNAPSHOT.geographicNames.flatMap((entry) =>
   entry.aliases.map((alias) => ({
     id: alias.id,
     geographic_name_id: alias.geographicNameId,
