@@ -1,0 +1,48 @@
+name: MAP-041 One-shot Cleanup
+
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-041-geographic-search-extents
+      - name: Clean one-shot canonicalizer duplication
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/map/leaflet.ts')
+          text = path.read_text()
+          import_line = "import { clearMapSearchFocus, locateMapSearchTarget } from './searchFocus';\n"
+          if import_line not in text:
+              raise SystemExit('MAP-041 search focus import missing')
+          while import_line + import_line in text:
+              text = text.replace(import_line + import_line, import_line)
+          extent_block = '''  readonly searchExtent: {\n    readonly minX: number;\n    readonly maxX: number;\n    readonly minY: number;\n    readonly maxY: number;\n  } | null;\n'''
+          if extent_block not in text:
+              raise SystemExit('MAP-041 searchExtent target contract missing')
+          while extent_block + extent_block in text:
+              text = text.replace(extent_block + extent_block, extent_block)
+          if text.count(import_line) != 1 or text.count(extent_block) != 1:
+              raise SystemExit('MAP-041 duplicate cleanup did not converge')
+          path.write_text(text)
+          PY
+      - name: Commit cleanup if needed
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/map/leaflet.ts
+          git commit -m "fix(MAP-041): remove temporary canonicalizer duplication"
+          git push origin HEAD:agent/map-041-geographic-search-extents
