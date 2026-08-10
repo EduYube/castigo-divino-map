@@ -420,8 +420,7 @@ export function mountPlaceSearch(
     } else if (event.key === 'ArrowDown') {
       activeSuggestionIndex = (activeSuggestionIndex + 1) % suggestions.length;
     } else {
-      activeSuggestionIndex =
-        (activeSuggestionIndex - 1 + suggestions.length) % suggestions.length;
+      activeSuggestionIndex = (activeSuggestionIndex - 1 + suggestions.length) % suggestions.length;
     }
 
     render();
