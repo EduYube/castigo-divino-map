@@ -96,13 +96,13 @@ select is(
 );
 select is(
   (select count(*) from public.geographic_names),
-  17::bigint,
-  'anon sees only valid published geographic names, including the MAP-032 baseline'
+  215::bigint,
+  'anon sees the MAP-039 raster inventory plus the two published local geographic fixtures'
 );
 select is(
   (select count(*) from public.geographic_name_aliases),
-  6::bigint,
-  'anon sees aliases only for published geographic names, including the MAP-032 baseline'
+  7::bigint,
+  'anon sees MAP-039 aliases plus the published local geographic alias'
 );
 
 select ok(pg_temp.statement_fails('select * from public.public_requests'), 'anon cannot enumerate requests');
