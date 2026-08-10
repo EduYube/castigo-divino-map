@@ -1,0 +1,39 @@
+name: MAP-039 format helper
+
+on:
+  push:
+    branches:
+      - agent/map-039-complete-geographic-index
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Format MAP-039 files
+        run: |
+          npx prettier --write \
+            src/data-access/geographicCoverageContract.js \
+            src/data-access/geographicCoverageContract.test.ts \
+            src/data-access/geographicCoverageManifest.d.ts \
+            src/data-access/geographicCoverageManifest.js
+      - name: Emit formatted files
+        run: |
+          for file in \
+            src/data-access/geographicCoverageContract.js \
+            src/data-access/geographicCoverageContract.test.ts \
+            src/data-access/geographicCoverageManifest.d.ts \
+            src/data-access/geographicCoverageManifest.js; do
+            echo "MAP039_FILE_BEGIN:${file}"
+            base64 -w0 "${file}"
+            echo
+            echo "MAP039_FILE_END:${file}"
+          done
