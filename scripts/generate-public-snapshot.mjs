@@ -24,6 +24,10 @@ assertGeographicSearchExtentCoverage(
   content,
   useFixture ? 'MAP-028 CI fixture' : 'Supabase published data',
 );
+assertGeographicSearchExtentCoverage(
+  content,
+  useFixture ? 'MAP-028 CI fixture' : 'Supabase published data',
+);
 const nextChecksum = checksum(content);
 let generatedAt = new Date().toISOString();
 

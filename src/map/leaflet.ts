@@ -12,6 +12,7 @@ import {
 import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './config';
 import { clearMapSearchFocus, locateMapSearchTarget } from './searchFocus';
 import { clearMapSearchFocus, locateMapSearchTarget } from './searchFocus';
+import { clearMapSearchFocus, locateMapSearchTarget } from './searchFocus';
 
 export type MapLoadState = 'loading' | 'ready' | 'error';
 
@@ -20,6 +21,12 @@ export interface MapSearchTarget {
     readonly x: number;
     readonly y: number;
   };
+  readonly searchExtent: {
+    readonly minX: number;
+    readonly maxX: number;
+    readonly minY: number;
+    readonly maxY: number;
+  } | null;
   readonly searchExtent: {
     readonly minX: number;
     readonly maxX: number;
