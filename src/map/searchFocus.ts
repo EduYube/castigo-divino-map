@@ -21,7 +21,11 @@ const stateByMap = new WeakMap<LeafletMap, SearchFocusState>();
 function stateFor(map: LeafletMap): SearchFocusState {
   const existing = stateByMap.get(map);
   if (existing) return existing;
-  const state: SearchFocusState = { highlight: null, timeoutId: null, metadataElement: null };
+  const state: SearchFocusState = {
+    highlight: null,
+    timeoutId: null,
+    metadataElement: null,
+  };
   stateByMap.set(map, state);
   return state;
 }
@@ -98,8 +102,7 @@ function showAreaFocus(map: LeafletMap, root: ParentNode, target: MapSearchTarge
 
   const state = stateFor(map);
   state.highlight = rectangle;
-  state.metadataElement =
-    root.querySelector<HTMLElement>('[data-map-shell]') ?? map.getContainer();
+  state.metadataElement = root.querySelector<HTMLElement>('[data-map-shell]') ?? map.getContainer();
 
   state.metadataElement.dataset.searchHighlight = 'true';
   state.metadataElement.dataset.searchHighlightKind = 'area';
