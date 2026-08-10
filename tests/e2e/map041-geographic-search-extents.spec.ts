@@ -10,9 +10,7 @@ const TEST_MAP = `
 `;
 
 const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
-  categories: [
-    { id: 'category-demo', slug: 'demo', name: 'Demo', description: '' },
-  ],
+  categories: [{ id: 'category-demo', slug: 'demo', name: 'Demo', description: '' }],
   tags: [],
   players: [],
   map_entities: [
@@ -137,7 +135,9 @@ async function selectGeographicResult(page: Page, query: string, name: RegExp): 
     .click();
 }
 
-test('switches point → extent → point and replaces the previous focus highlight', async ({ page }) => {
+test('switches point → extent → point and replaces the previous focus highlight', async ({
+  page,
+}) => {
   await openSearch(page);
   const shell = page.getByTestId('map-shell');
 
@@ -187,7 +187,10 @@ test('Spanish region alias uses identical bounds and the area layer never obstru
   await expect(shell).toHaveAttribute('data-search-highlight-bounds', englishBounds ?? '');
   await expect(pin).toBeVisible();
   await expect(page.locator('.geographic-search-area-pane')).toHaveCSS('pointer-events', 'none');
-  await expect(page.locator('.geographic-search-area-highlight')).toHaveCSS('pointer-events', 'none');
+  await expect(page.locator('.geographic-search-area-highlight')).toHaveCSS(
+    'pointer-events',
+    'none',
+  );
 
   const zOrder = await page.evaluate(() => ({
     area: Number(getComputedStyle(document.querySelector('.geographic-search-area-pane')!).zIndex),
