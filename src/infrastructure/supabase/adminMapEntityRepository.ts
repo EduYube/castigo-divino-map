@@ -14,6 +14,7 @@ import {
   type AdminMapEntityReferences,
   type AdminPlayerReference,
   type AdminTagReference,
+  type MapEntityAudience,
   type MapEntityPublicationStatus,
   type MapEntityType,
   type MapVisibility,
@@ -115,6 +116,14 @@ function visibility(value: unknown): MapVisibility {
   );
 }
 
+function audience(value: unknown): MapEntityAudience {
+  if (value === 'public' || value === 'master') return value;
+  throw new AdminMapEntityRepositoryError(
+    'invalid-response',
+    'Supabase devolvió una audiencia de entidad no válida.',
+  );
+}
+
 function disposition(value: unknown): PlayerDisposition {
   if (value === 'ally' || value === 'enemy' || value === 'neutral') return value;
   throw new AdminMapEntityRepositoryError(
@@ -129,6 +138,7 @@ function mapRecord(row: Record<string, unknown>): AdminMapEntityRecord {
     slug: requiredString(row, 'slug'),
     entityType: entityType(row.entity_type),
     visibility: visibility(row.visibility),
+    audience: audience(row.audience),
     name: requiredString(row, 'name'),
     summary: typeof row.summary === 'string' ? row.summary : '',
     description: typeof row.description === 'string' ? row.description : '',
@@ -254,7 +264,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
   async list(options: { readonly signal: AbortSignal }): Promise<readonly AdminMapEntityRecord[]> {
     const rows = await this.#listRows(
       'map_entities',
-      'id,slug,entity_type,visibility,name,summary,description,x,y,category_id,publication_status,published_at,archived_at,updated_at',
+      'id,slug,entity_type,visibility,audience,name,summary,description,x,y,category_id,publication_status,published_at,archived_at,updated_at',
       'name.asc,id.asc',
       options.signal,
     );
@@ -299,7 +309,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
     options: { readonly signal: AbortSignal },
   ): Promise<AdminMapEntityDetail> {
     const response = await this.#request(
-      new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_map_entity_editor`),
+      new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_map_entity_editor_v2`),
       { method: 'POST', body: JSON.stringify({ p_entity_id: entityId }) },
       options.signal,
     );
@@ -319,7 +329,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
     options: { readonly signal: AbortSignal },
   ): Promise<AdminMapEntityDetail> {
     const response = await this.#request(
-      new URL(`${this.#projectUrl}/rest/v1/rpc/admin_save_map_entity`),
+      new URL(`${this.#projectUrl}/rest/v1/rpc/admin_save_map_entity_v2`),
       {
         method: 'POST',
         body: JSON.stringify({
@@ -329,6 +339,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
           p_slug: draft.slug,
           p_entity_type: draft.entityType,
           p_visibility: draft.visibility,
+          p_audience: draft.audience,
           p_name: draft.name.trim(),
           p_summary: draft.summary.trim(),
           p_description: draft.description.trim(),
@@ -522,7 +533,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
           );
         }
         if (code === '23503') {
-          const saving = url.pathname.endsWith('/rpc/admin_save_map_entity');
+          const saving = url.pathname.endsWith('/rpc/admin_save_map_entity_v2');
           throw new AdminMapEntityRepositoryError(
             saving ? 'invalid-relation' : 'referenced',
             saving
