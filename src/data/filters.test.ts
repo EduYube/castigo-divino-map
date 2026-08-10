@@ -203,7 +203,7 @@ describe('search and filter combination', () => {
     expect(searchPublicPlaceIds(filterCatalog, 'hidden road')).toEqual(['place-pass']);
   });
 
-  it('combines an active query and filters with AND', () => {
+  it('combines an active entity query and filters with AND', () => {
     expect(
       deriveMatchingPublicPlaceIds(filterCatalog, 'market', {
         selectedCategoryIds: ['category-settlement'],
@@ -217,6 +217,39 @@ describe('search and filter combination', () => {
         selectedTagIds: [],
       }),
     ).toEqual([]);
+  });
+
+  it('ignores the textual query after a geographic result is selected', () => {
+    expect(
+      deriveMatchingPublicPlaceIds(filterCatalog, 'waterdeep', noFilters, {
+        searchIntent: 'geographic-navigation',
+      }),
+    ).toEqual(['place-harbor', 'place-market', 'place-pass']);
+  });
+
+  it('keeps explicit filters active during geographic navigation', () => {
+    expect(
+      deriveMatchingPublicPlaceIds(
+        filterCatalog,
+        'waterdeep',
+        {
+          selectedCategoryIds: ['category-landmark'],
+          selectedTagIds: ['note-only'],
+        },
+        { searchIntent: 'geographic-navigation' },
+      ),
+    ).toEqual(['place-pass']);
+  });
+
+  it('restores textual matching when geographic navigation is cleared', () => {
+    expect(
+      deriveMatchingPublicPlaceIds(filterCatalog, 'market', noFilters, {
+        searchIntent: 'geographic-navigation',
+      }),
+    ).toEqual(['place-harbor', 'place-market', 'place-pass']);
+    expect(deriveMatchingPublicPlaceIds(filterCatalog, 'market', noFilters)).toEqual([
+      'place-market',
+    ]);
   });
 
   it('does not restrict active filters when the query is empty', () => {
