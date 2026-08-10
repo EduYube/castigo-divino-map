@@ -60,7 +60,11 @@
         "y": 820
       },
       "categoryId": "category-settlement",
-      "tagIds": ["coastal", "demo-data", "trade-route"]
+      "tagIds": [
+        "coastal",
+        "demo-data",
+        "trade-route"
+      ]
     },
     {
       "id": "place-demo-pass",
@@ -84,7 +88,11 @@
         "y": 1240.25
       },
       "categoryId": "category-landmark",
-      "tagIds": ["demo-data", "mountain-pass", "trade-route"]
+      "tagIds": [
+        "demo-data",
+        "mountain-pass",
+        "trade-route"
+      ]
     }
   ],
   "dispositions": [],
@@ -97,7 +105,10 @@
       "title": "Información pública de demostración",
       "body": "Este puerto ficticio sirve para comprobar fichas, búsquedas y filtros sin representar hechos secretos ni confirmados de la campaña.",
       "sortOrder": 0,
-      "tagIds": ["coastal", "demo-data"]
+      "tagIds": [
+        "coastal",
+        "demo-data"
+      ]
     },
     {
       "id": "note-demo-pass-travel",
@@ -106,7 +117,11 @@
       "title": "Referencia pública de viaje",
       "body": "Este paso ficticio demuestra cómo una nota pública puede relacionar un lugar con etiquetas de viaje y terreno.",
       "sortOrder": 0,
-      "tagIds": ["demo-data", "mountain-pass", "trade-route"]
+      "tagIds": [
+        "demo-data",
+        "mountain-pass",
+        "trade-route"
+      ]
     }
   ],
   "geographicNames": [
@@ -219,7 +234,14 @@
       "slug": "baldurs-gate",
       "name": "Baldur's Gate",
       "language": "en",
-      "aliases": [],
+      "aliases": [
+        {
+          "id": "geo-alias-baldurs-gate-es",
+          "geographicNameId": "geo-baldurs-gate",
+          "language": "es",
+          "value": "Puerta de Baldur"
+        }
+      ],
       "coordinates": {
         "x": 1889,
         "y": 824
@@ -349,7 +371,14 @@
       "slug": "candlekeep",
       "name": "Candlekeep",
       "language": "en",
-      "aliases": [],
+      "aliases": [
+        {
+          "id": "geo-alias-candlekeep-es",
+          "geographicNameId": "geo-candlekeep",
+          "language": "es",
+          "value": "Candelero"
+        }
+      ],
       "coordinates": {
         "x": 1830,
         "y": 659
@@ -1066,7 +1095,14 @@
       "slug": "icewind-dale",
       "name": "Icewind Dale",
       "language": "en",
-      "aliases": [],
+      "aliases": [
+        {
+          "id": "geo-alias-icewind-dale-es",
+          "geographicNameId": "geo-icewind-dale",
+          "language": "es",
+          "value": "Valle del Viento Helado"
+        }
+      ],
       "coordinates": {
         "x": 1250,
         "y": 2209
@@ -1326,7 +1362,14 @@
       "slug": "moonshae-isles",
       "name": "Moonshae Isles",
       "language": "en",
-      "aliases": [],
+      "aliases": [
+        {
+          "id": "geo-alias-moonshae-isles-es",
+          "geographicNameId": "geo-moonshae-isles",
+          "language": "es",
+          "value": "Islas Lunshaes"
+        }
+      ],
       "coordinates": {
         "x": 1110,
         "y": 1099
@@ -1456,7 +1499,14 @@
       "slug": "neverwinter",
       "name": "Neverwinter",
       "language": "en",
-      "aliases": [],
+      "aliases": [
+        {
+          "id": "geo-alias-neverwinter-es",
+          "geographicNameId": "geo-neverwinter",
+          "language": "es",
+          "value": "Nuncainvierno"
+        }
+      ],
       "coordinates": {
         "x": 1433,
         "y": 1853
@@ -1924,7 +1974,14 @@
       "slug": "silverymoon",
       "name": "Silverymoon",
       "language": "en",
-      "aliases": [],
+      "aliases": [
+        {
+          "id": "geo-alias-silverymoon-es",
+          "geographicNameId": "geo-silverymoon",
+          "language": "es",
+          "value": "Luna Plateada"
+        }
+      ],
       "coordinates": {
         "x": 1998,
         "y": 1969
@@ -2074,7 +2131,14 @@
       "slug": "sword-coast",
       "name": "Sword Coast",
       "language": "en",
-      "aliases": [],
+      "aliases": [
+        {
+          "id": "geo-alias-sword-coast-es",
+          "geographicNameId": "geo-sword-coast",
+          "language": "es",
+          "value": "Costa de la Espada"
+        }
+      ],
       "coordinates": {
         "x": 1450,
         "y": 1049
@@ -2821,6 +2885,12 @@
           "geographicNameId": "geo-waterdeep",
           "language": "en",
           "value": "City of Splendors"
+        },
+        {
+          "id": "geo-alias-waterdeep-es",
+          "geographicNameId": "geo-waterdeep",
+          "language": "es",
+          "value": "Aguas Profundas"
         }
       ],
       "coordinates": {
@@ -2923,7 +2993,7 @@
     }
   ],
   "characterLocationEvents": [],
-  "generatedAt": "2026-08-10T13:15:41.150Z",
-  "sourceRevision": "sha256:0d0400346777241da963fefc29e7dcbbdc1c7b580869829376b811fb3f33e717",
-  "checksum": "sha256:0d0400346777241da963fefc29e7dcbbdc1c7b580869829376b811fb3f33e717"
+  "generatedAt": "2026-08-10T15:25:14.655Z",
+  "sourceRevision": "sha256:449a77629b63392db19d6fd9af70b2aea812e54f17324ca3eb0e057104e9e26a",
+  "checksum": "sha256:449a77629b63392db19d6fd9af70b2aea812e54f17324ca3eb0e057104e9e26a"
 }
