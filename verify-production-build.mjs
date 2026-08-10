@@ -38,6 +38,15 @@ const LEGACY_EDITORIAL_MARKERS = [
   'Este puerto ficticio sirve para comprobar fichas',
   'Este paso ficticio demuestra cómo una nota pública',
 ];
+const MASTER_CONTENT_CANARIES = [
+  'MAP044 MASTER CANARY CHARACTER',
+  'MAP044 MASTER CANARY LOCATION',
+  'MAP044 MASTER CANARY ALIAS',
+  'MAP044 MASTER CANARY NOTE',
+  'MAP044 MASTER CANARY GEOGRAPHY',
+  'MAP044 MASTER CANARY EVENT',
+  'MAP044 MASTER UNIT CANARY',
+];
 
 function fail(message) {
   throw new Error(`Production build verification failed: ${message}`);
@@ -196,6 +205,7 @@ for (const forbidden of [
   '"sender_name"',
   '"reason"',
   '"public_requests"',
+  '"audience"',
 ]) {
   if (snapshotText.includes(forbidden)) {
     fail(`the public snapshot contains a protected field or domain marker: ${forbidden}`);
@@ -230,6 +240,12 @@ if (!textualBundle.includes(OFFICIAL_MAP_URL)) {
   fail('the official remote map URL is missing from the production bundle');
 }
 
+for (const canary of MASTER_CONTENT_CANARIES) {
+  if (textualBundle.includes(canary)) {
+    fail(`a MAP-044 master-only canary leaked into the public production artifact: ${canary}`);
+  }
+}
+
 for (const pattern of SECRET_PATTERNS) {
   if (pattern.test(textualBundle)) {
     fail(`a known credential pattern matched ${pattern}`);
@@ -237,5 +253,5 @@ for (const pattern of SECRET_PATTERNS) {
 }
 
 console.log(
-  `Verified ${publicPaths.length} production files for ${expectedBase}: index, JavaScript, CSS, Beta 0.2 public snapshot, remote map reference, no raster map copy and no known or privileged Supabase credential patterns.`,
+  `Verified ${publicPaths.length} production files for ${expectedBase}: index, JavaScript, CSS, Beta 0.2 public snapshot, remote map reference, no master-only canaries, no raster map copy and no known or privileged Supabase credential patterns.`,
 );
