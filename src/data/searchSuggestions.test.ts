@@ -156,9 +156,11 @@ describe('public search suggestions', () => {
 
   it('keeps colliding visible names as distinct typed identities', () => {
     expect(
-      getPublicAtlasSuggestions({ categories: [], tags: [], places: [], notes: [] }, collisionCatalog, 'echo').map(
-        ({ id, type, name }) => ({ id, type, name }),
-      ),
+      getPublicAtlasSuggestions(
+        { categories: [], tags: [], places: [], notes: [] },
+        collisionCatalog,
+        'echo',
+      ).map(({ id, type, name }) => ({ id, type, name })),
     ).toEqual([
       { id: 'geo-echo', type: 'geographic', name: 'Echo' },
       { id: 'entity-echo', type: 'character', name: 'Echo' },
@@ -167,7 +169,11 @@ describe('public search suggestions', () => {
 
   it('accepts an alias from the Beta 0.2 geographic index', () => {
     expect(
-      getPublicAtlasSuggestions({ categories: [], tags: [], places: [], notes: [] }, collisionCatalog, 'the echo'),
+      getPublicAtlasSuggestions(
+        { categories: [], tags: [], places: [], notes: [] },
+        collisionCatalog,
+        'the echo',
+      ),
     ).toEqual([
       expect.objectContaining({
         id: 'geo-echo',
