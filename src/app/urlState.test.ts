@@ -86,6 +86,16 @@ describe('public application URL state', () => {
     ).toBe('q=Puerto+p%C3%BAblico');
   });
 
+  it('serializes the selected geographic identity independently from the query', () => {
+    expect(
+      serialize({
+        ...EMPTY_PUBLIC_APP_URL_STATE,
+        query: 'Aguas Profundas',
+        geographicNameId: 'geo-waterdeep',
+      }),
+    ).toBe('q=Aguas+Profundas&geo=geo-waterdeep');
+  });
+
   it('serializes only categories in stable catalog order', () => {
     expect(
       serialize({
@@ -109,11 +119,12 @@ describe('public application URL state', () => {
       serialize({
         activePlaceId: 'place-demo-pass',
         query: 'paso público',
+        geographicNameId: 'geo-sword-coast',
         selectedCategoryIds: ['category-landmark'],
         selectedTagIds: ['trade-route', 'mountain-pass'],
       }),
     ).toBe(
-      'place=paso-de-demostracion&q=paso+p%C3%BAblico&category=lugares-destacados&tag=trade-route&tag=mountain-pass',
+      'place=paso-de-demostracion&q=paso+p%C3%BAblico&geo=geo-sword-coast&category=lugares-destacados&tag=trade-route&tag=mountain-pass',
     );
   });
 
@@ -136,6 +147,7 @@ describe('public application URL state', () => {
     ).toEqual({
       activePlaceId: null,
       query: '',
+      geographicNameId: null,
       selectedCategoryIds: ['category-settlement', 'category-landmark'],
       selectedTagIds: ['coastal', 'mountain-pass'],
     });
@@ -150,9 +162,21 @@ describe('public application URL state', () => {
     expect(parsed.state).toEqual({
       activePlaceId: null,
       query: 'puerto',
+      geographicNameId: null,
       selectedCategoryIds: [],
       selectedTagIds: ['coastal'],
     });
+  });
+
+  it('ignores malformed geographic IDs and canonicalizes duplicate values', () => {
+    const parsed = parsePublicAppUrlState(
+      urlCatalog,
+      new URL(`${baseUrl.href}?geo=waterdeep&geo=geo-waterdeep&geo=geo-sword-coast`),
+    );
+
+    expect(parsed.state.geographicNameId).toBe('geo-waterdeep');
+    expect(parsed.canonicalUrl.search).toBe('?geo=geo-waterdeep');
+    expect(parsed.isCanonical).toBe(false);
   });
 
   it('ignores invalid categories and tags while preserving valid values', () => {
@@ -182,7 +206,7 @@ describe('public application URL state', () => {
   it('normalizes empty values and removes unknown parameters', () => {
     const parsed = parsePublicAppUrlState(
       urlCatalog,
-      new URL(`${baseUrl.href}?q=+++&category=&tag=&external=value#section`),
+      new URL(`${baseUrl.href}?q=+++&geo=&category=&tag=&external=value#section`),
     );
 
     expect(parsed.state).toEqual(EMPTY_PUBLIC_APP_URL_STATE);
@@ -216,10 +240,11 @@ describe('public application URL state', () => {
     );
   });
 
-  it('round-trips a complete state', () => {
+  it('round-trips a complete state including geographic navigation', () => {
     const state: PublicAppUrlState = {
       activePlaceId: 'place-demo-harbor',
-      query: 'Puerto & costa',
+      query: 'Aguas Profundas',
+      geographicNameId: 'geo-waterdeep',
       selectedCategoryIds: ['category-settlement'],
       selectedTagIds: ['coastal', 'trade-route'],
     };
@@ -234,6 +259,7 @@ describe('public application URL state', () => {
     const state: PublicAppUrlState = {
       activePlaceId: 'place-demo-pass',
       query: '  paso  ',
+      geographicNameId: 'geo-sword-coast',
       selectedCategoryIds: ['category-landmark', 'category-landmark'],
       selectedTagIds: ['mountain-pass', 'mountain-pass'],
     };
@@ -252,17 +278,33 @@ describe('public application URL state', () => {
         {
           activePlaceId: 'place-demo-harbor',
           query: ' puerto ',
+          geographicNameId: 'geo-waterdeep',
           selectedCategoryIds: ['category-settlement'],
           selectedTagIds: ['trade-route', 'coastal', 'coastal'],
         },
         {
           activePlaceId: 'place-demo-harbor',
           query: 'puerto',
+          geographicNameId: 'geo-waterdeep',
           selectedCategoryIds: ['category-settlement'],
           selectedTagIds: ['coastal', 'trade-route'],
         },
       ),
     ).toBe(true);
+  });
+
+  it('treats a different geographic identity as a different history state', () => {
+    expect(
+      arePublicAppUrlStatesEqual(
+        urlCatalog,
+        { ...EMPTY_PUBLIC_APP_URL_STATE, query: 'Waterdeep', geographicNameId: 'geo-waterdeep' },
+        {
+          ...EMPTY_PUBLIC_APP_URL_STATE,
+          query: 'Waterdeep',
+          geographicNameId: 'geo-sword-coast',
+        },
+      ),
+    ).toBe(false);
   });
 
   it('handles malformed percent encoding without throwing', () => {
