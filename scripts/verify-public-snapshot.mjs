@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-import { assertGeographicSearchCoverage } from '../src/data-access/geographicCoverageContract.js';
+import { assertGeographicSpanishSearchCoverage } from '../src/data-access/geographicSpanishReviewContract.js';
 import {
   buildPublicSnapshotContent,
   checksum,
@@ -31,13 +31,13 @@ const committedChecksum = checksum(committedContent);
 if (snapshot.checksum !== committedChecksum || snapshot.sourceRevision !== committedChecksum) {
   throw new Error('The committed public snapshot checksum/sourceRevision is invalid.');
 }
-assertGeographicSearchCoverage(committedContent, 'the committed public snapshot');
+assertGeographicSpanishSearchCoverage(committedContent, 'the committed public snapshot');
 
 if (verifyRemote) {
   const raw = await loadRemotePublicRows();
   const expectedContent = buildPublicSnapshotContent(raw);
   const expectedChecksum = checksum(expectedContent);
-  assertGeographicSearchCoverage(expectedContent, 'Supabase published data');
+  assertGeographicSpanishSearchCoverage(expectedContent, 'Supabase published data');
 
   if (expectedChecksum !== committedChecksum) {
     throw new Error(
@@ -149,10 +149,10 @@ for (const forbidden of [
 }
 
 const verificationTarget = verifyRemote
-  ? 'Supabase published data plus the MAP-039 complete geographic coverage gate'
+  ? 'Supabase published data plus the MAP-039 + MAP-040 geographic coverage gates'
   : verifyMigrationFixture
-    ? 'the historical MAP-028 migration fixture plus the MAP-039 complete geographic coverage gate'
-    : 'its canonical public content, publication filters and MAP-039 complete geographic coverage gate';
+    ? 'the historical MAP-028 migration fixture plus the MAP-039 + MAP-040 geographic coverage gates'
+    : 'its canonical public content, publication filters and MAP-039 + MAP-040 geographic coverage gates';
 console.log(
   `Verified Beta 0.2 public snapshot against ${verificationTarget}: ${committedChecksum}.`,
 );
