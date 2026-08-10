@@ -157,7 +157,10 @@ function mountPublicExperience(
         const visibleLeft = mapRect.left + edgePadding;
         const visibleRight = mapRect.right - edgePadding;
         const visibleTop = mapRect.top + edgePadding;
-        const visibleBottom = Math.min(mapRect.bottom - edgePadding, panelRect.top - edgePadding);
+        const visibleBottom = Math.min(
+          mapRect.bottom - edgePadding,
+          panelRect.top - edgePadding,
+        );
         let offsetX = 0;
         let offsetY = 0;
 
