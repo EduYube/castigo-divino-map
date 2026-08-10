@@ -1,11 +1,15 @@
 import 'leaflet/dist/leaflet.css';
 
-import { bootstrapAdminAuthRuntime } from './app/adminAuthRuntime';
+import { bootstrapAdminAuthRuntime, type AdminAuthRuntime } from './app/adminAuthRuntime';
 import { mountAdminPinVisualSync } from './app/adminPinVisualSync';
 import { mountCollapsibleMapControls } from './app/collapsibleControls';
 import { mountCompactPinDetails } from './app/compactPinDetails';
 import { mountFullEntityDetails, renderFullEntityDetailsShell } from './app/fullEntityDetails';
 import { createFullEntityUrl, parseFullEntityUrlRequest } from './app/fullEntityUrl';
+import { mountMasterDetailActions } from './app/masterDetailActions';
+import { mountMasterPinVisuals } from './app/masterPinVisuals';
+import { bootstrapMasterModeRuntime, type MasterModeRuntime } from './app/masterModeRuntime';
+import { mountMasterSearchVisuals } from './app/masterSearchVisuals';
 import { mountPlaceFilters } from './app/placeFilters';
 import {
   bootstrapPublicDataRuntime,
@@ -21,14 +25,16 @@ import {
   parsePublicAppUrlState,
   type PublicAppUrlState,
 } from './app/urlState';
-import type { GeographicNameId, PublicGeographicName } from './data/beta02-model';
+import type { EntityId, GeographicNameId, PublicGeographicName } from './data/beta02-model';
 import { campaignCatalog } from './data/catalog';
 import { buildCompactPinDetailModel } from './data/compactPinDetails';
 import { deriveMatchingPublicPlaceIds } from './data/filters';
 import { resolveFullEntityDetail } from './data/fullEntityDetails';
+import { createAuthorizedMasterCatalogView } from './data/masterCatalogView';
 import type { CampaignCatalog, PlaceId } from './data/model';
 import { createAtlasPinMarkerModels, type AtlasPinMarkerModel } from './data/pinMarkers';
 import type { AtlasSearchResult } from './data/search';
+import type { MapEntityAudience } from './domain/adminMapEntities';
 import { getPinTypeVisual } from './domain/pinVisualSystem';
 import { mountFaerunMap } from './map/leaflet';
 import './styles/main.css';
@@ -77,6 +83,7 @@ function isSameCatalogState(left: PublicCatalogState, right: PublicCatalogState)
 function mountPublicExperience(
   initialCatalogState: PublicCatalogState,
   publicDataRuntime?: PublicDataRuntime,
+  adminRuntime?: AdminAuthRuntime,
 ): void {
   let isRestoringFromHistory = false;
   let catalogState = initialCatalogState;
@@ -85,6 +92,8 @@ function mountPublicExperience(
   let renderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
   let activeSupplementalPin: AtlasPinMarkerModel | null = null;
   let geographicNameId: GeographicNameId | null = null;
+  let masterEntityIds: ReadonlySet<EntityId> = new Set();
+  let masterModeRuntime: MasterModeRuntime | null = null;
   const selection = createPlaceSelectionController();
   const mapSearchStatus = app.querySelector<HTMLElement>('[data-map-search-status]');
 
@@ -126,10 +135,14 @@ function mountPublicExperience(
       window.requestAnimationFrame(() => {
         if (!mapSearchStatus) return;
         const type = getPinTypeVisual(pin.entityType).label.toLocaleLowerCase('es');
-        mapSearchStatus.textContent = `${pin.name}, ${type}, seleccionado en el mapa. Ficha compacta abierta.`;
+        const audience =
+          pin.entityId && masterEntityIds.has(pin.entityId) ? ' Contenido del Máster.' : '';
+        mapSearchStatus.textContent = `${pin.name}, ${type}, seleccionado en el mapa. Ficha compacta abierta.${audience}`;
       });
     },
   });
+  const masterPinVisuals = mountMasterPinVisuals(app);
+  masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
   mountPublicPinRequest(app, mapController.map);
 
   const compactDetailsPanel = app.querySelector<HTMLElement>('[data-place-details]');
@@ -225,7 +238,7 @@ function mountPublicExperience(
       window.requestAnimationFrame(() => focusPinControl(supplementalPin));
     },
     createFullDetailsUrl(details): string | null {
-      if (!details.entitySlug) {
+      if (!details.entitySlug || (details.entityId && masterEntityIds.has(details.entityId))) {
         return null;
       }
 
@@ -316,8 +329,19 @@ function mountPublicExperience(
         coordinates: result.coordinates,
         searchExtent: result.searchExtent,
         recommendedZoom: result.recommendedZoom,
-        label: describeSearchTarget(result),
+        label:
+          result.linkedEntityId && masterEntityIds.has(result.linkedEntityId)
+            ? `${describeSearchTarget(result)}, contenido del Máster`
+            : describeSearchTarget(result),
       });
+
+      if (result.linkedEntityId && masterEntityIds.has(result.linkedEntityId)) {
+        const masterPin = renderedMarkers.find(({ entityId }) => entityId === result.linkedEntityId);
+        if (masterPin) {
+          activeSupplementalPin = masterPin;
+          showCompactDetails(masterPin, true);
+        }
+      }
       writePublicStateToHistory('push');
     },
     onOpenPlace(placeId): void {
@@ -325,13 +349,16 @@ function mountPublicExperience(
     },
   });
   placeSearchController.setCatalogState(catalog, beta02Catalog);
+  const masterSearchVisuals = mountMasterSearchVisuals(app);
+  masterSearchVisuals.refresh(masterEntityIds);
 
   function getCurrentPublicState(): PublicAppUrlState {
     const filters = placeFiltersController.getState();
 
     return {
       activePlaceId: selection.getActivePlaceId(),
-      query: placeSearchController.getQuery(),
+      // Never serialize an admin-only search term while private data is in memory.
+      query: masterEntityIds.size > 0 ? '' : placeSearchController.getQuery(),
       geographicNameId,
       selectedCategoryIds: filters.selectedCategoryIds,
       selectedTagIds: filters.selectedTagIds,
@@ -395,22 +422,58 @@ function mountPublicExperience(
     if (!showLegacyPlaceDetails(activePlaceId, options.focusDetails)) selection.clear();
   }
 
-  function applyCatalogState(nextCatalogState: PublicCatalogState): void {
-    if (isSameCatalogState(catalogState, nextCatalogState)) return;
+  function applyCatalogState(nextCatalogState: PublicCatalogState, force = false): void {
+    if (!force && isSameCatalogState(catalogState, nextCatalogState)) return;
 
     catalogState = nextCatalogState;
     const previousActivePlaceId = selection.getActivePlaceId();
     const previousGeographicNameId = geographicNameId;
+    const previousMasterEntityIds = masterEntityIds;
     const validPlaceIds = new Set(nextCatalogState.compatibility.places.map(({ id }) => id));
+    let effectiveBeta02 = nextCatalogState.beta02;
+    let nextMasterEntityIds: ReadonlySet<EntityId> = new Set();
+    const modeState = masterModeRuntime?.controller.getState();
+
+    if (modeState?.phase === 'on' && modeState.catalog && nextCatalogState.beta02) {
+      try {
+        const view = createAuthorizedMasterCatalogView(nextCatalogState.beta02, modeState.catalog);
+        effectiveBeta02 = view.catalog;
+        nextMasterEntityIds = view.masterEntityIds;
+      } catch {
+        // A contradictory public/private projection is a security invariant failure.
+        // Fail closed by dropping private state instead of trying to reconcile it client-side.
+        void masterModeRuntime?.controller.setEnabled(false);
+        effectiveBeta02 = nextCatalogState.beta02;
+        nextMasterEntityIds = new Set();
+      }
+    }
+
+    if (previousMasterEntityIds.size > 0 && nextMasterEntityIds.size === 0) {
+      if (
+        activeSupplementalPin?.entityId &&
+        previousMasterEntityIds.has(activeSupplementalPin.entityId)
+      ) {
+        activeSupplementalPin = null;
+        compactDetailsController.hide();
+        clearSupplementalMapSelection();
+      }
+      if (placeSearchController.getQuery()) {
+        placeSearchController.setQuery('', { notify: false });
+      }
+    }
+
+    masterEntityIds = nextMasterEntityIds;
     isRestoringFromHistory = true;
 
     try {
       catalog = nextCatalogState.compatibility;
-      beta02Catalog = nextCatalogState.beta02;
+      beta02Catalog = effectiveBeta02;
       placeFiltersController.setCatalog(catalog);
       placeSearchController.setCatalogState(catalog, beta02Catalog);
       renderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
       mapController.setMarkers(renderedMarkers);
+      masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
+      masterSearchVisuals.refresh(masterEntityIds);
       geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;
       if (previousGeographicNameId && !geographicNameId) {
         mapController.clearSearchFocus();
@@ -444,7 +507,53 @@ function mountPublicExperience(
     writePublicStateToHistory('replace');
   }
 
-  publicDataRuntime?.subscribeCatalogState(applyCatalogState);
+  publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state));
+
+  const refreshAfterAudienceChange = async (audience: MapEntityAudience): Promise<void> => {
+    if (!publicDataRuntime) return;
+    const masterEnabled = masterModeRuntime?.controller.getState().enabled === true;
+
+    if (audience === 'master') {
+      // Remove the entity from the public projection first so a stale private catalog
+      // can never create a public/private duplicate in memory.
+      await publicDataRuntime.refresh();
+      if (masterEnabled) await masterModeRuntime?.controller.reload();
+    } else {
+      // Remove it from private memory first, then let the public projection expose it.
+      if (masterEnabled) await masterModeRuntime?.controller.reload();
+      await publicDataRuntime.refresh();
+    }
+
+    applyCatalogState(publicDataRuntime.getCatalogState(), true);
+  };
+
+  if (adminRuntime && publicDataRuntime) {
+    masterModeRuntime = bootstrapMasterModeRuntime(app, adminRuntime);
+    masterModeRuntime.controller.subscribe(() => applyCatalogState(catalogState, true));
+
+    mountMasterDetailActions(app, adminRuntime.mapEntityController, {
+      getMasterEntityIds: () => masterEntityIds,
+      onAudienceChanged: async (_entityId, audience) => refreshAfterAudienceChange(audience),
+    });
+
+    let previousAudiences: ReadonlyMap<string, MapEntityAudience> | null = null;
+    adminRuntime.mapEntityController.subscribe((state) => {
+      if (state.phase !== 'ready') return;
+      const nextAudiences = new Map<string, MapEntityAudience>(
+        state.records.map((record) => [record.id, record.audience ?? 'public']),
+      );
+      if (previousAudiences) {
+        for (const [entityId, audience] of nextAudiences) {
+          const previous = previousAudiences.get(entityId);
+          if (previous && previous !== audience) {
+            void refreshAfterAudienceChange(audience);
+            break;
+          }
+        }
+      }
+      previousAudiences = nextAudiences;
+    });
+  }
 
   function restorePublicStateFromUrl(sourceUrl: URL): void {
     const parsed = parsePublicAppUrlState(catalog, sourceUrl);
@@ -522,14 +631,14 @@ function unavailableCatalogState(catalog: CampaignCatalog): PublicCatalogState {
 function startMapExperience(): void {
   app.innerHTML = renderApp();
   mountCollapsibleMapControls(app);
-  bootstrapAdminAuthRuntime(app);
+  const adminRuntime = bootstrapAdminAuthRuntime(app);
   mountAdminPinVisualSync(app);
 
   void bootstrapPublicDataRuntime(app, campaignCatalog)
     .then((publicDataRuntime) =>
-      mountPublicExperience(publicDataRuntime.getCatalogState(), publicDataRuntime),
+      mountPublicExperience(publicDataRuntime.getCatalogState(), publicDataRuntime, adminRuntime),
     )
-    .catch(() => mountPublicExperience(unavailableCatalogState(campaignCatalog)));
+    .catch(() => mountPublicExperience(unavailableCatalogState(campaignCatalog), undefined, adminRuntime));
 }
 
 function startFullEntityExperience(sourceUrl: URL): void {
