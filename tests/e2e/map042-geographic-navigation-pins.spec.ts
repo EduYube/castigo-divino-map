@@ -221,7 +221,9 @@ test('Waterdeep keeps the exact-coordinate campaign pin above the point focus an
   expect(await highlight.getAttribute('tabindex')).toBeNull();
 
   const zOrder = await page.evaluate(() => ({
-    focus: Number(getComputedStyle(document.querySelector('.geographic-search-focus-pane')!).zIndex),
+    focus: Number(
+      getComputedStyle(document.querySelector('.geographic-search-focus-pane')!).zIndex,
+    ),
     pins: Number(getComputedStyle(document.querySelector('.leaflet-marker-pane')!).zIndex),
   }));
   expect(zOrder.focus).toBeLessThan(zOrder.pins);
@@ -273,15 +275,15 @@ test('MAP-041 regional focus stays below pins and coincident pin groups remain o
   await expect(group).toHaveAttribute('role', 'button');
 
   const zOrder = await page.evaluate(() => ({
-    focus: Number(getComputedStyle(document.querySelector('.geographic-search-focus-pane')!).zIndex),
+    focus: Number(
+      getComputedStyle(document.querySelector('.geographic-search-focus-pane')!).zIndex,
+    ),
     pins: Number(getComputedStyle(document.querySelector('.leaflet-marker-pane')!).zIndex),
   }));
   expect(zOrder.focus).toBeLessThan(zOrder.pins);
 
   await group.click();
-  const option = page
-    .getByTestId('coincident-pin-option')
-    .filter({ hasText: 'Sword Coast Scout' });
+  const option = page.getByTestId('coincident-pin-option').filter({ hasText: 'Sword Coast Scout' });
   await expect(option).toBeVisible();
   await option.click();
   await expect(page.getByTestId('place-details')).toBeVisible();
@@ -350,7 +352,10 @@ test('Back and Forward reconstruct geographic navigation without restoring textu
   await page.goBack();
   await expect(page).toHaveURL(/q=Waterdeep&geo=geo-waterdeep/);
   await expect(page).not.toHaveURL(/place=/);
-  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-search-highlight-kind', 'point');
+  await expect(page.getByTestId('map-shell')).toHaveAttribute(
+    'data-search-highlight-kind',
+    'point',
+  );
   await expect(page.getByTestId('place-details')).toBeHidden();
   await expectPinNotTextDimmed(exactPin);
   await expectPinNotTextDimmed(nearbyPin);

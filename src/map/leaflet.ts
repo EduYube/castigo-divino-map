@@ -35,10 +35,7 @@ export interface FaerunMapController {
   setMarkers(markers: readonly AtlasPinMarkerModel[]): void;
   setActivePlace(placeId: PlaceId | null): void;
   clearSupplementalPinSelection(): void;
-  setMatchingPlaces(
-    placeIds: ReadonlySet<PlaceId>,
-    semantics?: PinMatchingSemantics,
-  ): void;
+  setMatchingPlaces(placeIds: ReadonlySet<PlaceId>, semantics?: PinMatchingSemantics): void;
   locatePlace(placeId: PlaceId): void;
   locateSearchTarget(target: MapSearchTarget): void;
   clearSearchFocus(): void;
