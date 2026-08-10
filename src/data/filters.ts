@@ -6,6 +6,12 @@ export interface PublicPlaceFilterState {
   readonly selectedTagIds: readonly TagId[];
 }
 
+export type PublicPlaceSearchIntent = 'entity-search' | 'geographic-navigation';
+
+export interface PublicPlaceMatchingOptions {
+  readonly searchIntent?: PublicPlaceSearchIntent;
+}
+
 export const EMPTY_PUBLIC_PLACE_FILTER_STATE: PublicPlaceFilterState = {
   selectedCategoryIds: [],
   selectedTagIds: [],
@@ -63,8 +69,13 @@ export function deriveMatchingPublicPlaceIds(
   catalog: CampaignCatalog,
   query: string,
   filters: PublicPlaceFilterState,
+  options: PublicPlaceMatchingOptions = {},
 ): readonly PlaceId[] {
-  const searchMatches = new Set(searchPublicPlaceIds(catalog, query));
+  const searchMatches = new Set(
+    options.searchIntent === 'geographic-navigation'
+      ? catalog.places.map(({ id }) => id)
+      : searchPublicPlaceIds(catalog, query),
+  );
   const filterMatches = new Set(filterPublicPlaces(catalog, filters));
 
   return catalog.places
