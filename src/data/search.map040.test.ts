@@ -129,7 +129,11 @@ describe('MAP-040 Spanish geographic search', () => {
   });
 
   it('does not create a parallel geographic identity for the translated alias', () => {
-    expect(spanishCatalog.geographicNames.filter(({ id }) => id === 'geo-waterdeep')).toHaveLength(1);
-    expect(spanishCatalog.geographicNames.some(({ name }) => name === 'Aguas Profundas')).toBe(false);
+    expect(spanishCatalog.geographicNames.filter(({ id }) => id === 'geo-waterdeep')).toHaveLength(
+      1,
+    );
+    expect(spanishCatalog.geographicNames.some(({ name }) => name === 'Aguas Profundas')).toBe(
+      false,
+    );
   });
 });
