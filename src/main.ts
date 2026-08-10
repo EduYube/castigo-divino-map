@@ -103,19 +103,11 @@ function mountPublicExperience(
   const mapController = mountFaerunMap(app, {
     markers: renderedMarkers,
     onPinActivate(pin): void {
-      const wasGeographicNavigation = geographicNameId !== null;
-      geographicNameId = null;
       mapController.clearSearchFocus();
 
       if (pin.legacyPlaceId) {
-        const wasAlreadyActive = selection.getActivePlaceId() === pin.legacyPlaceId;
         activeSupplementalPin = null;
         selection.select(pin.legacyPlaceId);
-
-        if (wasAlreadyActive && wasGeographicNavigation) {
-          updateMatchingPlaces();
-          writePublicStateToHistory('push');
-        }
         return;
       }
 
@@ -283,18 +275,10 @@ function mountPublicExperience(
 
   const openLegacyPlace = (placeId: PlaceId): void => {
     const wasAlreadyActive = selection.getActivePlaceId() === placeId;
-    const wasGeographicNavigation = geographicNameId !== null;
 
-    geographicNameId = null;
-    mapController.clearSearchFocus();
     activeSupplementalPin = null;
     mapController.locatePlace(placeId);
     selection.select(placeId);
-
-    if (wasAlreadyActive && wasGeographicNavigation) {
-      updateMatchingPlaces();
-      writePublicStateToHistory('push');
-    }
 
     if (wasAlreadyActive && !showLegacyPlaceDetails(placeId, true)) {
       selection.clear();
@@ -313,6 +297,8 @@ function mountPublicExperience(
     },
     onSelect(result): void {
       if (result.type === 'location' && result.legacyPlaceId) {
+        geographicNameId = null;
+        mapController.clearSearchFocus();
         openLegacyPlace(result.legacyPlaceId);
         return;
       }
@@ -436,7 +422,6 @@ function mountPublicExperience(
           : null;
 
       if (nextActivePlaceId) {
-        geographicNameId = null;
         renderActivePlace(nextActivePlaceId, { focusDetails: false, locate: false });
       } else {
         selection.clear();
@@ -483,7 +468,7 @@ function mountPublicExperience(
         { notify: false },
       );
 
-      geographicNameId = parsed.state.activePlaceId ? null : (requestedGeographicName?.id ?? null);
+      geographicNameId = requestedGeographicName?.id ?? null;
 
       if (parsed.state.activePlaceId) {
         selection.select(parsed.state.activePlaceId);
@@ -493,10 +478,10 @@ function mountPublicExperience(
 
       renderActivePlace(parsed.state.activePlaceId, {
         focusDetails: false,
-        locate: Boolean(parsed.state.activePlaceId),
+        locate: Boolean(parsed.state.activePlaceId) && !requestedGeographicName,
       });
 
-      if (!parsed.state.activePlaceId && requestedGeographicName) {
+      if (requestedGeographicName) {
         locateGeographicName(requestedGeographicName);
       } else if (!parsed.state.activePlaceId) {
         mapController.clearSearchFocus();
