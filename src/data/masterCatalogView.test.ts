@@ -15,7 +15,10 @@ async function publicCatalog() {
   return parsed.data.catalog;
 }
 
-function masterCatalog(categoryId: string, entityId = 'entity-master-unit'): AuthorizedMasterCatalog {
+function masterCatalog(
+  categoryId: string,
+  entityId = 'entity-master-unit',
+): AuthorizedMasterCatalog {
   return {
     entities: [
       {
@@ -76,7 +79,10 @@ describe('createAuthorizedMasterCatalogView', () => {
     if (!publicEntity || !category) throw new Error('Expected public entity/category fixtures.');
 
     expect(() =>
-      createAuthorizedMasterCatalogView(publicSnapshot, masterCatalog(category.id, publicEntity.id)),
+      createAuthorizedMasterCatalogView(
+        publicSnapshot,
+        masterCatalog(category.id, publicEntity.id),
+      ),
     ).toThrow(/también apareció en el catálogo público/i);
   });
 });
