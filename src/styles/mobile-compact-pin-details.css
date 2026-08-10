@@ -22,6 +22,7 @@
     width: 100%;
     max-height: min(52dvh, 40%);
     overflow: auto;
+    overflow-anchor: none;
     overscroll-behavior: contain;
     background:
       linear-gradient(180deg, rgba(45, 58, 49, 0.99), rgba(24, 32, 27, 0.995)),
