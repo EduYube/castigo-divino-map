@@ -1,4 +1,8 @@
-import type { MapEntityAudience, MapEntityType, PlayerDisposition } from '../domain/adminMapEntities';
+import type {
+  MapEntityAudience,
+  MapEntityType,
+  PlayerDisposition,
+} from '../domain/adminMapEntities';
 import {
   createPlayerDispositionVisuals,
   describePlayerDispositions,

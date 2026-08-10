@@ -67,7 +67,10 @@ function throwInvalid(): never {
   );
 }
 
-function arrayField(payload: Record<string, unknown>, field: string): readonly Record<string, unknown>[] {
+function arrayField(
+  payload: Record<string, unknown>,
+  field: string,
+): readonly Record<string, unknown>[] {
   const value = payload[field];
   if (!Array.isArray(value) || value.some((entry) => !isRecord(entry))) throwInvalid();
   return value as readonly Record<string, unknown>[];
@@ -121,7 +124,8 @@ function mapPlayer(row: Record<string, unknown>): MasterCatalogPlayer {
 
 function mapDisposition(row: Record<string, unknown>): MasterCatalogDisposition {
   const disposition = row.disposition;
-  if (disposition !== 'ally' && disposition !== 'enemy' && disposition !== 'neutral') throwInvalid();
+  if (disposition !== 'ally' && disposition !== 'enemy' && disposition !== 'neutral')
+    throwInvalid();
   return {
     entityId: stringField(row, 'entity_id'),
     playerId: stringField(row, 'player_id'),
@@ -131,7 +135,11 @@ function mapDisposition(row: Record<string, unknown>): MasterCatalogDisposition 
 
 function mapRelation(row: Record<string, unknown>): MasterCatalogRelation {
   const relationStatus = row.relation_status;
-  if (relationStatus !== 'present' && relationStatus !== 'associated' && relationStatus !== 'last-seen') {
+  if (
+    relationStatus !== 'present' &&
+    relationStatus !== 'associated' &&
+    relationStatus !== 'last-seen'
+  ) {
     throwInvalid();
   }
   return {

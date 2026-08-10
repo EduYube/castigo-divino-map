@@ -41,6 +41,13 @@ function toPlayerId(value: string): PlayerId {
   return value as PlayerId;
 }
 
+function toTagId(value: string): TagId {
+  if (!value.startsWith('tag-')) {
+    throw new Error('El catálogo Máster contiene una etiqueta no válida.');
+  }
+  return value as TagId;
+}
+
 function requirePublishedCategory(
   publicCatalog: PublicCatalogSnapshotV2,
   categoryId: CategoryId,
@@ -75,8 +82,9 @@ function buildMasterEntities(
     const tagIds = masterCatalog.entityTags
       .filter(({ entityId }) => entityId === entity.id)
       .map(({ tagId }) => {
-        requirePublishedTag(publicCatalog, tagId);
-        return tagId;
+        const typedTagId = toTagId(tagId);
+        requirePublishedTag(publicCatalog, typedTagId);
+        return typedTagId;
       });
 
     return {
@@ -154,7 +162,9 @@ export function createAuthorizedMasterCatalogView(
     publicCatalog.entities.some(({ id }) => id === entity.id),
   );
   if (duplicate) {
-    throw new Error('Una entidad Máster también apareció en el catálogo público. RLS debe fallar cerrado.');
+    throw new Error(
+      'Una entidad Máster también apareció en el catálogo público. RLS debe fallar cerrado.',
+    );
   }
 
   return {

@@ -218,7 +218,9 @@ export class AdminMapEntityController {
     const operation = this.#beginOperation();
     this.#publish({ ...this.#state, phase: 'mutating', issue: null });
     try {
-      const saved = await this.#repository.save(original, effectiveDraft, { signal: operation.signal });
+      const saved = await this.#repository.save(original, effectiveDraft, {
+        signal: operation.signal,
+      });
       if (!this.#isCurrent(operation.generation)) return false;
       const records = original
         ? this.#state.records.map((record) =>

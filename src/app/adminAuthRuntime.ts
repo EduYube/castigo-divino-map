@@ -226,9 +226,7 @@ class UnavailableAdminMapEntityRepository implements AdminMapEntityRepository {
   }
 }
 
-class UnavailableAdminCharacterLocationRelationRepository
-  implements AdminCharacterLocationRelationRepository
-{
+class UnavailableAdminCharacterLocationRelationRepository implements AdminCharacterLocationRelationRepository {
   readonly #error: AdminCharacterLocationRelationRepositoryError;
 
   constructor(error: AdminCharacterLocationRelationRepositoryError) {

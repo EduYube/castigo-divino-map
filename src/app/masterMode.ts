@@ -25,7 +25,8 @@ export function mountMasterMode(
   section.setAttribute('aria-label', 'Modo Máster');
   copy.className = 'master-mode__copy';
   label.textContent = 'Modo Máster';
-  hint.textContent = 'Contenido privado, cargado solo durante esta sesión y nunca en el snapshot público.';
+  hint.textContent =
+    'Contenido privado, cargado solo durante esta sesión y nunca en el snapshot público.';
   copy.append(label, hint);
   button.type = 'button';
   button.className = 'master-mode__toggle';
@@ -88,12 +89,12 @@ export function mountMasterMode(
     status.textContent =
       state.phase === 'loading'
         ? 'Cargando contenido privado autorizado…'
-        : state.message ??
+        : (state.message ??
           (state.phase === 'on'
             ? 'Modo Máster activo.'
             : state.phase === 'error'
               ? 'No se pudo activar Modo Máster.'
-              : 'Modo Máster desactivado.');
+              : 'Modo Máster desactivado.'));
     renderLegendItem(state.phase === 'on');
   };
 

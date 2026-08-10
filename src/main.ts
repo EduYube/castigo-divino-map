@@ -336,7 +336,9 @@ function mountPublicExperience(
       });
 
       if (result.linkedEntityId && masterEntityIds.has(result.linkedEntityId)) {
-        const masterPin = renderedMarkers.find(({ entityId }) => entityId === result.linkedEntityId);
+        const masterPin = renderedMarkers.find(
+          ({ entityId }) => entityId === result.linkedEntityId,
+        );
         if (masterPin) {
           activeSupplementalPin = masterPin;
           showCompactDetails(masterPin, true);
@@ -638,7 +640,9 @@ function startMapExperience(): void {
     .then((publicDataRuntime) =>
       mountPublicExperience(publicDataRuntime.getCatalogState(), publicDataRuntime, adminRuntime),
     )
-    .catch(() => mountPublicExperience(unavailableCatalogState(campaignCatalog), undefined, adminRuntime));
+    .catch(() =>
+      mountPublicExperience(unavailableCatalogState(campaignCatalog), undefined, adminRuntime),
+    );
 }
 
 function startFullEntityExperience(sourceUrl: URL): void {

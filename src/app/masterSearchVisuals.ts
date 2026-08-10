@@ -75,7 +75,9 @@ export function mountMasterSearchVisuals(root: ParentNode): MasterSearchVisualCo
       destroyed = true;
       observer.disconnect();
       if (frame !== null) window.cancelAnimationFrame(frame);
-      root.querySelectorAll<HTMLElement>('[data-master-search-badge]').forEach((badge) => badge.remove());
+      root
+        .querySelectorAll<HTMLElement>('[data-master-search-badge]')
+        .forEach((badge) => badge.remove());
     },
   };
 }

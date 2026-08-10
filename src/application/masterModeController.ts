@@ -69,7 +69,10 @@ export class MasterModeController {
       return;
     }
     if (!this.#isAvailable()) {
-      this.#purge('unavailable', 'Modo Máster requiere una sesión administrativa autorizada y Supabase conectado.');
+      this.#purge(
+        'unavailable',
+        'Modo Máster requiere una sesión administrativa autorizada y Supabase conectado.',
+      );
       return;
     }
     await this.reload();
@@ -163,7 +166,13 @@ export class MasterModeController {
     }
     if (!this.#state.available) {
       // A restored admin session never restores Modo Máster. It always starts OFF.
-      this.#publish({ available: true, enabled: false, phase: 'off', catalog: null, message: null });
+      this.#publish({
+        available: true,
+        enabled: false,
+        phase: 'off',
+        catalog: null,
+        message: null,
+      });
     }
   }
 

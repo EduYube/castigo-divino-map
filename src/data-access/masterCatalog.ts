@@ -1,4 +1,9 @@
-import type { MapEntityAudience, MapEntityType, MapVisibility, PlayerDisposition } from '../domain/adminMapEntities';
+import type {
+  MapEntityAudience,
+  MapEntityType,
+  MapVisibility,
+  PlayerDisposition,
+} from '../domain/adminMapEntities';
 
 export interface MasterCatalogEntity {
   readonly id: string;

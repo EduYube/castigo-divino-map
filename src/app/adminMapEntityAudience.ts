@@ -88,9 +88,9 @@ export function mountAdminMapEntityAudience(
       }
 
       const field = createAudienceField(controller, state.pendingAudience);
-      const visibility = fields?.querySelector<HTMLElement>(
-        '#admin-map-entity-field-visibility',
-      )?.closest('.admin-map-entity__field');
+      const visibility = fields
+        ?.querySelector<HTMLElement>('#admin-map-entity-field-visibility')
+        ?.closest('.admin-map-entity__field');
       if (visibility?.parentElement === fields) visibility.after(field);
       else fields?.prepend(field);
     });

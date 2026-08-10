@@ -90,8 +90,9 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
       );
     });
 
-    root.querySelectorAll<HTMLButtonElement>('.pin-coincident-list__button[data-pin-id]').forEach(
-      (button) => {
+    root
+      .querySelectorAll<HTMLButtonElement>('.pin-coincident-list__button[data-pin-id]')
+      .forEach((button) => {
         const marker = byId.get(button.dataset.pinId ?? '');
         const master = Boolean(marker && isMaster(marker));
         if (button.dataset.audience !== (master ? 'master' : 'public')) {
@@ -103,8 +104,7 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
         if (!existing.includes('Contenido del Máster')) {
           button.setAttribute('aria-label', `${existing} Contenido del Máster.`);
         }
-      },
-    );
+      });
   };
 
   const schedule = (): void => {
@@ -130,7 +130,9 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
         delete element.dataset.audience;
         element.querySelector<HTMLElement>('.pin-visual')?.classList.remove('pin-visual--master');
       });
-      root.querySelectorAll<HTMLElement>('[data-master-pin-badge]').forEach((badge) => badge.remove());
+      root
+        .querySelectorAll<HTMLElement>('[data-master-pin-badge]')
+        .forEach((badge) => badge.remove());
     },
   };
 }
