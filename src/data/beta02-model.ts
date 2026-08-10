@@ -20,6 +20,13 @@ export interface PublicCoordinate {
   readonly y: number;
 }
 
+export interface PublicSearchExtent {
+  readonly minX: number;
+  readonly maxX: number;
+  readonly minY: number;
+  readonly maxY: number;
+}
+
 export interface PublicCategory {
   readonly id: CategoryId;
   readonly slug: Slug;
@@ -98,6 +105,7 @@ export interface PublicGeographicName {
   readonly language: LanguageCode;
   readonly aliases: readonly PublicGeographicNameAlias[];
   readonly coordinates: PublicCoordinate;
+  readonly searchExtent: PublicSearchExtent | null;
   readonly recommendedZoom: number | null;
   readonly entityId: EntityId | null;
 }
