@@ -1,4 +1,4 @@
-name: MAP-041 Branch Formatter
+name: MAP-041 Branch Canonicalizer
 
 on:
   push:
@@ -9,8 +9,11 @@ permissions:
   contents: write
 
 jobs:
-  format:
+  canonicalize:
     runs-on: ubuntu-24.04
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
     steps:
       - name: Checkout branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
@@ -23,33 +26,87 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Normalize MAP-041 compatibility paths
+      - name: Integrate MAP-041 contracts and map controller
         run: |
           python - <<'PY'
           from pathlib import Path
 
-          replacements = {
-              Path('src/data/search.ts'): [
-                  ('searchExtent: geographicName.searchExtent,', 'searchExtent: geographicName.searchExtent ?? null,'),
-              ],
-              Path('src/infrastructure/supabase/publicCatalogCodec.ts'): [
-                  ('name.searchExtent === null ? null : expectRecord', 'name.searchExtent == null ? null : expectRecord'),
-              ],
-              Path('src/data-access/geographicSearchExtentContract.js'): [
-                  ('} else if (name.searchExtent !== null) {', '} else if ((name.searchExtent ?? null) !== null) {'),
-              ],
-          }
+          def replace(path, old, new):
+              file = Path(path)
+              text = file.read_text()
+              if old not in text:
+                  if new in text:
+                      return
+                  raise SystemExit(f'Expected MAP-041 edit marker missing in {path}: {old[:80]!r}')
+              file.write_text(text.replace(old, new))
 
-          for path, pairs in replacements.items():
-              text = path.read_text()
-              for old, new in pairs:
-                  if old in text:
-                      text = text.replace(old, new)
-              path.write_text(text)
+          replace(
+              'src/map/leaflet.ts',
+              "import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './config';\n",
+              "import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './config';\nimport { clearMapSearchFocus, locateMapSearchTarget } from './searchFocus';\n",
+          )
+          replace(
+              'src/map/leaflet.ts',
+              "  readonly recommendedZoom: number | null;\n  readonly label: string;\n",
+              "  readonly searchExtent: {\n    readonly minX: number;\n    readonly maxX: number;\n    readonly minY: number;\n    readonly maxY: number;\n  } | null;\n  readonly recommendedZoom: number | null;\n  readonly label: string;\n",
+          )
+          replace(
+              'src/map/leaflet.ts',
+              "    clearSearchHighlight();\n    const targetZoom = Math.min(\n",
+              "    clearSearchHighlight();\n    clearMapSearchFocus(map);\n    const targetZoom = Math.min(\n",
+          )
+          old_locate = '''    locateSearchTarget(target: MapSearchTarget): void {\n      const coordinate = L.latLng(target.coordinates.y, target.coordinates.x);\n      const fallbackZoom = Math.min(\n        FAERUN_MAP_CONFIG.maxZoom,\n        Math.max(map.getZoom(), map.getMinZoom() + 1),\n      );\n      const targetZoom =\n        target.recommendedZoom === null\n          ? fallbackZoom\n          : Math.min(FAERUN_MAP_CONFIG.maxZoom, Math.max(map.getMinZoom(), target.recommendedZoom));\n\n      map.setView(coordinate, targetZoom, { animate: false });\n      map.panInsideBounds(bounds, { animate: false });\n      synchronizeView();\n      showSearchHighlight(target);\n    },\n'''
+          new_locate = '''    locateSearchTarget(target: MapSearchTarget): void {\n      clearMapSearchFocus(map);\n\n      if (target.searchExtent) {\n        locateMapSearchTarget(map, root, target);\n        synchronizeView();\n        return;\n      }\n\n      const coordinate = L.latLng(target.coordinates.y, target.coordinates.x);\n      const fallbackZoom = Math.min(\n        FAERUN_MAP_CONFIG.maxZoom,\n        Math.max(map.getZoom(), map.getMinZoom() + 1),\n      );\n      const targetZoom =\n        target.recommendedZoom === null\n          ? fallbackZoom\n          : Math.min(FAERUN_MAP_CONFIG.maxZoom, Math.max(map.getMinZoom(), target.recommendedZoom));\n\n      map.setView(coordinate, targetZoom, { animate: false });\n      map.panInsideBounds(bounds, { animate: false });\n      synchronizeView();\n      showSearchHighlight(target);\n    },\n'''
+          replace('src/map/leaflet.ts', old_locate, new_locate)
+          replace(
+              'src/map/leaflet.ts',
+              "      clearSearchHighlight();\n      clearRenderedMarkers();\n",
+              "      clearSearchHighlight();\n      clearMapSearchFocus(map);\n      clearRenderedMarkers();\n",
+          )
+          replace(
+              'src/main.ts',
+              "import { locateMapSearchTarget } from './map/searchFocus';\n",
+              '',
+          )
+          replace(
+              'src/main.ts',
+              '      locateMapSearchTarget(mapController.map, app, {\n',
+              '      mapController.locateSearchTarget({\n',
+          )
+          replace(
+              'scripts/verify-public-snapshot.mjs',
+              "import { assertGeographicSpanishSearchCoverage } from '../src/data-access/geographicSpanishReviewContract.js';\n",
+              "import { assertGeographicSearchExtentCoverage } from '../src/data-access/geographicSearchExtentContract.js';\n",
+          )
+          file = Path('scripts/verify-public-snapshot.mjs')
+          text = file.read_text().replace(
+              'assertGeographicSpanishSearchCoverage',
+              'assertGeographicSearchExtentCoverage',
+          ).replace(
+              'MAP-039 + MAP-040 geographic coverage gates',
+              'MAP-039 + MAP-040 + MAP-041 geographic coverage gates',
+          )
+          file.write_text(text)
+          generator = Path('scripts/generate-public-snapshot.mjs')
+          text = generator.read_text()
+          import_line = "import { assertGeographicSearchExtentCoverage } from '../src/data-access/geographicSearchExtentContract.js';\n"
+          if import_line not in text:
+              text = text.replace("import { readFile, writeFile } from 'node:fs/promises';\n", "import { readFile, writeFile } from 'node:fs/promises';\n\n" + import_line)
+          marker = 'const content = buildPublicSnapshotContent(raw);\n'
+          validation = "const content = buildPublicSnapshotContent(raw);\nassertGeographicSearchExtentCoverage(content, useFixture ? 'MAP-028 CI fixture' : 'Supabase published data');\n"
+          if validation not in text:
+              if marker not in text:
+                  raise SystemExit('Snapshot generator content marker missing')
+              text = text.replace(marker, validation)
+          generator.write_text(text)
           PY
+      - name: Generate canonical snapshot from hosted Supabase
+        run: npm run snapshot:generate
+      - name: Verify canonical snapshot against hosted Supabase
+        run: npm run snapshot:verify:remote
       - name: Apply Prettier
-        run: npx prettier --write --end-of-line auto "src/**/*.{ts,js,json}" "public/**/*.json" "tests/**/*.ts" "scripts/**/*.{mjs,mts}" "*.{js,mjs,ts,json,html}" ".github/**/*.yml"
-      - name: Commit formatting if needed
+        run: npm run format
+      - name: Commit canonical MAP-041 changes if needed
         run: |
           if git diff --quiet; then
             exit 0
@@ -57,5 +114,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "style(MAP-041): normalize and format"
+          git commit -m "feat(MAP-041): integrate area focus and canonical snapshot"
           git push origin HEAD:agent/map-041-geographic-search-extents
