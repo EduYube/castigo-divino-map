@@ -280,14 +280,6 @@ export function mountCompactPinDetails(
     const preserveViewport = isMobileSheet();
     const scrollX = preserveViewport ? window.scrollX : 0;
     const scrollY = preserveViewport ? window.scrollY : 0;
-    const focusedElement = preserveViewport ? document.activeElement : null;
-
-    if (
-      focusedElement instanceof HTMLElement &&
-      focusedElement.classList.contains('campaign-marker-icon')
-    ) {
-      focusedElement.blur();
-    }
 
     options.onClose();
 
@@ -300,9 +292,24 @@ export function mountCompactPinDetails(
   };
   const handleClose = (): void => closePreservingViewport();
   const handleReturnToPin = (): void => {
-    elements.workspace
-      .querySelector<HTMLElement>('.campaign-marker-icon[aria-pressed="true"]')
-      ?.focus({ preventScroll: true });
+    const marker = elements.workspace.querySelector<HTMLElement>(
+      '.campaign-marker-icon[aria-pressed="true"]',
+    );
+
+    if (!marker) {
+      return;
+    }
+
+    const preserveViewport = isMobileSheet();
+    const scrollX = preserveViewport ? window.scrollX : 0;
+    const scrollY = preserveViewport ? window.scrollY : 0;
+
+    marker.focus({ preventScroll: preserveViewport });
+
+    if (preserveViewport) {
+      restoreViewportPosition(scrollX, scrollY);
+      window.requestAnimationFrame(() => restoreViewportPosition(scrollX, scrollY));
+    }
   };
   const handleKeyDown = (event: KeyboardEvent): void => {
     if (event.key !== 'Escape' || elements.panel.hidden || !isMobileSheet()) {
