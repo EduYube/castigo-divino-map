@@ -101,8 +101,8 @@ select is(
 );
 select is(
   (select count(*) from public.geographic_name_aliases),
-  7::bigint,
-  'anon sees MAP-039 aliases plus the published local geographic alias'
+  15::bigint,
+  'anon sees MAP-039 aliases, MAP-040 Spanish aliases and the published local geographic alias'
 );
 
 select ok(pg_temp.statement_fails('select * from public.public_requests'), 'anon cannot enumerate requests');
