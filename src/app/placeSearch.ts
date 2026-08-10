@@ -48,14 +48,53 @@ function getRequiredElement<T extends HTMLElement>(root: ParentNode, selector: s
   return element;
 }
 
+function ensureAutocompleteStructure(
+  root: ParentNode,
+  input: HTMLInputElement,
+): Pick<PlaceSearchElements, 'combobox' | 'suggestions'> {
+  let combobox = root.querySelector<HTMLElement>('[data-place-search-combobox]');
+  let suggestions = root.querySelector<HTMLUListElement>('[data-place-search-suggestions]');
+
+  if (!combobox) {
+    combobox = document.createElement('div');
+    combobox.className = 'place-search__combobox';
+    combobox.dataset.placeSearchCombobox = '';
+    input.before(combobox);
+    combobox.append(input);
+  }
+
+  if (!suggestions) {
+    suggestions = document.createElement('ul');
+    suggestions.id = 'place-search-suggestions';
+    suggestions.className = 'place-search__suggestions';
+    suggestions.dataset.placeSearchSuggestions = '';
+    suggestions.setAttribute('role', 'listbox');
+    suggestions.setAttribute('aria-label', 'Sugerencias de búsqueda');
+    suggestions.hidden = true;
+    combobox.append(suggestions);
+  }
+
+  combobox.setAttribute('role', 'combobox');
+  combobox.setAttribute('aria-haspopup', 'listbox');
+  combobox.setAttribute('aria-expanded', 'false');
+  combobox.setAttribute('aria-controls', suggestions.id);
+  combobox.setAttribute('aria-labelledby', 'place-search-label');
+  input.setAttribute('aria-autocomplete', 'list');
+  input.setAttribute('aria-controls', suggestions.id);
+
+  return { combobox, suggestions };
+}
+
 function resolveElements(root: ParentNode): PlaceSearchElements {
+  const input = getRequiredElement<HTMLInputElement>(root, '[data-place-search-input]');
+  const autocomplete = ensureAutocompleteStructure(root, input);
+
   return {
-    combobox: getRequiredElement(root, '[data-place-search-combobox]'),
-    input: getRequiredElement<HTMLInputElement>(root, '[data-place-search-input]'),
+    ...autocomplete,
+    input,
     clearButton: getRequiredElement<HTMLButtonElement>(root, '[data-place-search-clear]'),
     status: getRequiredElement(root, '[data-place-search-status]'),
     summary: getRequiredElement(root, '[data-place-search-summary]'),
-    suggestions: getRequiredElement<HTMLUListElement>(root, '[data-place-search-suggestions]'),
     results: getRequiredElement<HTMLUListElement>(root, '[data-place-search-results]'),
   };
 }
@@ -235,7 +274,12 @@ export function mountPlaceSearch(
     );
     elements.suggestions.replaceChildren(
       ...suggestions.map((result, index) =>
-        createSuggestionItem(result, index, suggestionsOpen && index === activeSuggestionIndex, selectSuggestion),
+        createSuggestionItem(
+          result,
+          index,
+          suggestionsOpen && index === activeSuggestionIndex,
+          selectSuggestion,
+        ),
       ),
     );
     setStatusText(elements.summary, describeCollapsedSearchSummary(query, searchResults.length));
