@@ -59,7 +59,10 @@ interface Map044Backend {
   getSaveCount(): number;
 }
 
-function projectRows(table: string, audience: 'public' | 'master'): readonly Record<string, unknown>[] {
+function projectRows(
+  table: string,
+  audience: 'public' | 'master',
+): readonly Record<string, unknown>[] {
   const query = Object.values(PUBLIC_CATALOG_TABLE_QUERIES).find(({ name }) => name === table);
   const fixtureKey = FIXTURE_KEYS_BY_TABLE[table];
   const fixtureRows = fixtureKey ? PUBLIC_FIXTURE[fixtureKey] : undefined;
