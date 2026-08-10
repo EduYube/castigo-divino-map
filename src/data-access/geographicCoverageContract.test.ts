@@ -1,78 +1,127 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  assertGeographicCoverageManifest,
   assertGeographicSearchCoverage,
-  REQUIRED_GEOGRAPHIC_NAMES,
+  MAP032_STABLE_IDS,
 } from './geographicCoverageContract.js';
-
-const REQUIRED_ALIASES: Readonly<Record<string, readonly string[]>> = {
-  'the-evermoors': ['Evermoors'],
-  'the-fields-of-the-dead': ['Fields of the Dead'],
-  'the-high-forest': ['High Forest'],
-  'the-high-moor': ['High Moor'],
-  waterdeep: ['City of Splendors'],
-};
+import {
+  GEOGRAPHIC_COVERAGE_MANIFEST,
+  GEOGRAPHIC_COVERAGE_MANIFEST_COUNT,
+  GEOGRAPHIC_ZOOM_POLICY,
+} from './geographicCoverageManifest.js';
 
 function createValidContent() {
   return {
-    geographicNames: REQUIRED_GEOGRAPHIC_NAMES.map(([slug, name]) => ({
-      slug,
-      name,
+    geographicNames: GEOGRAPHIC_COVERAGE_MANIFEST.map((expected, index) => ({
+      id: expected.id,
+      slug: expected.slug,
+      name: expected.name,
       language: 'en',
-      aliases: (REQUIRED_ALIASES[slug] ?? []).map((value) => ({ value })),
-      coordinates: slug === 'waterdeep' ? { x: 1626, y: 1465 } : { x: 1000, y: 1000 },
-      recommendedZoom: slug === 'waterdeep' ? 0.75 : 0.5,
+      aliases: expected.requiredAliases.map((alias) => ({
+        ...alias,
+        geographicNameId: expected.id,
+        language: 'en',
+      })),
+      coordinates: expected.lockedCoordinates ?? {
+        x: 100 + (index % 30) * 100,
+        y: 100 + (index % 20) * 100,
+      },
+      recommendedZoom: GEOGRAPHIC_ZOOM_POLICY[expected.zoomClass],
+      entityId: null,
     })),
   };
 }
 
-describe('geographic search coverage contract', () => {
-  it('accepts the complete MAP-032 baseline', () => {
+describe('MAP-039 geographic search coverage contract', () => {
+  it('accepts the audited complete raster inventory', () => {
+    expect(GEOGRAPHIC_COVERAGE_MANIFEST_COUNT).toBe(213);
+    expect(() => assertGeographicCoverageManifest()).not.toThrow();
     expect(() => assertGeographicSearchCoverage(createValidContent(), 'fixture')).not.toThrow();
+
+    for (const name of [
+      'The Dalelands',
+      'Thunder Peaks',
+      'The Shining Plains',
+      'The High Ice',
+      'Omans Isle',
+    ]) {
+      expect(GEOGRAPHIC_COVERAGE_MANIFEST.some((entry) => entry.name === name)).toBe(true);
+    }
   });
 
-  it('rejects an empty geographic index', () => {
-    expect(() => assertGeographicSearchCoverage({ geographicNames: [] }, 'empty snapshot')).toThrow(
-      /expected at least 15 published geographic names/i,
-    );
-  });
-
-  it('rejects a baseline with a required geographic identity missing', () => {
+  it('rejects a required geographic identity even when the row count stays high', () => {
     const content = createValidContent();
-    content.geographicNames = content.geographicNames.filter(({ slug }) => slug !== 'neverwinter');
-    content.geographicNames.push({
-      slug: 'extra-place',
-      name: 'Extra place',
-      language: 'en',
-      aliases: [],
-      coordinates: { x: 1000, y: 1000 },
-      recommendedZoom: 0.5,
-    });
+    content.geographicNames = content.geographicNames.filter(
+      ({ id }) => id !== 'geo-the-dalelands',
+    );
 
+    for (let index = 0; index < 50; index += 1) {
+      content.geographicNames.push({
+        id: `geo-extra-${index}`,
+        slug: `extra-${index}`,
+        name: `Extra ${index}`,
+        language: 'en',
+        aliases: [],
+        coordinates: { x: 1000, y: 1000 },
+        recommendedZoom: 0.5,
+        entityId: null,
+      });
+    }
+
+    expect(content.geographicNames.length).toBeGreaterThan(GEOGRAPHIC_COVERAGE_MANIFEST_COUNT);
     expect(() => assertGeographicSearchCoverage(content, 'missing identity')).toThrow(
-      /required geographic name neverwinter is missing/i,
+      /required geographic identity geo-the-dalelands is missing/i,
     );
   });
 
-  it('rejects Waterdeep coordinate or zoom drift', () => {
+  it('rejects invalid coordinates for a covered identity', () => {
     const content = createValidContent();
-    const waterdeep = content.geographicNames.find(({ slug }) => slug === 'waterdeep');
-    if (!waterdeep) throw new Error('Waterdeep fixture missing');
-    waterdeep.coordinates = { x: 1690, y: 1020 };
+    const thunderPeaks = content.geographicNames.find(({ id }) => id === 'geo-thunder-peaks');
+    if (!thunderPeaks) throw new Error('Thunder Peaks fixture missing');
+    thunderPeaks.coordinates = { x: 3601, y: 859 };
 
-    expect(() => assertGeographicSearchCoverage(content, 'drifted snapshot')).toThrow(
-      /Waterdeep must keep the MAP-032 measured coordinate/i,
+    expect(() => assertGeographicSearchCoverage(content, 'invalid coordinates')).toThrow(
+      /geo-thunder-peaks must use finite coordinates inside the official map bounds/i,
     );
   });
 
-  it('rejects a required geographic alias missing from the publication', () => {
+  it('rejects zoom drift from the scale policy', () => {
     const content = createValidContent();
-    const waterdeep = content.geographicNames.find(({ slug }) => slug === 'waterdeep');
-    if (!waterdeep) throw new Error('Waterdeep fixture missing');
-    waterdeep.aliases = [];
+    const shiningPlains = content.geographicNames.find(({ id }) => id === 'geo-the-shining-plains');
+    if (!shiningPlains) throw new Error('The Shining Plains fixture missing');
+    shiningPlains.recommendedZoom = 0.75;
+
+    expect(() => assertGeographicSearchCoverage(content, 'invalid zoom')).toThrow(
+      /geo-the-shining-plains must use the area zoom policy \(0\.5\)/i,
+    );
+  });
+
+  it('rejects a required alias missing from the publication', () => {
+    const content = createValidContent();
+    const starMounts = content.geographicNames.find(({ id }) => id === 'geo-star-mountains');
+    if (!starMounts) throw new Error('Star Mounts fixture missing');
+    starMounts.aliases = [];
 
     expect(() => assertGeographicSearchCoverage(content, 'alias drift')).toThrow(
-      /waterdeep is missing required alias City of Splendors/i,
+      /geo-star-mountains is missing required alias Star Mountains/i,
     );
+  });
+
+  it('keeps every MAP-032 stable identity, coordinate lock and legacy search compatibility', () => {
+    const content = createValidContent();
+    const ids = new Set(GEOGRAPHIC_COVERAGE_MANIFEST.map(({ id }) => id));
+
+    expect(MAP032_STABLE_IDS).toHaveLength(15);
+    expect(MAP032_STABLE_IDS.every((id) => ids.has(id))).toBe(true);
+
+    const waterdeep = content.geographicNames.find(({ id }) => id === 'geo-waterdeep');
+    expect(waterdeep?.coordinates).toEqual({ x: 1626, y: 1465 });
+    expect(waterdeep?.recommendedZoom).toBe(0.75);
+
+    const starMounts = content.geographicNames.find(({ id }) => id === 'geo-star-mountains');
+    expect(starMounts?.slug).toBe('star-mountains');
+    expect(starMounts?.name).toBe('Star Mounts');
+    expect(starMounts?.aliases.map(({ value }) => value)).toContain('Star Mountains');
   });
 });

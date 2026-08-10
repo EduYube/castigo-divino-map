@@ -149,10 +149,10 @@ for (const forbidden of [
 }
 
 const verificationTarget = verifyRemote
-  ? 'Supabase published data plus the MAP-032 geographic coverage gate'
+  ? 'Supabase published data plus the MAP-039 complete geographic coverage gate'
   : verifyMigrationFixture
-    ? 'the historical MAP-028 migration fixture plus the MAP-032 geographic coverage gate'
-    : 'its canonical public content, publication filters and MAP-032 geographic coverage gate';
+    ? 'the historical MAP-028 migration fixture plus the MAP-039 complete geographic coverage gate'
+    : 'its canonical public content, publication filters and MAP-039 complete geographic coverage gate';
 console.log(
   `Verified Beta 0.2 public snapshot against ${verificationTarget}: ${committedChecksum}.`,
 );
