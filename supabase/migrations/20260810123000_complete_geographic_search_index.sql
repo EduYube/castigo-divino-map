@@ -62,7 +62,7 @@ geo-evermoors|the-evermoors|The Evermoors|1890|1921|0.5
 geo-sword-mountains|sword-mountains|Sword Mountains|1610|1569|0.5
 geo-mere-of-dead-men|mere-of-dead-men|Mere of Dead Men|1470|1677|0.5
 geo-high-road|high-road|High Road|1470|1789|0.5
-geo-long-road|long-road|Long Road|Long Road|1650|1679|0.5
+geo-long-road|long-road|Long Road|1650|1679|0.5
 geo-cold-wood|cold-wood|Cold Wood|2130|2184|0.5
 geo-beorunnas-well|beorunnas-well|Beorunna's Well|2100|2144|0.75
 geo-castle-hartwick|castle-hartwick|Castle Hartwick|2335|2164|0.75
@@ -260,6 +260,8 @@ begin
       message = 'MAP-039 migration source must contain exactly 213 audited identities';
   end if;
 
+  -- MAP-032 used the non-raster display "Star Mountains". MAP-039 keeps the stable id/slug and
+  -- coordinate contract while correcting the canonical raster label to "Star Mounts".
   if exists (
     select 1
     from public.geographic_names
@@ -275,7 +277,9 @@ begin
         or publication_status is distinct from 'published'::public.publication_status
       )
   ) then
-    raise exception using errcode = '23514', message = 'MAP-039 Star Mounts compatibility update conflicts with existing data';
+    raise exception using
+      errcode = '23514',
+      message = 'MAP-039 Star Mounts compatibility update conflicts with existing data';
   end if;
 
   update public.geographic_names
@@ -290,14 +294,51 @@ begin
     and entity_id is null
     and publication_status = 'published'::public.publication_status;
 
-  insert into public.geographic_names (id, slug, name, language, x, y, recommended_zoom, entity_id, publication_status)
-  select expected.id, expected.slug, expected.name, 'en', expected.x, expected.y, expected.recommended_zoom, null, 'published'::public.publication_status
-  from jsonb_to_recordset(expected_names) as expected(id text, slug text, name text, x double precision, y double precision, recommended_zoom double precision)
-  where not exists (select 1 from public.geographic_names actual where actual.id = expected.id);
+  insert into public.geographic_names (
+    id,
+    slug,
+    name,
+    language,
+    x,
+    y,
+    recommended_zoom,
+    entity_id,
+    publication_status
+  )
+  select
+    expected.id,
+    expected.slug,
+    expected.name,
+    'en',
+    expected.x,
+    expected.y,
+    expected.recommended_zoom,
+    null,
+    'published'::public.publication_status
+  from jsonb_to_recordset(expected_names) as expected(
+    id text,
+    slug text,
+    name text,
+    x double precision,
+    y double precision,
+    recommended_zoom double precision
+  )
+  where not exists (
+    select 1
+    from public.geographic_names actual
+    where actual.id = expected.id
+  );
 
   if exists (
     select 1
-    from jsonb_to_recordset(expected_names) as expected(id text, slug text, name text, x double precision, y double precision, recommended_zoom double precision)
+    from jsonb_to_recordset(expected_names) as expected(
+      id text,
+      slug text,
+      name text,
+      x double precision,
+      y double precision,
+      recommended_zoom double precision
+    )
     left join public.geographic_names actual on actual.id = expected.id
     where actual.id is null
       or actual.slug is distinct from expected.slug
@@ -309,17 +350,42 @@ begin
       or actual.entity_id is not null
       or actual.publication_status is distinct from 'published'::public.publication_status
   ) then
-    raise exception using errcode = '23514', message = 'MAP-039 geographic inventory conflicts with existing data';
+    raise exception using
+      errcode = '23514',
+      message = 'MAP-039 geographic inventory conflicts with existing data';
   end if;
 
-  insert into public.geographic_name_aliases (id, geographic_name_id, language, value, publication_status)
-  select expected.id, expected.geographic_name_id, 'en', expected.value, 'published'::public.publication_status
-  from jsonb_to_recordset(expected_aliases) as expected(id text, geographic_name_id text, value text)
-  where not exists (select 1 from public.geographic_name_aliases actual where actual.id = expected.id);
+  insert into public.geographic_name_aliases (
+    id,
+    geographic_name_id,
+    language,
+    value,
+    publication_status
+  )
+  select
+    expected.id,
+    expected.geographic_name_id,
+    'en',
+    expected.value,
+    'published'::public.publication_status
+  from jsonb_to_recordset(expected_aliases) as expected(
+    id text,
+    geographic_name_id text,
+    value text
+  )
+  where not exists (
+    select 1
+    from public.geographic_name_aliases actual
+    where actual.id = expected.id
+  );
 
   if exists (
     select 1
-    from jsonb_to_recordset(expected_aliases) as expected(id text, geographic_name_id text, value text)
+    from jsonb_to_recordset(expected_aliases) as expected(
+      id text,
+      geographic_name_id text,
+      value text
+    )
     left join public.geographic_name_aliases actual on actual.id = expected.id
     where actual.id is null
       or actual.geographic_name_id is distinct from expected.geographic_name_id
@@ -327,7 +393,9 @@ begin
       or actual.value is distinct from expected.value
       or actual.publication_status is distinct from 'published'::public.publication_status
   ) then
-    raise exception using errcode = '23514', message = 'MAP-039 geographic aliases conflict with existing data';
+    raise exception using
+      errcode = '23514',
+      message = 'MAP-039 geographic aliases conflict with existing data';
   end if;
 
   if (
@@ -336,7 +404,9 @@ begin
     join jsonb_to_recordset(expected_names) as expected(id text) on expected.id = actual.id
     where actual.publication_status = 'published'::public.publication_status
   ) <> jsonb_array_length(expected_names) then
-    raise exception using errcode = '23514', message = 'MAP-039 requires every audited geographic identity to be published';
+    raise exception using
+      errcode = '23514',
+      message = 'MAP-039 requires every audited geographic identity to be published';
   end if;
 end
 $map039$;
