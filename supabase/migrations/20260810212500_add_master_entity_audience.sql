@@ -222,7 +222,7 @@ drop policy if exists character_location_relations_public_select on public.chara
 create policy character_location_relations_public_select
 on public.character_location_relations
 for select
-to anon
+to anon, authenticated
 using (
   publication_status = 'published'
   and exists (
