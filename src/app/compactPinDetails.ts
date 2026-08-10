@@ -65,6 +65,15 @@ function isMobileSheet(): boolean {
   );
 }
 
+function restoreViewportPosition(scrollX: number, scrollY: number): void {
+  const root = document.documentElement;
+  const previousScrollBehavior = root.style.scrollBehavior;
+
+  root.style.scrollBehavior = 'auto';
+  window.scrollTo(scrollX, scrollY);
+  root.style.scrollBehavior = previousScrollBehavior;
+}
+
 function appendTextElement<K extends keyof HTMLElementTagNameMap>(
   parent: HTMLElement,
   tagName: K,
@@ -286,8 +295,8 @@ export function mountCompactPinDetails(
       return;
     }
 
-    window.scrollTo(scrollX, scrollY);
-    window.requestAnimationFrame(() => window.scrollTo(scrollX, scrollY));
+    restoreViewportPosition(scrollX, scrollY);
+    window.requestAnimationFrame(() => restoreViewportPosition(scrollX, scrollY));
   };
   const handleClose = (): void => closePreservingViewport();
   const handleReturnToPin = (): void => {
@@ -359,7 +368,7 @@ export function mountCompactPinDetails(
 
       if (preserveViewport) {
         void elements.workspace.offsetHeight;
-        window.scrollTo(scrollX, scrollY);
+        restoreViewportPosition(scrollX, scrollY);
       }
     },
     destroy(): void {
