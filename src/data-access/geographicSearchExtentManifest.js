@@ -8,7 +8,7 @@ export const MAP041_GEOGRAPHIC_REVIEW_COUNT = 213;
 
 // MAP-041 owns a semantic fingerprint rather than a second runtime index. Any MAP-039 identity,
 // spelling, classification or audit-cell change must be explicitly reviewed before this module loads.
-export const MAP041_REVIEWED_MAP039_FINGERPRINT = 'PENDING';
+export const MAP041_REVIEWED_MAP039_FINGERPRINT = '00398d27e44e7e85';
 
 export const MAP041_EXTENT_SOURCES = Object.freeze({
   'official-sword-coast-raster': Object.freeze({
