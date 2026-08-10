@@ -29,7 +29,7 @@ begin
 end;
 $$;
 
-select plan(29);
+select plan(39);
 
 select is(
   (select column_default from information_schema.columns
@@ -190,6 +190,17 @@ values (
   'published'
 );
 
+insert into public.character_location_relations (
+  character_id, location_id, relation_status, publication_status
+)
+values (
+  'entity-aster-guide',
+  'entity-bramble-fort',
+  'associated',
+  'published'
+)
+on conflict do nothing;
+
 select is(
   (select count(*) from public.map_entities where audience = 'master'),
   2::bigint,
@@ -275,6 +286,22 @@ select is(
    where id in ('entity-master-canary-character', 'place-master-canary-location')),
   0::bigint,
   'authenticated non-admin cannot receive master entities'
+);
+select is((select count(*) from public.entity_aliases where id = 'alias-master-canary'), 0::bigint, 'authenticated non-admin cannot receive master aliases');
+select is((select count(*) from public.entity_tags where id = 'entity-tag-master-canary'), 0::bigint, 'authenticated non-admin cannot receive master tag links');
+select is((select count(*) from public.public_notes where id = 'note-master-canary'), 0::bigint, 'authenticated non-admin cannot receive master notes');
+select is((select count(*) from public.public_note_tags where id = 'note-tag-master-canary'), 0::bigint, 'authenticated non-admin cannot receive master note tags');
+select is((select count(*) from public.entity_player_dispositions where entity_id = 'entity-master-canary-character'), 0::bigint, 'authenticated non-admin cannot infer master entities from dispositions');
+select is((select count(*) from public.geographic_names where id = 'geo-master-canary'), 0::bigint, 'authenticated non-admin cannot receive a geographic name linked to a master entity');
+select is((select count(*) from public.geographic_name_aliases where id = 'geo-alias-master-canary'), 0::bigint, 'authenticated non-admin cannot receive a geographic alias linked to a master entity');
+select is((select count(*) from public.character_location_events where id = 'location-event-master-canary'), 0::bigint, 'authenticated non-admin cannot receive an event whose endpoints are master');
+select is((select count(*) from public.character_location_relations where character_id = 'entity-master-canary-character'), 0::bigint, 'authenticated non-admin cannot receive a relation whose endpoints are master');
+select is(
+  (select count(*) from public.character_location_relations
+   where character_id = 'entity-aster-guide'
+     and location_id = 'entity-bramble-fort'),
+  1::bigint,
+  'authenticated non-admin retains access to published public relations'
 );
 select is(
   pg_temp.statement_affected_rows(
