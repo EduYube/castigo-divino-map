@@ -129,26 +129,25 @@ function mountPublicExperience(
       return;
     }
 
-    window.requestAnimationFrame(() => {
-      if (
-        !mobileCompactDetailsMedia.matches ||
-        !compactDetailsPanel ||
-        compactDetailsPanel.hidden
-      ) {
-        return;
-      }
+    const adjustActiveMarker = (attemptsRemaining: number): void => {
+      window.requestAnimationFrame(() => {
+        if (
+          !mobileCompactDetailsMedia.matches ||
+          !compactDetailsPanel ||
+          compactDetailsPanel.hidden
+        ) {
+          return;
+        }
 
-      const activeMarker = app.querySelector<HTMLElement>(
-        '.campaign-marker-icon[aria-pressed="true"]',
-      );
-      if (!activeMarker) {
-        return;
-      }
+        const activeMarker = app.querySelector<HTMLElement>(
+          '.campaign-marker-icon[aria-pressed="true"]',
+        );
+        if (!activeMarker) {
+          return;
+        }
 
-      const edgePadding = 20;
-      mapController.map.invalidateSize({ animate: false, pan: false });
-
-      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const edgePadding = 20;
+        mapController.map.invalidateSize({ animate: false, pan: false });
         const mapRect = mapController.map.getContainer().getBoundingClientRect();
         const panelRect = compactDetailsPanel.getBoundingClientRect();
         const markerRect = activeMarker.getBoundingClientRect();
@@ -174,7 +173,7 @@ function mountPublicExperience(
         }
 
         if (offsetX === 0 && offsetY === 0) {
-          break;
+          return;
         }
 
         const roundAwayFromZero = (value: number): number =>
@@ -182,8 +181,14 @@ function mountPublicExperience(
         mapController.map.panBy([roundAwayFromZero(offsetX), roundAwayFromZero(offsetY)], {
           animate: false,
         });
-      }
-    });
+
+        if (attemptsRemaining > 1) {
+          adjustActiveMarker(attemptsRemaining - 1);
+        }
+      });
+    };
+
+    adjustActiveMarker(3);
   };
 
   const clearSupplementalMapSelection = (pin: AtlasPinMarkerModel): void => {
