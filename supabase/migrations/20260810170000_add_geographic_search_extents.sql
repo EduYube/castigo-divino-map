@@ -17,21 +17,21 @@ comment on column public.geographic_names.search_max_y is
 
 do $$
 declare
-  column_name text;
+  extent_column_name text;
   actual_udt text;
   actual_nullable text;
 begin
-  foreach column_name in array array['search_min_x','search_max_x','search_min_y','search_max_y'] loop
+  foreach extent_column_name in array array['search_min_x','search_max_x','search_min_y','search_max_y'] loop
     select c.udt_name, c.is_nullable
       into actual_udt, actual_nullable
     from information_schema.columns c
     where c.table_schema = 'public'
       and c.table_name = 'geographic_names'
-      and c.column_name = column_name;
+      and c.column_name = extent_column_name;
 
     if actual_udt is distinct from 'float8' or actual_nullable is distinct from 'YES' then
       raise exception 'MAP-041 schema conflict for geographic_names.%: expected nullable float8, got udt=% nullable=%',
-        column_name, actual_udt, actual_nullable;
+        extent_column_name, actual_udt, actual_nullable;
     end if;
   end loop;
 end
