@@ -105,7 +105,7 @@ export interface PublicGeographicName {
   readonly language: LanguageCode;
   readonly aliases: readonly PublicGeographicNameAlias[];
   readonly coordinates: PublicCoordinate;
-  readonly searchExtent: PublicSearchExtent | null;
+  readonly searchExtent?: PublicSearchExtent | null;
   readonly recommendedZoom: number | null;
   readonly entityId: EntityId | null;
 }
