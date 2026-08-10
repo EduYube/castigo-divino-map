@@ -70,7 +70,10 @@ export function assertGeographicSearchExtentReviewManifest() {
     MAP041_GEOGRAPHIC_REVIEW_COUNTS.extent +
     MAP041_GEOGRAPHIC_REVIEW_COUNTS.unverified;
   if (total !== MAP041_GEOGRAPHIC_REVIEW_COUNT) {
-    fail('review manifest', `status counts add up to ${total}, not ${MAP041_GEOGRAPHIC_REVIEW_COUNT}.`);
+    fail(
+      'review manifest',
+      `status counts add up to ${total}, not ${MAP041_GEOGRAPHIC_REVIEW_COUNT}.`,
+    );
   }
   if (MAP041_PUBLISHED_SEARCH_EXTENTS.length !== MAP041_GEOGRAPHIC_REVIEW_COUNTS.extent) {
     fail('review manifest', 'published extent list does not match extent classification count.');
