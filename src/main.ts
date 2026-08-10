@@ -189,9 +189,8 @@ function mountPublicExperience(
     adjustActiveMarker(4);
   };
 
-  const clearSupplementalMapSelection = (pin: AtlasPinMarkerModel): void => {
-    mapController.setMarkers(renderedMarkers.filter(({ id }) => id !== pin.id));
-    mapController.setMarkers(renderedMarkers);
+  const clearSupplementalMapSelection = (): void => {
+    mapController.clearSupplementalPinSelection();
   };
 
   const compactDetailsController = mountCompactPinDetails(app, {
@@ -212,7 +211,7 @@ function mountPublicExperience(
       }
 
       activeSupplementalPin = null;
-      clearSupplementalMapSelection(supplementalPin);
+      clearSupplementalMapSelection();
       window.requestAnimationFrame(() => focusPinControl(supplementalPin));
     },
     createFullDetailsUrl(details): string | null {
@@ -275,10 +274,9 @@ function mountPublicExperience(
       }
 
       if (activeSupplementalPin) {
-        const supplementalPin = activeSupplementalPin;
         activeSupplementalPin = null;
         compactDetailsController.hide();
-        clearSupplementalMapSelection(supplementalPin);
+        clearSupplementalMapSelection();
       }
       selection.clear();
       mapController.locateSearchTarget({
@@ -419,10 +417,9 @@ function mountPublicExperience(
 
     try {
       if (activeSupplementalPin) {
-        const supplementalPin = activeSupplementalPin;
         activeSupplementalPin = null;
         compactDetailsController.hide();
-        clearSupplementalMapSelection(supplementalPin);
+        clearSupplementalMapSelection();
       }
 
       placeSearchController.setQuery(parsed.state.query, { notify: false });
