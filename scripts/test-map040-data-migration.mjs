@@ -1,5 +1,5 @@
-import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 
 const DATABASE_CONTAINER = 'supabase_db_castigo-divino-map';
 const MIGRATION_PATH = 'supabase/migrations/20260810144500_add_spanish_geographic_aliases.sql';
@@ -69,13 +69,12 @@ if (afterRepeatedMigration !== before) {
 
 expectPsqlFailure(
   `begin;\n` +
-    `delete from public.geographic_name_aliases where id = 'geo-alias-waterdeep-es';\n` +
-    `insert into public.geographic_name_aliases (` +
-    `id, geographic_name_id, language, value, normalized_value, publication_status, published_at` +
-    `) values (` +
-    `'geo-alias-waterdeep-es', 'geo-cormyr', 'es', 'Aguas Profundas', ` +
-    `private.normalize_search_text('Aguas Profundas'), 'published'::public.publication_status, now()` +
-    `);\n${migrationSql}\nrollback;`,
+    `set local session_replication_role = replica;\n` +
+    `update public.geographic_name_aliases ` +
+    `set geographic_name_id = 'geo-cormyr' ` +
+    `where id = 'geo-alias-waterdeep-es';\n` +
+    `set local session_replication_role = origin;\n` +
+    `${migrationSql}\nrollback;`,
   'MAP-040 alias id geo-alias-waterdeep-es already exists with incompatible semantics',
 );
 
