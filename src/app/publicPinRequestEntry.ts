@@ -56,7 +56,10 @@ export function mountPublicPinRequest(
     openButton.remove();
     controller = mountPublicPinRequestController(root, map);
 
-    mountedOpenButton = getRequiredElement<HTMLButtonElement>(root, '[data-public-pin-request-open]');
+    mountedOpenButton = getRequiredElement<HTMLButtonElement>(
+      root,
+      '[data-public-pin-request-open]',
+    );
     mountedOpenButton.addEventListener('click', handleMountedOpen);
     mountedOpenButton.click();
   };
