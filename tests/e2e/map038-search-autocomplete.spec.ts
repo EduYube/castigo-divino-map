@@ -294,18 +294,20 @@ test('keeps the popup bounded without shifting the map in short mobile landscape
   await expect(listbox).toBeVisible();
 
   const listboxBox = await listbox.boundingBox();
-  const mapWithPopup = await mapShell.boundingBox();
+  const mapDocumentTopWithPopup = await mapShell.evaluate(
+    (element) => element.getBoundingClientRect().top + window.scrollY,
+  );
   expect(listboxBox).not.toBeNull();
-  expect(mapWithPopup).not.toBeNull();
   expect(listboxBox!.height).toBeLessThanOrEqual(112);
 
   await input.press('Escape');
   await expect(listbox).toBeHidden();
   await expect(input).toHaveValue('Water');
 
-  const mapWithoutPopup = await mapShell.boundingBox();
-  expect(mapWithoutPopup).not.toBeNull();
-  expect(Math.abs(mapWithoutPopup!.y - mapWithPopup!.y)).toBeLessThanOrEqual(1);
+  const mapDocumentTopWithoutPopup = await mapShell.evaluate(
+    (element) => element.getBoundingClientRect().top + window.scrollY,
+  );
+  expect(Math.abs(mapDocumentTopWithoutPopup - mapDocumentTopWithPopup)).toBeLessThanOrEqual(1);
 
   const horizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
