@@ -46,7 +46,7 @@ const rankingCatalog = {
       tagIds: [],
     },
     ...Array.from({ length: 6 }, (_, index) => ({
-      id: `place-alpha-${index}`,
+      id: `place-alpha-${index}` as `place-${string}`,
       slug: `alpha-${index}`,
       name: `Alpha ${index}`,
       aliases: [],
