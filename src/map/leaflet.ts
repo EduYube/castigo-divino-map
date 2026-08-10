@@ -622,6 +622,7 @@ export function mountFaerunMap(
       if (pinId) locatePin(pinId);
     },
     locateSearchTarget(target: MapSearchTarget): void {
+      clearSearchHighlight();
       clearMapSearchFocus(map);
 
       if (target.searchExtent) {
