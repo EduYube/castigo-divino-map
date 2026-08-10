@@ -346,9 +346,10 @@ test('preserves entered data and the provisional marker across map interaction a
   await expect(page.locator('.public-request-position-marker')).toBeVisible();
   await expect(page.locator('[data-public-pin-request-panel]')).toHaveCount(1);
 
-  const choosePosition = form.getByRole('button', { name: 'Elegir posición en el mapa' });
+  const choosePosition = page.locator('[data-public-pin-request-position-choose]');
+  await expect(choosePosition).toHaveCount(1);
   await choosePosition.click();
-  await expect(choosePosition).toHaveAttribute('aria-pressed', 'true');
+  await expect(mapCanvas).toHaveAttribute('data-public-request-selecting', 'true');
   await expectNoHorizontalOverflow(page);
 });
 
