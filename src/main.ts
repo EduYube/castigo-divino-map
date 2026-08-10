@@ -172,15 +172,13 @@ function mountPublicExperience(
           offsetY = markerCenterY - visibleBottom;
         }
 
-        if (offsetX === 0 && offsetY === 0) {
-          return;
+        if (offsetX !== 0 || offsetY !== 0) {
+          const roundAwayFromZero = (value: number): number =>
+            value > 0 ? Math.ceil(value) : Math.floor(value);
+          mapController.map.panBy([roundAwayFromZero(offsetX), roundAwayFromZero(offsetY)], {
+            animate: false,
+          });
         }
-
-        const roundAwayFromZero = (value: number): number =>
-          value > 0 ? Math.ceil(value) : Math.floor(value);
-        mapController.map.panBy([roundAwayFromZero(offsetX), roundAwayFromZero(offsetY)], {
-          animate: false,
-        });
 
         if (attemptsRemaining > 1) {
           adjustActiveMarker(attemptsRemaining - 1);
@@ -188,7 +186,7 @@ function mountPublicExperience(
       });
     };
 
-    adjustActiveMarker(3);
+    adjustActiveMarker(4);
   };
 
   const clearSupplementalMapSelection = (pin: AtlasPinMarkerModel): void => {
