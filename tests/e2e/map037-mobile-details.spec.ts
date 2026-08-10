@@ -279,8 +279,11 @@ test('changes the active pin without leaving the mobile map workspace', async ({
   const group = page.getByTestId('coincident-pin');
   await expect(group).toBeVisible();
   await group.click();
-  await expect(page.getByRole('button', { name: /Demonstration Harbor/ })).toBeVisible();
-  await page.getByRole('button', { name: /Demonstration Harbor/ }).click();
+  const harborOption = page.locator(
+    '[data-testid="coincident-pin-option"][data-pin-id="place-demo-harbor"]',
+  );
+  await expect(harborOption).toBeVisible();
+  await harborOption.click();
 
   await expect(panel).toBeVisible();
   await expect(
