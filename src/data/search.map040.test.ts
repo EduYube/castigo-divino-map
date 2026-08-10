@@ -132,8 +132,8 @@ describe('MAP-040 Spanish geographic search', () => {
     expect(spanishCatalog.geographicNames.filter(({ id }) => id === 'geo-waterdeep')).toHaveLength(
       1,
     );
-    expect(spanishCatalog.geographicNames.some(({ name }) => name === 'Aguas Profundas')).toBe(
-      false,
+    expect(spanishCatalog.geographicNames.map(({ name }) => String(name))).not.toContain(
+      'Aguas Profundas',
     );
   });
 });
