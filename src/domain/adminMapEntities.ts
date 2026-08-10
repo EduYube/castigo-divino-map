@@ -2,6 +2,7 @@ import type { MapCoordinate } from './mapCoordinates';
 
 export type MapEntityType = 'character' | 'location';
 export type MapVisibility = 'pin' | 'search_only';
+export type MapEntityAudience = 'public' | 'master';
 export type PlayerDisposition = 'ally' | 'enemy' | 'neutral';
 export type MapEntityPublicationStatus = 'draft' | 'published' | 'archived';
 
@@ -10,6 +11,7 @@ export interface AdminMapEntityRecord extends MapCoordinate {
   readonly slug: string;
   readonly entityType: MapEntityType;
   readonly visibility: MapVisibility;
+  readonly audience: MapEntityAudience;
   readonly name: string;
   readonly summary: string;
   readonly description: string;
@@ -86,6 +88,7 @@ export interface AdminMapEntityDraft extends MapCoordinate {
   readonly slug: string;
   readonly entityType: MapEntityType;
   readonly visibility: MapVisibility;
+  readonly audience: MapEntityAudience;
   readonly name: string;
   readonly summary: string;
   readonly description: string;
@@ -107,6 +110,7 @@ export function detailToDraft(detail: AdminMapEntityDetail): AdminMapEntityDraft
     slug: detail.record.slug,
     entityType: detail.record.entityType,
     visibility: detail.record.visibility,
+    audience: detail.record.audience,
     name: detail.record.name,
     summary: detail.record.summary,
     description: detail.record.description,
@@ -131,6 +135,7 @@ export function createEmptyMapEntityDraft(
     slug: '',
     entityType,
     visibility: 'pin',
+    audience: 'public',
     name: '',
     summary: '',
     description: '',
