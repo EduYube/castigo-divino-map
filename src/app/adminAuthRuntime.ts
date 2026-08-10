@@ -56,6 +56,7 @@ import { SupabaseAdminPublicRequestRepository } from '../infrastructure/supabase
 import { mountAdminCatalog } from './adminCatalog';
 import { mountAdminCharacterLocationRelations } from './adminCharacterLocationRelations';
 import { mountAdminMapEntities } from './adminMapEntities';
+import { mountAdminMapEntityAudience } from './adminMapEntityAudience';
 import { mountAdminPublicRequests } from './adminPublicRequests';
 import { mountAdminAuth } from './adminAuth';
 import '../styles/admin-catalog.css';
@@ -73,6 +74,8 @@ declare global {
 }
 
 export interface AdminAuthRuntime {
+  readonly authController: AdminAuthController;
+  readonly mapEntityController: AdminMapEntityController;
   destroy(): void;
 }
 
@@ -223,7 +226,9 @@ class UnavailableAdminMapEntityRepository implements AdminMapEntityRepository {
   }
 }
 
-class UnavailableAdminCharacterLocationRelationRepository implements AdminCharacterLocationRelationRepository {
+class UnavailableAdminCharacterLocationRelationRepository
+  implements AdminCharacterLocationRelationRepository
+{
   readonly #error: AdminCharacterLocationRelationRepositoryError;
 
   constructor(error: AdminCharacterLocationRelationRepositoryError) {
@@ -441,6 +446,7 @@ export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
   });
   const catalogUi = mountAdminCatalog(root, catalogController, authController);
   const mapEntityUi = mountAdminMapEntities(root, mapEntityController, authController);
+  const mapEntityAudienceUi = mountAdminMapEntityAudience(root, mapEntityController);
   const relationUi = mountAdminCharacterLocationRelations(root, relationController, authController);
   const requestUi = mountAdminPublicRequests(root, requestController, authController, {
     onOpenDraft: async (entityId) => {
@@ -451,11 +457,14 @@ export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
   void authController.start();
 
   return {
+    authController,
+    mapEntityController,
     destroy(): void {
       requestUi.destroy();
       requestController.destroy();
       relationUi.destroy();
       relationController.destroy();
+      mapEntityAudienceUi.destroy();
       mapEntityUi.destroy();
       mapEntityController.destroy();
       catalogUi.destroy();
