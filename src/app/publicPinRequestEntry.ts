@@ -36,14 +36,11 @@ export function mountPublicPinRequest(
     openButton.remove();
     controller = mountPublicPinRequestController(root, map);
 
-    const form = getRequiredElement<HTMLFormElement>(root, '[data-public-pin-request-form]');
-    const privacy = getRequiredElement<HTMLElement>(root, '#public-pin-request-privacy');
     const mountedOpenButton = getRequiredElement<HTMLButtonElement>(
       root,
       '[data-public-pin-request-open]',
     );
 
-    form.prepend(privacy);
     mountedOpenButton.click();
   };
 
