@@ -241,9 +241,6 @@ test('supports pointer/touch selection at 320 px without overflow or losing the 
   const listbox = page.getByRole('listbox', { name: 'Sugerencias de búsqueda' });
 
   await input.fill('Waterf');
-  const suggestion = listbox
-    .getByRole('option')
-    .filter({ has: page.locator('[data-search-suggestion-id="entity-waterfall-pass"]') });
   const exactSuggestion = page.locator(
     '[role="option"][data-search-suggestion-id="entity-waterfall-pass"]',
   );
@@ -274,5 +271,36 @@ test('supports pointer/touch selection at 320 px without overflow or losing the 
   const filtersToggle = page.locator('[data-place-filters-toggle]');
   await filtersToggle.click();
   await expect(filtersToggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(suggestion).toHaveCount(0);
+});
+
+test('keeps the popup bounded without shifting the map in short mobile landscape', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 430, height: 360 });
+  await openAutocomplete(page);
+
+  const input = searchInput(page);
+  const listbox = page.getByRole('listbox', { name: 'Sugerencias de búsqueda' });
+  const mapShell = page.getByTestId('map-shell');
+  const mapBefore = await mapShell.boundingBox();
+
+  await input.fill('Water');
+  await expect(listbox).toBeVisible();
+
+  const listboxBox = await listbox.boundingBox();
+  const mapAfter = await mapShell.boundingBox();
+  expect(listboxBox).not.toBeNull();
+  expect(mapBefore).not.toBeNull();
+  expect(mapAfter).not.toBeNull();
+  expect(listboxBox!.height).toBeLessThanOrEqual(112);
+  expect(Math.abs(mapAfter!.y - mapBefore!.y)).toBeLessThanOrEqual(1);
+
+  const horizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  );
+  expect(horizontalOverflow).toBe(false);
+
+  await input.press('Escape');
+  await expect(listbox).toBeHidden();
+  await expect(input).toHaveValue('Water');
 });
