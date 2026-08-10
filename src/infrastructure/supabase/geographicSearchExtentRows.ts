@@ -28,7 +28,7 @@ function parseSearchExtent(
   coordinates: PublicGeographicName['coordinates'],
 ): PublicSearchExtent | null {
   const raw = EXTENT_COLUMNS.map((column) => row[column]);
-  const nullCount = raw.filter((value) => value === null).length;
+  const nullCount = raw.filter((value) => value == null).length;
 
   if (nullCount === EXTENT_COLUMNS.length) return null;
   if (nullCount !== 0) {
