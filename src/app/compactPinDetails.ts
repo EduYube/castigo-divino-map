@@ -271,6 +271,14 @@ export function mountCompactPinDetails(
     const preserveViewport = isMobileSheet();
     const scrollX = preserveViewport ? window.scrollX : 0;
     const scrollY = preserveViewport ? window.scrollY : 0;
+    const focusedElement = preserveViewport ? document.activeElement : null;
+
+    if (
+      focusedElement instanceof HTMLElement &&
+      focusedElement.classList.contains('campaign-marker-icon')
+    ) {
+      focusedElement.blur();
+    }
 
     options.onClose();
 
