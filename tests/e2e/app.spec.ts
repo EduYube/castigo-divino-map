@@ -197,9 +197,10 @@ test('operates search results with the keyboard and preserves close focus behavi
   await openReadyMap(page);
 
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  const clearSearch = page.getByRole('button', { name: 'Limpiar búsqueda' });
 
   await searchbox.fill('DESFILADERO DE EJEMPLO');
-  await searchbox.press('ArrowDown');
+  await searchbox.press('Escape');
 
   const result = page
     .getByRole('list', { name: 'Resultados de búsqueda de lugares' })
@@ -207,6 +208,9 @@ test('operates search results with the keyboard and preserves close focus behavi
       name: /Paso de demostración.*Coincidencia por alias: Desfiladero de ejemplo/i,
     });
 
+  await page.keyboard.press('Tab');
+  await expect(clearSearch).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(result).toBeFocused();
   await page.keyboard.press('Enter');
 
@@ -347,6 +351,7 @@ test('keeps search, map and compact details useful in a mobile viewport', async 
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
 
   await searchbox.fill('demostracion');
+  await searchbox.press('Escape');
 
   const results = page.getByRole('list', { name: 'Resultados de búsqueda de lugares' });
   const resultsBox = await results.boundingBox();
