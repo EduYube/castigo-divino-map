@@ -30,7 +30,6 @@ import { createAtlasPinMarkerModels, type AtlasPinMarkerModel } from './data/pin
 import type { AtlasSearchResult } from './data/search';
 import { getPinTypeVisual } from './domain/pinVisualSystem';
 import { mountFaerunMap } from './map/leaflet';
-import { locateMapSearchTarget } from './map/searchFocus';
 import './styles/main.css';
 import './styles/pin-visual-system.css';
 import './styles/compact-pin-details.css';
@@ -280,7 +279,7 @@ function mountPublicExperience(
         clearSupplementalMapSelection();
       }
       selection.clear();
-      locateMapSearchTarget(mapController.map, app, {
+      mapController.locateSearchTarget({
         coordinates: result.coordinates,
         searchExtent: result.searchExtent,
         recommendedZoom: result.recommendedZoom,
