@@ -108,7 +108,7 @@ export function assertGeographicSearchExtentCoverage(content, label = 'catalog')
       if (!sameExtent(name.searchExtent, review.searchExtent)) {
         fail(label, `${review.id} does not expose the reviewed representative bounds.`);
       }
-    } else if (name.searchExtent !== null) {
+    } else if ((name.searchExtent ?? null) !== null) {
       fail(label, `${review.id} must remain without a published extent (${review.status}).`);
     }
   }

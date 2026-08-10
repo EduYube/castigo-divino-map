@@ -477,7 +477,7 @@ function snapshotPayloads(
       const coordinates = expectRecord(name.coordinates, `${path}.coordinates`);
       assertAllowedProperties(coordinates, ['x', 'y'], `${path}.coordinates`);
       const searchExtent =
-        name.searchExtent === null ? null : expectRecord(name.searchExtent, `${path}.searchExtent`);
+        name.searchExtent == null ? null : expectRecord(name.searchExtent, `${path}.searchExtent`);
       if (searchExtent) {
         assertAllowedProperties(
           searchExtent,

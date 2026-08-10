@@ -259,7 +259,7 @@ export function searchPublicAtlas(
       matchedText: bestMatch.matchedText,
       matchRank: bestMatch.matchRank,
       coordinates: geographicName.coordinates,
-      searchExtent: geographicName.searchExtent,
+      searchExtent: geographicName.searchExtent ?? null,
       recommendedZoom: geographicName.recommendedZoom,
       legacyPlaceId: legacyPlace?.id ?? null,
       linkedEntityId: geographicName.entityId,

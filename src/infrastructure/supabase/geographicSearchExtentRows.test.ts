@@ -46,10 +46,22 @@ describe('MAP-041 geographic extent row codec', () => {
   });
 
   it.each([
-    [{ search_min_x: 1710, search_max_x: 1380, search_min_y: 750, search_max_y: 1500 }, 'search_min_x < search_max_x'],
-    [{ search_min_x: 1380, search_max_x: 1380, search_min_y: 750, search_max_y: 1500 }, 'search_min_x < search_max_x'],
-    [{ search_min_x: 1380, search_max_x: 1710, search_min_y: 1500, search_max_y: 750 }, 'search_min_y < search_max_y'],
-    [{ search_min_x: 1380, search_max_x: 1710, search_min_y: 750, search_max_y: 750 }, 'search_min_y < search_max_y'],
+    [
+      { search_min_x: 1710, search_max_x: 1380, search_min_y: 750, search_max_y: 1500 },
+      'search_min_x < search_max_x',
+    ],
+    [
+      { search_min_x: 1380, search_max_x: 1380, search_min_y: 750, search_max_y: 1500 },
+      'search_min_x < search_max_x',
+    ],
+    [
+      { search_min_x: 1380, search_max_x: 1710, search_min_y: 1500, search_max_y: 750 },
+      'search_min_y < search_max_y',
+    ],
+    [
+      { search_min_x: 1380, search_max_x: 1710, search_min_y: 750, search_max_y: 750 },
+      'search_min_y < search_max_y',
+    ],
     [{ search_min_x: -1, search_max_x: 1710, search_min_y: 750, search_max_y: 1500 }, '0 y 3600'],
     [{ search_min_x: 1380, search_max_x: 3601, search_min_y: 750, search_max_y: 1500 }, '0 y 3600'],
     [{ search_min_x: 1380, search_max_x: 1710, search_min_y: -1, search_max_y: 1500 }, '0 y 2329'],
@@ -77,7 +89,12 @@ describe('MAP-041 geographic extent row codec', () => {
   it('rejects non-finite bounds', () => {
     expect(() =>
       parseGeographicNameWithExtent(
-        row({ search_min_x: Number.NaN, search_max_x: 1710, search_min_y: 750, search_max_y: 1500 }),
+        row({
+          search_min_x: Number.NaN,
+          search_max_x: 1710,
+          search_min_y: 750,
+          search_max_y: 1500,
+        }),
         0,
         aliases as never,
       ),
