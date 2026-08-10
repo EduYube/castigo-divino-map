@@ -36,10 +36,7 @@ interface SnapshotPayload {
 }
 
 const SNAPSHOT = JSON.parse(
-  readFileSync(
-    new URL('../../public/data/public-catalog.snapshot.json', import.meta.url),
-    'utf8',
-  ),
+  readFileSync(new URL('../../public/data/public-catalog.snapshot.json', import.meta.url), 'utf8'),
 ) as SnapshotPayload;
 
 const GEOGRAPHIC_ROWS = SNAPSHOT.content.geographicNames.map((entry) => ({
