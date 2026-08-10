@@ -287,10 +287,7 @@ const VERIFIED_DECISIONS = Object.freeze({
   'geo-waterdeep': Object.freeze({
     status: 'translated',
     aliases: Object.freeze(['Aguas Profundas']),
-    sources: Object.freeze([
-      'secret-lair-forgotten-realms-2026',
-      'magic-afr-spanish-gallery',
-    ]),
+    sources: Object.freeze(['secret-lair-forgotten-realms-2026', 'magic-afr-spanish-gallery']),
   }),
 });
 
