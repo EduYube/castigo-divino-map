@@ -12,13 +12,9 @@ const beta02: PublicCatalogSnapshotV2 = {
   generatedAt: '2026-08-10T00:00:00.000Z',
   sourceRevision: 'sha256:test',
   checksum: 'sha256:test',
-  categories: [
-    { id: 'category-test', slug: 'test', name: 'Test', description: '' },
-  ],
+  categories: [{ id: 'category-test', slug: 'test', name: 'Test', description: '' }],
   tags: [],
-  players: [
-    { id: 'player-test', slug: 'test', displayName: 'Test', nameLanguage: 'en' },
-  ],
+  players: [{ id: 'player-test', slug: 'test', displayName: 'Test', nameLanguage: 'en' }],
   entities: [
     {
       id: 'entity-public-character',
@@ -140,10 +136,7 @@ const beta01: CampaignCatalog = {
 
 describe('MAP-044 public catalog revocations', () => {
   it('removes a reprivatized entity and every dependent public projection from Beta 0.2', () => {
-    const result = applyEntityRevocationsToBeta02(
-      beta02,
-      new Set(['place-revoked-secret']),
-    );
+    const result = applyEntityRevocationsToBeta02(beta02, new Set(['place-revoked-secret']));
 
     expect(result.entities.map(({ id }) => id)).toEqual(['entity-public-character']);
     expect(result.dispositions).toEqual([]);
@@ -155,10 +148,7 @@ describe('MAP-044 public catalog revocations', () => {
   });
 
   it('also removes a revoked legacy place and its note from a Beta 0.1 fallback', () => {
-    const result = applyEntityRevocationsToBeta01(
-      beta01,
-      new Set(['place-revoked-secret']),
-    );
+    const result = applyEntityRevocationsToBeta01(beta01, new Set(['place-revoked-secret']));
 
     expect(result.places).toEqual([]);
     expect(result.notes).toEqual([]);
