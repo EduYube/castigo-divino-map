@@ -10,6 +10,20 @@ function coordinateKey(marker: AtlasPinMarkerModel): string {
   return `${marker.coordinate[0]}\u0000${marker.coordinate[1]}`;
 }
 
+function synchronizePopupBadge(button: HTMLButtonElement, master: boolean): void {
+  const existing = button.querySelector<HTMLElement>('[data-master-pin-badge]');
+  if (!master) {
+    existing?.remove();
+    return;
+  }
+  if (existing) return;
+  const badge = document.createElement('span');
+  badge.className = 'place-search__result-audience';
+  badge.dataset.masterPinBadge = '';
+  badge.textContent = 'Máster';
+  button.append(badge);
+}
+
 export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualController {
   let markers: readonly AtlasPinMarkerModel[] = [];
   let masterEntityIds: ReadonlySet<EntityId> = new Set();
@@ -37,7 +51,9 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
       if (pinId) {
         const marker = byId.get(pinId);
         const master = Boolean(marker && isMaster(marker));
-        element.dataset.audience = master ? 'master' : 'public';
+        if (element.dataset.audience !== (master ? 'master' : 'public')) {
+          element.dataset.audience = master ? 'master' : 'public';
+        }
         inner?.classList.toggle('pin-visual--master', master);
         if (master && marker) {
           const type = marker.entityType === 'character' ? 'Personaje' : 'Emplazamiento de campaña';
@@ -59,11 +75,12 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
       const group = byCoordinate.get(`${lat}\u0000${lng}`) ?? [];
       const masters = group.filter(isMaster);
       if (masters.length === 0) {
-        element.dataset.audience = 'public';
+        if (element.dataset.audience !== 'public') element.dataset.audience = 'public';
         inner?.classList.remove('pin-visual--master');
         return;
       }
-      element.dataset.audience = masters.length === group.length ? 'master' : 'mixed';
+      const audience = masters.length === group.length ? 'master' : 'mixed';
+      if (element.dataset.audience !== audience) element.dataset.audience = audience;
       inner?.classList.add('pin-visual--master');
       element.setAttribute(
         'aria-label',
@@ -77,14 +94,11 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
       (button) => {
         const marker = byId.get(button.dataset.pinId ?? '');
         const master = Boolean(marker && isMaster(marker));
-        button.dataset.audience = master ? 'master' : 'public';
-        button.querySelector<HTMLElement>('[data-master-pin-badge]')?.remove();
+        if (button.dataset.audience !== (master ? 'master' : 'public')) {
+          button.dataset.audience = master ? 'master' : 'public';
+        }
+        synchronizePopupBadge(button, master);
         if (!master || !marker) return;
-        const badge = document.createElement('span');
-        badge.className = 'place-search__result-audience';
-        badge.dataset.masterPinBadge = '';
-        badge.textContent = 'Máster';
-        button.append(badge);
         const existing = button.getAttribute('aria-label') ?? marker.name;
         if (!existing.includes('Contenido del Máster')) {
           button.setAttribute('aria-label', `${existing} Contenido del Máster.`);
