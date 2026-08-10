@@ -4,7 +4,6 @@ import type { EntityId } from '../data/beta02-model';
 
 export interface MasterDetailActionsOptions {
   readonly getMasterEntityIds: () => ReadonlySet<EntityId>;
-  readonly onAudienceChanged: (entityId: EntityId, audience: MapEntityAudience) => Promise<void>;
 }
 
 export interface MasterDetailActionsController {
@@ -104,7 +103,7 @@ export function mountMasterDetailActions(
     warning.id = `master-audience-warning-${entityId}`;
     warning.textContent =
       nextAudience === 'master'
-        ? 'Al confirmar, esta entidad dejará de ser visible y buscable para jugadores y saldrá del próximo snapshot público. El cambio se aplica en cuanto PostgreSQL lo confirme.'
+        ? 'Al confirmar, esta entidad dejará de salir de nuevas consultas públicas y se revocará de inmediato en esta sesión incluso si el refresh cae a un fallback antiguo. Si ya fue pública, el cambio no puede borrar copias previamente entregadas ni convertir ese contenido histórico en un secreto fuerte; para confidencialidad fuerte crea una entidad nueva que nunca haya sido pública.'
         : 'Al confirmar, si la entidad está publicada volverá a ser visible y buscable para jugadores y podrá entrar en el próximo snapshot público.';
     confirmButton.type = 'button';
     confirmButton.className = 'compact-details__full-action';
@@ -146,13 +145,8 @@ export function mountMasterDetailActions(
         status.textContent = issue?.message ?? 'No se pudo guardar el cambio de audiencia.';
         return;
       }
-      status.textContent = 'Audiencia guardada. Actualizando mapa y búsquedas…';
-      try {
-        await options.onAudienceChanged(entityId, nextAudience);
-      } catch {
-        status.textContent =
-          'La audiencia se guardó, pero no se pudo refrescar toda la vista. El backend conserva el cambio y puede reintentarse recargando los datos.';
-      }
+      status.textContent =
+        'Audiencia guardada. El runtime actualizará mapa y búsquedas desde el cambio del controlador.';
     });
   };
 
