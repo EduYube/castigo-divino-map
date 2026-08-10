@@ -34,6 +34,23 @@ Para una identidad no administradora —incluidos `anon` y un usuario autenticad
 
 La UI nunca concede acceso. `private.is_admin()` y las policies existentes continúan siendo la única fuente de verdad de autorización administrativa.
 
+### Límite de re-privatización
+
+`public → master` es una **revocación de futuras entregas públicas**, no una capacidad criptográfica de borrar información ya publicada. Una entidad que anteriormente fue pública puede existir en:
+
+- una pestaña que ya la cargó;
+- un snapshot público antiguo;
+- una cache de sesión antigua;
+- una copia descargada, capturada o almacenada fuera del control del Atlas.
+
+RLS impide nuevas lecturas desde Supabase después de la transición, pero no puede retirar bytes que ya se entregaron. Por tanto:
+
+- el cliente administrativo que efectúa `public → master` instala inmediatamente una lista de revocación **solo en memoria** y la aplica también sobre cualquier fallback público antiguo, de modo que esa misma sesión no reinyecte la entidad si el refresh remoto falla;
+- esa lista no se persiste como catálogo privado ni pretende revocar otros clientes;
+- no se debe presentar una entidad previamente pública como un secreto fuerte hasta regenerar y desplegar un snapshot público que ya no la incluya;
+- incluso después del despliegue, las copias históricas entregadas previamente siguen siendo irrecuperables;
+- para confidencialidad fuerte debe crearse una entidad/identidad nueva cuyo contenido secreto nunca haya sido público, en lugar de reutilizar como secreto el mismo ID y contenido histórico.
+
 ## Modelo y migración
 
 Se añadirá un enum de base de datos `public.entity_audience` con valores `public` y `master` y una columna `map_entities.audience NOT NULL DEFAULT 'public'`.
@@ -56,7 +73,9 @@ Las policies públicas deberán exigir `audience = 'public'` al leer una entidad
 - `character_location_relations`;
 - `character_location_events`.
 
-Las policies administrativas continuarán exigiendo `private.is_admin()`. La columna `audience` solo tendrá permisos de escritura para `authenticated` bajo esa RLS; un usuario autenticado no-admin seguirá sin poder modificarla.
+Las proyecciones públicas se conceden tanto a `anon` como a `authenticated`; un usuario autenticado no-admin mantiene el mismo catálogo público que un visitante, pero ninguna fila Máster. Las policies administrativas continúan exigiendo `private.is_admin()`.
+
+La columna `audience` solo tendrá permisos de escritura para `authenticated` bajo esa RLS; un usuario autenticado no-admin seguirá sin poder modificarla.
 
 Las RPC administrativas de edición deben conservar `SECURITY INVOKER`, `search_path = ''`, comprobación explícita mediante el mecanismo administrativo existente y ACL sin `anon`/`PUBLIC`.
 
@@ -66,7 +85,7 @@ El lector público seguirá usando exclusivamente la clave publicable y la proye
 
 El generador/verificador de snapshot utiliza esa misma frontera pública. Se añadirá una prueba canaria que falle si una entidad `master` o cualquiera de sus datos dependientes entra en la instantánea o en el artifact de Pages.
 
-No habrá snapshot privado, fallback privado, `localStorage` ni IndexedDB para contenido Máster.
+No habrá snapshot privado, fallback privado, `localStorage` ni IndexedDB para contenido Máster. El fallback público puede ser antiguo; por eso una transición `public → master` aplica la revocación efímera descrita arriba antes de renderizar cualquier resultado de Supabase, cache de sesión o snapshot bundled.
 
 ## Catálogo administrativo efímero
 
@@ -115,10 +134,10 @@ Además, la ampliación de alcance de #119 exige que un admin autorizado pueda c
 
 Ambas transiciones requieren confirmación explícita:
 
-- `public → master`: advierte que la entidad dejará de ser visible/buscable para jugadores y saldrá del próximo snapshot;
+- `public → master`: advierte que la entidad dejará de salir de nuevas consultas públicas, se revocará de inmediato en la sesión administrativa incluso sobre fallbacks antiguos y saldrá del próximo snapshot, pero que una publicación anterior no puede convertirse retroactivamente en secreto;
 - `master → public`: advierte que una entidad publicada podrá volver a ser visible/buscable y entrar en el siguiente snapshot.
 
-No habrá cambio optimista irreversible. Solo después de persistir correctamente se refrescará el runtime correspondiente. Cancelar o fallar mantiene la audiencia original.
+No habrá cambio optimista irreversible. Solo después de persistir correctamente se actualizará el runtime desde el cambio publicado por `AdminMapEntityController`. Ese evento es la única fuente de refresco para evitar dobles lecturas/races entre ficha y editor general. Cancelar o fallar mantiene la audiencia original.
 
 ## Solicitudes públicas
 
@@ -131,10 +150,12 @@ La cobertura incluirá:
 - migración y default histórico `public`;
 - pgTAP negativa para `anon` y auth no-admin sobre entidad Máster y todas sus relaciones relevantes;
 - pgTAP positiva para admin, incluida transición de audiencia y pérdida de autorización;
+- pgTAP que demuestre que auth no-admin conserva las relaciones públicas mientras las relaciones Máster permanecen ocultas;
 - public request manipulada sin posibilidad de escalar a Máster;
 - codec/modelo/default administrativo;
 - visual Máster distinto por forma/símbolo y accesible;
 - merge efímero y purga al OFF/logout/401/403;
+- revocación `public → master` sobre resultados públicos remotos, cache de sesión y snapshot bundled dentro del runtime que efectúa el cambio;
 - búsqueda pública vs administrativa;
 - agrupación coincidente sin filtración de conteos;
 - snapshot y artifact canario sin contenido privado;
