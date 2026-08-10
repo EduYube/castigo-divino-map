@@ -267,7 +267,21 @@ export function mountCompactPinDetails(
   options: CompactPinDetailsOptions,
 ): CompactPinDetailsController {
   const elements = resolveElements(root);
-  const handleClose = (): void => options.onClose();
+  const closePreservingViewport = (): void => {
+    const preserveViewport = isMobileSheet();
+    const scrollX = preserveViewport ? window.scrollX : 0;
+    const scrollY = preserveViewport ? window.scrollY : 0;
+
+    options.onClose();
+
+    if (!preserveViewport) {
+      return;
+    }
+
+    window.scrollTo(scrollX, scrollY);
+    window.requestAnimationFrame(() => window.scrollTo(scrollX, scrollY));
+  };
+  const handleClose = (): void => closePreservingViewport();
   const handleReturnToPin = (): void => {
     elements.workspace
       .querySelector<HTMLElement>('.campaign-marker-icon[aria-pressed="true"]')
@@ -279,7 +293,7 @@ export function mountCompactPinDetails(
     }
 
     event.preventDefault();
-    options.onClose();
+    closePreservingViewport();
   };
 
   elements.closeButton.addEventListener('click', handleClose);
