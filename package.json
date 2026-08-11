@@ -41,7 +41,7 @@
     "supabase:db:test:upgrade": "node scripts/test-supabase-upgrade.mjs",
     "supabase:db:test:concurrency": "node scripts/test-supabase-concurrency.mjs && node scripts/test-public-request-moderation-concurrency.mjs",
     "supabase:db:lint": "supabase db lint --local --fail-on warning",
-    "supabase:db:validate": "npm run supabase:db:test:upgrade && npm run supabase:db:reset && npm run supabase:db:test:map045:http && npm run supabase:db:test:map028 && npm run supabase:db:test:map040 && npm run supabase:db:test:map041 && npm run supabase:db:lint && npm run supabase:db:test && npm run supabase:db:test:concurrency",
+    "supabase:db:validate": "npm run supabase:db:test:upgrade && npm run supabase:db:reset && npm run supabase:db:test:map045:http && npm run supabase:db:reset && npm run supabase:db:test:map028 && npm run supabase:db:test:map040 && npm run supabase:db:test:map041 && npm run supabase:db:lint && npm run supabase:db:test && npm run supabase:db:test:concurrency",
     "supabase:types": "supabase gen types typescript --local --schema public > src/database.types.ts",
     "snapshot:generate:fixture": "node scripts/generate-public-snapshot.mjs --fixture",
     "snapshot:verify:remote": "node scripts/verify-public-snapshot.mjs --remote",
