@@ -94,7 +94,11 @@ async function configureStartupRaceBackend(page: Page): Promise<StartupRaceBacke
     updated_at: '2026-08-07T10:00:00.000Z',
   };
   const categories = [
-    { id: 'category-landmark', name: 'Lugar destacado', publication_status: 'published' },
+    {
+      id: 'category-landmark',
+      name: 'Lugar destacado',
+      publication_status: 'published',
+    },
   ];
 
   await page.addInitScript(
@@ -176,7 +180,8 @@ async function configureStartupRaceBackend(page: Page): Promise<StartupRaceBacke
     if (url.pathname.endsWith('/rpc/admin_save_map_entity_v2')) {
       const body = request.postDataJSON() as Record<string, unknown>;
       entity.audience = body.p_audience === 'master' ? 'master' : 'public';
-      entity.publication_status = body.p_publication_status === 'published' ? 'published' : 'draft';
+      entity.publication_status =
+        body.p_publication_status === 'published' ? 'published' : 'draft';
       entity.updated_at = '2026-08-11T10:30:00.000Z';
       saveCount += 1;
       await route.fulfill({
