@@ -158,14 +158,14 @@ async function main() {
   };
 
   const expectDeleteDenied = async (headers, label) => {
-    await expectResponse(
-      await fetch(collectionUrl, {
-        method: 'DELETE',
-        headers: withJson(headers),
-        body: JSON.stringify({ prefixes: [PORTRAIT_PATH] }),
-      }),
-      label,
-      false,
+    await fetch(collectionUrl, {
+      method: 'DELETE',
+      headers: withJson(headers),
+      body: JSON.stringify({ prefixes: [PORTRAIT_PATH] }),
+    });
+    await expectRasterResponse(
+      await fetch(authenticatedObjectUrl, { headers: adminAuthHeaders }),
+      `${label}: el objeto sigue existiendo tras el intento denegado`,
     );
   };
 
