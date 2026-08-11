@@ -116,14 +116,12 @@ select is(
   5::bigint,
   'admin may upload portrait objects, including an unreferenced cleanup canary'
 );
-select like(
-  public.admin_get_map_entity_editor_v3('entity-map045-master') -> 'record' ->> 'portrait_path',
-  'portraits/%',
+select ok(
+  (public.admin_get_map_entity_editor_v3('entity-map045-master') -> 'record' ->> 'portrait_path') like 'portraits/%',
   'admin editor receives the current portrait reference'
 );
-select like(
-  public.admin_get_master_catalog_v2()::text,
-  '%22222222-2222-4222-8222-222222222222.webp%',
+select ok(
+  public.admin_get_master_catalog_v2()::text like '%22222222-2222-4222-8222-222222222222.webp%',
   'authorized master catalog includes the master portrait reference'
 );
 
