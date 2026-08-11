@@ -30,6 +30,7 @@ export function mountMasterDetailActions(
   let frame: number | null = null;
   let destroyed = false;
   let renderedSignature = '';
+  let confirmingSignature: string | null = null;
 
   const resolveAudience = (entityId: EntityId): MapEntityAudience => {
     if (options.getMasterEntityIds().has(entityId)) return 'master';
@@ -56,6 +57,7 @@ export function mountMasterDetailActions(
       !state.backendConnected ||
       state.phase === 'blocked'
     ) {
+      confirmingSignature = null;
       if (renderedSignature) removeInjected();
       return;
     }
@@ -65,8 +67,20 @@ export function mountMasterDetailActions(
     // Transient controller phases (for example loading -> ready after login) must not
     // replace an open confirmation UI. Audience/entity changes remain authoritative.
     const signature = `${entityId}:${audience}`;
+    if (confirmingSignature !== null && confirmingSignature !== signature) {
+      confirmingSignature = null;
+    }
     const existingAction = content.querySelector<HTMLElement>('[data-master-audience-action]');
-    if (renderedSignature === signature && existingAction) return;
+    if (renderedSignature === signature && existingAction) {
+      const existingStart = existingAction.querySelector<HTMLButtonElement>('[data-master-audience-start]');
+      const existingConfirmation = existingAction.querySelector<HTMLElement>(
+        '[data-master-audience-confirmation]',
+      );
+      const isConfirming = confirmingSignature === signature;
+      if (existingStart) existingStart.hidden = isConfirming;
+      if (existingConfirmation) existingConfirmation.hidden = !isConfirming;
+      return;
+    }
     removeInjected();
     renderedSignature = signature;
 
@@ -89,6 +103,7 @@ export function mountMasterDetailActions(
     const cancelButton = document.createElement('button');
     const status = document.createElement('p');
     const nextAudience: MapEntityAudience = audience === 'master' ? 'public' : 'master';
+    const isConfirming = confirmingSignature === signature;
 
     section.className = 'compact-details__audience-action';
     section.dataset.masterAudienceAction = '';
@@ -102,9 +117,10 @@ export function mountMasterDetailActions(
     button.className = 'compact-details__full-action';
     button.dataset.masterAudienceStart = '';
     button.textContent = audience === 'master' ? 'Cambiar a Público' : 'Cambiar a Solo Máster';
+    button.hidden = isConfirming;
     confirmation.className = 'compact-details__audience-confirmation';
     confirmation.dataset.masterAudienceConfirmation = '';
-    confirmation.hidden = true;
+    confirmation.hidden = !isConfirming;
     warning.id = `master-audience-warning-${entityId}`;
     warning.textContent =
       nextAudience === 'master'
@@ -128,11 +144,13 @@ export function mountMasterDetailActions(
     content.append(section);
 
     button.addEventListener('click', () => {
+      confirmingSignature = signature;
       button.hidden = true;
       confirmation.hidden = false;
       confirmButton.focus();
     });
     cancelButton.addEventListener('click', () => {
+      confirmingSignature = null;
       confirmation.hidden = true;
       button.hidden = false;
       status.textContent = 'Cambio de audiencia cancelado.';
@@ -150,6 +168,7 @@ export function mountMasterDetailActions(
         status.textContent = issue?.message ?? 'No se pudo guardar el cambio de audiencia.';
         return;
       }
+      confirmingSignature = null;
       status.textContent =
         'Audiencia guardada. El runtime actualizará mapa y búsquedas desde el cambio del controlador.';
     });
@@ -169,6 +188,7 @@ export function mountMasterDetailActions(
     refresh: schedule,
     destroy(): void {
       destroyed = true;
+      confirmingSignature = null;
       observer.disconnect();
       unsubscribe();
       if (frame !== null) window.cancelAnimationFrame(frame);
