@@ -215,6 +215,16 @@ test('uses the full map-experience width on desktop without compressing the form
       proposedName.boundingBox(),
       type.boundingBox(),
     ]);
+  const [senderFieldTop, proposedFieldTop] = await Promise.all([
+    sender.evaluate(
+      (element) =>
+        (element.closest('label') ?? element.parentElement)?.getBoundingClientRect().top ?? Number.NaN,
+    ),
+    proposedName.evaluate(
+      (element) =>
+        (element.closest('label') ?? element.parentElement)?.getBoundingClientRect().top ?? Number.NaN,
+    ),
+  ]);
 
   expect(experienceBox).not.toBeNull();
   expect(panelBox).not.toBeNull();
@@ -243,7 +253,9 @@ test('uses the full map-experience width on desktop without compressing the form
   expect(privacyBox.width).toBeGreaterThan(formBox.width * 0.95);
   expect(senderBox.width).toBeGreaterThan(formBox.width * 0.4);
   expect(proposedBox.width).toBeGreaterThan(formBox.width * 0.4);
-  expect(Math.abs(senderBox.y - proposedBox.y)).toBeLessThan(2);
+  expect(Number.isFinite(senderFieldTop)).toBe(true);
+  expect(Number.isFinite(proposedFieldTop)).toBe(true);
+  expect(Math.abs(senderFieldTop - proposedFieldTop)).toBeLessThan(2);
   expect(typeBox.width).toBeGreaterThan(formBox.width * 0.95);
   await expectNoHorizontalOverflow(page);
 });
