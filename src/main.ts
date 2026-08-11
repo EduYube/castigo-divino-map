@@ -556,10 +556,11 @@ function mountPublicExperience(
           (previousPin!.coordinate[0] !== pin.coordinate[0] ||
             previousPin!.coordinate[1] !== pin.coordinate[1]);
         if (
-          !previousPin ||
-          previousPin.portraitPath !== pin.portraitPath ||
-          previousAccess !== nextAccess ||
-          moved
+          (!previousPin && nextAccess === 'master') ||
+          (previousPin &&
+            (previousPin.portraitPath !== pin.portraitPath ||
+              previousAccess !== nextAccess ||
+              moved))
         ) {
           eagerPortraitPinIds.add(pin.id);
         }
@@ -617,8 +618,6 @@ function mountPublicExperience(
       if (masterEnabled) await masterModeRuntime?.controller.reload();
       await publicDataRuntime.refresh();
     }
-
-    applyCatalogState(publicDataRuntime.getCatalogState(), true);
   };
 
   if (adminRuntime && publicDataRuntime) {
@@ -649,7 +648,14 @@ function mountPublicExperience(
       if (previousEntityRevisions) {
         for (const [entityId, revision] of nextEntityRevisions) {
           const previous = previousEntityRevisions.get(entityId);
-          if (previous?.updatedAt === revision.updatedAt) continue;
+          if (
+            previous &&
+            previous.updatedAt === revision.updatedAt &&
+            previous.audience === revision.audience &&
+            previous.publicationStatus === revision.publicationStatus
+          ) {
+            continue;
+          }
 
           const wasPublic =
             previous?.publicationStatus === 'published' && previous.audience === 'public';
@@ -665,14 +671,10 @@ function mountPublicExperience(
             void refreshAfterAudienceChange(revision.audience);
           } else if (wasMaster || isMaster) {
             if (masterModeRuntime?.controller.getState().enabled === true) {
-              void masterModeRuntime.controller
-                .reload()
-                .then(() => applyCatalogState(catalogState, true));
+              void masterModeRuntime.controller.reload();
             }
           } else if (wasPublic || isPublic) {
-            void publicDataRuntime
-              .refresh()
-              .then(() => applyCatalogState(publicDataRuntime.getCatalogState(), true));
+            void publicDataRuntime.refresh();
           }
           break;
         }
