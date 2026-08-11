@@ -21,7 +21,8 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
   },
   entities: {
     name: 'map_entities',
-    select: 'id,slug,entity_type,visibility,name,name_language,summary,description,x,y,category_id',
+    select:
+      'id,slug,entity_type,visibility,name,name_language,summary,description,portrait_path,x,y,category_id',
     order: 'id.asc',
     published: true,
   },

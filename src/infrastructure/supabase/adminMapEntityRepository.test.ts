@@ -162,7 +162,7 @@ function detail(): AdminMapEntityDetail {
 describe('SupabaseAdminMapEntityRepository', () => {
   it('loads editor snapshots with a just-in-time administrative JWT', async () => {
     const fetchImplementation = vi.fn<typeof fetch>(async (input, init) => {
-      expect(new URL(String(input)).pathname).toMatch(/\/rpc\/admin_get_map_entity_editor_v2$/);
+      expect(new URL(String(input)).pathname).toMatch(/\/rpc\/admin_get_map_entity_editor_v3$/);
       const headers = new Headers(init?.headers);
       expect(headers.get('authorization')).toBe(`Bearer ${ACCESS_TOKEN}`);
       expect(headers.get('apikey')).toBe(PUBLISHABLE_KEY);
@@ -187,13 +187,14 @@ describe('SupabaseAdminMapEntityRepository', () => {
   it('sends entity, audience and relation locks through the atomic save RPC', async () => {
     const original = detail();
     const fetchImplementation = vi.fn<typeof fetch>(async (input, init) => {
-      expect(new URL(String(input)).pathname).toMatch(/\/rpc\/admin_save_map_entity_v2$/);
+      expect(new URL(String(input)).pathname).toMatch(/\/rpc\/admin_save_map_entity_v3$/);
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
       expect(body).toMatchObject({
         p_id: 'entity-map019',
         p_expected_updated_at: original.record.updatedAt,
         p_expected_relations_revision: original.relationsRevision,
         p_audience: 'master',
+        p_portrait_path: null,
         p_tag_ids: ['notable'],
       });
       return jsonResponse(detailPayload);
@@ -286,5 +287,41 @@ describe('SupabaseAdminMapEntityRepository', () => {
         repository.load('entity-map019', { signal: new AbortController().signal }),
       ).rejects.toMatchObject({ code, status });
     }
+  });
+
+  it('uploads new portrait objects with an opaque UUID path and deletes by Storage API', async () => {
+    const calls: Array<{ url: URL; init: RequestInit | undefined }> = [];
+    const fetchImplementation = vi.fn<typeof fetch>(async (input, init) => {
+      calls.push({ url: new URL(String(input)), init });
+      return jsonResponse({ Key: 'character-portraits/path' });
+    });
+    const repository = new SupabaseAdminMapEntityRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      storage: createStorage(),
+      fetchImplementation,
+      now: () => 1_700_000_000_000,
+    });
+    const file = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xdb])], 'secret-name.jpg', {
+      type: 'image/jpeg',
+    });
+
+    const path = await repository.uploadPortrait(file, {
+      signal: new AbortController().signal,
+    });
+    expect(path).toMatch(
+      /^portraits\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.jpg$/,
+    );
+    expect(path).not.toContain('secret-name');
+    expect(calls[0]?.url.pathname).toContain('/storage/v1/object/character-portraits/portraits/');
+    expect(calls[0]?.init?.method).toBe('POST');
+    const uploadHeaders = new Headers(calls[0]?.init?.headers);
+    expect(uploadHeaders.get('authorization')).toBe(`Bearer ${ACCESS_TOKEN}`);
+    expect(uploadHeaders.get('cache-control')).toBe('no-store');
+
+    await repository.deletePortrait(path, { signal: new AbortController().signal });
+    expect(calls[1]?.url.pathname).toBe('/storage/v1/object/character-portraits');
+    expect(calls[1]?.init?.method).toBe('DELETE');
+    expect(JSON.parse(String(calls[1]?.init?.body))).toEqual({ prefixes: [path] });
   });
 });

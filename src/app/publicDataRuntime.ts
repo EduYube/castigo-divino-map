@@ -16,8 +16,8 @@ import { BundledPublicCatalogRepository } from '../infrastructure/snapshot/publi
 import { BrowserPublicCatalogSessionCache } from '../infrastructure/snapshot/sessionCatalogCache';
 import { SupabasePublicCatalogRepository } from '../infrastructure/supabase/publicCatalogRepository';
 import {
-  ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT,
-  type AdminEntityAudienceChangedDetail,
+  getBufferedAdminEntityRevocations,
+  subscribeAdminEntityAudienceChanges,
 } from './adminEntityAudienceEvents';
 import { mountBackendStatus } from './backendStatus';
 
@@ -62,12 +62,6 @@ export interface PublicDataRuntime {
 
 function resolveTestConfig(): PublicDataTestConfig | undefined {
   return import.meta.env.DEV ? window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ : undefined;
-}
-
-function isAudienceChangedEvent(
-  event: Event,
-): event is CustomEvent<AdminEntityAudienceChangedDetail> {
-  return event instanceof CustomEvent && event.type === ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT;
 }
 
 function dispatchSafeStatusEvent(result: PublicCatalogLoadResult): void {
@@ -164,7 +158,7 @@ export async function bootstrapPublicDataRuntime(
     timeoutMs: testConfig?.timeoutMs,
     retryDelaysMs: testConfig?.retryDelaysMs,
   });
-  const revokedEntityIds = new Set<EntityId>();
+  const revokedEntityIds = new Set<EntityId>(getBufferedAdminEntityRevocations());
   let publishBufferedRevocations: (() => void) | null = null;
 
   const setEntityRevoked = (entityId: EntityId, revoked: boolean): void => {
@@ -174,22 +168,18 @@ export async function bootstrapPublicDataRuntime(
     if (changed) publishBufferedRevocations?.();
   };
 
-  const handleAudienceChanged = (event: Event): void => {
-    if (!isAudienceChangedEvent(event)) return;
-    setEntityRevoked(event.detail.entityId, event.detail.audience === 'master');
-  };
-
-  // Capture audience transitions before the first asynchronous public load. An
-  // administrative session can already be restored while initialize() is waiting on
-  // Supabase, cache, or the bundled snapshot; those revocations must be applied to
-  // whichever initial result eventually wins instead of being lost during bootstrap.
-  window.addEventListener(ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT, handleAudienceChanged);
+  // Subscribe synchronously at module level before the first asynchronous public load.
+  // The DOM event remains available for UI integrations, but fail-closed revocation must
+  // not depend on EventTarget delivery or listener ordering while bootstrap is in flight.
+  const unsubscribeAudienceChanges = subscribeAdminEntityAudienceChanges((detail) => {
+    setEntityRevoked(detail.entityId, detail.audience === 'master');
+  });
 
   let initialResult: PublicCatalogLoadResult;
   try {
     initialResult = await service.initialize();
   } catch (error) {
-    window.removeEventListener(ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT, handleAudienceChanged);
+    unsubscribeAudienceChanges();
     service.dispose();
     status.destroy();
     throw error;
@@ -273,7 +263,6 @@ export async function bootstrapPublicDataRuntime(
     },
     subscribeCatalogState(listener: PublicCatalogStateListener): () => void {
       catalogListeners.add(listener);
-      listener(catalogState);
 
       return (): void => {
         catalogListeners.delete(listener);
@@ -286,7 +275,7 @@ export async function bootstrapPublicDataRuntime(
     clearEntityRevocation,
     destroy(): void {
       window.clearInterval(refreshInterval);
-      window.removeEventListener(ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT, handleAudienceChanged);
+      unsubscribeAudienceChanges();
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);

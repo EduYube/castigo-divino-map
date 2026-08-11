@@ -32,6 +32,7 @@ export interface CompactPinDetailModel {
   readonly tags: readonly CompactDetailTag[];
   readonly dispositions: readonly PinPlayerDispositionInput[];
   readonly importantCharacters: readonly CompactImportantCharacter[];
+  readonly portraitPath: string | null;
   readonly source: 'beta01' | 'beta02';
 }
 
@@ -74,6 +75,7 @@ function buildBeta02Details(
         relationLabel,
       }),
     ),
+    portraitPath: entity.entityType === 'character' ? (entity.portraitPath ?? null) : null,
     source: 'beta02',
   };
 }
@@ -116,6 +118,7 @@ function buildLegacyDetails(
     tags,
     dispositions: marker.dispositions,
     importantCharacters: [],
+    portraitPath: null,
     source: 'beta01',
   };
 }

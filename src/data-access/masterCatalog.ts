@@ -14,6 +14,7 @@ export interface MasterCatalogEntity {
   readonly name: string;
   readonly summary: string;
   readonly description: string;
+  readonly portraitPath?: string | null;
   readonly x: number;
   readonly y: number;
   readonly categoryId: string;

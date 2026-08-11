@@ -22,6 +22,7 @@ import {
   AdminMapEntityRepositoryError,
   type AdminMapEntityRepository,
 } from '../data-access/adminMapEntities';
+import type { EntityId } from '../data/beta02-model';
 import {
   AdminPublicRequestRepositoryError,
   type AdminPublicRequestRepository,
@@ -54,6 +55,7 @@ import { SupabaseAdminCharacterLocationRelationRepository } from '../infrastruct
 import { SupabaseAdminMapEntityRepository } from '../infrastructure/supabase/adminMapEntityRepository';
 import { SupabaseAdminPublicRequestRepository } from '../infrastructure/supabase/adminPublicRequestRepository';
 import { mountAdminCatalog } from './adminCatalog';
+import { dispatchAdminEntityAudienceChanged } from './adminEntityAudienceEvents';
 import { mountAdminCharacterLocationRelations } from './adminCharacterLocationRelations';
 import { mountAdminMapEntities } from './adminMapEntities';
 import { mountAdminMapEntityAudience } from './adminMapEntityAudience';
@@ -204,6 +206,18 @@ class UnavailableAdminMapEntityRepository implements AdminMapEntityRepository {
     _options: { readonly signal: AbortSignal },
   ): Promise<AdminMapEntityDetail> {
     void _entityId;
+    void _options;
+    return Promise.reject(this.#error);
+  }
+
+  uploadPortrait(_file: File, _options: { readonly signal: AbortSignal }): Promise<string> {
+    void _file;
+    void _options;
+    return Promise.reject(this.#error);
+  }
+
+  deletePortrait(_path: string, _options: { readonly signal: AbortSignal }): Promise<void> {
+    void _path;
     void _options;
     return Promise.reject(this.#error);
   }
@@ -434,6 +448,11 @@ export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
   });
   const mapEntityController = new AdminMapEntityController(createMapEntityRepository(), {
     onAuthorizationRejected: rejectAuthorization,
+    onPublicAudienceRevocationRequested(entityId): void {
+      if (/^(?:entity|place)-/.test(entityId)) {
+        dispatchAdminEntityAudienceChanged(entityId as EntityId, 'master');
+      }
+    },
   });
   const relationController = new AdminCharacterLocationRelationController(
     createCharacterLocationRelationRepository(),

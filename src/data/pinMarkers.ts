@@ -14,6 +14,8 @@ export interface AtlasPinMarkerModel {
   readonly categoryName: string;
   readonly categorySlug: string;
   readonly dispositions: readonly PinPlayerDispositionInput[];
+  /** MAP-045 opaque Storage reference; only characters may provide it. */
+  readonly portraitPath: string | null;
   readonly source: 'beta01' | 'beta02';
 }
 
@@ -74,6 +76,8 @@ export function createAtlasPinMarkerModels(
         beta02Catalog && beta02Entity
           ? resolveBeta02Dispositions(beta02Catalog, beta02Entity.id)
           : [],
+      portraitPath:
+        beta02Entity?.entityType === 'character' ? (beta02Entity.portraitPath ?? null) : null,
       source: beta02Entity ? 'beta02' : 'beta01',
     };
   });
@@ -94,6 +98,7 @@ export function createAtlasPinMarkerModels(
         categoryName: category?.name ?? entity.categoryId,
         categorySlug: category?.slug ?? entity.categoryId,
         dispositions: beta02Catalog ? resolveBeta02Dispositions(beta02Catalog, entity.id) : [],
+        portraitPath: entity.entityType === 'character' ? (entity.portraitPath ?? null) : null,
         source: 'beta02',
       };
     });

@@ -57,6 +57,7 @@ const beta02Catalog: PublicCatalogSnapshotV2 = {
       aliases: [],
       summary: '',
       description: '',
+      portraitPath: 'portraits/123e4567-e89b-42d3-a456-426614174000.webp',
       coordinates: { x: 100, y: 200 },
       categoryId: 'category-demo',
       tagIds: [],
@@ -101,6 +102,7 @@ describe('createAtlasPinMarkerModels', () => {
     expect(pins[1]).toMatchObject({
       legacyPlaceId: null,
       entityType: 'character',
+      portraitPath: 'portraits/123e4567-e89b-42d3-a456-426614174000.webp',
       source: 'beta02',
     });
   });
@@ -123,6 +125,7 @@ describe('createAtlasPinMarkerModels', () => {
       entityType: 'location',
       source: 'beta01',
       dispositions: [],
+      portraitPath: null,
     });
   });
 });

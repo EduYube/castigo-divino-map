@@ -307,3 +307,26 @@
     opacity: 0.55;
   }
 }
+
+/* MAP-045 portrait markers keep the existing 52×52 Leaflet interaction target. */
+.pin-visual--portrait {
+  width: 2.25rem;
+  height: 2.25rem;
+  overflow: visible;
+  background: Canvas;
+  border-radius: 50%;
+}
+
+.pin-visual__portrait {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+@media (forced-colors: active) {
+  .pin-visual--portrait {
+    border: 3px solid CanvasText;
+  }
+}

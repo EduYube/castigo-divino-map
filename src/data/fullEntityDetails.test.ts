@@ -56,6 +56,7 @@ const catalog = {
       aliases: [],
       summary: 'Guardia del puerto.',
       description: 'Descripción del personaje.',
+      portraitPath: 'portraits/123e4567-e89b-42d3-a456-426614174000.webp',
       coordinates: { x: 1080.5, y: 820 },
       categoryId: 'category-settlement',
       tagIds: ['watch'],
@@ -185,6 +186,7 @@ describe('full entity details', () => {
         },
       ],
       importantCharacters: [],
+      portraitPath: 'portraits/123e4567-e89b-42d3-a456-426614174000.webp',
     });
     expect(details?.locationHistory).toEqual([
       expect.objectContaining({

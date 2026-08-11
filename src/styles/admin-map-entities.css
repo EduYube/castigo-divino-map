@@ -283,3 +283,17 @@ textarea.admin-map-entity__control {
     min-height: 17rem;
   }
 }
+
+.admin-map-entity__portrait-preview {
+  display: block;
+  width: 6rem;
+  height: 6rem;
+  margin-block: 0.65rem;
+  object-fit: cover;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+}
+
+.admin-map-entity__portrait-preview[hidden] {
+  display: none;
+}

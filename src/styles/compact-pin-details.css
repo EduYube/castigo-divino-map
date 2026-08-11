@@ -227,3 +227,18 @@
     border-radius: 0.25rem;
   }
 }
+
+/* MAP-045 portrait: no container exists until an authorized image is available. */
+.compact-details__portrait {
+  float: inline-end;
+  margin: 0 0 0.5rem 0.75rem;
+}
+
+.compact-details__portrait-image {
+  display: block;
+  inline-size: clamp(4.5rem, 22vw, 7rem);
+  block-size: clamp(4.5rem, 22vw, 7rem);
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid currentColor;
+}

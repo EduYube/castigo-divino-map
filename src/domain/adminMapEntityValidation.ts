@@ -59,6 +59,10 @@ export function validateAdminMapEntityDraft(
     setError(errors, 'coordinates', 'Las coordenadas deben estar dentro de X 0–3600 e Y 0–2329.');
   }
 
+  if (draft.entityType !== 'character' && draft.portraitPath) {
+    setError(errors, 'portraitPath', 'Solo los personajes pueden tener retrato.');
+  }
+
   const category = references.categories.find((candidate) => candidate.id === draft.categoryId);
   if (!category || category.publicationStatus === 'archived') {
     setError(errors, 'categoryId', 'Selecciona una categoría disponible.');

@@ -34,8 +34,12 @@ import { createAuthorizedMasterCatalogView } from './data/masterCatalogView';
 import type { CampaignCatalog, PlaceId } from './data/model';
 import { createAtlasPinMarkerModels, type AtlasPinMarkerModel } from './data/pinMarkers';
 import type { AtlasSearchResult } from './data/search';
-import type { MapEntityAudience } from './domain/adminMapEntities';
+import type { MapEntityAudience, MapEntityPublicationStatus } from './domain/adminMapEntities';
 import { getPinTypeVisual } from './domain/pinVisualSystem';
+import {
+  SupabaseCharacterPortraitResources,
+  type CharacterPortraitResources,
+} from './infrastructure/supabase/characterPortraitResources';
 import { mountFaerunMap } from './map/leaflet';
 import './styles/main.css';
 import './styles/pin-visual-system.css';
@@ -56,6 +60,39 @@ if (!appElement) {
 }
 
 const app = appElement;
+
+interface PortraitRuntimeTestConfig {
+  readonly projectUrl?: string;
+  readonly publishableKey?: string;
+  readonly timeoutMs?: number;
+}
+
+interface AdminEntityProjectionRevision {
+  readonly audience: MapEntityAudience;
+  readonly publicationStatus: MapEntityPublicationStatus;
+  readonly updatedAt: string;
+}
+
+function createPortraitResources(): CharacterPortraitResources | null {
+  const testWindow = window as Window & {
+    __MAP016_PUBLIC_DATA_TEST_CONFIG__?: PortraitRuntimeTestConfig;
+    __MAP017_AUTH_TEST_CONFIG__?: PortraitRuntimeTestConfig;
+  };
+  const testConfig = import.meta.env.DEV
+    ? (testWindow.__MAP016_PUBLIC_DATA_TEST_CONFIG__ ?? testWindow.__MAP017_AUTH_TEST_CONFIG__)
+    : undefined;
+  try {
+    return new SupabaseCharacterPortraitResources({
+      projectUrl: testConfig?.projectUrl ?? import.meta.env.VITE_SUPABASE_URL ?? '',
+      publishableKey:
+        testConfig?.publishableKey ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
+      timeoutMs: testConfig?.timeoutMs,
+      allowLocalProject: import.meta.env.DEV,
+    });
+  } catch {
+    return null;
+  }
+}
 
 function describeSearchTarget(result: AtlasSearchResult): string {
   switch (result.type) {
@@ -94,6 +131,7 @@ function mountPublicExperience(
   let geographicNameId: GeographicNameId | null = null;
   let masterEntityIds: ReadonlySet<EntityId> = new Set();
   let masterModeRuntime: MasterModeRuntime | null = null;
+  const portraitResources = createPortraitResources();
   const selection = createPlaceSelectionController();
   const mapSearchStatus = app.querySelector<HTMLElement>('[data-map-search-status]');
 
@@ -111,6 +149,14 @@ function mountPublicExperience(
 
   const mapController = mountFaerunMap(app, {
     markers: renderedMarkers,
+    loadPortrait(pin, signal) {
+      if (!portraitResources || !pin.portraitPath) return Promise.resolve(null);
+      return portraitResources.load(pin.portraitPath, {
+        access: pin.entityId && masterEntityIds.has(pin.entityId) ? 'master' : 'public',
+        variant: 'marker',
+        signal,
+      });
+    },
     onPinActivate(pin): void {
       mapController.clearSearchFocus();
 
@@ -236,6 +282,14 @@ function mountPublicExperience(
       activeSupplementalPin = null;
       clearSupplementalMapSelection();
       window.requestAnimationFrame(() => focusPinControl(supplementalPin));
+    },
+    loadPortrait(details, signal) {
+      if (!portraitResources || !details.portraitPath) return Promise.resolve(null);
+      return portraitResources.load(details.portraitPath, {
+        access: details.entityId && masterEntityIds.has(details.entityId) ? 'master' : 'public',
+        variant: 'detail',
+        signal,
+      });
     },
     createFullDetailsUrl(details): string | null {
       if (!details.entitySlug || (details.entityId && masterEntityIds.has(details.entityId))) {
@@ -465,6 +519,19 @@ function mountPublicExperience(
     }
 
     masterEntityIds = nextMasterEntityIds;
+    const publicPortraitPaths = new Set(
+      (nextCatalogState.beta02?.entities ?? [])
+        .map(({ portraitPath }) => portraitPath ?? null)
+        .filter((path): path is string => path !== null),
+    );
+    const masterPortraitPaths = new Set(
+      (effectiveBeta02?.entities ?? [])
+        .filter(({ id }) => nextMasterEntityIds.has(id))
+        .map(({ portraitPath }) => portraitPath ?? null)
+        .filter((path): path is string => path !== null),
+    );
+    portraitResources?.retainPublicPaths(publicPortraitPaths);
+    portraitResources?.retainMasterPaths(masterPortraitPaths);
     isRestoringFromHistory = true;
 
     try {
@@ -472,8 +539,34 @@ function mountPublicExperience(
       beta02Catalog = effectiveBeta02;
       placeFiltersController.setCatalog(catalog);
       placeSearchController.setCatalogState(catalog, beta02Catalog);
-      renderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
-      mapController.setMarkers(renderedMarkers);
+      const previousMarkersById = new Map(renderedMarkers.map((pin) => [pin.id, pin]));
+      const nextRenderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
+      const eagerPortraitPinIds = new Set<string>();
+      for (const pin of nextRenderedMarkers) {
+        if (!pin.portraitPath) continue;
+        const previousPin = previousMarkersById.get(pin.id);
+        const previousAccess =
+          previousPin?.entityId && previousMasterEntityIds.has(previousPin.entityId)
+            ? 'master'
+            : 'public';
+        const nextAccess =
+          pin.entityId && nextMasterEntityIds.has(pin.entityId) ? 'master' : 'public';
+        const moved =
+          Boolean(previousPin) &&
+          (previousPin!.coordinate[0] !== pin.coordinate[0] ||
+            previousPin!.coordinate[1] !== pin.coordinate[1]);
+        if (
+          (!previousPin && nextAccess === 'master') ||
+          (previousPin &&
+            (previousPin.portraitPath !== pin.portraitPath ||
+              previousAccess !== nextAccess ||
+              moved))
+        ) {
+          eagerPortraitPinIds.add(pin.id);
+        }
+      }
+      renderedMarkers = nextRenderedMarkers;
+      mapController.setMarkers(renderedMarkers, { eagerPortraitPinIds });
       masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
       masterSearchVisuals.refresh(masterEntityIds);
       geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;
@@ -509,7 +602,7 @@ function mountPublicExperience(
     writePublicStateToHistory('replace');
   }
 
-  publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state));
+  publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state, true));
 
   const refreshAfterAudienceChange = async (audience: MapEntityAudience): Promise<void> => {
     if (!publicDataRuntime) return;
@@ -525,11 +618,12 @@ function mountPublicExperience(
       if (masterEnabled) await masterModeRuntime?.controller.reload();
       await publicDataRuntime.refresh();
     }
-
-    applyCatalogState(publicDataRuntime.getCatalogState(), true);
   };
 
   if (adminRuntime && publicDataRuntime) {
+    adminRuntime.authController.subscribe((authState) => {
+      if (authState.phase !== 'authorized') portraitResources?.clearPrivate();
+    });
     masterModeRuntime = bootstrapMasterModeRuntime(app, adminRuntime);
     masterModeRuntime.controller.subscribe(() => applyCatalogState(catalogState, true));
 
@@ -538,22 +632,54 @@ function mountPublicExperience(
       onAudienceChanged: async (_entityId, audience) => refreshAfterAudienceChange(audience),
     });
 
-    let previousAudiences: ReadonlyMap<string, MapEntityAudience> | null = null;
+    let previousEntityRevisions: ReadonlyMap<string, AdminEntityProjectionRevision> | null = null;
     adminRuntime.mapEntityController.subscribe((state) => {
       if (state.phase !== 'ready') return;
-      const nextAudiences = new Map<string, MapEntityAudience>(
-        state.records.map((record) => [record.id, record.audience ?? 'public']),
+      const nextEntityRevisions = new Map<string, AdminEntityProjectionRevision>(
+        state.records.map((record) => [
+          record.id,
+          {
+            audience: record.audience ?? 'public',
+            publicationStatus: record.publicationStatus,
+            updatedAt: record.updatedAt,
+          },
+        ]),
       );
-      if (previousAudiences) {
-        for (const [entityId, audience] of nextAudiences) {
-          const previous = previousAudiences.get(entityId);
-          if (previous && previous !== audience) {
-            void refreshAfterAudienceChange(audience);
-            break;
+      if (previousEntityRevisions) {
+        for (const [entityId, revision] of nextEntityRevisions) {
+          const previous = previousEntityRevisions.get(entityId);
+          if (
+            previous &&
+            previous.updatedAt === revision.updatedAt &&
+            previous.audience === revision.audience &&
+            previous.publicationStatus === revision.publicationStatus
+          ) {
+            continue;
           }
+
+          const wasPublic =
+            previous?.publicationStatus === 'published' && previous.audience === 'public';
+          const isPublic =
+            revision.publicationStatus === 'published' && revision.audience === 'public';
+          const wasMaster =
+            previous?.publicationStatus === 'published' && previous.audience === 'master';
+          const isMaster =
+            revision.publicationStatus === 'published' && revision.audience === 'master';
+          if (!wasPublic && !isPublic && !wasMaster && !isMaster) continue;
+
+          if (previous && previous.audience !== revision.audience) {
+            void refreshAfterAudienceChange(revision.audience);
+          } else if (wasMaster || isMaster) {
+            if (masterModeRuntime?.controller.getState().enabled === true) {
+              void masterModeRuntime.controller.reload();
+            }
+          } else if (wasPublic || isPublic) {
+            void publicDataRuntime.refresh();
+          }
+          break;
         }
       }
-      previousAudiences = nextAudiences;
+      previousEntityRevisions = nextEntityRevisions;
     });
   }
 
@@ -657,7 +783,17 @@ function startFullEntityExperience(sourceUrl: URL): void {
   const mapUrl = new URL(sourceUrl);
   mapUrl.search = '';
   mapUrl.hash = '';
-  const detailsController = mountFullEntityDetails(app, mapUrl);
+  const portraitResources = createPortraitResources();
+  const detailsController = mountFullEntityDetails(app, mapUrl, {
+    loadPortrait(details, signal) {
+      if (!portraitResources || !details.portraitPath) return Promise.resolve(null);
+      return portraitResources.load(details.portraitPath, {
+        access: 'public',
+        variant: 'detail',
+        signal,
+      });
+    },
+  });
 
   if (!request.slug) {
     detailsController.showUnavailable();
@@ -671,7 +807,7 @@ function startFullEntityExperience(sourceUrl: URL): void {
 
   void bootstrapPublicDataRuntime(app, campaignCatalog)
     .then((runtime) => {
-      runtime.subscribeCatalogState(({ beta02 }) => {
+      const renderCatalogState = ({ beta02 }: PublicCatalogState): void => {
         if (!beta02) {
           detailsController.showUnavailable();
           return;
@@ -683,7 +819,10 @@ function startFullEntityExperience(sourceUrl: URL): void {
         } else {
           detailsController.showUnavailable();
         }
-      });
+      };
+
+      renderCatalogState(runtime.getCatalogState());
+      runtime.subscribeCatalogState(renderCatalogState);
     })
     .catch(() => detailsController.showUnavailable());
 }

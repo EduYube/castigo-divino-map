@@ -20,6 +20,7 @@ import {
   type MapVisibility,
   type PlayerDisposition,
 } from '../../domain/adminMapEntities';
+import { validateCharacterPortraitFile } from '../../domain/characterPortrait';
 import { AUTH_SESSION_STORAGE_KEY, BrowserAuthSessionStorage } from './authSessionStorage';
 
 const HOSTED_PROJECT_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
@@ -139,6 +140,7 @@ function mapRecord(row: Record<string, unknown>): AdminMapEntityRecord {
     entityType: entityType(row.entity_type),
     visibility: visibility(row.visibility),
     audience: audience(row.audience),
+    portraitPath: row.portrait_path == null ? null : nullableString(row, 'portrait_path'),
     name: requiredString(row, 'name'),
     summary: typeof row.summary === 'string' ? row.summary : '',
     description: typeof row.description === 'string' ? row.description : '',
@@ -264,7 +266,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
   async list(options: { readonly signal: AbortSignal }): Promise<readonly AdminMapEntityRecord[]> {
     const rows = await this.#listRows(
       'map_entities',
-      'id,slug,entity_type,visibility,audience,name,summary,description,x,y,category_id,publication_status,published_at,archived_at,updated_at',
+      'id,slug,entity_type,visibility,audience,portrait_path,name,summary,description,x,y,category_id,publication_status,published_at,archived_at,updated_at',
       'name.asc,id.asc',
       options.signal,
     );
@@ -309,7 +311,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
     options: { readonly signal: AbortSignal },
   ): Promise<AdminMapEntityDetail> {
     const response = await this.#request(
-      new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_map_entity_editor_v2`),
+      new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_map_entity_editor_v3`),
       { method: 'POST', body: JSON.stringify({ p_entity_id: entityId }) },
       options.signal,
     );
@@ -323,13 +325,45 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
     return mapDetail(payload);
   }
 
+  async uploadPortrait(file: File, options: { readonly signal: AbortSignal }): Promise<string> {
+    const validated = await validateCharacterPortraitFile(file);
+    const path = `portraits/${globalThis.crypto.randomUUID()}.${validated.extension}`;
+    const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+    await this.#request(
+      new URL(`${this.#projectUrl}/storage/v1/object/character-portraits/${encodedPath}`),
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': validated.mimeType,
+          'x-upsert': 'false',
+          'Cache-Control': 'no-store',
+        },
+        body: validated.file,
+      },
+      options.signal,
+    );
+    return path;
+  }
+
+  async deletePortrait(path: string, options: { readonly signal: AbortSignal }): Promise<void> {
+    await this.#request(
+      new URL(`${this.#projectUrl}/storage/v1/object/character-portraits`),
+      {
+        method: 'DELETE',
+        body: JSON.stringify({ prefixes: [path] }),
+      },
+      options.signal,
+    );
+  }
+
   async save(
     original: AdminMapEntityDetail | null,
     draft: AdminMapEntityDraft,
     options: { readonly signal: AbortSignal },
   ): Promise<AdminMapEntityDetail> {
     const response = await this.#request(
-      new URL(`${this.#projectUrl}/rest/v1/rpc/admin_save_map_entity_v2`),
+      new URL(`${this.#projectUrl}/rest/v1/rpc/admin_save_map_entity_v3`),
       {
         method: 'POST',
         body: JSON.stringify({
@@ -340,6 +374,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
           p_entity_type: draft.entityType,
           p_visibility: draft.visibility,
           p_audience: draft.audience,
+          p_portrait_path: draft.portraitPath ?? null,
           p_name: draft.name.trim(),
           p_summary: draft.summary.trim(),
           p_description: draft.description.trim(),
@@ -533,7 +568,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
           );
         }
         if (code === '23503') {
-          const saving = url.pathname.endsWith('/rpc/admin_save_map_entity_v2');
+          const saving = url.pathname.endsWith('/rpc/admin_save_map_entity_v3');
           throw new AdminMapEntityRepositoryError(
             saving ? 'invalid-relation' : 'referenced',
             saving
