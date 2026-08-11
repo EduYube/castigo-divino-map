@@ -58,7 +58,9 @@ export function mountMasterDetailActions(
     const action = content.querySelector<HTMLElement>('[data-master-audience-action]');
     if (!action) return;
 
-    const disclosure = action.querySelector<HTMLDetailsElement>('[data-master-audience-disclosure]');
+    const disclosure = action.querySelector<HTMLDetailsElement>(
+      '[data-master-audience-disclosure]',
+    );
     const summary = action.querySelector<HTMLElement>('[data-master-audience-start]');
     const confirm = action.querySelector<HTMLButtonElement>('[data-master-audience-confirm]');
     const status = action.querySelector<HTMLElement>('[data-master-audience-status]');
