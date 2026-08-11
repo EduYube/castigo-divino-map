@@ -29,7 +29,7 @@ begin
 end;
 $$;
 
-select plan(24);
+select plan(26);
 
 select is(
   (select is_nullable from information_schema.columns
@@ -257,6 +257,24 @@ select ok(
       and cmd = 'DELETE'
   ),
   'admin delete policy is installed; deletion behavior is exercised through the Storage HTTP API'
+);
+select is(
+  pg_temp.statement_affected_rows($sql$
+    delete from storage.objects
+    where bucket_id = 'character-portraits'
+      and name = 'portraits/22222222-2222-4222-8222-222222222222.webp'
+  $sql$),
+  0::bigint,
+  'admin cannot delete Storage metadata while a current entity still references the portrait'
+);
+select is(
+  pg_temp.statement_affected_rows($sql$
+    delete from storage.objects
+    where bucket_id = 'character-portraits'
+      and name = 'portraits/99999999-9999-4999-8999-999999999999.webp'
+  $sql$),
+  1::bigint,
+  'admin may delete an unreferenced portrait object during compensation or cleanup'
 );
 
 select * from finish();

@@ -346,6 +346,44 @@ describe('AdminMapEntityController', () => {
     expect(deletePortrait).toHaveBeenCalledWith(original.record.portraitPath, expect.any(Object));
   });
 
+  it('uses a fresh signal to compensate an uploaded portrait after the edit operation is aborted', async () => {
+    const uploadedPath = 'portraits/123e4567-e89b-42d3-a456-426614174014.webp';
+    const save = vi.fn<AdminMapEntityRepository['save']>(
+      (_original, _draft, options) =>
+        new Promise<AdminMapEntityDetail>((_resolve, reject) => {
+          options.signal.addEventListener(
+            'abort',
+            () => reject(new AdminMapEntityRepositoryError('backend-unavailable', 'aborted')),
+            { once: true },
+          );
+        }),
+    );
+    const deletePortrait = vi.fn<AdminMapEntityRepository['deletePortrait']>(
+      async (_path, options) => {
+        expect(options.signal.aborted).toBe(false);
+      },
+    );
+    const controller = new AdminMapEntityController(
+      repository({
+        uploadPortrait: vi.fn(async () => uploadedPath),
+        deletePortrait,
+        save,
+      }),
+    );
+    await authorize(controller);
+    await controller.openEditor(record.id);
+
+    const file = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xdb])], 'portrait.jpg', {
+      type: 'image/jpeg',
+    });
+    const request = controller.save(draft, { kind: 'replace', file });
+    await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    controller.closeEditor();
+
+    await expect(request).resolves.toBe(false);
+    expect(deletePortrait).toHaveBeenCalledWith(uploadedPath, expect.any(Object));
+  });
+
   it('compensates a newly uploaded portrait when an optimistic save loses a race', async () => {
     const uploadedPath = 'portraits/123e4567-e89b-42d3-a456-426614174004.webp';
     const deletePortrait = vi.fn(async () => undefined);

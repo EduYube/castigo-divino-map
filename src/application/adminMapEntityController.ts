@@ -269,7 +269,9 @@ export class AdminMapEntityController {
       const savedPortraitPath = saved.record.portraitPath ?? null;
       if (currentPortraitPath && currentPortraitPath !== savedPortraitPath) {
         try {
-          await this.#repository.deletePortrait(currentPortraitPath, { signal: operation.signal });
+          await this.#repository.deletePortrait(currentPortraitPath, {
+            signal: new AbortController().signal,
+          });
         } catch (cleanupError) {
           console.warn(
             'MAP-045 portrait cleanup deferred after successful entity save.',
@@ -281,7 +283,9 @@ export class AdminMapEntityController {
     } catch (error) {
       if (uploadedPortraitPath) {
         try {
-          await this.#repository.deletePortrait(uploadedPortraitPath, { signal: operation.signal });
+          await this.#repository.deletePortrait(uploadedPortraitPath, {
+            signal: new AbortController().signal,
+          });
         } catch (cleanupError) {
           console.warn(
             'MAP-045 orphan portrait cleanup failed after rejected entity save.',
@@ -390,7 +394,7 @@ export class AdminMapEntityController {
       if (detail.record.portraitPath) {
         try {
           await this.#repository.deletePortrait(detail.record.portraitPath, {
-            signal: operation.signal,
+            signal: new AbortController().signal,
           });
         } catch (cleanupError) {
           console.warn(

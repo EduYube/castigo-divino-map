@@ -214,6 +214,10 @@ async function main() {
       publication_status: 'published',
     });
 
+    await expectDeleteDenied(
+      adminAuthHeaders,
+      'admin no puede eliminar un retrato mientras siga referenciado',
+    );
     await expectRasterResponse(
       await fetch(authenticatedObjectUrl, { headers: publicHeaders }),
       'lectura pública de retrato en bucket privado',
@@ -283,6 +287,7 @@ async function main() {
       false,
     );
 
+    await patchEntity({ portrait_path: null });
     await deleteObject();
 
     console.log(
