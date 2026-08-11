@@ -69,6 +69,36 @@ describe('SupabaseCharacterPortraitResources', () => {
     const requested = String(fetchImplementation.mock.calls[0]?.[0]);
     expect(requested).toContain('/storage/v1/render/image/authenticated/character-portraits/');
     expect(requested).toContain('width=96');
+    expect(fetchImplementation).toHaveBeenCalledTimes(1);
+    subject.destroy();
+  });
+
+  it('falls back to the same authorized private object when image transformations are unavailable', async () => {
+    const fetchImplementation = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.headers).toMatchObject({ apikey: PUBLISHABLE_KEY });
+      expect(init?.headers).not.toHaveProperty('Authorization');
+      expect(init?.cache).toBe('no-store');
+      const requested = String(input);
+      if (requested.includes('/storage/v1/render/image/authenticated/')) return imageResponse(403);
+      return imageResponse();
+    });
+    const { subject } = resources(fetchImplementation as unknown as typeof fetch);
+
+    await expect(
+      subject.load(PATH, {
+        access: 'public',
+        variant: 'marker',
+        signal: new AbortController().signal,
+      }),
+    ).resolves.toBe('blob:portrait');
+
+    expect(fetchImplementation).toHaveBeenCalledTimes(2);
+    expect(String(fetchImplementation.mock.calls[0]?.[0])).toContain(
+      '/storage/v1/render/image/authenticated/character-portraits/',
+    );
+    expect(String(fetchImplementation.mock.calls[1]?.[0])).toContain(
+      '/storage/v1/object/authenticated/character-portraits/',
+    );
     subject.destroy();
   });
 
