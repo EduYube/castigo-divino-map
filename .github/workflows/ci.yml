@@ -63,18 +63,14 @@ jobs:
         run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Run end-to-end tests
-        run: |
-          set -o pipefail
-          npm run test:e2e 2>&1 | tee playwright-output.log
+        run: npm run test:e2e
 
       - name: Upload MAP-033 mobile visual references
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: map-033-mobile-references-${{ github.run_id }}
-          path: |
-            test-results/**/*.png
-            playwright-output.log
+          path: test-results/**/*.png
           if-no-files-found: warn
           retention-days: 14
 
