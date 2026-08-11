@@ -315,9 +315,9 @@ describe('SupabaseAdminMapEntityRepository', () => {
     expect(path).not.toContain('secret-name');
     expect(calls[0]?.url.pathname).toContain('/storage/v1/object/character-portraits/portraits/');
     expect(calls[0]?.init?.method).toBe('POST');
-    expect(new Headers(calls[0]?.init?.headers).get('authorization')).toBe(
-      `Bearer ${ACCESS_TOKEN}`,
-    );
+    const uploadHeaders = new Headers(calls[0]?.init?.headers);
+    expect(uploadHeaders.get('authorization')).toBe(`Bearer ${ACCESS_TOKEN}`);
+    expect(uploadHeaders.get('cache-control')).toBe('no-store');
 
     await repository.deletePortrait(path, { signal: new AbortController().signal });
     expect(calls[1]?.url.pathname).toBe('/storage/v1/object/character-portraits');
