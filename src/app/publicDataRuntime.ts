@@ -164,8 +164,37 @@ export async function bootstrapPublicDataRuntime(
     timeoutMs: testConfig?.timeoutMs,
     retryDelaysMs: testConfig?.retryDelaysMs,
   });
-  const initialResult = await service.initialize();
   const revokedEntityIds = new Set<EntityId>();
+  let publishBufferedRevocations: (() => void) | null = null;
+
+  const setEntityRevoked = (entityId: EntityId, revoked: boolean): void => {
+    const changed = revoked
+      ? !revokedEntityIds.has(entityId) && (revokedEntityIds.add(entityId), true)
+      : revokedEntityIds.delete(entityId);
+    if (changed) publishBufferedRevocations?.();
+  };
+
+  const handleAudienceChanged = (event: Event): void => {
+    if (!isAudienceChangedEvent(event)) return;
+    setEntityRevoked(event.detail.entityId, event.detail.audience === 'master');
+  };
+
+  // Capture audience transitions before the first asynchronous public load. An
+  // administrative session can already be restored while initialize() is waiting on
+  // Supabase, cache, or the bundled snapshot; those revocations must be applied to
+  // whichever initial result eventually wins instead of being lost during bootstrap.
+  window.addEventListener(ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT, handleAudienceChanged);
+
+  let initialResult: PublicCatalogLoadResult;
+  try {
+    initialResult = await service.initialize();
+  } catch (error) {
+    window.removeEventListener(ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT, handleAudienceChanged);
+    service.dispose();
+    status.destroy();
+    throw error;
+  }
+
   const catalogListeners = new Set<PublicCatalogStateListener>();
   let latestResult = initialResult;
   let catalogState = toCatalogState(initialResult, revokedEntityIds);
@@ -183,21 +212,14 @@ export async function bootstrapPublicDataRuntime(
     catalogListeners.forEach((listener) => listener(catalogState));
   };
 
+  publishBufferedRevocations = () => publishCatalogState(latestResult, true);
+
   const revokeEntity = (entityId: EntityId): void => {
-    if (revokedEntityIds.has(entityId)) return;
-    revokedEntityIds.add(entityId);
-    publishCatalogState(latestResult, true);
+    setEntityRevoked(entityId, true);
   };
 
   const clearEntityRevocation = (entityId: EntityId): void => {
-    if (!revokedEntityIds.delete(entityId)) return;
-    publishCatalogState(latestResult, true);
-  };
-
-  const handleAudienceChanged = (event: Event): void => {
-    if (!isAudienceChangedEvent(event)) return;
-    if (event.detail.audience === 'master') revokeEntity(event.detail.entityId);
-    else clearEntityRevocation(event.detail.entityId);
+    setEntityRevoked(entityId, false);
   };
 
   const unsubscribe = service.subscribe((result) => {
@@ -240,7 +262,6 @@ export async function bootstrapPublicDataRuntime(
     }
   }, REFRESH_INTERVAL_MS);
 
-  window.addEventListener(ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT, handleAudienceChanged);
   window.addEventListener('online', handleOnline);
   window.addEventListener('offline', handleOffline);
   document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -269,6 +290,7 @@ export async function bootstrapPublicDataRuntime(
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      publishBufferedRevocations = null;
       revokedEntityIds.clear();
       catalogListeners.clear();
       unsubscribe();
