@@ -160,7 +160,7 @@ export class SupabaseCharacterPortraitResources implements CharacterPortraitReso
             apikey: this.#publishableKey,
             ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           },
-          cache: options.access === 'master' ? 'no-store' : 'default',
+          cache: 'no-store',
           signal: requestController.signal,
         });
       } catch {
