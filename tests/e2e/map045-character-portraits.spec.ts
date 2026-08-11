@@ -133,7 +133,7 @@ async function configureBackend(
     if (
       portraitPath !== PORTRAIT_PATH ||
       !url.pathname.endsWith(`/character-portraits/${PORTRAIT_PATH}`) ||
-      (request.headers()['authorization'] ?? '') !== '' ||
+      (request.headers()['authorization'] ?? '') !== `Bearer ${PUBLIC_KEY}` ||
       shouldFailImages
     ) {
       await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
@@ -197,7 +197,7 @@ test('public portrait is lazy on initial map load, then becomes the selected cir
   expect(backend.markerRequests()).toHaveLength(1);
   expect(backend.markerRequests()[0]).toContain('width=96');
   expect(backend.markerRequests()[0]).toContain('height=96');
-  expect(backend.authorizationHeaders()[0]).toBe('');
+  expect(backend.authorizationHeaders()[0]).toBe(`Bearer ${PUBLIC_KEY}`);
 
   const compact = page.getByTestId('compact-character-portrait');
   await expect(compact).toBeVisible();

@@ -96,7 +96,7 @@ async function main() {
   const usesOpaquePublishableKey = publishableKey.startsWith('sb_publishable_');
   const publicHeaders = {
     apikey: publishableKey,
-    ...(usesOpaquePublishableKey ? {} : { Authorization: `Bearer ${publishableKey}` }),
+    Authorization: `Bearer ${publishableKey}`,
   };
   const adminAuthHeaders = {
     apikey: publishableKey,

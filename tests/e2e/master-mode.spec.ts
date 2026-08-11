@@ -9,6 +9,7 @@ const OFFICIAL_MAP_URL =
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
 const ADMIN_TOKEN = 'map044-admin-access-token';
 const ADMIN_ID = '00000000-0000-4000-8000-000000000001';
+const PUBLIC_PORTRAIT_AUTHORIZATION = 'Bearer sb_publishable_map044_public_key';
 const MASTER_ID = 'entity-master-e2e';
 const COINCIDENT_MASTER_ID = 'entity-master-coincident-e2e';
 const MASTER_NAME = 'MAP044 E2E SECRET';
@@ -231,7 +232,7 @@ async function configureMap044Backend(
     const authorized =
       path === MASTER_PORTRAIT_PATH &&
       (authorization === `Bearer ${ADMIN_TOKEN}` ||
-        (authorization === '' && audience === 'public'));
+        (authorization === PUBLIC_PORTRAIT_AUTHORIZATION && audience === 'public'));
     if (!authorized) {
       await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
       return;
@@ -498,7 +499,9 @@ test('detail audience transition requires confirmation, supports cancel and refr
   );
   await expect(transitionedPublicMarker).toHaveCount(1);
   await expect(transitionedPublicMarker).toHaveAttribute('data-portrait-marker', 'true');
-  await expect.poll(() => backend.getPortraitAuthorizations()).toContain('');
+  await expect
+    .poll(() => backend.getPortraitAuthorizations())
+    .toContain(PUBLIC_PORTRAIT_AUTHORIZATION);
   await expect(page.locator('[data-master-mode-status]')).toContainText(
     /No hay entidades Máster publicadas/i,
   );

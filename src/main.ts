@@ -34,7 +34,7 @@ import { createAuthorizedMasterCatalogView } from './data/masterCatalogView';
 import type { CampaignCatalog, PlaceId } from './data/model';
 import { createAtlasPinMarkerModels, type AtlasPinMarkerModel } from './data/pinMarkers';
 import type { AtlasSearchResult } from './data/search';
-import type { MapEntityAudience } from './domain/adminMapEntities';
+import type { MapEntityAudience, MapEntityPublicationStatus } from './domain/adminMapEntities';
 import { getPinTypeVisual } from './domain/pinVisualSystem';
 import {
   SupabaseCharacterPortraitResources,
@@ -65,6 +65,12 @@ interface PortraitRuntimeTestConfig {
   readonly projectUrl?: string;
   readonly publishableKey?: string;
   readonly timeoutMs?: number;
+}
+
+interface AdminEntityProjectionRevision {
+  readonly audience: MapEntityAudience;
+  readonly publicationStatus: MapEntityPublicationStatus;
+  readonly updatedAt: string;
 }
 
 function createPortraitResources(): CharacterPortraitResources | null {
@@ -533,8 +539,33 @@ function mountPublicExperience(
       beta02Catalog = effectiveBeta02;
       placeFiltersController.setCatalog(catalog);
       placeSearchController.setCatalogState(catalog, beta02Catalog);
-      renderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
-      mapController.setMarkers(renderedMarkers);
+      const previousMarkersById = new Map(renderedMarkers.map((pin) => [pin.id, pin]));
+      const nextRenderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
+      const eagerPortraitPinIds = new Set<string>();
+      for (const pin of nextRenderedMarkers) {
+        if (!pin.portraitPath) continue;
+        const previousPin = previousMarkersById.get(pin.id);
+        const previousAccess =
+          previousPin?.entityId && previousMasterEntityIds.has(previousPin.entityId)
+            ? 'master'
+            : 'public';
+        const nextAccess =
+          pin.entityId && nextMasterEntityIds.has(pin.entityId) ? 'master' : 'public';
+        const moved =
+          Boolean(previousPin) &&
+          (previousPin!.coordinate[0] !== pin.coordinate[0] ||
+            previousPin!.coordinate[1] !== pin.coordinate[1]);
+        if (
+          !previousPin ||
+          previousPin.portraitPath !== pin.portraitPath ||
+          previousAccess !== nextAccess ||
+          moved
+        ) {
+          eagerPortraitPinIds.add(pin.id);
+        }
+      }
+      renderedMarkers = nextRenderedMarkers;
+      mapController.setMarkers(renderedMarkers, { eagerPortraitPinIds });
       masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
       masterSearchVisuals.refresh(masterEntityIds);
       geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;
@@ -602,31 +633,43 @@ function mountPublicExperience(
       onAudienceChanged: async (_entityId, audience) => refreshAfterAudienceChange(audience),
     });
 
-    let previousEntityRevisions: ReadonlyMap<
-      string,
-      { readonly audience: MapEntityAudience; readonly updatedAt: string }
-    > | null = null;
+    let previousEntityRevisions: ReadonlyMap<string, AdminEntityProjectionRevision> | null = null;
     adminRuntime.mapEntityController.subscribe((state) => {
       if (state.phase !== 'ready') return;
-      const nextEntityRevisions = new Map(
+      const nextEntityRevisions = new Map<string, AdminEntityProjectionRevision>(
         state.records.map((record) => [
           record.id,
-          { audience: record.audience ?? 'public', updatedAt: record.updatedAt },
+          {
+            audience: record.audience ?? 'public',
+            publicationStatus: record.publicationStatus,
+            updatedAt: record.updatedAt,
+          },
         ]),
       );
       if (previousEntityRevisions) {
         for (const [entityId, revision] of nextEntityRevisions) {
           const previous = previousEntityRevisions.get(entityId);
           if (previous?.updatedAt === revision.updatedAt) continue;
+
+          const wasPublic =
+            previous?.publicationStatus === 'published' && previous.audience === 'public';
+          const isPublic =
+            revision.publicationStatus === 'published' && revision.audience === 'public';
+          const wasMaster =
+            previous?.publicationStatus === 'published' && previous.audience === 'master';
+          const isMaster =
+            revision.publicationStatus === 'published' && revision.audience === 'master';
+          if (!wasPublic && !isPublic && !wasMaster && !isMaster) continue;
+
           if (previous && previous.audience !== revision.audience) {
             void refreshAfterAudienceChange(revision.audience);
-          } else if (revision.audience === 'master') {
+          } else if (wasMaster || isMaster) {
             if (masterModeRuntime?.controller.getState().enabled === true) {
               void masterModeRuntime.controller
                 .reload()
                 .then(() => applyCatalogState(catalogState, true));
             }
-          } else {
+          } else if (wasPublic || isPublic) {
             void publicDataRuntime
               .refresh()
               .then(() => applyCatalogState(publicDataRuntime.getCatalogState(), true));

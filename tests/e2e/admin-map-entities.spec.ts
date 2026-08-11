@@ -192,7 +192,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     const request = route.request();
     const url = new URL(request.url());
     const authorization = request.headers()['authorization'] ?? '';
-    if (request.method() === 'GET' && authorization === '') {
+    if (request.method() === 'GET' && authorization === `Bearer ${PUBLIC_KEY}`) {
       const encodedPath = url.pathname.split('/character-portraits/')[1] ?? '';
       const path = decodeURIComponent(encodedPath);
       const authorized = entities.some(

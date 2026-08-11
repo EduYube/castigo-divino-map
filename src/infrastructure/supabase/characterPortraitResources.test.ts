@@ -52,8 +52,10 @@ function resources(fetchImplementation: typeof fetch) {
 describe('SupabaseCharacterPortraitResources', () => {
   it('loads a public marker thumbnail with the anonymous/public credential, never the admin JWT', async () => {
     const fetchImplementation = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      expect(init?.headers).toMatchObject({ apikey: PUBLISHABLE_KEY });
-      expect(init?.headers).not.toHaveProperty('Authorization');
+      expect(init?.headers).toMatchObject({
+        apikey: PUBLISHABLE_KEY,
+        Authorization: `Bearer ${PUBLISHABLE_KEY}`,
+      });
       expect(init?.cache).toBe('no-store');
       return imageResponse();
     });
@@ -75,8 +77,10 @@ describe('SupabaseCharacterPortraitResources', () => {
 
   it('falls back to the same authorized private object when image transformations are unavailable', async () => {
     const fetchImplementation = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      expect(init?.headers).toMatchObject({ apikey: PUBLISHABLE_KEY });
-      expect(init?.headers).not.toHaveProperty('Authorization');
+      expect(init?.headers).toMatchObject({
+        apikey: PUBLISHABLE_KEY,
+        Authorization: `Bearer ${PUBLISHABLE_KEY}`,
+      });
       expect(init?.cache).toBe('no-store');
       const requested = String(input);
       if (requested.includes('/storage/v1/render/image/authenticated/')) return imageResponse(403);

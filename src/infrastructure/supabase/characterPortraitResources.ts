@@ -164,7 +164,7 @@ export class SupabaseCharacterPortraitResources implements CharacterPortraitReso
             headers: {
               Accept: 'image/jpeg,image/png,image/webp',
               apikey: this.#publishableKey,
-              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+              Authorization: `Bearer ${accessToken ?? this.#publishableKey}`,
             },
             cache: 'no-store',
             signal: requestController.signal,

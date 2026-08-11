@@ -30,9 +30,14 @@ export interface MapSearchTarget {
   readonly label: string;
 }
 
+export interface FaerunMapMarkerUpdateOptions {
+  /** Portraits that changed during a catalog refresh and should be re-materialized immediately. */
+  readonly eagerPortraitPinIds?: ReadonlySet<string>;
+}
+
 export interface FaerunMapController {
   readonly map: LeafletMap;
-  setMarkers(markers: readonly AtlasPinMarkerModel[]): void;
+  setMarkers(markers: readonly AtlasPinMarkerModel[], options?: FaerunMapMarkerUpdateOptions): void;
   setActivePlace(placeId: PlaceId | null): void;
   clearSupplementalPinSelection(): void;
   setMatchingPlaces(placeIds: ReadonlySet<PlaceId>, semantics?: PinMatchingSemantics): void;
@@ -425,7 +430,7 @@ export function mountFaerunMap(
     leafletMarker.setZIndexOffset(isActive ? 1000 : filterState === 'false' ? 0 : 200);
   };
 
-  let refreshPortraitMarkers = (): void => undefined;
+  let refreshPortraitMarkers: (eagerPortraitPinIds?: ReadonlySet<string>) => void = () => undefined;
 
   const activatePin = (pin: AtlasPinMarkerModel): void => {
     map.closePopup();
@@ -550,7 +555,7 @@ export function mountFaerunMap(
     drainPortraitQueue();
   };
 
-  refreshPortraitMarkers = (): void => {
+  refreshPortraitMarkers = (eagerPortraitPinIds: ReadonlySet<string> = new Set()): void => {
     if (!options.loadPortrait || destroyed) return;
     const canLoadViewportPortraits = map.getZoom() > map.getMinZoom() + 0.01;
     const visibleBounds = canLoadViewportPortraits ? map.getBounds().pad(0.08) : null;
@@ -561,7 +566,13 @@ export function mountFaerunMap(
       const leafletMarker = groupMarkerByPinId.get(pin.id);
       const element = leafletMarker?.getElement();
       if (!leafletMarker || !element || element.dataset.pinId !== pin.id) continue;
-      if (!isPinActive(pin) && !visibleBounds?.contains(leafletMarker.getLatLng())) continue;
+      if (
+        !eagerPortraitPinIds.has(pin.id) &&
+        !isPinActive(pin) &&
+        !visibleBounds?.contains(leafletMarker.getLatLng())
+      ) {
+        continue;
+      }
       schedulePortrait(leafletMarker, pin, generation);
     }
   };
@@ -581,7 +592,10 @@ export function mountFaerunMap(
     pinIdByLegacyPlaceId.clear();
   };
 
-  const renderMarkers = (markers: readonly AtlasPinMarkerModel[]): void => {
+  const renderMarkers = (
+    markers: readonly AtlasPinMarkerModel[],
+    eagerPortraitPinIds: ReadonlySet<string> = new Set(),
+  ): void => {
     clearRenderedMarkers();
     renderedMarkers = markers;
     if (activeSupplementalPinId && !markers.some(({ id }) => id === activeSupplementalPinId)) {
@@ -644,7 +658,7 @@ export function mountFaerunMap(
       for (const pin of pins) groupMarkerByPinId.set(pin.id, leafletMarker);
     }
 
-    refreshPortraitMarkers();
+    refreshPortraitMarkers(eagerPortraitPinIds);
   };
 
   matchingPlaceIds = new Set(
@@ -710,13 +724,18 @@ export function mountFaerunMap(
 
   return {
     map,
-    setMarkers(markers): void {
+    setMarkers(markers, updateOptions = {}): void {
       const previousMatching = matchingPlaceIds;
+      const eagerPortraitPinIds = new Set(updateOptions.eagerPortraitPinIds ?? []);
+      for (const pin of renderedMarkers) {
+        const element = groupMarkerByPinId.get(pin.id)?.getElement();
+        if (element?.dataset.portraitMarker === 'true') eagerPortraitPinIds.add(pin.id);
+      }
       const legacyIds = markers
         .map(({ legacyPlaceId }) => legacyPlaceId)
         .filter((placeId): placeId is PlaceId => placeId !== null);
       if (previousMatching.size === 0) matchingPlaceIds = new Set(legacyIds);
-      renderMarkers(markers);
+      renderMarkers(markers, eagerPortraitPinIds);
       refreshMarkerPresentation();
     },
     setActivePlace(placeId: PlaceId | null): void {
