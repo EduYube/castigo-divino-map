@@ -25,8 +25,8 @@ jobs:
       - name: Record pinned Supabase CLI version
         run: npx supabase --version
 
-      - name: Start local Supabase database
-        run: npx supabase db start
+      - name: Start local Supabase stack
+        run: npx supabase start
 
       - name: Test upgrade path
         run: npm run supabase:db:test:upgrade
@@ -66,6 +66,6 @@ jobs:
       - name: Run database concurrency suite
         run: npm run supabase:db:test:concurrency
 
-      - name: Stop local Supabase database
+      - name: Stop local Supabase stack
         if: always()
         run: npx supabase stop --no-backup
