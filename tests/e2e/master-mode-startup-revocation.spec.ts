@@ -180,8 +180,7 @@ async function configureStartupRaceBackend(page: Page): Promise<StartupRaceBacke
     if (url.pathname.endsWith('/rpc/admin_save_map_entity_v2')) {
       const body = request.postDataJSON() as Record<string, unknown>;
       entity.audience = body.p_audience === 'master' ? 'master' : 'public';
-      entity.publication_status =
-        body.p_publication_status === 'published' ? 'published' : 'draft';
+      entity.publication_status = body.p_publication_status === 'published' ? 'published' : 'draft';
       entity.updated_at = '2026-08-11T10:30:00.000Z';
       saveCount += 1;
       await route.fulfill({
@@ -195,11 +194,7 @@ async function configureStartupRaceBackend(page: Page): Promise<StartupRaceBacke
     const table = url.pathname.split('/').at(-1) ?? '';
     if (request.method() === 'GET') {
       const rows: Record<string, unknown>[] =
-        table === 'map_entities'
-          ? [entity]
-          : table === 'categories'
-            ? categories
-            : [];
+        table === 'map_entities' ? [entity] : table === 'categories' ? categories : [];
       const response = rangeResponse(rows);
       await route.fulfill({ status: 200, headers: response.headers, body: response.body });
       return;
