@@ -807,7 +807,7 @@ function startFullEntityExperience(sourceUrl: URL): void {
 
   void bootstrapPublicDataRuntime(app, campaignCatalog)
     .then((runtime) => {
-      runtime.subscribeCatalogState(({ beta02 }) => {
+      const renderCatalogState = ({ beta02 }: PublicCatalogState): void => {
         if (!beta02) {
           detailsController.showUnavailable();
           return;
@@ -819,7 +819,10 @@ function startFullEntityExperience(sourceUrl: URL): void {
         } else {
           detailsController.showUnavailable();
         }
-      });
+      };
+
+      renderCatalogState(runtime.getCatalogState());
+      runtime.subscribeCatalogState(renderCatalogState);
     })
     .catch(() => detailsController.showUnavailable());
 }
