@@ -11,9 +11,7 @@ export interface AdminEntityAudienceChangedDetail {
   readonly audience: MapEntityAudience;
 }
 
-export type AdminEntityAudienceChangedListener = (
-  detail: AdminEntityAudienceChangedDetail,
-) => void;
+export type AdminEntityAudienceChangedListener = (detail: AdminEntityAudienceChangedDetail) => void;
 
 export function getBufferedAdminEntityRevocations(): ReadonlySet<EntityId> {
   return new Set(revokedPublicEntityIds);
