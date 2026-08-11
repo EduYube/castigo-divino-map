@@ -176,23 +176,29 @@ test('NPC without portrait keeps the standard marker and details have no image g
   expect(backend.detailRequests()).toHaveLength(0);
 });
 
-test('authorized public portrait becomes a circular marker and is reused by compact/full details', async ({
+test('public portrait is lazy on initial map load, then becomes the selected circular marker and details image', async ({
   page,
 }) => {
   const backend = await configureBackend(page, PORTRAIT_PATH);
   await page.goto('/');
 
   const marker = characterMarker(page);
+  await expect(marker).toHaveCount(1);
+  await expect(marker).not.toHaveAttribute('data-portrait-marker', 'true');
+  expect(backend.markerRequests()).toHaveLength(0);
+  expect(backend.detailRequests()).toHaveLength(0);
+
+  await marker.focus();
+  await expect(marker).toBeFocused();
+  await page.keyboard.press('Enter');
+
   await expect(marker).toHaveAttribute('data-portrait-marker', 'true');
   await expect(marker.locator('.pin-visual--portrait')).toHaveCount(1);
   expect(backend.markerRequests()).toHaveLength(1);
   expect(backend.markerRequests()[0]).toContain('width=96');
   expect(backend.markerRequests()[0]).toContain('height=96');
-  expect(backend.authorizationHeaders()).toEqual(['']);
+  expect(backend.authorizationHeaders()[0]).toBe('');
 
-  await marker.focus();
-  await expect(marker).toBeFocused();
-  await page.keyboard.press('Enter');
   const compact = page.getByTestId('compact-character-portrait');
   await expect(compact).toBeVisible();
   await expect(compact).toHaveAttribute('alt', 'Retrato de MAP045 Portrait Character');
@@ -215,10 +221,11 @@ test('portrait authorization/storage failure degrades to the standard pin and no
   await page.goto('/');
 
   const marker = characterMarker(page);
+  expect(backend.markerRequests()).toHaveLength(0);
+  await marker.click();
   await expect.poll(() => backend.markerRequests().length).toBeGreaterThan(0);
   await expect(marker).not.toHaveAttribute('data-portrait-marker', 'true');
   await expect(marker.locator('.pin-visual--character:not(.pin-visual--portrait)')).toHaveCount(1);
-  await marker.click();
   await expect.poll(() => backend.detailRequests().length).toBeGreaterThan(0);
   await expect(page.getByTestId('compact-character-portrait')).toHaveCount(0);
   await expect(page.getByTestId('map-shell')).toBeVisible();
@@ -234,12 +241,14 @@ for (const viewport of [
     page,
   }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    await configureBackend(page, PORTRAIT_PATH);
+    const backend = await configureBackend(page, PORTRAIT_PATH);
     await page.goto('/');
 
     const marker = characterMarker(page);
-    await expect(marker).toHaveAttribute('data-portrait-marker', 'true');
+    await expect(marker).not.toHaveAttribute('data-portrait-marker', 'true');
+    expect(backend.markerRequests()).toHaveLength(0);
     await marker.click();
+    await expect(marker).toHaveAttribute('data-portrait-marker', 'true');
     await expect(page.getByTestId('compact-character-portrait')).toBeVisible();
     await expect(page.getByTestId('map-shell')).toBeVisible();
     expect(
