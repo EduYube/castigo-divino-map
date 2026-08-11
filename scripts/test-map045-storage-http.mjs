@@ -7,43 +7,8 @@ const PNG = Buffer.from(
   'base64',
 );
 
-function normalizeStatusKey(key) {
-  return key
-    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
-    .replace(/[^A-Za-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .toUpperCase();
-}
-
-function collectStatusValues(value, values = new Map(), prefix = '') {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return values;
-  for (const [key, entry] of Object.entries(value)) {
-    const qualifiedKey = prefix ? `${prefix}_${key}` : key;
-    if (typeof entry === 'string' && entry.length > 0) {
-      values.set(normalizeStatusKey(qualifiedKey), entry);
-      values.set(normalizeStatusKey(key), entry);
-    } else if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
-      collectStatusValues(entry, values, qualifiedKey);
-    }
-  }
-  return values;
-}
-
-function parseSupabaseStatus(output) {
-  const trimmed = output.trim();
-  try {
-    return collectStatusValues(JSON.parse(trimmed));
-  } catch {
-    const start = trimmed.indexOf('{');
-    const end = trimmed.lastIndexOf('}');
-    if (start >= 0 && end > start) {
-      return collectStatusValues(JSON.parse(trimmed.slice(start, end + 1)));
-    }
-    throw new Error('Supabase local no devolvió un estado JSON válido.');
-  }
-}
-
-function parseSupabaseEnvironment(output, values = new Map()) {
+function parseSupabaseEnvironment(output) {
+  const values = new Map();
   for (const line of output.split(/\r?\n/)) {
     const match = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());
     if (!match) continue;
@@ -59,12 +24,10 @@ function parseSupabaseEnvironment(output, values = new Map()) {
   return values;
 }
 
-function required(values, ...names) {
-  for (const name of names) {
-    const value = values.get(name);
-    if (value) return value;
-  }
-  throw new Error(`Supabase local no expuso ${names.join(' / ')}.`);
+function required(values, name) {
+  const value = values.get(name);
+  if (value) return value;
+  throw new Error(`Supabase local no expuso ${name}.`);
 }
 
 async function expectResponse(response, label, expectedOk) {
@@ -74,28 +37,31 @@ async function expectResponse(response, label, expectedOk) {
 }
 
 async function main() {
-  const status = parseSupabaseStatus(
-    execFileSync('npx', ['supabase', 'status', '-o', 'json'], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }),
-  );
-  parseSupabaseEnvironment(
-    execFileSync('npx', ['supabase', 'status', '-o', 'env'], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }),
-    status,
+  const status = parseSupabaseEnvironment(
+    execFileSync(
+      'npx',
+      [
+        'supabase',
+        'status',
+        '-o',
+        'env',
+        '--override-name',
+        'api.url=API_URL',
+        '--override-name',
+        'auth.anon_key=ANON_KEY',
+        '--override-name',
+        'auth.service_role_key=SERVICE_ROLE_KEY',
+      ],
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      },
+    ),
   );
 
-  const apiUrl = required(status, 'API_URL', 'SUPABASE_URL').replace(/\/$/, '');
-  const publishableKey = required(status, 'PUBLISHABLE_KEY', 'ANON_KEY', 'SUPABASE_ANON_KEY');
-  const privilegedKey = required(
-    status,
-    'SECRET_KEY',
-    'SERVICE_ROLE_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY',
-  );
+  const apiUrl = required(status, 'API_URL').replace(/\/$/, '');
+  const publishableKey = required(status, 'ANON_KEY');
+  const privilegedKey = required(status, 'SERVICE_ROLE_KEY');
   const usesOpaquePublishableKey = publishableKey.startsWith('sb_publishable_');
   const usesOpaquePrivilegedKey = privilegedKey.startsWith('sb_secret_');
   const publicHeaders = {
