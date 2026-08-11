@@ -49,12 +49,17 @@ async function main() {
   const publishableKey = required(env, 'PUBLISHABLE_KEY', 'ANON_KEY');
   const privilegedKey = required(env, 'SECRET_KEY', 'SERVICE_ROLE_KEY');
   const usesOpaquePublishableKey = publishableKey.startsWith('sb_publishable_');
+  const usesOpaquePrivilegedKey = privilegedKey.startsWith('sb_secret_');
   const publicHeaders = {
     apikey: publishableKey,
     ...(usesOpaquePublishableKey ? {} : { Authorization: `Bearer ${publishableKey}` }),
   };
-  const privilegedHeaders = {
+  const privilegedAuthHeaders = {
     apikey: privilegedKey,
+    ...(usesOpaquePrivilegedKey ? {} : { Authorization: `Bearer ${privilegedKey}` }),
+  };
+  const privilegedHeaders = {
+    ...privilegedAuthHeaders,
     'Content-Type': 'application/json',
   };
 
@@ -63,7 +68,7 @@ async function main() {
   entityUrl.searchParams.set('select', 'portrait_path,audience,publication_status');
 
   const originalResponse = await expectResponse(
-    await fetch(entityUrl, { headers: { apikey: privilegedKey } }),
+    await fetch(entityUrl, { headers: privilegedAuthHeaders }),
     'leer fixture MAP-045',
     true,
   );
@@ -101,7 +106,7 @@ async function main() {
       await fetch(objectUrl, {
         method: 'POST',
         headers: {
-          apikey: privilegedKey,
+          ...privilegedAuthHeaders,
           'Content-Type': 'image/png',
           'x-upsert': 'false',
         },
@@ -155,7 +160,7 @@ async function main() {
     );
 
     console.log(
-      `MAP-045 Storage HTTP: OK (${usesOpaquePublishableKey ? 'publishable apikey-only' : 'legacy anon JWT'}).`,
+      `MAP-045 Storage HTTP: OK (${usesOpaquePublishableKey ? 'publishable apikey-only' : 'legacy anon JWT'} / ${usesOpaquePrivilegedKey ? 'secret apikey-only' : 'legacy service_role JWT'}).`,
     );
   } finally {
     await patchEntity({
