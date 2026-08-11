@@ -1,0 +1,56 @@
+name: MAP-045 pgTAP assertion fix
+
+on:
+  push:
+    branches:
+      - agent/map-045-character-portraits
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/map-045-character-portraits
+          fetch-depth: 0
+      - name: Replace unavailable pgTAP like assertions
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('supabase/tests/database/020_character_portraits.test.sql')
+          text = path.read_text()
+          old = """select like(
+  public.admin_get_map_entity_editor_v3('entity-map045-master') -> 'record' ->> 'portrait_path',
+  'portraits/%',
+  'admin editor receives the current portrait reference'
+);
+select like(
+  public.admin_get_master_catalog_v2()::text,
+  '%22222222-2222-4222-8222-222222222222.webp%',
+  'authorized master catalog includes the master portrait reference'
+);
+"""
+          new = """select ok(
+  (public.admin_get_map_entity_editor_v3('entity-map045-master') -> 'record' ->> 'portrait_path') like 'portraits/%',
+  'admin editor receives the current portrait reference'
+);
+select ok(
+  public.admin_get_master_catalog_v2()::text like '%22222222-2222-4222-8222-222222222222.webp%',
+  'authorized master catalog includes the master portrait reference'
+);
+"""
+          if old not in text:
+              raise SystemExit('expected pgTAP assertions not found')
+          path.write_text(text.replace(old, new, 1))
+      - name: Commit fix and remove helper workflow
+        shell: bash
+        run: |
+          rm .github/workflows/map045-pgtap-assertion-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: use portable pgTAP portrait assertions"
+          git push origin HEAD:agent/map-045-character-portraits
