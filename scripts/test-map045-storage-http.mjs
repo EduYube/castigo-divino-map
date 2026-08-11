@@ -106,10 +106,8 @@ async function main() {
     apikey: publishableKey,
     Authorization: `Bearer ${mintLocalAuthenticatedToken(LOCAL_READER_ID)}`,
   };
-  const adminJsonHeaders = {
-    ...adminAuthHeaders,
-    'Content-Type': 'application/json',
-  };
+  const withJson = (headers) => ({ ...headers, 'Content-Type': 'application/json' });
+  const adminJsonHeaders = withJson(adminAuthHeaders);
 
   const entityUrl = new URL(`${apiUrl}/rest/v1/map_entities`);
   entityUrl.searchParams.set('id', `eq.${ENTITY_ID}`);
@@ -147,15 +145,27 @@ async function main() {
     );
   };
 
-  const deleteObject = async () => {
+  const deleteObject = async (headers = adminJsonHeaders) => {
+    return expectResponse(
+      await fetch(collectionUrl, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ prefixes: [PORTRAIT_PATH] }),
+      }),
+      'eliminar retrato MAP-045',
+      true,
+    );
+  };
+
+  const expectDeleteDenied = async (headers, label) => {
     await expectResponse(
       await fetch(collectionUrl, {
         method: 'DELETE',
-        headers: adminJsonHeaders,
+        headers: withJson(headers),
         body: JSON.stringify({ prefixes: [PORTRAIT_PATH] }),
       }),
-      'eliminar retrato MAP-045 como admin autenticado',
-      true,
+      label,
+      false,
     );
   };
 
@@ -195,6 +205,8 @@ async function main() {
       'admin puede subir retratos',
       true,
     );
+    await expectDeleteDenied(publicHeaders, 'anon no puede eliminar retratos');
+    await expectDeleteDenied(readerAuthHeaders, 'auth no-admin no puede eliminar retratos');
 
     await patchEntity({
       portrait_path: PORTRAIT_PATH,
@@ -271,8 +283,10 @@ async function main() {
       false,
     );
 
+    await deleteObject();
+
     console.log(
-      `MAP-045 Storage HTTP: OK (${usesOpaquePublishableKey ? 'publishable key' : 'legacy anon key'} + JWTs authenticated locales efímeros + transformaciones ${transformationsAvailable ? 'verificadas' : 'no expuestas por el stack local; fallback cubierto por unitarios'}).`,
+      `MAP-045 Storage HTTP: OK (${usesOpaquePublishableKey ? 'publishable key' : 'legacy anon key'} + JWTs authenticated locales efímeros + upload/delete admin-only + transformaciones ${transformationsAvailable ? 'verificadas' : 'no expuestas por el stack local; fallback cubierto por unitarios'}).`,
     );
   } finally {
     await patchEntity({
