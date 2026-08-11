@@ -1,5 +1,6 @@
 name: MAP-044 Prettier diagnostic
 
+# Temporary diagnostic only; PR #125 will never be merged.
 on:
   pull_request:
     branches:
