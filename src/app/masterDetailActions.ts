@@ -4,6 +4,9 @@ import type { EntityId } from '../data/beta02-model';
 
 export interface MasterDetailActionsOptions {
   readonly getMasterEntityIds: () => ReadonlySet<EntityId>;
+  // Kept for call-site compatibility while MAP-044 is in Draft. The detail action does
+  // not invoke this callback; controller state is the single source of refresh events.
+  readonly onAudienceChanged?: (entityId: EntityId, audience: MapEntityAudience) => Promise<void>;
 }
 
 export interface MasterDetailActionsController {
