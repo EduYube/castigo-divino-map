@@ -75,6 +75,14 @@ async function expectResponse(response, label, expectedOk) {
   throw new Error(`${label}: HTTP ${response.status}${body ? ` (${body.slice(0, 180)})` : ''}`);
 }
 
+async function expectRasterResponse(response, label) {
+  await expectResponse(response, label, true);
+  if (!(response.headers.get('content-type') ?? '').startsWith('image/')) {
+    throw new Error(`${label}: la respuesta no tiene un MIME de imagen.`);
+  }
+  return response;
+}
+
 async function main() {
   const status = parseSupabaseEnvironment(
     execFileSync('npx', ['supabase', 'status', '-o', 'env'], {
@@ -118,6 +126,13 @@ async function main() {
 
   const objectUrl = `${apiUrl}/storage/v1/object/character-portraits/${PORTRAIT_PATH}`;
   const authenticatedObjectUrl = `${apiUrl}/storage/v1/object/authenticated/character-portraits/${PORTRAIT_PATH}`;
+  const renderUrl = new URL(
+    `${apiUrl}/storage/v1/render/image/authenticated/character-portraits/${PORTRAIT_PATH}`,
+  );
+  renderUrl.searchParams.set('width', '96');
+  renderUrl.searchParams.set('height', '96');
+  renderUrl.searchParams.set('resize', 'cover');
+  renderUrl.searchParams.set('quality', '72');
   const collectionUrl = `${apiUrl}/storage/v1/object/character-portraits`;
 
   const patchEntity = async (patch) => {
@@ -187,18 +202,18 @@ async function main() {
       publication_status: 'published',
     });
 
-    const publicRead = await expectResponse(
+    await expectRasterResponse(
       await fetch(authenticatedObjectUrl, { headers: publicHeaders }),
       'lectura pública de retrato en bucket privado',
-      true,
     );
-    if (!(publicRead.headers.get('content-type') ?? '').startsWith('image/png')) {
-      throw new Error('La lectura pública no devolvió el MIME raster esperado.');
-    }
     await expectResponse(
       await fetch(authenticatedObjectUrl, { headers: readerAuthHeaders }),
       'auth no-admin puede leer un retrato público',
       true,
+    );
+    await expectRasterResponse(
+      await fetch(renderUrl, { headers: publicHeaders }),
+      'anon puede solicitar el thumbnail transformado del retrato público',
     );
 
     await patchEntity({ audience: 'master' });
@@ -208,14 +223,22 @@ async function main() {
       false,
     );
     await expectResponse(
+      await fetch(renderUrl, { headers: publicHeaders }),
+      'revocación public → master también bloquea el thumbnail transformado',
+      false,
+    );
+    await expectResponse(
       await fetch(authenticatedObjectUrl, { headers: readerAuthHeaders }),
       'auth no-admin no puede leer retrato master',
       false,
     );
-    await expectResponse(
+    await expectRasterResponse(
       await fetch(authenticatedObjectUrl, { headers: adminAuthHeaders }),
       'admin puede leer retrato master',
-      true,
+    );
+    await expectRasterResponse(
+      await fetch(renderUrl, { headers: adminAuthHeaders }),
+      'admin puede solicitar el thumbnail transformado del retrato master',
     );
 
     await patchEntity({ audience: 'public' });
@@ -240,7 +263,7 @@ async function main() {
     );
 
     console.log(
-      `MAP-045 Storage HTTP: OK (${usesOpaquePublishableKey ? 'publishable key' : 'legacy anon key'} + JWTs authenticated locales efímeros).`,
+      `MAP-045 Storage HTTP: OK (${usesOpaquePublishableKey ? 'publishable key' : 'legacy anon key'} + JWTs authenticated locales efímeros + thumbnail transformado).`,
     );
   } finally {
     await patchEntity({
