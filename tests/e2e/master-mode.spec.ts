@@ -465,7 +465,9 @@ test('detail audience transition requires confirmation, supports cancel and refr
   await expect(
     page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_ID}"][data-audience="public"]`),
   ).toHaveCount(1);
-  await expect(page.locator('[data-master-mode-status]')).toContainText(/0 entidades privadas/i);
+  await expect(page.locator('[data-master-mode-status]')).toContainText(
+    /No hay entidades Máster publicadas/i,
+  );
 });
 
 test('master pin remains distinguishable on mobile with reduced motion and forced colors', async ({
