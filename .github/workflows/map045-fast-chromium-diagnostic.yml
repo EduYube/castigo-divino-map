@@ -1,0 +1,24 @@
+name: MAP-045 Fast Chromium Diagnostic
+
+on:
+  push:
+    branches:
+      - agent/map-045-bootstrap-diagnostic
+
+permissions:
+  contents: read
+
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-045-character-portraits
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --project=chromium --workers=4 --retries=0
