@@ -13,12 +13,14 @@ const TEST_MAP = `
 
 type PublicationStatus = 'draft' | 'published' | 'archived';
 type Disposition = 'ally' | 'enemy' | 'neutral';
+type Audience = 'public' | 'master';
 
 interface EntityRow extends Record<string, unknown> {
   id: string;
   slug: string;
   entity_type: 'character' | 'location';
   visibility: 'pin' | 'search_only';
+  audience: Audience;
   name: string;
   summary: string;
   description: string;
@@ -77,6 +79,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       slug: 'aster-guide',
       entity_type: 'character',
       visibility: 'pin',
+      audience: 'public',
       name: 'Aster Guide',
       summary: 'A fictitious ally.',
       description: '',
@@ -180,7 +183,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v2')) {
       const body = request.postDataJSON() as { p_entity_id?: string };
       await route.fulfill({
         status: 200,
@@ -190,7 +193,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v2')) {
       if (mode === 'network') {
         mode = 'normal';
         await route.abort('failed');
@@ -249,6 +252,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         slug: String(body.p_slug),
         entity_type: body.p_entity_type as EntityRow['entity_type'],
         visibility: body.p_visibility as EntityRow['visibility'],
+        audience: body.p_audience as Audience,
         name: String(body.p_name),
         summary: String(body.p_summary),
         description: String(body.p_description),
