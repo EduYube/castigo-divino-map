@@ -58,7 +58,12 @@ export class MasterModeController {
 
   subscribe(listener: MasterModeStateListener): () => void {
     this.#listeners.add(listener);
-    listener(this.#state);
+    // Defer only the initial replay. mountPublicExperience restores/canonicalizes the
+    // incoming public URL synchronously after wiring Modo Máster; an eager replay here
+    // used to force an empty-state catalog render that replaced that URL first.
+    queueMicrotask(() => {
+      if (!this.#destroyed && this.#listeners.has(listener)) listener(this.#state);
+    });
     return () => this.#listeners.delete(listener);
   }
 
