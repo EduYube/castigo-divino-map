@@ -218,11 +218,13 @@ test('uses the full map-experience width on desktop without compressing the form
   const [senderFieldTop, proposedFieldTop] = await Promise.all([
     sender.evaluate(
       (element) =>
-        (element.closest('label') ?? element.parentElement)?.getBoundingClientRect().top ?? Number.NaN,
+        (element.closest('label') ?? element.parentElement)?.getBoundingClientRect().top ??
+        Number.NaN,
     ),
     proposedName.evaluate(
       (element) =>
-        (element.closest('label') ?? element.parentElement)?.getBoundingClientRect().top ?? Number.NaN,
+        (element.closest('label') ?? element.parentElement)?.getBoundingClientRect().top ??
+        Number.NaN,
     ),
   ]);
 
