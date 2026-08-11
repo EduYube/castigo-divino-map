@@ -31,6 +31,9 @@ export function mountMasterDetailActions(
   let destroyed = false;
   let renderedSignature = '';
   let confirmingSignature: string | null = null;
+  let savingSignature: string | null = null;
+  let statusSignature: string | null = null;
+  let statusMessage = '';
 
   const resolveAudience = (entityId: EntityId): MapEntityAudience => {
     if (options.getMasterEntityIds().has(entityId)) return 'master';
@@ -44,6 +47,32 @@ export function mountMasterDetailActions(
     renderedSignature = '';
   };
 
+  const clearInteractionState = (): void => {
+    confirmingSignature = null;
+    savingSignature = null;
+    statusSignature = null;
+    statusMessage = '';
+  };
+
+  const syncActionState = (signature: string): void => {
+    const action = content.querySelector<HTMLElement>('[data-master-audience-action]');
+    if (!action) return;
+
+    const start = action.querySelector<HTMLButtonElement>('[data-master-audience-start]');
+    const confirmation = action.querySelector<HTMLElement>('[data-master-audience-confirmation]');
+    const confirm = action.querySelector<HTMLButtonElement>('[data-master-audience-confirm]');
+    const cancel = action.querySelector<HTMLButtonElement>('[data-master-audience-cancel]');
+    const status = action.querySelector<HTMLElement>('[data-master-audience-status]');
+    const isConfirming = confirmingSignature === signature;
+    const isSaving = savingSignature === signature;
+
+    if (start) start.hidden = isConfirming;
+    if (confirmation) confirmation.hidden = !isConfirming;
+    if (confirm) confirm.disabled = isSaving;
+    if (cancel) cancel.disabled = isSaving;
+    if (status) status.textContent = statusSignature === signature ? statusMessage : '';
+  };
+
   const render = (): void => {
     frame = null;
     if (destroyed) return;
@@ -51,36 +80,34 @@ export function mountMasterDetailActions(
     const state = controller.getState();
     const entityIdValue = panel.dataset.entityId;
     if (
-      panel.hidden ||
       !isEntityId(entityIdValue) ||
       !state.authorized ||
       !state.backendConnected ||
       state.phase === 'blocked'
     ) {
-      confirmingSignature = null;
+      clearInteractionState();
+      if (renderedSignature) removeInjected();
+      return;
+    }
+
+    // Compact details can transiently hide while the same entity is being redrawn.
+    // Preserve an open confirmation in that case; a real close deletes data-entity-id,
+    // which is handled by the fail-closed branch above on the next observer pass.
+    if (panel.hidden) {
       if (renderedSignature) removeInjected();
       return;
     }
 
     const entityId = entityIdValue;
     const audience = resolveAudience(entityId);
-    // Transient controller phases (for example loading -> ready after login) must not
-    // replace an open confirmation UI. Audience/entity changes remain authoritative.
     const signature = `${entityId}:${audience}`;
     if (confirmingSignature !== null && confirmingSignature !== signature) {
-      confirmingSignature = null;
+      clearInteractionState();
     }
+
     const existingAction = content.querySelector<HTMLElement>('[data-master-audience-action]');
     if (renderedSignature === signature && existingAction) {
-      const existingStart = existingAction.querySelector<HTMLButtonElement>(
-        '[data-master-audience-start]',
-      );
-      const existingConfirmation = existingAction.querySelector<HTMLElement>(
-        '[data-master-audience-confirmation]',
-      );
-      const isConfirming = confirmingSignature === signature;
-      if (existingStart) existingStart.hidden = isConfirming;
-      if (existingConfirmation) existingConfirmation.hidden = !isConfirming;
+      syncActionState(signature);
       return;
     }
     removeInjected();
@@ -105,7 +132,6 @@ export function mountMasterDetailActions(
     const cancelButton = document.createElement('button');
     const status = document.createElement('p');
     const nextAudience: MapEntityAudience = audience === 'master' ? 'public' : 'master';
-    const isConfirming = confirmingSignature === signature;
 
     section.className = 'compact-details__audience-action';
     section.dataset.masterAudienceAction = '';
@@ -119,10 +145,8 @@ export function mountMasterDetailActions(
     button.className = 'compact-details__full-action';
     button.dataset.masterAudienceStart = '';
     button.textContent = audience === 'master' ? 'Cambiar a Público' : 'Cambiar a Solo Máster';
-    button.hidden = isConfirming;
     confirmation.className = 'compact-details__audience-confirmation';
     confirmation.dataset.masterAudienceConfirmation = '';
-    confirmation.hidden = !isConfirming;
     warning.id = `master-audience-warning-${entityId}`;
     warning.textContent =
       nextAudience === 'master'
@@ -144,36 +168,7 @@ export function mountMasterDetailActions(
     confirmation.append(warning, confirmButton, cancelButton);
     section.append(heading, description, button, confirmation, status);
     content.append(section);
-
-    button.addEventListener('click', () => {
-      confirmingSignature = signature;
-      button.hidden = true;
-      confirmation.hidden = false;
-      confirmButton.focus();
-    });
-    cancelButton.addEventListener('click', () => {
-      confirmingSignature = null;
-      confirmation.hidden = true;
-      button.hidden = false;
-      status.textContent = 'Cambio de audiencia cancelado.';
-      button.focus();
-    });
-    confirmButton.addEventListener('click', async () => {
-      confirmButton.disabled = true;
-      cancelButton.disabled = true;
-      status.textContent = 'Guardando audiencia en PostgreSQL…';
-      const saved = await controller.changeAudience(entityId, nextAudience);
-      if (!saved) {
-        confirmButton.disabled = false;
-        cancelButton.disabled = false;
-        const issue = controller.getState().issue;
-        status.textContent = issue?.message ?? 'No se pudo guardar el cambio de audiencia.';
-        return;
-      }
-      confirmingSignature = null;
-      status.textContent =
-        'Audiencia guardada. El runtime actualizará mapa y búsquedas desde el cambio del controlador.';
-    });
+    syncActionState(signature);
   };
 
   const schedule = (): void => {
@@ -181,6 +176,79 @@ export function mountMasterDetailActions(
     frame = window.requestAnimationFrame(render);
   };
 
+  const getCurrentSignature = (): { entityId: EntityId; signature: string } | null => {
+    const entityIdValue = panel.dataset.entityId;
+    if (!isEntityId(entityIdValue) || panel.hidden) return null;
+    const audience = resolveAudience(entityIdValue);
+    return { entityId: entityIdValue, signature: `${entityIdValue}:${audience}` };
+  };
+
+  const handleActionClick = async (event: MouseEvent): Promise<void> => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const start = target.closest<HTMLButtonElement>('[data-master-audience-start]');
+    const confirm = target.closest<HTMLButtonElement>('[data-master-audience-confirm]');
+    const cancel = target.closest<HTMLButtonElement>('[data-master-audience-cancel]');
+    const actionButton = start ?? confirm ?? cancel;
+    if (!actionButton || !content.contains(actionButton)) return;
+
+    const current = getCurrentSignature();
+    if (!current) return;
+
+    if (start) {
+      confirmingSignature = current.signature;
+      savingSignature = null;
+      statusSignature = null;
+      statusMessage = '';
+      syncActionState(current.signature);
+      content.querySelector<HTMLButtonElement>('[data-master-audience-confirm]')?.focus();
+      schedule();
+      return;
+    }
+
+    if (cancel) {
+      if (savingSignature === current.signature) return;
+      confirmingSignature = null;
+      statusSignature = current.signature;
+      statusMessage = 'Cambio de audiencia cancelado.';
+      syncActionState(current.signature);
+      content.querySelector<HTMLButtonElement>('[data-master-audience-start]')?.focus();
+      schedule();
+      return;
+    }
+
+    if (!confirm || savingSignature === current.signature) return;
+
+    const currentAudience = resolveAudience(current.entityId);
+    const nextAudience: MapEntityAudience = currentAudience === 'master' ? 'public' : 'master';
+    confirmingSignature = current.signature;
+    savingSignature = current.signature;
+    statusSignature = current.signature;
+    statusMessage = 'Guardando audiencia en PostgreSQL…';
+    syncActionState(current.signature);
+
+    const saved = await controller.changeAudience(current.entityId, nextAudience);
+    if (destroyed) return;
+
+    savingSignature = null;
+    if (!saved) {
+      confirmingSignature = current.signature;
+      statusSignature = current.signature;
+      statusMessage =
+        controller.getState().issue?.message ?? 'No se pudo guardar el cambio de audiencia.';
+      syncActionState(current.signature);
+      schedule();
+      return;
+    }
+
+    confirmingSignature = null;
+    statusSignature = null;
+    statusMessage = '';
+    schedule();
+  };
+
+  content.addEventListener('click', handleActionClick);
   const observer = new MutationObserver(schedule);
   observer.observe(content, { childList: true, subtree: true });
   const unsubscribe = controller.subscribe(schedule);
@@ -190,7 +258,8 @@ export function mountMasterDetailActions(
     refresh: schedule,
     destroy(): void {
       destroyed = true;
-      confirmingSignature = null;
+      clearInteractionState();
+      content.removeEventListener('click', handleActionClick);
       observer.disconnect();
       unsubscribe();
       if (frame !== null) window.cancelAnimationFrame(frame);
