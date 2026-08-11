@@ -17,6 +17,7 @@ import { BrowserPublicCatalogSessionCache } from '../infrastructure/snapshot/ses
 import { SupabasePublicCatalogRepository } from '../infrastructure/supabase/publicCatalogRepository';
 import {
   ADMIN_ENTITY_AUDIENCE_CHANGED_EVENT,
+  getBufferedAdminEntityRevocations,
   type AdminEntityAudienceChangedDetail,
 } from './adminEntityAudienceEvents';
 import { mountBackendStatus } from './backendStatus';
@@ -164,7 +165,7 @@ export async function bootstrapPublicDataRuntime(
     timeoutMs: testConfig?.timeoutMs,
     retryDelaysMs: testConfig?.retryDelaysMs,
   });
-  const revokedEntityIds = new Set<EntityId>();
+  const revokedEntityIds = new Set<EntityId>(getBufferedAdminEntityRevocations());
   let publishBufferedRevocations: (() => void) | null = null;
 
   const setEntityRevoked = (entityId: EntityId, revoked: boolean): void => {
