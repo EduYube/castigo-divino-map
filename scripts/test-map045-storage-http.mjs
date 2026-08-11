@@ -2,6 +2,8 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
 const ENTITY_ID = 'entity-aster-guide';
+const LOCAL_ADMIN_ID = '00000000-0000-4000-8000-000000000001';
+const LOCAL_READER_ID = '00000000-0000-4000-8000-000000000002';
 const PORTRAIT_PATH = 'portraits/04504504-5045-4045-8045-045045045045.png';
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
@@ -53,6 +55,20 @@ function localApiUrl() {
   throw new Error('supabase/config.toml no define [api].port para el entorno local.');
 }
 
+function mintLocalAuthenticatedToken(userId) {
+  const output = execFileSync(
+    'npx',
+    ['supabase', 'gen', 'bearer-jwt', '--role', 'authenticated', '--sub', userId],
+    {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    },
+  );
+  const token = output.match(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/)?.[0];
+  if (!token) throw new Error(`No se pudo generar el JWT local para ${userId}.`);
+  return token;
+}
+
 async function expectResponse(response, label, expectedOk) {
   if (response.ok === expectedOk) return response;
   const body = await response.text().catch(() => '');
@@ -69,24 +85,21 @@ async function main() {
 
   const apiUrl = localApiUrl();
   const publishableKey = requiredAny(status, 'PUBLISHABLE_KEY', 'ANON_KEY', 'SUPABASE_ANON_KEY');
-  const privilegedKey = requiredAny(
-    status,
-    'SECRET_KEY',
-    'SERVICE_ROLE_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY',
-  );
   const usesOpaquePublishableKey = publishableKey.startsWith('sb_publishable_');
-  const usesOpaquePrivilegedKey = privilegedKey.startsWith('sb_secret_');
   const publicHeaders = {
     apikey: publishableKey,
     ...(usesOpaquePublishableKey ? {} : { Authorization: `Bearer ${publishableKey}` }),
   };
-  const privilegedAuthHeaders = {
-    apikey: privilegedKey,
-    ...(usesOpaquePrivilegedKey ? {} : { Authorization: `Bearer ${privilegedKey}` }),
+  const adminAuthHeaders = {
+    apikey: publishableKey,
+    Authorization: `Bearer ${mintLocalAuthenticatedToken(LOCAL_ADMIN_ID)}`,
   };
-  const privilegedHeaders = {
-    ...privilegedAuthHeaders,
+  const readerAuthHeaders = {
+    apikey: publishableKey,
+    Authorization: `Bearer ${mintLocalAuthenticatedToken(LOCAL_READER_ID)}`,
+  };
+  const adminJsonHeaders = {
+    ...adminAuthHeaders,
     'Content-Type': 'application/json',
   };
 
@@ -95,8 +108,8 @@ async function main() {
   entityUrl.searchParams.set('select', 'portrait_path,audience,publication_status');
 
   const originalResponse = await expectResponse(
-    await fetch(entityUrl, { headers: privilegedAuthHeaders }),
-    'leer fixture MAP-045',
+    await fetch(entityUrl, { headers: adminAuthHeaders }),
+    'leer fixture MAP-045 como admin autenticado',
     true,
   );
   const originalRows = await originalResponse.json();
@@ -111,35 +124,60 @@ async function main() {
     await expectResponse(
       await fetch(`${apiUrl}/rest/v1/map_entities?id=eq.${encodeURIComponent(ENTITY_ID)}`, {
         method: 'PATCH',
-        headers: { ...privilegedHeaders, Prefer: 'return=minimal' },
+        headers: { ...adminJsonHeaders, Prefer: 'return=minimal' },
         body: JSON.stringify(patch),
       }),
-      'actualizar fixture MAP-045',
+      'actualizar fixture MAP-045 como admin autenticado',
       true,
     );
   };
 
   const deleteObject = async () => {
-    await fetch(collectionUrl, {
-      method: 'DELETE',
-      headers: privilegedHeaders,
-      body: JSON.stringify({ prefixes: [PORTRAIT_PATH] }),
-    }).catch(() => undefined);
+    await expectResponse(
+      await fetch(collectionUrl, {
+        method: 'DELETE',
+        headers: adminJsonHeaders,
+        body: JSON.stringify({ prefixes: [PORTRAIT_PATH] }),
+      }),
+      'eliminar retrato MAP-045 como admin autenticado',
+      true,
+    );
   };
 
+  const uploadHeaders = (headers) => ({
+    ...headers,
+    'Content-Type': 'image/png',
+    'x-upsert': 'false',
+  });
+
   try {
-    await deleteObject();
+    await deleteObject().catch(() => undefined);
+
     await expectResponse(
       await fetch(objectUrl, {
         method: 'POST',
-        headers: {
-          ...privilegedAuthHeaders,
-          'Content-Type': 'image/png',
-          'x-upsert': 'false',
-        },
+        headers: uploadHeaders(publicHeaders),
         body: PNG,
       }),
-      'subir retrato fixture MAP-045',
+      'anon no puede subir retratos',
+      false,
+    );
+    await expectResponse(
+      await fetch(objectUrl, {
+        method: 'POST',
+        headers: uploadHeaders(readerAuthHeaders),
+        body: PNG,
+      }),
+      'auth no-admin no puede subir retratos',
+      false,
+    );
+    await expectResponse(
+      await fetch(objectUrl, {
+        method: 'POST',
+        headers: uploadHeaders(adminAuthHeaders),
+        body: PNG,
+      }),
+      'admin puede subir retratos',
       true,
     );
 
@@ -157,12 +195,27 @@ async function main() {
     if (!(publicRead.headers.get('content-type') ?? '').startsWith('image/png')) {
       throw new Error('La lectura pública no devolvió el MIME raster esperado.');
     }
+    await expectResponse(
+      await fetch(authenticatedObjectUrl, { headers: readerAuthHeaders }),
+      'auth no-admin puede leer un retrato público',
+      true,
+    );
 
     await patchEntity({ audience: 'master' });
     await expectResponse(
       await fetch(authenticatedObjectUrl, { headers: publicHeaders }),
-      'revocación public → master',
+      'revocación public → master para anon',
       false,
+    );
+    await expectResponse(
+      await fetch(authenticatedObjectUrl, { headers: readerAuthHeaders }),
+      'auth no-admin no puede leer retrato master',
+      false,
+    );
+    await expectResponse(
+      await fetch(authenticatedObjectUrl, { headers: adminAuthHeaders }),
+      'admin puede leer retrato master',
+      true,
     );
 
     await patchEntity({ audience: 'public' });
@@ -187,7 +240,7 @@ async function main() {
     );
 
     console.log(
-      `MAP-045 Storage HTTP: OK (${usesOpaquePublishableKey ? 'publishable apikey-only' : 'legacy anon JWT'} / ${usesOpaquePrivilegedKey ? 'secret apikey-only' : 'legacy service_role JWT'}).`,
+      `MAP-045 Storage HTTP: OK (${usesOpaquePublishableKey ? 'publishable key' : 'legacy anon key'} + JWTs authenticated locales efímeros).`,
     );
   } finally {
     await patchEntity({
@@ -195,7 +248,7 @@ async function main() {
       audience: original.audience,
       publication_status: original.publication_status,
     }).catch(() => undefined);
-    await deleteObject();
+    await deleteObject().catch(() => undefined);
   }
 }
 
