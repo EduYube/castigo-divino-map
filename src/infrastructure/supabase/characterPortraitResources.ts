@@ -129,19 +129,21 @@ export class SupabaseCharacterPortraitResources implements CharacterPortraitReso
     }
 
     const encodedPath = encodeStoragePath(path);
-    const url =
-      options.variant === 'marker'
-        ? new URL(
-            `${this.#projectUrl}/storage/v1/render/image/authenticated/character-portraits/${encodedPath}`,
-          )
-        : new URL(
-            `${this.#projectUrl}/storage/v1/object/authenticated/character-portraits/${encodedPath}`,
-          );
+    const objectUrl = new URL(
+      `${this.#projectUrl}/storage/v1/object/authenticated/character-portraits/${encodedPath}`,
+    );
+    const candidateUrls: URL[] = [];
     if (options.variant === 'marker') {
-      url.searchParams.set('width', String(MARKER_RENDER_SIZE));
-      url.searchParams.set('height', String(MARKER_RENDER_SIZE));
-      url.searchParams.set('resize', 'cover');
-      url.searchParams.set('quality', '72');
+      const renderUrl = new URL(
+        `${this.#projectUrl}/storage/v1/render/image/authenticated/character-portraits/${encodedPath}`,
+      );
+      renderUrl.searchParams.set('width', String(MARKER_RENDER_SIZE));
+      renderUrl.searchParams.set('height', String(MARKER_RENDER_SIZE));
+      renderUrl.searchParams.set('resize', 'cover');
+      renderUrl.searchParams.set('quality', '72');
+      candidateUrls.push(renderUrl, objectUrl);
+    } else {
+      candidateUrls.push(objectUrl);
     }
 
     const requestController = new AbortController();
@@ -151,55 +153,60 @@ export class SupabaseCharacterPortraitResources implements CharacterPortraitReso
     const timeout = globalThis.setTimeout(() => requestController.abort(), this.#timeoutMs);
 
     try {
-      let response: Response;
-      try {
-        response = await this.#fetchImplementation(url, {
-          method: 'GET',
-          headers: {
-            Accept: 'image/jpeg,image/png,image/webp',
-            apikey: this.#publishableKey,
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          },
-          cache: 'no-store',
-          signal: requestController.signal,
-        });
-      } catch {
-        return null;
-      }
+      let finalStatus: number | null = null;
+      for (const url of candidateUrls) {
+        if (requestController.signal.aborted || options.signal.aborted) return null;
 
-      if (!response.ok) {
-        if (options.access === 'master' && (response.status === 401 || response.status === 403)) {
-          this.clearPrivate();
+        let response: Response;
+        try {
+          response = await this.#fetchImplementation(url, {
+            method: 'GET',
+            headers: {
+              Accept: 'image/jpeg,image/png,image/webp',
+              apikey: this.#publishableKey,
+              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+            },
+            cache: 'no-store',
+            signal: requestController.signal,
+          });
+        } catch {
+          continue;
         }
-        return null;
+        finalStatus = response.status;
+        if (!response.ok) continue;
+
+        const contentType = response.headers
+          .get('content-type')
+          ?.split(';', 1)[0]
+          ?.trim()
+          .toLowerCase();
+        if (!contentType || !ACCEPTED_IMAGE_TYPES.has(contentType)) continue;
+
+        let blob: Blob;
+        try {
+          blob = await response.blob();
+        } catch {
+          continue;
+        }
+        if (blob.size === 0 || blob.size > MAX_RESPONSE_BYTES) continue;
+        if (this.#destroyed || requestController.signal.aborted || options.signal.aborted)
+          return null;
+
+        const portraitUrl = this.#createObjectUrl(blob);
+        const entry: CachedPortrait = {
+          path,
+          access: options.access,
+          variant: options.variant,
+          url: portraitUrl,
+        };
+        this.#cache.set(key, entry);
+        return portraitUrl;
       }
 
-      const contentType = response.headers
-        .get('content-type')
-        ?.split(';', 1)[0]
-        ?.trim()
-        .toLowerCase();
-      if (!contentType || !ACCEPTED_IMAGE_TYPES.has(contentType)) return null;
-
-      let blob: Blob;
-      try {
-        blob = await response.blob();
-      } catch {
-        return null;
+      if (options.access === 'master' && (finalStatus === 401 || finalStatus === 403)) {
+        this.clearPrivate();
       }
-      if (blob.size === 0 || blob.size > MAX_RESPONSE_BYTES) return null;
-      if (this.#destroyed || requestController.signal.aborted || options.signal.aborted)
-        return null;
-
-      const objectUrl = this.#createObjectUrl(blob);
-      const entry: CachedPortrait = {
-        path,
-        access: options.access,
-        variant: options.variant,
-        url: objectUrl,
-      };
-      this.#cache.set(key, entry);
-      return objectUrl;
+      return null;
     } finally {
       globalThis.clearTimeout(timeout);
       options.signal.removeEventListener('abort', abortRequest);
