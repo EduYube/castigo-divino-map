@@ -7,6 +7,13 @@ export interface FullEntityDetailsController {
   showUnavailable(options?: { readonly focus?: boolean }): void;
 }
 
+export interface FullEntityDetailsOptions {
+  readonly loadPortrait?: (
+    details: FullEntityDetailModel,
+    signal: AbortSignal,
+  ) => Promise<string | null>;
+}
+
 interface FullEntityDetailsElements {
   readonly title: HTMLHeadingElement;
   readonly type: HTMLElement;
@@ -243,6 +250,28 @@ function appendHistory(parent: HTMLElement, details: FullEntityDetailModel, sour
   section.append(list);
 }
 
+function appendPortrait(
+  elements: FullEntityDetailsElements,
+  details: FullEntityDetailModel,
+  url: string,
+): void {
+  if (elements.body.querySelector('[data-character-portrait]')) return;
+  const figure = document.createElement('figure');
+  const image = document.createElement('img');
+  figure.className = 'full-entity__portrait';
+  figure.dataset.characterPortrait = '';
+  image.className = 'full-entity__portrait-image';
+  image.src = url;
+  image.alt = `Retrato de ${details.name}`;
+  image.width = 288;
+  image.height = 288;
+  image.decoding = 'async';
+  image.setAttribute('data-testid', 'full-character-portrait');
+  image.addEventListener('error', () => figure.remove(), { once: true });
+  figure.append(image);
+  elements.body.prepend(figure);
+}
+
 function renderDetails(elements: FullEntityDetailsElements, details: FullEntityDetailModel): void {
   const type = getPinTypeVisual(details.entityType);
   elements.body.replaceChildren();
@@ -324,7 +353,11 @@ export function renderFullEntityDetailsShell(): string {
   `;
 }
 
-export function mountFullEntityDetails(root: ParentNode, mapUrl: URL): FullEntityDetailsController {
+export function mountFullEntityDetails(
+  root: ParentNode,
+  mapUrl: URL,
+  options: FullEntityDetailsOptions = {},
+): FullEntityDetailsController {
   const elements: FullEntityDetailsElements = {
     title: getRequiredElement(root, '[data-full-entity-title]'),
     type: getRequiredElement(root, '[data-full-entity-type]'),
@@ -332,6 +365,7 @@ export function mountFullEntityDetails(root: ParentNode, mapUrl: URL): FullEntit
     status: getRequiredElement(root, '[data-full-entity-status]'),
     mapLink: getRequiredElement(root, '[data-full-entity-map-link]'),
   };
+  let portraitAbort: AbortController | null = null;
 
   root.querySelectorAll<HTMLAnchorElement>('[data-full-entity-map-link]').forEach((link) => {
     link.href = mapUrl.href;
@@ -342,11 +376,23 @@ export function mountFullEntityDetails(root: ParentNode, mapUrl: URL): FullEntit
   };
 
   return {
-    show(details, options = {}): void {
+    show(details, showOptions = {}): void {
+      portraitAbort?.abort();
+      portraitAbort = null;
       renderDetails(elements, details);
-      if (options.focus !== false) focusTitle();
+      if (details.portraitPath && options.loadPortrait) {
+        const request = new AbortController();
+        portraitAbort = request;
+        void options.loadPortrait(details, request.signal).then((url) => {
+          if (!url || request.signal.aborted || elements.title.textContent !== details.name) return;
+          appendPortrait(elements, details, url);
+        });
+      }
+      if (showOptions.focus !== false) focusTitle();
     },
-    showUnavailable(options = {}): void {
+    showUnavailable(showOptions = {}): void {
+      portraitAbort?.abort();
+      portraitAbort = null;
       elements.type.textContent = 'Ficha pública completa';
       elements.title.textContent = 'Entidad no disponible';
       elements.body.replaceChildren();
@@ -357,7 +403,7 @@ export function mountFullEntityDetails(root: ParentNode, mapUrl: URL): FullEntit
       document.title = 'Entidad no disponible · El Atlas de los Nuevos Dioses';
       ensureDescriptionMeta().content =
         'La entidad solicitada no está disponible en la proyección pública del Atlas.';
-      if (options.focus !== false) focusTitle();
+      if (showOptions.focus !== false) focusTitle();
     },
   };
 }

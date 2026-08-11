@@ -57,6 +57,8 @@ export interface PublicMapEntity {
   readonly aliases: readonly PublicEntityAlias[];
   readonly summary: string;
   readonly description: string;
+  /** MAP-045 stable private Storage reference; absent/null means no portrait. */
+  readonly portraitPath?: string | null;
   readonly coordinates: PublicCoordinate;
   readonly categoryId: CategoryId;
   readonly tagIds: readonly TagId[];

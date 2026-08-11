@@ -16,6 +16,10 @@ import {
   type PlayerDisposition,
 } from '../domain/adminMapEntities';
 import { validateAdminMapEntityDraft } from '../domain/adminMapEntityValidation';
+import {
+  CHARACTER_PORTRAIT_ACCEPT,
+  validateCharacterPortraitFile,
+} from '../domain/characterPortrait';
 import { isMapCoordinateWithinBounds } from '../domain/mapCoordinates';
 import {
   mountAdminEntityEditorMap,
@@ -122,6 +126,12 @@ export function mountAdminMapEntities(
   let dispositionError: HTMLParagraphElement | null = null;
   let restoreFocus: HTMLElement | null = null;
   let pendingConfirmation: PendingConfirmation | null = null;
+  let pendingPortraitFile: File | null = null;
+  let removePortraitOnSave = false;
+  let portraitSelectionInvalid = false;
+  let portraitSelectionPending = false;
+  let portraitPreviewUrl: string | null = null;
+  let portraitError: HTMLParagraphElement | null = null;
 
   heading.textContent = 'Personajes y emplazamientos';
   heading.id = 'admin-map-entity-heading';
@@ -304,6 +314,7 @@ export function mountAdminMapEntities(
       slug: input('slug'),
       entityType: input('entityType') as MapEntityType,
       visibility: input('visibility') as MapVisibility,
+      portraitPath: state.editorDetail?.record.portraitPath ?? null,
       name: input('name'),
       summary: input('summary'),
       description: input('description'),
@@ -375,7 +386,18 @@ export function mountAdminMapEntities(
     if (isMapCoordinateWithinBounds(coordinate)) mapController?.setCoordinate(coordinate);
   }
 
+  function clearPortraitPreviewUrl(): void {
+    if (portraitPreviewUrl) URL.revokeObjectURL(portraitPreviewUrl);
+    portraitPreviewUrl = null;
+  }
+
   function renderEditorForm(): void {
+    clearPortraitPreviewUrl();
+    pendingPortraitFile = null;
+    removePortraitOnSave = false;
+    portraitSelectionInvalid = false;
+    portraitSelectionPending = false;
+    portraitError = null;
     mapController?.destroy();
     mapController = null;
     controls = new Map();
@@ -431,6 +453,98 @@ export function mountAdminMapEntities(
       value: draft.description,
       textarea: true,
     });
+
+    if (draft.entityType === 'character') {
+      const portraitField = createElement('fieldset', 'admin-map-entity__fieldset');
+      const portraitLegend = createElement('legend', 'admin-map-entity__legend');
+      const portraitHelp = createElement('p', 'admin-map-entity__help');
+      const portraitInput = createElement('input', 'admin-map-entity__control');
+      const portraitState = createElement('p', 'admin-map-entity__help');
+      const portraitPreview = createElement('img', 'admin-map-entity__portrait-preview');
+      const removeButton = createElement('button', 'admin-map-entity__button');
+      portraitLegend.textContent = 'Retrato opcional';
+      portraitHelp.textContent =
+        'JPEG, PNG o WebP, máximo 4 MiB. El retrato se guarda junto con el resto de cambios al pulsar Guardar/Publicar.';
+      portraitInput.type = 'file';
+      portraitInput.accept = CHARACTER_PORTRAIT_ACCEPT;
+      portraitInput.id = 'admin-map-entity-portrait';
+      portraitInput.setAttribute('data-testid', 'admin-character-portrait-input');
+      portraitPreview.alt = 'Previsualización del retrato seleccionado';
+      portraitPreview.hidden = true;
+      portraitState.textContent = draft.portraitPath
+        ? 'Hay un retrato guardado para este personaje.'
+        : 'Este personaje no tiene retrato.';
+      removeButton.type = 'button';
+      removeButton.textContent = 'Quitar retrato al guardar';
+      removeButton.disabled = !draft.portraitPath;
+      removeButton.setAttribute('data-testid', 'admin-character-portrait-remove');
+      portraitError = createElement('p', 'admin-map-entity__field-error');
+      portraitError.setAttribute('aria-live', 'polite');
+
+      portraitInput.addEventListener('change', () => {
+        const selected = portraitInput.files?.[0] ?? null;
+        clearPortraitPreviewUrl();
+        pendingPortraitFile = null;
+        removePortraitOnSave = false;
+        portraitSelectionInvalid = false;
+        portraitSelectionPending = Boolean(selected);
+        if (portraitError) portraitError.textContent = '';
+        portraitPreview.hidden = true;
+        removeButton.disabled = !draft.portraitPath;
+        if (!selected) {
+          portraitState.textContent = draft.portraitPath
+            ? 'Hay un retrato guardado para este personaje.'
+            : 'Este personaje no tiene retrato.';
+          return;
+        }
+        void validateCharacterPortraitFile(selected)
+          .then(() => {
+            if (portraitInput.files?.[0] !== selected) return;
+            portraitSelectionPending = false;
+            pendingPortraitFile = selected;
+            removePortraitOnSave = false;
+            portraitPreviewUrl = URL.createObjectURL(selected);
+            portraitPreview.src = portraitPreviewUrl;
+            portraitPreview.hidden = false;
+            portraitState.textContent = draft.portraitPath
+              ? 'El retrato actual se sustituirá al guardar.'
+              : 'El retrato se añadirá al guardar.';
+            removeButton.disabled = false;
+          })
+          .catch((error: unknown) => {
+            if (portraitInput.files?.[0] !== selected) return;
+            portraitSelectionPending = false;
+            portraitSelectionInvalid = true;
+            if (portraitError)
+              portraitError.textContent =
+                error instanceof Error ? error.message : 'El retrato seleccionado no es válido.';
+          });
+      });
+
+      removeButton.addEventListener('click', () => {
+        clearPortraitPreviewUrl();
+        portraitInput.value = '';
+        pendingPortraitFile = null;
+        portraitSelectionInvalid = false;
+        portraitSelectionPending = false;
+        removePortraitOnSave = true;
+        portraitPreview.hidden = true;
+        portraitState.textContent = 'El retrato se quitará al guardar.';
+        if (portraitError) portraitError.textContent = '';
+      });
+
+      portraitField.append(
+        portraitLegend,
+        portraitHelp,
+        portraitInput,
+        portraitState,
+        portraitPreview,
+        removeButton,
+        portraitError,
+      );
+      fields.append(portraitField);
+    }
+
     addSelect({
       name: 'categoryId',
       label: 'Categoría',
@@ -587,6 +701,7 @@ export function mountAdminMapEntities(
   }
 
   function closeEditorUi(): void {
+    clearPortraitPreviewUrl();
     mapController?.destroy();
     mapController = null;
     renderedEditorKey = null;
@@ -729,6 +844,14 @@ export function mountAdminMapEntities(
 
   async function saveWithStatus(publicationStatus: MapEntityPublicationStatus): Promise<void> {
     const draft = readDraft(publicationStatus);
+    if (portraitSelectionPending) {
+      editorStatus.textContent = 'Espera a que termine la validación local del retrato.';
+      return;
+    }
+    if (portraitSelectionInvalid) {
+      editorStatus.textContent = 'Corrige el retrato seleccionado antes de guardar.';
+      return;
+    }
     if (!showFieldErrors(draft)) {
       editorStatus.textContent = 'Revisa los campos indicados antes de guardar.';
       const invalid = Array.from(controls.values()).find(
@@ -737,7 +860,14 @@ export function mountAdminMapEntities(
       invalid?.input.focus();
       return;
     }
-    const saved = await controller.save(draft);
+    const saved = await controller.save(
+      draft,
+      pendingPortraitFile
+        ? { kind: 'replace', file: pendingPortraitFile }
+        : removePortraitOnSave
+          ? { kind: 'remove' }
+          : { kind: 'keep' },
+    );
     if (saved) {
       editorStatus.textContent =
         publicationStatus === 'published'
@@ -854,6 +984,7 @@ export function mountAdminMapEntities(
       dismissButton.removeEventListener('click', handleDismiss);
       document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('atlas:public-data-status', handlePublicDataStatus);
+      clearPortraitPreviewUrl();
       section.remove();
     },
   };

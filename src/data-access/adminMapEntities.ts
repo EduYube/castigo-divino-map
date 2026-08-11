@@ -66,10 +66,17 @@ export function toAdminMapEntityIssue(error: unknown): AdminMapEntityIssue {
   };
 }
 
+export type AdminCharacterPortraitMutation =
+  | { readonly kind: 'keep' }
+  | { readonly kind: 'remove' }
+  | { readonly kind: 'replace'; readonly file: File };
+
 export interface AdminMapEntityRepository {
   list(options: { readonly signal: AbortSignal }): Promise<readonly AdminMapEntityRecord[]>;
   loadReferences(options: { readonly signal: AbortSignal }): Promise<AdminMapEntityReferences>;
   load(entityId: string, options: { readonly signal: AbortSignal }): Promise<AdminMapEntityDetail>;
+  uploadPortrait(file: File, options: { readonly signal: AbortSignal }): Promise<string>;
+  deletePortrait(path: string, options: { readonly signal: AbortSignal }): Promise<void>;
   save(
     original: AdminMapEntityDetail | null,
     draft: AdminMapEntityDraft,

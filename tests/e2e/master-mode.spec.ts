@@ -12,6 +12,11 @@ const ADMIN_ID = '00000000-0000-4000-8000-000000000001';
 const MASTER_ID = 'entity-master-e2e';
 const COINCIDENT_MASTER_ID = 'entity-master-coincident-e2e';
 const MASTER_NAME = 'MAP044 E2E SECRET';
+const MASTER_PORTRAIT_PATH = 'portraits/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.png';
+const PORTRAIT_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -46,6 +51,7 @@ const MASTER_ROW = {
   name_language: 'en',
   summary: 'Private E2E summary',
   description: 'Private E2E description',
+  portrait_path: MASTER_PORTRAIT_PATH,
   x: 1700,
   y: 1100,
   category_id: 'category-landmark',
@@ -74,6 +80,7 @@ interface Map044Backend {
   getAudience(): 'public' | 'master';
   getSaveCount(): number;
   setMasterCatalogStatus(status: 200 | 401 | 403): void;
+  getPortraitAuthorizations(): readonly string[];
 }
 
 function projectRows(
@@ -134,6 +141,7 @@ function toMasterCatalogEntity(row: typeof MASTER_ROW) {
     name: row.name,
     summary: row.summary,
     description: row.description,
+    portrait_path: row.portrait_path,
     x: row.x,
     y: row.y,
     category_id: row.category_id,
@@ -170,6 +178,7 @@ async function configureMap044Backend(
   let audience: 'public' | 'master' = 'master';
   let saveCount = 0;
   let masterCatalogStatus: 200 | 401 | 403 = 200;
+  const portraitAuthorizations: string[] = [];
   const includeCoincidentMaster = options.includeCoincidentMaster === true;
 
   await page.addInitScript(
@@ -212,6 +221,24 @@ async function configureMap044Backend(
     await route.fulfill({ status: 204, body: '' });
   });
 
+  await page.route('**/storage/v1/**', async (route: Route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const authorization = request.headers()['authorization'] ?? '';
+    portraitAuthorizations.push(authorization);
+    const encodedPath = url.pathname.split('/character-portraits/')[1] ?? '';
+    const path = decodeURIComponent(encodedPath);
+    const authorized =
+      path === MASTER_PORTRAIT_PATH &&
+      (authorization === `Bearer ${ADMIN_TOKEN}` ||
+        (authorization === '' && audience === 'public'));
+    if (!authorized) {
+      await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: 'image/png', body: PORTRAIT_PNG });
+  });
+
   await page.route('**/rest/v1/**', async (route: Route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -223,7 +250,7 @@ async function configureMap044Backend(
       await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
       return;
     }
-    if (adminRequest && resource === 'rpc/admin_get_master_catalog') {
+    if (adminRequest && resource === 'rpc/admin_get_master_catalog_v2') {
       if (masterCatalogStatus !== 200) {
         await route.fulfill({
           status: masterCatalogStatus,
@@ -239,7 +266,7 @@ async function configureMap044Backend(
       });
       return;
     }
-    if (adminRequest && resource === 'rpc/admin_get_map_entity_editor_v2') {
+    if (adminRequest && resource === 'rpc/admin_get_map_entity_editor_v3') {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -247,7 +274,7 @@ async function configureMap044Backend(
       });
       return;
     }
-    if (adminRequest && resource === 'rpc/admin_save_map_entity_v2') {
+    if (adminRequest && resource === 'rpc/admin_save_map_entity_v3') {
       saveCount += 1;
       const body = JSON.parse(request.postData() ?? '{}') as { p_audience?: unknown };
       audience = body.p_audience === 'master' ? 'master' : 'public';
@@ -286,6 +313,7 @@ async function configureMap044Backend(
     setMasterCatalogStatus(status): void {
       masterCatalogStatus = status;
     },
+    getPortraitAuthorizations: () => portraitAuthorizations,
   };
 }
 
@@ -309,10 +337,11 @@ async function expectMasterAbsentFromMapExperience(page: Page): Promise<void> {
 test('visitor and admin OFF cannot see master data; ON loads it ephemerally and logout purges it', async ({
   page,
 }) => {
-  await configureMap044Backend(page);
+  const backend = await configureMap044Backend(page);
   await page.goto('/');
 
   await expect(page.locator('[data-master-mode-toggle]')).toHaveCount(0);
+  expect(backend.getPortraitAuthorizations()).toHaveLength(0);
   await expect(page.getByText(MASTER_NAME, { exact: true })).toHaveCount(0);
   await expect(page.locator('.campaign-marker-icon[data-audience="master"]')).toHaveCount(0);
 
@@ -327,6 +356,8 @@ test('visitor and admin OFF cannot see master data; ON loads it ephemerally and 
   const privateMarker = page.locator('.campaign-marker-icon[data-audience="master"]');
   await expect(privateMarker).toHaveCount(1);
   await expect(privateMarker).toHaveAttribute('aria-label', /Contenido del Máster/);
+  await expect(privateMarker).toHaveAttribute('data-portrait-marker', 'true');
+  await expect.poll(() => backend.getPortraitAuthorizations()).toContain(`Bearer ${ADMIN_TOKEN}`);
 
   await page.getByRole('searchbox', { name: 'Buscar lugares' }).fill('Xanathar oculto');
   const masterResult = page.locator(`[data-search-result-id="${MASTER_ID}"]`);
@@ -462,9 +493,12 @@ test('detail audience transition requires confirmation, supports cancel and refr
   await expect.poll(() => backend.getSaveCount()).toBe(1);
   await expect.poll(() => backend.getAudience()).toBe('public');
   await expect(page.locator('.campaign-marker-icon[data-audience="master"]')).toHaveCount(0);
-  await expect(
-    page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_ID}"][data-audience="public"]`),
-  ).toHaveCount(1);
+  const transitionedPublicMarker = page.locator(
+    `.campaign-marker-icon[data-entity-id="${MASTER_ID}"][data-audience="public"]`,
+  );
+  await expect(transitionedPublicMarker).toHaveCount(1);
+  await expect(transitionedPublicMarker).toHaveAttribute('data-portrait-marker', 'true');
+  await expect.poll(() => backend.getPortraitAuthorizations()).toContain('');
   await expect(page.locator('[data-master-mode-status]')).toContainText(
     /No hay entidades Máster publicadas/i,
   );

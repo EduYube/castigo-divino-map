@@ -91,6 +91,7 @@ function mapEntity(row: Record<string, unknown>): MasterCatalogEntity {
     name: stringField(row, 'name'),
     summary: typeof row.summary === 'string' ? row.summary : '',
     description: typeof row.description === 'string' ? row.description : '',
+    portraitPath: row.portrait_path == null ? null : stringField(row, 'portrait_path'),
     x: numberField(row, 'x'),
     y: numberField(row, 'y'),
     categoryId: stringField(row, 'category_id'),
@@ -224,7 +225,7 @@ export class SupabaseMasterCatalogRepository implements MasterCatalogRepository 
       let response: Response;
       try {
         response = await this.#fetchImplementation(
-          new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_master_catalog`),
+          new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_master_catalog_v2`),
           {
             method: 'POST',
             headers: {

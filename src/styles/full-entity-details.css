@@ -228,3 +228,18 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+/* MAP-045 portrait: injected only after an authorized image resolves. */
+.full-entity__portrait {
+  margin: 0 0 1.25rem;
+}
+
+.full-entity__portrait-image {
+  display: block;
+  inline-size: min(18rem, 100%);
+  block-size: auto;
+  aspect-ratio: 1;
+  border-radius: 1rem;
+  object-fit: cover;
+  border: 1px solid currentColor;
+}

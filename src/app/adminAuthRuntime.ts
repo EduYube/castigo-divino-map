@@ -208,6 +208,18 @@ class UnavailableAdminMapEntityRepository implements AdminMapEntityRepository {
     return Promise.reject(this.#error);
   }
 
+  uploadPortrait(_file: File, _options: { readonly signal: AbortSignal }): Promise<string> {
+    void _file;
+    void _options;
+    return Promise.reject(this.#error);
+  }
+
+  deletePortrait(_path: string, _options: { readonly signal: AbortSignal }): Promise<void> {
+    void _path;
+    void _options;
+    return Promise.reject(this.#error);
+  }
+
   save(
     _original: AdminMapEntityDetail | null,
     _draft: AdminMapEntityDraft,

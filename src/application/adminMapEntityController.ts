@@ -1,5 +1,6 @@
 import {
   toAdminMapEntityIssue,
+  type AdminCharacterPortraitMutation,
   type AdminMapEntityIssue,
   type AdminMapEntityRepository,
 } from '../data-access/adminMapEntities';
@@ -188,11 +189,16 @@ export class AdminMapEntityController {
     });
   }
 
-  async save(draft: AdminMapEntityDraft): Promise<boolean> {
+  async save(
+    draft: AdminMapEntityDraft,
+    portraitMutation: AdminCharacterPortraitMutation = { kind: 'keep' },
+  ): Promise<boolean> {
     const original = this.#state.editorDetail;
+    const currentPortraitPath = original?.record.portraitPath ?? null;
     const effectiveDraft: AdminMapEntityDraft = {
       ...draft,
       audience: draft.audience ?? this.#state.pendingAudience,
+      portraitPath: draft.portraitPath ?? currentPortraitPath,
     };
     const validation = validateAdminMapEntityDraft(
       effectiveDraft,
@@ -217,8 +223,22 @@ export class AdminMapEntityController {
     }
     const operation = this.#beginOperation();
     this.#publish({ ...this.#state, phase: 'mutating', issue: null });
+    let uploadedPortraitPath: string | null = null;
     try {
-      const saved = await this.#repository.save(original, effectiveDraft, {
+      let draftToSave = effectiveDraft;
+      if (portraitMutation.kind === 'replace') {
+        if (effectiveDraft.entityType !== 'character') {
+          throw new Error('Only character entities can have a portrait.');
+        }
+        uploadedPortraitPath = await this.#repository.uploadPortrait(portraitMutation.file, {
+          signal: operation.signal,
+        });
+        draftToSave = { ...effectiveDraft, portraitPath: uploadedPortraitPath };
+      } else if (portraitMutation.kind === 'remove') {
+        draftToSave = { ...effectiveDraft, portraitPath: null };
+      }
+
+      const saved = await this.#repository.save(original, draftToSave, {
         signal: operation.signal,
       });
       if (!this.#isCurrent(operation.generation)) return false;
@@ -236,8 +256,29 @@ export class AdminMapEntityController {
         issue: null,
         pendingAudience: getMapEntityAudience(saved.record),
       });
+      const savedPortraitPath = saved.record.portraitPath ?? null;
+      if (currentPortraitPath && currentPortraitPath !== savedPortraitPath) {
+        try {
+          await this.#repository.deletePortrait(currentPortraitPath, { signal: operation.signal });
+        } catch (cleanupError) {
+          console.warn(
+            'MAP-045 portrait cleanup deferred after successful entity save.',
+            cleanupError,
+          );
+        }
+      }
       return true;
     } catch (error) {
+      if (uploadedPortraitPath) {
+        try {
+          await this.#repository.deletePortrait(uploadedPortraitPath, { signal: operation.signal });
+        } catch (cleanupError) {
+          console.warn(
+            'MAP-045 orphan portrait cleanup failed after rejected entity save.',
+            cleanupError,
+          );
+        }
+      }
       this.#handleFailure(error, operation.generation);
       return false;
     }
@@ -332,6 +373,18 @@ export class AdminMapEntityController {
     try {
       await this.#repository.delete(detail, { signal: operation.signal });
       if (!this.#isCurrent(operation.generation)) return false;
+      if (detail.record.portraitPath) {
+        try {
+          await this.#repository.deletePortrait(detail.record.portraitPath, {
+            signal: operation.signal,
+          });
+        } catch (cleanupError) {
+          console.warn(
+            'MAP-045 draft portrait cleanup failed after entity deletion.',
+            cleanupError,
+          );
+        }
+      }
       this.#publish({
         ...this.#state,
         records: this.#state.records.filter((record) => record.id !== detail.record.id),

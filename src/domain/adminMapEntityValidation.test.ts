@@ -111,6 +111,23 @@ describe('validateAdminMapEntityDraft', () => {
     expect(result.fieldErrors.tagIds).toMatch(/publicadas/);
   });
 
+  it('rejects portraits on locations while allowing locations without one', () => {
+    const withoutPortrait = validateAdminMapEntityDraft(
+      draft({ entityType: 'location', portraitPath: null }),
+      references,
+    );
+    expect(withoutPortrait.valid).toBe(true);
+
+    const withPortrait = validateAdminMapEntityDraft(
+      draft({
+        entityType: 'location',
+        portraitPath: 'portraits/123e4567-e89b-42d3-a456-426614174000.webp',
+      }),
+      references,
+    );
+    expect(withPortrait.fieldErrors.portraitPath).toMatch(/personajes/);
+  });
+
   it('blocks out-of-bounds positions and stale player matrices', () => {
     const result = validateAdminMapEntityDraft(
       draft({

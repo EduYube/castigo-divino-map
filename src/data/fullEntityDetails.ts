@@ -38,6 +38,7 @@ export interface FullEntityDetailModel {
   readonly importantCharacters: readonly PublicEntityPresentationRelation[];
   readonly relatedLocations: readonly PublicEntityPresentationRelation[];
   readonly locationHistory: readonly FullEntityLocationHistoryEntry[];
+  readonly portraitPath: string | null;
   readonly publicUpdatedAt: string;
 }
 
@@ -147,6 +148,7 @@ export function resolveFullEntityDetail(
     relatedLocations: presentation.relatedLocations,
     locationHistory:
       entity.entityType === 'character' ? buildLocationHistory(catalog, entity.id) : [],
+    portraitPath: entity.entityType === 'character' ? (entity.portraitPath ?? null) : null,
     publicUpdatedAt: catalog.generatedAt,
   };
 }

@@ -381,6 +381,7 @@ function snapshotPayloads(
         'aliases',
         'summary',
         'description',
+        'portraitPath',
         'coordinates',
         'categoryId',
         'tagIds',
@@ -417,6 +418,9 @@ function snapshotPayloads(
       name_language: entity.nameLanguage,
       summary: entity.summary,
       description: entity.description,
+      ...(Object.prototype.hasOwnProperty.call(entity, 'portraitPath')
+        ? { portrait_path: entity.portraitPath ?? null }
+        : {}),
       x: coordinates.x,
       y: coordinates.y,
       category_id: entity.categoryId,

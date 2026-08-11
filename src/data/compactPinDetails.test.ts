@@ -51,6 +51,7 @@ const beta02Catalog = {
       aliases: [],
       summary: '',
       description: '',
+      portraitPath: 'portraits/123e4567-e89b-42d3-a456-426614174000.webp',
       coordinates: { x: 1080.5, y: 820 },
       categoryId: 'category-settlement',
       tagIds: ['demo-data'],
@@ -98,6 +99,7 @@ describe('compact pin detail model', () => {
       tags: [{ name: 'Costero' }, { name: 'Dato de demostración' }, { name: 'Ruta comercial' }],
       dispositions: [],
       importantCharacters: [],
+      portraitPath: null,
       source: 'beta01',
     });
     expect(details).not.toHaveProperty('aliases');
@@ -149,6 +151,7 @@ describe('compact pin detail model', () => {
       category: { name: 'Asentamiento Beta 0.2' },
       tags: [{ name: 'Dato de demostración' }],
       importantCharacters: [],
+      portraitPath: 'portraits/123e4567-e89b-42d3-a456-426614174000.webp',
       source: 'beta02',
     });
   });

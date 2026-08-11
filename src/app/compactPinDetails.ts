@@ -14,6 +14,10 @@ export interface CompactPinDetailsShowOptions {
 export interface CompactPinDetailsOptions {
   readonly onClose: () => void;
   readonly createFullDetailsUrl: (details: CompactPinDetailModel) => string | null;
+  readonly loadPortrait?: (
+    details: CompactPinDetailModel,
+    signal: AbortSignal,
+  ) => Promise<string | null>;
 }
 
 interface CompactPinDetailsElements {
@@ -246,6 +250,39 @@ function appendFullDetailsAction(
   parent.append(section);
 }
 
+function appendPortrait(content: HTMLElement, details: CompactPinDetailModel, url: string): void {
+  const title = content.querySelector<HTMLElement>('#place-details-title');
+  if (!title || content.querySelector('[data-character-portrait]')) return;
+
+  const figure = document.createElement('figure');
+  const image = document.createElement('img');
+  figure.className = 'compact-details__portrait';
+  figure.dataset.characterPortrait = '';
+  image.className = 'compact-details__portrait-image';
+  image.src = url;
+  image.alt = `Retrato de ${details.name}`;
+  image.width = 112;
+  image.height = 112;
+  image.decoding = 'async';
+  image.setAttribute('data-testid', 'compact-character-portrait');
+  image.addEventListener('error', () => figure.remove(), { once: true });
+  figure.append(image);
+  title.before(figure);
+}
+
+function createDetailsSignature(details: CompactPinDetailModel): string {
+  return JSON.stringify({
+    id: details.id,
+    name: details.name,
+    portraitPath: details.portraitPath,
+    category: details.category,
+    tags: details.tags,
+    dispositions: details.dispositions,
+    importantCharacters: details.importantCharacters,
+    entitySlug: details.entitySlug,
+  });
+}
+
 function renderDetails(
   content: HTMLElement,
   details: CompactPinDetailModel,
@@ -276,6 +313,7 @@ export function mountCompactPinDetails(
   options: CompactPinDetailsOptions,
 ): CompactPinDetailsController {
   const elements = resolveElements(root);
+  let portraitAbort: AbortController | null = null;
   const closePreservingViewport = (): void => {
     const preserveViewport = isMobileSheet();
     const scrollX = preserveViewport ? window.scrollX : 0;
@@ -327,9 +365,11 @@ export function mountCompactPinDetails(
   return {
     show(details, showOptions = {}): void {
       const existingTitle = elements.content.querySelector<HTMLElement>('#place-details-title');
+      const detailsSignature = createDetailsSignature(details);
       const canReuseContent =
         !elements.panel.hidden &&
         elements.panel.dataset.activePinId === details.id &&
+        elements.panel.dataset.detailsSignature === detailsSignature &&
         existingTitle !== null;
       const title = canReuseContent
         ? existingTitle
@@ -339,6 +379,7 @@ export function mountCompactPinDetails(
       elements.panel.dataset.activePinId = details.id;
       elements.panel.dataset.entityType = details.entityType;
       elements.panel.dataset.detailSource = details.source;
+      elements.panel.dataset.detailsSignature = detailsSignature;
       if (details.legacyPlaceId) elements.panel.dataset.activePlaceId = details.legacyPlaceId;
       else delete elements.panel.dataset.activePlaceId;
       if (details.entityId) elements.panel.dataset.entityId = details.entityId;
@@ -350,6 +391,23 @@ export function mountCompactPinDetails(
 
       if (!canReuseContent) {
         elements.panel.scrollTop = 0;
+        portraitAbort?.abort();
+        portraitAbort = null;
+        if (details.portraitPath && options.loadPortrait) {
+          const request = new AbortController();
+          portraitAbort = request;
+          void options.loadPortrait(details, request.signal).then((url) => {
+            if (
+              !url ||
+              request.signal.aborted ||
+              elements.panel.hidden ||
+              elements.panel.dataset.activePinId !== details.id
+            ) {
+              return;
+            }
+            appendPortrait(elements.content, details, url);
+          });
+        }
       }
 
       if (showOptions.focus !== false) {
@@ -357,6 +415,8 @@ export function mountCompactPinDetails(
       }
     },
     hide(): void {
+      portraitAbort?.abort();
+      portraitAbort = null;
       const preserveViewport = isMobileSheet();
       const scrollX = preserveViewport ? window.scrollX : 0;
       const scrollY = preserveViewport ? window.scrollY : 0;
@@ -367,6 +427,7 @@ export function mountCompactPinDetails(
       delete elements.panel.dataset.entityId;
       delete elements.panel.dataset.entityType;
       delete elements.panel.dataset.detailSource;
+      delete elements.panel.dataset.detailsSignature;
       delete elements.workspace.dataset.detailsOpen;
       elements.closeButton.setAttribute('aria-label', 'Cerrar la ficha compacta');
       elements.closeButton.removeAttribute('aria-keyshortcuts');
@@ -379,6 +440,8 @@ export function mountCompactPinDetails(
       }
     },
     destroy(): void {
+      portraitAbort?.abort();
+      portraitAbort = null;
       elements.closeButton.removeEventListener('click', handleClose);
       elements.returnButton.removeEventListener('click', handleReturnToPin);
       elements.workspace.removeEventListener('keydown', handleKeyDown);

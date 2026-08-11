@@ -46,6 +46,8 @@ export interface FaerunMapController {
 export interface FaerunMapOptions {
   readonly markers?: readonly AtlasPinMarkerModel[];
   readonly onPinActivate?: (pin: AtlasPinMarkerModel) => void;
+  /** MAP-045 authorized thumbnail loader. Returning null keeps the standard pin. */
+  readonly loadPortrait?: (pin: AtlasPinMarkerModel, signal: AbortSignal) => Promise<string | null>;
 }
 
 interface MapElements {
@@ -140,15 +142,61 @@ function createDispositionMarkup(marker: AtlasPinMarkerModel): string {
     .join('');
 }
 
-function createSinglePinIcon(marker: AtlasPinMarkerModel): L.DivIcon {
+function createSinglePinMarkup(marker: AtlasPinMarkerModel): string {
   const type = getPinTypeVisual(marker.entityType);
+  return `<span class="pin-visual ${type.className}"><span class="pin-visual__type-symbol" aria-hidden="true">${type.symbol}</span><span class="pin-visual__dispositions" aria-hidden="true">${createDispositionMarkup(marker)}</span></span>`;
+}
 
+function createSinglePinIcon(marker: AtlasPinMarkerModel): L.DivIcon {
   return L.divIcon({
     className: 'campaign-marker-icon',
-    html: `<span class="pin-visual ${type.className}"><span class="pin-visual__type-symbol" aria-hidden="true">${type.symbol}</span><span class="pin-visual__dispositions" aria-hidden="true">${createDispositionMarkup(marker)}</span></span>`,
+    html: createSinglePinMarkup(marker),
     iconSize: [52, 52],
     iconAnchor: [26, 26],
   });
+}
+
+function preservedPinVisualClasses(element: HTMLElement): readonly string[] {
+  const current = element.querySelector<HTMLElement>('.pin-visual');
+  return ['pin-visual--master', 'pin-visual--active', 'pin-visual--dimmed'].filter((className) =>
+    current?.classList.contains(className),
+  );
+}
+
+function restoreStandardPin(element: HTMLElement, marker: AtlasPinMarkerModel): void {
+  const preservedClasses = preservedPinVisualClasses(element);
+  element.innerHTML = createSinglePinMarkup(marker);
+  element.querySelector<HTMLElement>('.pin-visual')?.classList.add(...preservedClasses);
+  delete element.dataset.portraitMarker;
+}
+
+function applyPortraitPin(
+  element: HTMLElement,
+  marker: AtlasPinMarkerModel,
+  url: string,
+  onDecodeFailure: () => void,
+): void {
+  const visual = document.createElement('span');
+  const image = document.createElement('img');
+  const dispositions = document.createElement('span');
+
+  const preservedClasses = preservedPinVisualClasses(element);
+  visual.className = 'pin-visual pin-visual--character pin-visual--portrait';
+  visual.classList.add(...preservedClasses);
+  image.className = 'pin-visual__portrait';
+  image.src = url;
+  image.alt = '';
+  image.width = 36;
+  image.height = 36;
+  image.decoding = 'async';
+  image.setAttribute('aria-hidden', 'true');
+  dispositions.className = 'pin-visual__dispositions';
+  dispositions.setAttribute('aria-hidden', 'true');
+  dispositions.innerHTML = createDispositionMarkup(marker);
+  image.addEventListener('error', onDecodeFailure, { once: true });
+  visual.append(image, dispositions);
+  element.replaceChildren(visual);
+  element.dataset.portraitMarker = 'true';
 }
 
 function createCoincidentPinIcon(count: number): L.DivIcon {
@@ -277,6 +325,11 @@ export function mountFaerunMap(
   const groupMarkerByPinId = new Map<string, Marker>();
   const pinIdByLegacyPlaceId = new Map<PlaceId, string>();
   const markerDomListeners: MarkerDomListener[] = [];
+  const portraitAbortControllers = new Set<AbortController>();
+  const portraitQueue: Array<() => Promise<void>> = [];
+  const MAX_CONCURRENT_PORTRAITS = 6;
+  let activePortraitLoads = 0;
+  let portraitGeneration = 0;
   let renderedMarkers: readonly AtlasPinMarkerModel[] = [];
   let activePlaceId: PlaceId | null = null;
   let activeSupplementalPinId: string | null = null;
@@ -441,7 +494,55 @@ export function mountFaerunMap(
     updateGroupPresentation(leafletMarker, pins);
   };
 
+  const drainPortraitQueue = (): void => {
+    while (activePortraitLoads < MAX_CONCURRENT_PORTRAITS && portraitQueue.length > 0) {
+      const task = portraitQueue.shift();
+      if (!task) return;
+      activePortraitLoads += 1;
+      void task().finally(() => {
+        activePortraitLoads -= 1;
+        drainPortraitQueue();
+      });
+    }
+  };
+
+  const schedulePortrait = (
+    leafletMarker: Marker,
+    pin: AtlasPinMarkerModel,
+    generation: number,
+  ): void => {
+    if (!options.loadPortrait || pin.entityType !== 'character' || !pin.portraitPath) return;
+    portraitQueue.push(async () => {
+      if (destroyed || generation !== portraitGeneration) return;
+      const request = new AbortController();
+      portraitAbortControllers.add(request);
+      try {
+        const url = await options.loadPortrait?.(pin, request.signal);
+        if (!url || request.signal.aborted || destroyed || generation !== portraitGeneration)
+          return;
+        const element = leafletMarker.getElement();
+        if (!element || groupMarkerByPinId.get(pin.id) !== leafletMarker) return;
+        const fallback = (): void => {
+          if (groupMarkerByPinId.get(pin.id) !== leafletMarker) return;
+          restoreStandardPin(element, pin);
+          updateGroupPresentation(leafletMarker, [pin]);
+        };
+        applyPortraitPin(element, pin, url, fallback);
+        updateGroupPresentation(leafletMarker, [pin]);
+      } catch {
+        // Portraits are enhancement-only. The standard pin remains authoritative.
+      } finally {
+        portraitAbortControllers.delete(request);
+      }
+    });
+    drainPortraitQueue();
+  };
+
   const clearRenderedMarkers = (): void => {
+    portraitGeneration += 1;
+    portraitQueue.splice(0);
+    portraitAbortControllers.forEach((controller) => controller.abort());
+    portraitAbortControllers.clear();
     markerDomListeners.splice(0).forEach(({ element, handler }) => {
       element.removeEventListener('keydown', handler);
     });
@@ -453,6 +554,7 @@ export function mountFaerunMap(
 
   const renderMarkers = (markers: readonly AtlasPinMarkerModel[]): void => {
     clearRenderedMarkers();
+    const generation = portraitGeneration;
     renderedMarkers = markers;
     if (activeSupplementalPinId && !markers.some(({ id }) => id === activeSupplementalPinId)) {
       activeSupplementalPinId = null;
@@ -512,6 +614,7 @@ export function mountFaerunMap(
       leafletMarker.addTo(map);
       groupMarkers.add(leafletMarker);
       for (const pin of pins) groupMarkerByPinId.set(pin.id, leafletMarker);
+      if (pins.length === 1) schedulePortrait(leafletMarker, pins[0], generation);
     }
   };
 

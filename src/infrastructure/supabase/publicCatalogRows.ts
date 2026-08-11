@@ -322,6 +322,7 @@ export function parseEntity(
       'name_language',
       'summary',
       'description',
+      'portrait_path',
       'x',
       'y',
       'category_id',
@@ -334,13 +335,27 @@ export function parseEntity(
     IDENTIFIER_PATTERNS.entity,
   ) as PublicMapEntity['id'];
 
+  const parsedEntityType = expectEnum(row.entity_type, `${path}.entity_type`, [
+    'character',
+    'location',
+  ] as const);
+  const hasPortraitPath = Object.prototype.hasOwnProperty.call(row, 'portrait_path');
+  const portraitPath =
+    row.portrait_path == null
+      ? null
+      : expectString(
+          row.portrait_path,
+          `${path}.portrait_path`,
+          /^portraits\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp)$/,
+        );
+  if (portraitPath !== null && parsedEntityType !== 'character') {
+    invalidResponse(`${path}.portrait_path solo puede pertenecer a un personaje.`);
+  }
+
   return {
     id,
     slug: expectString(row.slug, `${path}.slug`, IDENTIFIER_PATTERNS.slug),
-    entityType: expectEnum(row.entity_type, `${path}.entity_type`, [
-      'character',
-      'location',
-    ] as const),
+    entityType: parsedEntityType,
     visibility: expectEnum(row.visibility, `${path}.visibility`, ['pin', 'search_only'] as const),
     name: expectString(row.name, `${path}.name`),
     nameLanguage: expectEnum(row.name_language, `${path}.name_language`, ['en'] as const),
@@ -353,6 +368,7 @@ export function parseEntity(
       typeof row.description === 'string'
         ? row.description
         : invalidResponse(`${path}.description debe ser texto.`),
+    ...(hasPortraitPath ? { portraitPath } : {}),
     coordinates: {
       x: expectNumber(row.x, `${path}.x`, 0, 3600),
       y: expectNumber(row.y, `${path}.y`, 0, 2329),

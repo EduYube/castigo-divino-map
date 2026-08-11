@@ -4,7 +4,12 @@ const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const PROJECT_URL = 'http://127.0.0.1:4173';
 const ACCESS_TOKEN = 'map019_e2e_access_token';
+const PUBLIC_KEY = 'sb_publishable_map019_e2e_key';
 const REFRESH_TOKEN = 'map019_e2e_refresh_token';
+const PORTRAIT_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -21,6 +26,7 @@ interface EntityRow extends Record<string, unknown> {
   entity_type: 'character' | 'location';
   visibility: 'pin' | 'search_only';
   audience: Audience;
+  portrait_path: string | null;
   name: string;
   summary: string;
   description: string;
@@ -36,6 +42,7 @@ interface EntityRow extends Record<string, unknown> {
 interface BackendControl {
   getEntity(id: string): EntityRow | undefined;
   getSaveCount(): number;
+  getStoredPortraits(): readonly string[];
   failNextSave(): void;
   expireNextSave(): void;
   staleNextSave(): void;
@@ -59,6 +66,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
   let mode: 'normal' | 'network' | 'expired' | 'stale' | 'invalid-relation' = 'normal';
   let counter = 10;
   let saveCount = 0;
+  const storedPortraits = new Set<string>();
 
   const categories = [
     { id: 'category-people', name: 'People', publication_status: 'published' },
@@ -80,6 +88,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       entity_type: 'character',
       visibility: 'pin',
       audience: 'public',
+      portrait_path: null,
       name: 'Aster Guide',
       summary: 'A fictitious ally.',
       description: '',
@@ -133,13 +142,22 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     };
   };
 
-  await page.addInitScript((projectUrl) => {
-    window.__MAP017_AUTH_TEST_CONFIG__ = {
-      projectUrl,
-      publishableKey: 'sb_publishable_map019_e2e_key',
-      timeoutMs: 2_000,
-    };
-  }, PROJECT_URL);
+  await page.addInitScript(
+    ({ projectUrl, publishableKey }) => {
+      window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
+        projectUrl,
+        publishableKey,
+        timeoutMs: 2_000,
+        retryDelaysMs: [0, 0, 0],
+      };
+      window.__MAP017_AUTH_TEST_CONFIG__ = {
+        projectUrl,
+        publishableKey,
+        timeoutMs: 2_000,
+      };
+    },
+    { projectUrl: PROJECT_URL, publishableKey: PUBLIC_KEY },
+  );
 
   await page.route(OFFICIAL_MAP_URL, async (route) => {
     await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: TEST_MAP });
@@ -170,11 +188,129 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
   });
 
+  await page.route('**/storage/v1/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const authorization = request.headers()['authorization'] ?? '';
+    if (request.method() === 'GET' && authorization === '') {
+      const encodedPath = url.pathname.split('/character-portraits/')[1] ?? '';
+      const path = decodeURIComponent(encodedPath);
+      const authorized = entities.some(
+        (entity) =>
+          entity.entity_type === 'character' &&
+          entity.audience === 'public' &&
+          entity.publication_status === 'published' &&
+          entity.portrait_path === path,
+      );
+      if (!authorized) {
+        await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: 'image/png', body: PORTRAIT_PNG });
+      return;
+    }
+    if (authorization !== `Bearer ${ACCESS_TOKEN}`) {
+      await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
+      return;
+    }
+    if (
+      request.method() === 'POST' &&
+      url.pathname.startsWith('/storage/v1/object/character-portraits/')
+    ) {
+      const path = decodeURIComponent(
+        url.pathname.slice('/storage/v1/object/character-portraits/'.length),
+      );
+      storedPortraits.add(path);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ Key: `character-portraits/${path}` }),
+      });
+      return;
+    }
+    if (
+      request.method() === 'DELETE' &&
+      url.pathname === '/storage/v1/object/character-portraits'
+    ) {
+      const body = request.postDataJSON() as { prefixes?: unknown };
+      if (Array.isArray(body.prefixes))
+        body.prefixes.map(String).forEach((path) => storedPortraits.delete(path));
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+      return;
+    }
+    await route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
+  });
+
   await page.route('**/rest/v1/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
-    if (request.headers()['authorization'] !== `Bearer ${ACCESS_TOKEN}`) {
-      await route.fallback();
+    const authorization = request.headers()['authorization'] ?? '';
+    if (authorization !== `Bearer ${ACCESS_TOKEN}` && request.method() === 'GET') {
+      const table = url.pathname.split('/').at(-1) ?? '';
+      const publishedEntities = entities.filter(
+        (entity) => entity.publication_status === 'published' && entity.audience === 'public',
+      );
+      const publicRows: Record<string, unknown>[] =
+        table === 'categories'
+          ? categories
+              .filter(({ publication_status }) => publication_status === 'published')
+              .map(({ id, name }) => ({ id, slug: id, name, description: '' }))
+          : table === 'tags'
+            ? tags
+                .filter(({ publication_status }) => publication_status === 'published')
+                .map(({ id, name }) => ({ id, name, description: '' }))
+            : table === 'players'
+              ? players
+                  .filter(({ publication_status }) => publication_status === 'published')
+                  .map(({ id, display_name }) => ({
+                    id,
+                    slug: id,
+                    display_name,
+                    name_language: 'en',
+                  }))
+              : table === 'map_entities'
+                ? publishedEntities.map((entity) => ({
+                    id: entity.id,
+                    slug: entity.slug,
+                    entity_type: entity.entity_type,
+                    visibility: entity.visibility,
+                    name: entity.name,
+                    name_language: 'en',
+                    summary: entity.summary,
+                    description: entity.description,
+                    portrait_path: entity.portrait_path,
+                    x: entity.x,
+                    y: entity.y,
+                    category_id: entity.category_id,
+                  }))
+                : table === 'entity_tags'
+                  ? publishedEntities.flatMap((entity) =>
+                      (entityTags.get(entity.id) ?? []).map((tagId) => ({
+                        entity_id: entity.id,
+                        tag_id: tagId,
+                      })),
+                    )
+                  : table === 'entity_player_dispositions'
+                    ? publishedEntities.flatMap((entity) =>
+                        Object.entries(dispositions.get(entity.id) ?? {}).map(
+                          ([playerId, playerDisposition]) => ({
+                            entity_id: entity.id,
+                            player_id: playerId,
+                            disposition: playerDisposition,
+                          }),
+                        ),
+                      )
+                    : [];
+      const select = (url.searchParams.get('select') ?? '').split(',').filter(Boolean);
+      const projected = select.length
+        ? publicRows.map((row) => Object.fromEntries(select.map((field) => [field, row[field]])))
+        : publicRows;
+      const range = rangeResponse(projected);
+      await route.fulfill({ status: 200, headers: range.headers, body: range.body });
+      return;
+    }
+    if (authorization !== `Bearer ${ACCESS_TOKEN}`) {
+      await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
       return;
     }
 
@@ -183,7 +319,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v2')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v3')) {
       const body = request.postDataJSON() as { p_entity_id?: string };
       await route.fulfill({
         status: 200,
@@ -193,7 +329,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v2')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v3')) {
       if (mode === 'network') {
         mode = 'normal';
         await route.abort('failed');
@@ -253,6 +389,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         entity_type: body.p_entity_type as EntityRow['entity_type'],
         visibility: body.p_visibility as EntityRow['visibility'],
         audience: body.p_audience as Audience,
+        portrait_path: body.p_portrait_path == null ? null : String(body.p_portrait_path),
         name: String(body.p_name),
         summary: String(body.p_summary),
         description: String(body.p_description),
@@ -333,6 +470,9 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     },
     getSaveCount(): number {
       return saveCount;
+    },
+    getStoredPortraits(): readonly string[] {
+      return [...storedPortraits];
     },
     failNextSave(): void {
       mode = 'network';
@@ -458,6 +598,92 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await expect(page.getByText('MAP-019 Character', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Editar MAP-019 Character' }).click();
   await expect(page.getByLabel('Nombre principal (inglés)')).toHaveValue('MAP-019 Character');
+});
+
+test('MAP-045 edits coordinates and portrait in one character flow without changing identity', async ({
+  page,
+}) => {
+  const backend = await configureBackend(page);
+  await page.goto('/');
+  const publicMarker = page.locator('.campaign-marker-icon[data-entity-id="entity-aster-guide"]');
+  await expect(publicMarker).toHaveCount(1);
+  await expect(publicMarker).toHaveAttribute('data-marker-lat', '500');
+  await expect(publicMarker).toHaveAttribute('data-marker-lng', '800');
+  await expect(publicMarker).not.toHaveAttribute('data-portrait-marker', 'true');
+
+  await loginAndConnect(page);
+  await page.getByRole('button', { name: 'Editar Aster Guide' }).click();
+
+  const original = backend.getEntity('entity-aster-guide');
+  expect(original?.id).toBe('entity-aster-guide');
+  expect(original?.slug).toBe('aster-guide');
+  expect(original?.portrait_path).toBeNull();
+
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    'base64',
+  );
+  const input = page.getByTestId('admin-character-portrait-input');
+  await input.setInputFiles({ name: 'secret-npc-name.png', mimeType: 'image/png', buffer: png });
+  await expect(page.getByText('El retrato se añadirá al guardar.')).toBeVisible();
+  await page.getByLabel('Coordenada X').fill('901');
+  await page.getByLabel('Coordenada Y').fill('601');
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
+
+  const afterAdd = backend.getEntity('entity-aster-guide');
+  expect(afterAdd).toMatchObject({
+    id: 'entity-aster-guide',
+    slug: 'aster-guide',
+    x: 901,
+    y: 601,
+    publication_status: 'published',
+  });
+  expect(afterAdd?.portrait_path).toMatch(/^portraits\/[0-9a-f-]{36}\.png$/);
+  expect(afterAdd?.portrait_path).not.toContain('secret-npc-name');
+  await expect.poll(() => backend.getStoredPortraits().length).toBe(1);
+  await expect(publicMarker).toHaveCount(1);
+  await expect(publicMarker).toHaveAttribute('data-marker-lat', '601');
+  await expect(publicMarker).toHaveAttribute('data-marker-lng', '901');
+  await expect(publicMarker).toHaveAttribute('data-portrait-marker', 'true');
+  const firstPath = afterAdd?.portrait_path;
+
+  await input.setInputFiles({ name: 'replacement.png', mimeType: 'image/png', buffer: png });
+  await expect(page.getByText('El retrato actual se sustituirá al guardar.')).toBeVisible();
+  await page.getByLabel('Coordenada X').fill('902');
+  await page.getByLabel('Coordenada Y').fill('602');
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect.poll(() => backend.getStoredPortraits().length).toBe(1);
+  const afterReplace = backend.getEntity('entity-aster-guide');
+  expect(afterReplace).toMatchObject({
+    id: 'entity-aster-guide',
+    slug: 'aster-guide',
+    x: 902,
+    y: 602,
+  });
+  expect(afterReplace?.portrait_path).not.toBe(firstPath);
+  expect(backend.getStoredPortraits()).not.toContain(firstPath ?? '');
+  await expect(publicMarker).toHaveCount(1);
+  await expect(publicMarker).toHaveAttribute('data-marker-lat', '602');
+  await expect(publicMarker).toHaveAttribute('data-marker-lng', '902');
+  await expect(publicMarker).toHaveAttribute('data-portrait-marker', 'true');
+
+  await page.getByTestId('admin-character-portrait-remove').click();
+  await expect(page.getByText('El retrato se quitará al guardar.')).toBeVisible();
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect.poll(() => backend.getStoredPortraits().length).toBe(0);
+  expect(backend.getEntity('entity-aster-guide')).toMatchObject({
+    id: 'entity-aster-guide',
+    slug: 'aster-guide',
+    portrait_path: null,
+    x: 902,
+    y: 602,
+  });
+  await expect(publicMarker).toHaveCount(1);
+  await expect(publicMarker).not.toHaveAttribute('data-portrait-marker', 'true');
+  await expect(
+    publicMarker.locator('.pin-visual--character:not(.pin-visual--portrait)'),
+  ).toHaveCount(1);
 });
 
 test('keyboard coordinate editing can create, publish and archive an emplacement', async ({

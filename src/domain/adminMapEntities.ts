@@ -16,6 +16,8 @@ export interface AdminMapEntityRecord extends MapCoordinate {
    * this field; absence is interpreted as the migration default (`public`).
    */
   readonly audience?: MapEntityAudience;
+  /** MAP-045 opaque private Storage reference; null/missing means no portrait. */
+  readonly portraitPath?: string | null;
   readonly name: string;
   readonly summary: string;
   readonly description: string;
@@ -94,6 +96,7 @@ export interface AdminMapEntityDraft extends MapCoordinate {
   readonly visibility: MapVisibility;
   /** See AdminMapEntityRecord.audience. Missing means the safe migration default. */
   readonly audience?: MapEntityAudience;
+  readonly portraitPath?: string | null;
   readonly name: string;
   readonly summary: string;
   readonly description: string;
@@ -122,6 +125,7 @@ export function detailToDraft(detail: AdminMapEntityDetail): AdminMapEntityDraft
     entityType: detail.record.entityType,
     visibility: detail.record.visibility,
     audience: getMapEntityAudience(detail.record),
+    portraitPath: detail.record.portraitPath ?? null,
     name: detail.record.name,
     summary: detail.record.summary,
     description: detail.record.description,
@@ -147,6 +151,7 @@ export function createEmptyMapEntityDraft(
     entityType,
     visibility: 'pin',
     audience: 'public',
+    portraitPath: null,
     name: '',
     summary: '',
     description: '',
