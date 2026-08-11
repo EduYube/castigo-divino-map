@@ -30,15 +30,15 @@ jobs:
           if text.count(old) != 1:
               raise SystemExit('initial diagnostic anchor mismatch')
           text = text.replace(old, new, 1)
-          old = """  await expect.poll(() => backend.getSaveCount()).toBe(1);\n  await expect.poll(() => backend.getAudience()).toBe('master');\n\n  backend.failDelayedPublicInitialization();\n"""
-          new = """  await expect.poll(() => backend.getSaveCount()).toBe(1);\n  await expect.poll(() => backend.getAudience()).toBe('master');\n  console.log(\n    'MAP045_DIAG_AFTER_SAVE',\n    await page.evaluate((entityId) => {\n      const diagnosticWindow = window as Window & { __MAP045_AUDIENCE_EVENTS__?: unknown[] };\n      return {\n        events: diagnosticWindow.__MAP045_AUDIENCE_EVENTS__ ?? [],\n        markerCount: document.querySelectorAll(\n          `[data-testid=\\\"place-marker\\\"][data-place-id=\\\"${entityId}\\\"]`,\n        ).length,\n        publicStatus: document.documentElement.dataset.publicDataStatus ?? null,\n      };\n    }, RACE_ENTITY_ID),\n  );\n\n  backend.failDelayedPublicInitialization();\n"""
+          old = """  await expect.poll(() => backend.getAudience()).toBe('master');\n\n  // Only now let the public remote load fail. initialize() must fall back to the bundled\n"""
+          new = """  await expect.poll(() => backend.getAudience()).toBe('master');\n  console.log(\n    'MAP045_DIAG_AFTER_SAVE',\n    await page.evaluate((entityId) => {\n      const diagnosticWindow = window as Window & { __MAP045_AUDIENCE_EVENTS__?: unknown[] };\n      return {\n        events: diagnosticWindow.__MAP045_AUDIENCE_EVENTS__ ?? [],\n        markerCount: document.querySelectorAll(\n          `[data-testid=\\\"place-marker\\\"][data-place-id=\\\"${entityId}\\\"]`,\n        ).length,\n      };\n    }, RACE_ENTITY_ID),\n  );\n\n  // Only now let the public remote load fail. initialize() must fall back to the bundled\n"""
           if text.count(old) != 1:
               raise SystemExit('post-save diagnostic anchor mismatch')
           text = text.replace(old, new, 1)
-          old = """  await expect\n    .poll(() => page.locator('html').getAttribute('data-public-data-status'))\n    .toMatch(/available|degraded/);\n"""
-          new = """  await expect\n    .poll(() => page.locator('html').getAttribute('data-public-data-status'))\n    .toMatch(/available|degraded/);\n  console.log(\n    'MAP045_DIAG_AFTER_PUBLIC_FAILURE',\n    await page.evaluate((entityId) => {\n      const diagnosticWindow = window as Window & { __MAP045_AUDIENCE_EVENTS__?: unknown[] };\n      return {\n        events: diagnosticWindow.__MAP045_AUDIENCE_EVENTS__ ?? [],\n        markerCount: document.querySelectorAll(\n          `[data-testid=\\\"place-marker\\\"][data-place-id=\\\"${entityId}\\\"]`,\n        ).length,\n        publicStatus: document.documentElement.dataset.publicDataStatus ?? null,\n      };\n    }, RACE_ENTITY_ID),\n  );\n"""
+          old = """  backend.failDelayedPublicInitialization();\n\n  const publicControlMarker = page.locator(\n"""
+          new = """  backend.failDelayedPublicInitialization();\n  await page.waitForTimeout(250);\n  console.log(\n    'MAP045_DIAG_AFTER_RELEASE',\n    await page.evaluate((entityId) => {\n      const diagnosticWindow = window as Window & { __MAP045_AUDIENCE_EVENTS__?: unknown[] };\n      return {\n        events: diagnosticWindow.__MAP045_AUDIENCE_EVENTS__ ?? [],\n        markerCount: document.querySelectorAll(\n          `[data-testid=\\\"place-marker\\\"][data-place-id=\\\"${entityId}\\\"]`,\n        ).length,\n      };\n    }, RACE_ENTITY_ID),\n  );\n\n  const publicControlMarker = page.locator(\n"""
           if text.count(old) != 1:
-              raise SystemExit('post-failure diagnostic anchor mismatch')
+              raise SystemExit('release diagnostic anchor mismatch')
           path.write_text(text.replace(old, new, 1))
           PY
       - run: npx playwright install --with-deps chromium
