@@ -54,6 +54,7 @@ describe('SupabaseCharacterPortraitResources', () => {
     const fetchImplementation = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       expect(init?.headers).toMatchObject({ apikey: PUBLISHABLE_KEY });
       expect(init?.headers).not.toHaveProperty('Authorization');
+      expect(init?.cache).toBe('no-store');
       return imageResponse();
     });
     const { subject } = resources(fetchImplementation as unknown as typeof fetch);
