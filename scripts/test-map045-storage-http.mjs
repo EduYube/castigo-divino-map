@@ -15,13 +15,15 @@ function normalizeStatusKey(key) {
     .toUpperCase();
 }
 
-function collectStatusValues(value, values = new Map()) {
+function collectStatusValues(value, values = new Map(), prefix = '') {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return values;
   for (const [key, entry] of Object.entries(value)) {
+    const qualifiedKey = prefix ? `${prefix}_${key}` : key;
     if (typeof entry === 'string' && entry.length > 0) {
+      values.set(normalizeStatusKey(qualifiedKey), entry);
       values.set(normalizeStatusKey(key), entry);
     } else if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
-      collectStatusValues(entry, values);
+      collectStatusValues(entry, values, qualifiedKey);
     }
   }
   return values;
