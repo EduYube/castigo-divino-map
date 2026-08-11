@@ -24,6 +24,7 @@ const entity = {
   slug: 'aster-guide',
   entity_type: 'character',
   visibility: 'pin',
+  audience: 'public',
   name: 'Aster Guide',
   summary: 'A fictitious ally.',
   description: '',
@@ -94,7 +95,7 @@ async function configureAdminBackend(page: Page): Promise<void> {
       return;
     }
 
-    if (authenticated && url.pathname.endsWith('/rpc/admin_get_map_entity_editor')) {
+    if (authenticated && url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v2')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

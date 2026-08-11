@@ -242,12 +242,12 @@ for (const viewport of MOBILE_VIEWPORTS) {
     await expectTouchTarget(page, '[data-place-details-close]');
     await expectSheetPreservesMapContext(page);
     await expectNoHorizontalOverflow(page);
+    expect(await panel.evaluate((element) => element.scrollTop)).toBe(0);
     await captureReference(page, testInfo, viewport.label);
 
     const fullAction = panel.getByRole('link', {
       name: 'Abrir ficha completa de Scout en una pestaña nueva',
     });
-    expect(await panel.evaluate((element) => element.scrollTop)).toBe(0);
     await panel.evaluate((element) => {
       element.scrollTop = element.scrollHeight;
     });

@@ -5,10 +5,12 @@ import {
 } from '../data-access/adminMapEntities';
 import {
   detailToDraft,
+  getMapEntityAudience,
   type AdminMapEntityDetail,
   type AdminMapEntityDraft,
   type AdminMapEntityRecord,
   type AdminMapEntityReferences,
+  type MapEntityAudience,
 } from '../domain/adminMapEntities';
 import { validateAdminMapEntityDraft } from '../domain/adminMapEntityValidation';
 
@@ -24,6 +26,7 @@ export interface AdminMapEntityState {
   readonly issue: AdminMapEntityIssue | null;
   readonly authorized: boolean;
   readonly backendConnected: boolean;
+  readonly pendingAudience: MapEntityAudience;
 }
 
 export type AdminMapEntityStateListener = (state: AdminMapEntityState) => void;
@@ -47,6 +50,7 @@ const INITIAL_STATE: AdminMapEntityState = {
   issue: null,
   authorized: false,
   backendConnected: false,
+  pendingAudience: 'public',
 };
 
 export class AdminMapEntityController {
@@ -89,11 +93,17 @@ export class AdminMapEntityController {
         creating: false,
         phase: 'blocked',
         issue: null,
+        pendingAudience: 'public',
       });
       return;
     }
     this.#publish({ ...this.#state, authorized, backendConnected, issue: null });
     if (!wasAvailable || this.#state.records.length === 0) void this.reload();
+  }
+
+  setPendingAudience(audience: MapEntityAudience): void {
+    if (!this.#canMutate() || (audience !== 'public' && audience !== 'master')) return;
+    this.#publish({ ...this.#state, pendingAudience: audience });
   }
 
   async reload(): Promise<void> {
@@ -108,6 +118,7 @@ export class AdminMapEntityController {
       issue: null,
       editorDetail: null,
       creating: false,
+      pendingAudience: 'public',
     });
     try {
       const [records, references] = await Promise.all([
@@ -127,7 +138,13 @@ export class AdminMapEntityController {
       return;
     }
     this.#cancelActive();
-    this.#publish({ ...this.#state, creating: true, editorDetail: null, issue: null });
+    this.#publish({
+      ...this.#state,
+      creating: true,
+      editorDetail: null,
+      issue: null,
+      pendingAudience: 'public',
+    });
   }
 
   async openEditor(entityId: string): Promise<void> {
@@ -142,11 +159,18 @@ export class AdminMapEntityController {
       issue: null,
       creating: false,
       editorDetail: null,
+      pendingAudience: 'public',
     });
     try {
       const detail = await this.#repository.load(entityId, { signal: operation.signal });
       if (!this.#isCurrent(operation.generation)) return;
-      this.#publish({ ...this.#state, editorDetail: detail, phase: 'ready', issue: null });
+      this.#publish({
+        ...this.#state,
+        editorDetail: detail,
+        phase: 'ready',
+        issue: null,
+        pendingAudience: getMapEntityAudience(detail.record),
+      });
     } catch (error) {
       this.#handleFailure(error, operation.generation);
     }
@@ -160,12 +184,21 @@ export class AdminMapEntityController {
       creating: false,
       phase: this.#canMutate() ? 'ready' : 'blocked',
       issue: null,
+      pendingAudience: 'public',
     });
   }
 
   async save(draft: AdminMapEntityDraft): Promise<boolean> {
     const original = this.#state.editorDetail;
-    const validation = validateAdminMapEntityDraft(draft, this.#state.references, original);
+    const effectiveDraft: AdminMapEntityDraft = {
+      ...draft,
+      audience: draft.audience ?? this.#state.pendingAudience,
+    };
+    const validation = validateAdminMapEntityDraft(
+      effectiveDraft,
+      this.#state.references,
+      original,
+    );
     if (!validation.valid) {
       this.#publish({
         ...this.#state,
@@ -185,7 +218,9 @@ export class AdminMapEntityController {
     const operation = this.#beginOperation();
     this.#publish({ ...this.#state, phase: 'mutating', issue: null });
     try {
-      const saved = await this.#repository.save(original, draft, { signal: operation.signal });
+      const saved = await this.#repository.save(original, effectiveDraft, {
+        signal: operation.signal,
+      });
       if (!this.#isCurrent(operation.generation)) return false;
       const records = original
         ? this.#state.records.map((record) =>
@@ -199,6 +234,47 @@ export class AdminMapEntityController {
         creating: false,
         phase: 'ready',
         issue: null,
+        pendingAudience: getMapEntityAudience(saved.record),
+      });
+      return true;
+    } catch (error) {
+      this.#handleFailure(error, operation.generation);
+      return false;
+    }
+  }
+
+  async changeAudience(entityId: string, audience: MapEntityAudience): Promise<boolean> {
+    if (!this.#canMutate() || this.#state.phase === 'mutating') {
+      this.#publishBlocked();
+      return false;
+    }
+    const operation = this.#beginOperation();
+    this.#publish({ ...this.#state, phase: 'mutating', issue: null });
+    try {
+      const detail = await this.#repository.load(entityId, { signal: operation.signal });
+      if (!this.#isCurrent(operation.generation)) return false;
+      if (getMapEntityAudience(detail.record) === audience) {
+        this.#publish({ ...this.#state, phase: 'ready', issue: null });
+        return true;
+      }
+      const saved = await this.#repository.save(
+        detail,
+        { ...detailToDraft(detail), audience },
+        { signal: operation.signal },
+      );
+      if (!this.#isCurrent(operation.generation)) return false;
+      const editorMatches = this.#state.editorDetail?.record.id === saved.record.id;
+      this.#publish({
+        ...this.#state,
+        records: this.#state.records.map((record) =>
+          record.id === saved.record.id ? saved.record : record,
+        ),
+        editorDetail: editorMatches ? saved : this.#state.editorDetail,
+        phase: 'ready',
+        issue: null,
+        pendingAudience: editorMatches
+          ? getMapEntityAudience(saved.record)
+          : this.#state.pendingAudience,
       });
       return true;
     } catch (error) {
@@ -234,6 +310,10 @@ export class AdminMapEntityController {
             : this.#state.editorDetail,
         phase: 'ready',
         issue: null,
+        pendingAudience:
+          this.#state.editorDetail?.record.id === saved.record.id
+            ? getMapEntityAudience(saved.record)
+            : this.#state.pendingAudience,
       });
       return true;
     } catch (error) {
@@ -259,6 +339,7 @@ export class AdminMapEntityController {
         creating: false,
         phase: 'ready',
         issue: null,
+        pendingAudience: 'public',
       });
       return true;
     } catch (error) {

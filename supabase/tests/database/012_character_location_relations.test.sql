@@ -32,13 +32,13 @@ select ok(
 );
 select ok(
   (
-    select roles = array['anon']::name[]
+    select roles = array['anon', 'authenticated']::name[]
     from pg_policies
     where schemaname = 'public'
       and tablename = 'character_location_relations'
       and policyname = 'character_location_relations_public_select'
   ),
-  'the player-facing select policy applies only to anon and does not overlap the admin policy'
+  'the player-facing select policy applies to anon and authenticated readers'
 );
 
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';

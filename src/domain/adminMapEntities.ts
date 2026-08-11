@@ -2,6 +2,7 @@ import type { MapCoordinate } from './mapCoordinates';
 
 export type MapEntityType = 'character' | 'location';
 export type MapVisibility = 'pin' | 'search_only';
+export type MapEntityAudience = 'public' | 'master';
 export type PlayerDisposition = 'ally' | 'enemy' | 'neutral';
 export type MapEntityPublicationStatus = 'draft' | 'published' | 'archived';
 
@@ -10,6 +11,11 @@ export interface AdminMapEntityRecord extends MapCoordinate {
   readonly slug: string;
   readonly entityType: MapEntityType;
   readonly visibility: MapVisibility;
+  /**
+   * Older in-memory fixtures predate MAP-044. Runtime repositories always return
+   * this field; absence is interpreted as the migration default (`public`).
+   */
+  readonly audience?: MapEntityAudience;
   readonly name: string;
   readonly summary: string;
   readonly description: string;
@@ -86,6 +92,8 @@ export interface AdminMapEntityDraft extends MapCoordinate {
   readonly slug: string;
   readonly entityType: MapEntityType;
   readonly visibility: MapVisibility;
+  /** See AdminMapEntityRecord.audience. Missing means the safe migration default. */
+  readonly audience?: MapEntityAudience;
   readonly name: string;
   readonly summary: string;
   readonly description: string;
@@ -93,6 +101,12 @@ export interface AdminMapEntityDraft extends MapCoordinate {
   readonly tagIds: readonly string[];
   readonly dispositions: readonly AdminDispositionDraft[];
   readonly publicationStatus: MapEntityPublicationStatus;
+}
+
+export function getMapEntityAudience(
+  value: Pick<AdminMapEntityRecord | AdminMapEntityDraft, 'audience'>,
+): MapEntityAudience {
+  return value.audience ?? 'public';
 }
 
 export function getSelectedTagIds(detail: AdminMapEntityDetail): readonly string[] {
@@ -107,6 +121,7 @@ export function detailToDraft(detail: AdminMapEntityDetail): AdminMapEntityDraft
     slug: detail.record.slug,
     entityType: detail.record.entityType,
     visibility: detail.record.visibility,
+    audience: getMapEntityAudience(detail.record),
     name: detail.record.name,
     summary: detail.record.summary,
     description: detail.record.description,
@@ -131,6 +146,7 @@ export function createEmptyMapEntityDraft(
     slug: '',
     entityType,
     visibility: 'pin',
+    audience: 'public',
     name: '',
     summary: '',
     description: '',

@@ -36,6 +36,7 @@ interface EntityRow extends Record<string, unknown> {
   slug: string;
   entity_type: 'character' | 'location';
   visibility: 'pin' | 'search_only';
+  audience: 'public' | 'master';
   name: string;
   summary: string;
   description: string;
@@ -237,6 +238,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
           slug: `request-${requestRow.id.replaceAll('-', '')}`,
           entity_type: requestRow.entity_type,
           visibility: 'pin',
+          audience: 'public',
           name: requestRow.proposed_name,
           summary: '',
           description: requestRow.description,
@@ -258,7 +260,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v2')) {
       const body = request.postDataJSON() as { p_entity_id?: string };
       const entity = entities.find((candidate) => candidate.id === body.p_entity_id);
       await route.fulfill({

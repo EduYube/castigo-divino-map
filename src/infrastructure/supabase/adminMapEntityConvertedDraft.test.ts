@@ -47,6 +47,7 @@ describe('MAP-027 converted drafts in the entity repository', () => {
       slug: 'request-1000',
       entity_type: 'location',
       visibility: 'pin',
+      audience: 'public',
       name: 'Converted request',
       summary: '',
       description: 'Editable draft',
@@ -79,6 +80,7 @@ describe('MAP-027 converted drafts in the entity repository', () => {
     await expect(repository.list({ signal: new AbortController().signal })).resolves.toEqual([
       expect.objectContaining({
         id: 'entity-request-1000',
+        audience: 'public',
         categoryId: '',
         publicationStatus: 'draft',
       }),
