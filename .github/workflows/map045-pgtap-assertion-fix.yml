@@ -20,31 +20,38 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          path = Path('supabase/tests/database/020_character_portraits.test.sql')
+
+          path = Path("supabase/tests/database/020_character_portraits.test.sql")
           text = path.read_text()
-          old = """select like(
-  public.admin_get_map_entity_editor_v3('entity-map045-master') -> 'record' ->> 'portrait_path',
-  'portraits/%',
-  'admin editor receives the current portrait reference'
-);
-select like(
-  public.admin_get_master_catalog_v2()::text,
-  '%22222222-2222-4222-8222-222222222222.webp%',
-  'authorized master catalog includes the master portrait reference'
-);
-"""
-          new = """select ok(
-  (public.admin_get_map_entity_editor_v3('entity-map045-master') -> 'record' ->> 'portrait_path') like 'portraits/%',
-  'admin editor receives the current portrait reference'
-);
-select ok(
-  public.admin_get_master_catalog_v2()::text like '%22222222-2222-4222-8222-222222222222.webp%',
-  'authorized master catalog includes the master portrait reference'
-);
-"""
-          if old not in text:
-              raise SystemExit('expected pgTAP assertions not found')
-          path.write_text(text.replace(old, new, 1))
+          old_editor = (
+              "select like(\n"
+              "  public.admin_get_map_entity_editor_v3('entity-map045-master') -> 'record' ->> 'portrait_path',\n"
+              "  'portraits/%',\n"
+              "  'admin editor receives the current portrait reference'\n"
+              ");"
+          )
+          new_editor = (
+              "select ok(\n"
+              "  (public.admin_get_map_entity_editor_v3('entity-map045-master') -> 'record' ->> 'portrait_path') like 'portraits/%',\n"
+              "  'admin editor receives the current portrait reference'\n"
+              ");"
+          )
+          old_catalog = (
+              "select like(\n"
+              "  public.admin_get_master_catalog_v2()::text,\n"
+              "  '%22222222-2222-4222-8222-222222222222.webp%',\n"
+              "  'authorized master catalog includes the master portrait reference'\n"
+              ");"
+          )
+          new_catalog = (
+              "select ok(\n"
+              "  public.admin_get_master_catalog_v2()::text like '%22222222-2222-4222-8222-222222222222.webp%',\n"
+              "  'authorized master catalog includes the master portrait reference'\n"
+              ");"
+          )
+          if old_editor not in text or old_catalog not in text:
+              raise SystemExit("expected pgTAP assertions not found")
+          path.write_text(text.replace(old_editor, new_editor, 1).replace(old_catalog, new_catalog, 1))
       - name: Commit fix and remove helper workflow
         shell: bash
         run: |
