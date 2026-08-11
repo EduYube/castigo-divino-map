@@ -1,9 +1,9 @@
 name: MAP-044 Prettier diagnostic
 
 on:
-  push:
+  pull_request:
     branches:
-      - diag/map-044-prettier
+      - agent/map-044-master-audience
 
 permissions:
   contents: read
