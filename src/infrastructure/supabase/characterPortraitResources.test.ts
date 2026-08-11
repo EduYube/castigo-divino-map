@@ -102,6 +102,34 @@ describe('SupabaseCharacterPortraitResources', () => {
     subject.destroy();
   });
 
+  it('keeps the admin JWT while falling back from an unavailable master transformation', async () => {
+    const fetchImplementation = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.headers).toMatchObject({
+        apikey: PUBLISHABLE_KEY,
+        Authorization: 'Bearer admin-jwt',
+      });
+      expect(init?.cache).toBe('no-store');
+      const requested = String(input);
+      if (requested.includes('/storage/v1/render/image/authenticated/')) return imageResponse(403);
+      return imageResponse();
+    });
+    const { subject } = resources(fetchImplementation as unknown as typeof fetch);
+
+    await expect(
+      subject.load(PATH, {
+        access: 'master',
+        variant: 'marker',
+        signal: new AbortController().signal,
+      }),
+    ).resolves.toBe('blob:portrait');
+
+    expect(fetchImplementation).toHaveBeenCalledTimes(2);
+    expect(String(fetchImplementation.mock.calls[1]?.[0])).toContain(
+      '/storage/v1/object/authenticated/character-portraits/',
+    );
+    subject.destroy();
+  });
+
   it('uses the current admin JWT only for master portraits', async () => {
     const fetchImplementation = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       expect(init?.headers).toMatchObject({ Authorization: 'Bearer admin-jwt' });
