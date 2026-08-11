@@ -72,7 +72,9 @@ export function mountMasterDetailActions(
     }
     const existingAction = content.querySelector<HTMLElement>('[data-master-audience-action]');
     if (renderedSignature === signature && existingAction) {
-      const existingStart = existingAction.querySelector<HTMLButtonElement>('[data-master-audience-start]');
+      const existingStart = existingAction.querySelector<HTMLButtonElement>(
+        '[data-master-audience-start]',
+      );
       const existingConfirmation = existingAction.querySelector<HTMLElement>(
         '[data-master-audience-confirmation]',
       );
