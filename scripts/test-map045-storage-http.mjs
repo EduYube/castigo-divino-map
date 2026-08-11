@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 
 const ENTITY_ID = 'entity-aster-guide';
 const PORTRAIT_PATH = 'portraits/04504504-5045-4045-8045-045045045045.png';
@@ -24,10 +25,32 @@ function parseSupabaseEnvironment(output) {
   return values;
 }
 
-function required(values, name) {
-  const value = values.get(name);
-  if (value) return value;
-  throw new Error(`Supabase local no expuso ${name}.`);
+function requiredAny(values, ...names) {
+  for (const name of names) {
+    const value = values.get(name);
+    if (value) return value;
+  }
+  throw new Error(
+    `Supabase local no expuso ${names.join(' / ')}. Variables disponibles: ${[...values.keys()].sort().join(', ') || '(ninguna)'}.`,
+  );
+}
+
+function localApiUrl() {
+  const config = readFileSync(new URL('../supabase/config.toml', import.meta.url), 'utf8');
+  let section = '';
+  for (const rawLine of config.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    const sectionMatch = /^\[([^\]]+)\]$/.exec(line);
+    if (sectionMatch) {
+      section = sectionMatch[1] ?? '';
+      continue;
+    }
+    if (section !== 'api') continue;
+    const portMatch = /^port\s*=\s*(\d+)\s*$/.exec(line);
+    if (!portMatch) continue;
+    return `http://127.0.0.1:${Number(portMatch[1])}`;
+  }
+  throw new Error('supabase/config.toml no define [api].port para el entorno local.');
 }
 
 async function expectResponse(response, label, expectedOk) {
@@ -38,30 +61,20 @@ async function expectResponse(response, label, expectedOk) {
 
 async function main() {
   const status = parseSupabaseEnvironment(
-    execFileSync(
-      'npx',
-      [
-        'supabase',
-        'status',
-        '-o',
-        'env',
-        '--override-name',
-        'api.url=API_URL',
-        '--override-name',
-        'auth.anon_key=ANON_KEY',
-        '--override-name',
-        'auth.service_role_key=SERVICE_ROLE_KEY',
-      ],
-      {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      },
-    ),
+    execFileSync('npx', ['supabase', 'status', '-o', 'env'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }),
   );
 
-  const apiUrl = required(status, 'API_URL').replace(/\/$/, '');
-  const publishableKey = required(status, 'ANON_KEY');
-  const privilegedKey = required(status, 'SERVICE_ROLE_KEY');
+  const apiUrl = localApiUrl();
+  const publishableKey = requiredAny(status, 'PUBLISHABLE_KEY', 'ANON_KEY', 'SUPABASE_ANON_KEY');
+  const privilegedKey = requiredAny(
+    status,
+    'SECRET_KEY',
+    'SERVICE_ROLE_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY',
+  );
   const usesOpaquePublishableKey = publishableKey.startsWith('sb_publishable_');
   const usesOpaquePrivilegedKey = privilegedKey.startsWith('sb_secret_');
   const publicHeaders = {
