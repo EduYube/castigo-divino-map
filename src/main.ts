@@ -602,7 +602,7 @@ function mountPublicExperience(
     writePublicStateToHistory('replace');
   }
 
-  publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state));
+  publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state, true));
 
   const refreshAfterAudienceChange = async (audience: MapEntityAudience): Promise<void> => {
     if (!publicDataRuntime) return;
