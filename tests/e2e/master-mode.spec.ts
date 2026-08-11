@@ -443,15 +443,21 @@ test('detail audience transition requires confirmation, supports cancel and refr
 
   const details = page.getByTestId('place-details');
   await expect(details).toContainText('Contenido del Máster');
-  const start = details.getByRole('button', { name: 'Cambiar a Público' });
-  await start.click();
-  await expect(details.getByRole('button', { name: 'Cancelar' })).toBeVisible();
+  const disclosure = details.locator('[data-master-audience-disclosure]');
+  const audienceToggle = details.locator('[data-master-audience-start]');
+  await expect(audienceToggle).toHaveText('Cambiar a Público');
+  await audienceToggle.click();
+  await expect(disclosure).toHaveAttribute('open', '');
+  await expect(audienceToggle).toHaveText('Cancelar');
   await expect(details).toContainText(/volverá a ser visible y buscable para jugadores/i);
-  await details.getByRole('button', { name: 'Cancelar' }).click();
+  await audienceToggle.click();
+  await expect(disclosure).not.toHaveAttribute('open', '');
+  await expect(audienceToggle).toHaveText('Cambiar a Público');
   expect(backend.getSaveCount()).toBe(0);
   expect(backend.getAudience()).toBe('master');
 
-  await start.click();
+  await audienceToggle.click();
+  await expect(disclosure).toHaveAttribute('open', '');
   await details.getByRole('button', { name: 'Confirmar cambio de audiencia' }).click();
   await expect.poll(() => backend.getSaveCount()).toBe(1);
   await expect.poll(() => backend.getAudience()).toBe('public');
