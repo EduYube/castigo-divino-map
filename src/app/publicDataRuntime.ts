@@ -263,7 +263,6 @@ export async function bootstrapPublicDataRuntime(
     },
     subscribeCatalogState(listener: PublicCatalogStateListener): () => void {
       catalogListeners.add(listener);
-      listener(catalogState);
 
       return (): void => {
         catalogListeners.delete(listener);
