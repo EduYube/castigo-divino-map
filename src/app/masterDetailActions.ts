@@ -4,7 +4,6 @@ import type { EntityId } from '../data/beta02-model';
 
 export interface MasterDetailActionsOptions {
   readonly getMasterEntityIds: () => ReadonlySet<EntityId>;
-  readonly onAudienceChanged?: (entityId: EntityId, audience: MapEntityAudience) => Promise<void>;
 }
 
 export interface MasterDetailActionsController {
@@ -60,7 +59,9 @@ export function mountMasterDetailActions(
 
     const entityId = entityIdValue;
     const audience = resolveAudience(entityId);
-    const signature = `${entityId}:${audience}:${state.phase}`;
+    // Transient controller phases (for example loading -> ready after login) must not
+    // replace an open confirmation UI. Audience/entity changes remain authoritative.
+    const signature = `${entityId}:${audience}`;
     const existingAction = content.querySelector<HTMLElement>('[data-master-audience-action]');
     if (renderedSignature === signature && existingAction) return;
     removeInjected();
