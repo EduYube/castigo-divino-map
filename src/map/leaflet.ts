@@ -327,6 +327,7 @@ export function mountFaerunMap(
   const markerDomListeners: MarkerDomListener[] = [];
   const portraitAbortControllers = new Set<AbortController>();
   const portraitQueue: Array<() => Promise<void>> = [];
+  const scheduledPortraitPinIds = new Set<string>();
   const MAX_CONCURRENT_PORTRAITS = 6;
   let activePortraitLoads = 0;
   let portraitGeneration = 0;
@@ -424,6 +425,8 @@ export function mountFaerunMap(
     leafletMarker.setZIndexOffset(isActive ? 1000 : filterState === 'false' ? 0 : 200);
   };
 
+  let refreshPortraitMarkers = (): void => undefined;
+
   const activatePin = (pin: AtlasPinMarkerModel): void => {
     map.closePopup();
     options.onPinActivate?.(pin);
@@ -439,6 +442,7 @@ export function mountFaerunMap(
         );
         updateGroupPresentation(marker, pinsForMarker);
       });
+      refreshPortraitMarkers();
     }
   };
 
@@ -511,7 +515,15 @@ export function mountFaerunMap(
     pin: AtlasPinMarkerModel,
     generation: number,
   ): void => {
-    if (!options.loadPortrait || pin.entityType !== 'character' || !pin.portraitPath) return;
+    if (
+      !options.loadPortrait ||
+      pin.entityType !== 'character' ||
+      !pin.portraitPath ||
+      scheduledPortraitPinIds.has(pin.id)
+    ) {
+      return;
+    }
+    scheduledPortraitPinIds.add(pin.id);
     portraitQueue.push(async () => {
       if (destroyed || generation !== portraitGeneration) return;
       const request = new AbortController();
@@ -538,9 +550,26 @@ export function mountFaerunMap(
     drainPortraitQueue();
   };
 
+  refreshPortraitMarkers = (): void => {
+    if (!options.loadPortrait || destroyed) return;
+    const canLoadViewportPortraits = map.getZoom() > map.getMinZoom() + 0.01;
+    const visibleBounds = canLoadViewportPortraits ? map.getBounds().pad(0.08) : null;
+    const generation = portraitGeneration;
+
+    for (const pin of renderedMarkers) {
+      if (pin.entityType !== 'character' || !pin.portraitPath) continue;
+      const leafletMarker = groupMarkerByPinId.get(pin.id);
+      const element = leafletMarker?.getElement();
+      if (!leafletMarker || !element || element.dataset.pinId !== pin.id) continue;
+      if (!isPinActive(pin) && !visibleBounds?.contains(leafletMarker.getLatLng())) continue;
+      schedulePortrait(leafletMarker, pin, generation);
+    }
+  };
+
   const clearRenderedMarkers = (): void => {
     portraitGeneration += 1;
     portraitQueue.splice(0);
+    scheduledPortraitPinIds.clear();
     portraitAbortControllers.forEach((controller) => controller.abort());
     portraitAbortControllers.clear();
     markerDomListeners.splice(0).forEach(({ element, handler }) => {
@@ -554,7 +583,6 @@ export function mountFaerunMap(
 
   const renderMarkers = (markers: readonly AtlasPinMarkerModel[]): void => {
     clearRenderedMarkers();
-    const generation = portraitGeneration;
     renderedMarkers = markers;
     if (activeSupplementalPinId && !markers.some(({ id }) => id === activeSupplementalPinId)) {
       activeSupplementalPinId = null;
@@ -614,8 +642,9 @@ export function mountFaerunMap(
       leafletMarker.addTo(map);
       groupMarkers.add(leafletMarker);
       for (const pin of pins) groupMarkerByPinId.set(pin.id, leafletMarker);
-      if (pins.length === 1) schedulePortrait(leafletMarker, pins[0], generation);
     }
+
+    refreshPortraitMarkers();
   };
 
   matchingPlaceIds = new Set(
@@ -646,8 +675,12 @@ export function mountFaerunMap(
   imageOverlay.addTo(map);
 
   const synchronizeView = (): void => synchronizeViewDataset(map, elements.shell);
-  map.on('zoomend', synchronizeView);
-  map.on('moveend', synchronizeView);
+  const handleViewSettled = (): void => {
+    synchronizeView();
+    refreshPortraitMarkers();
+  };
+  map.on('zoomend', handleViewSettled);
+  map.on('moveend', handleViewSettled);
   synchronizeView();
 
   let resizeFrame: number | undefined;
@@ -660,6 +693,7 @@ export function mountFaerunMap(
       map.invalidateSize({ animate: false, pan: false });
       constrainViewport(map, bounds, wasAtMinimumZoom);
       synchronizeView();
+      refreshPortraitMarkers();
     });
   };
   const resizeObserver =
@@ -689,6 +723,7 @@ export function mountFaerunMap(
       activePlaceId = placeId;
       if (placeId !== null) activeSupplementalPinId = null;
       refreshMarkerPresentation();
+      refreshPortraitMarkers();
     },
     clearSupplementalPinSelection(): void {
       activeSupplementalPinId = null;
@@ -706,6 +741,7 @@ export function mountFaerunMap(
     locateSearchTarget(target: MapSearchTarget): void {
       locateMapSearchTarget(map, root, target);
       synchronizeView();
+      refreshPortraitMarkers();
     },
     clearSearchFocus(): void {
       clearMapSearchFocus(map);
@@ -721,8 +757,8 @@ export function mountFaerunMap(
       clearRenderedMarkers();
       imageOverlay.off('load', handleImageLoad);
       imageOverlay.off('error', handleImageError);
-      map.off('zoomend', synchronizeView);
-      map.off('moveend', synchronizeView);
+      map.off('zoomend', handleViewSettled);
+      map.off('moveend', handleViewSettled);
       resizeObserver?.disconnect();
       window.removeEventListener('resize', handleResize);
       if (resizeFrame !== undefined) window.cancelAnimationFrame(resizeFrame);
