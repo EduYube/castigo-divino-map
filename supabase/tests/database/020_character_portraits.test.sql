@@ -166,14 +166,16 @@ select ok(
   $sql$),
   'anon cannot upload portrait objects'
 );
-select is(
-  pg_temp.statement_affected_rows($sql$
-    delete from storage.objects
-    where bucket_id = 'character-portraits'
-      and name = 'portraits/11111111-1111-4111-8111-111111111111.webp'
-  $sql$),
-  0::bigint,
-  'anon cannot delete portrait objects'
+select ok(
+  not exists(
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and cmd = 'DELETE'
+      and policyname <> 'character_portraits_admin_delete'
+  ),
+  'Storage exposes no anonymous portrait delete policy; denial is exercised through the HTTP API'
 );
 
 reset role;
