@@ -34,6 +34,7 @@ export type AdminMapEntityStateListener = (state: AdminMapEntityState) => void;
 
 interface AdminMapEntityControllerOptions {
   readonly onAuthorizationRejected?: (status: 401 | 403) => void;
+  readonly onPublicAudienceRevocationRequested?: (entityId: string) => void;
 }
 
 const EMPTY_REFERENCES: AdminMapEntityReferences = {
@@ -57,6 +58,7 @@ const INITIAL_STATE: AdminMapEntityState = {
 export class AdminMapEntityController {
   readonly #repository: AdminMapEntityRepository;
   readonly #onAuthorizationRejected: ((status: 401 | 403) => void) | undefined;
+  readonly #onPublicAudienceRevocationRequested: ((entityId: string) => void) | undefined;
   readonly #listeners = new Set<AdminMapEntityStateListener>();
   #state = INITIAL_STATE;
   #generation = 0;
@@ -66,6 +68,7 @@ export class AdminMapEntityController {
   constructor(repository: AdminMapEntityRepository, options: AdminMapEntityControllerOptions = {}) {
     this.#repository = repository;
     this.#onAuthorizationRejected = options.onAuthorizationRejected;
+    this.#onPublicAudienceRevocationRequested = options.onPublicAudienceRevocationRequested;
   }
 
   getState(): AdminMapEntityState {
@@ -221,6 +224,13 @@ export class AdminMapEntityController {
       this.#publishBlocked();
       return false;
     }
+    if (
+      original &&
+      getMapEntityAudience(original.record) === 'public' &&
+      effectiveDraft.audience === 'master'
+    ) {
+      this.#onPublicAudienceRevocationRequested?.(original.record.id);
+    }
     const operation = this.#beginOperation();
     this.#publish({ ...this.#state, phase: 'mutating', issue: null });
     let uploadedPortraitPath: string | null = null;
@@ -294,9 +304,13 @@ export class AdminMapEntityController {
     try {
       const detail = await this.#repository.load(entityId, { signal: operation.signal });
       if (!this.#isCurrent(operation.generation)) return false;
-      if (getMapEntityAudience(detail.record) === audience) {
+      const currentAudience = getMapEntityAudience(detail.record);
+      if (currentAudience === audience) {
         this.#publish({ ...this.#state, phase: 'ready', issue: null });
         return true;
+      }
+      if (currentAudience === 'public' && audience === 'master') {
+        this.#onPublicAudienceRevocationRequested?.(detail.record.id);
       }
       const saved = await this.#repository.save(
         detail,

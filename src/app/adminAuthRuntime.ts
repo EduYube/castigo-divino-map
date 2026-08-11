@@ -22,6 +22,7 @@ import {
   AdminMapEntityRepositoryError,
   type AdminMapEntityRepository,
 } from '../data-access/adminMapEntities';
+import type { EntityId } from '../data/beta02-model';
 import {
   AdminPublicRequestRepositoryError,
   type AdminPublicRequestRepository,
@@ -54,6 +55,7 @@ import { SupabaseAdminCharacterLocationRelationRepository } from '../infrastruct
 import { SupabaseAdminMapEntityRepository } from '../infrastructure/supabase/adminMapEntityRepository';
 import { SupabaseAdminPublicRequestRepository } from '../infrastructure/supabase/adminPublicRequestRepository';
 import { mountAdminCatalog } from './adminCatalog';
+import { dispatchAdminEntityAudienceChanged } from './adminEntityAudienceEvents';
 import { mountAdminCharacterLocationRelations } from './adminCharacterLocationRelations';
 import { mountAdminMapEntities } from './adminMapEntities';
 import { mountAdminMapEntityAudience } from './adminMapEntityAudience';
@@ -446,6 +448,11 @@ export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
   });
   const mapEntityController = new AdminMapEntityController(createMapEntityRepository(), {
     onAuthorizationRejected: rejectAuthorization,
+    onPublicAudienceRevocationRequested(entityId): void {
+      if (/^(?:entity|place)-/.test(entityId)) {
+        dispatchAdminEntityAudienceChanged(entityId as EntityId, 'master');
+      }
+    },
   });
   const relationController = new AdminCharacterLocationRelationController(
     createCharacterLocationRelationRepository(),

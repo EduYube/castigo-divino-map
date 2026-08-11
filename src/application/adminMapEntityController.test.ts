@@ -154,6 +154,49 @@ describe('AdminMapEntityController', () => {
     expect(onAuthorizationRejected).toHaveBeenCalledWith(401);
     expect(save).toHaveBeenCalledTimes(1);
   });
+  it('requests fail-closed public revocation before a public entity is saved as master', async () => {
+    const publicDetail: AdminMapEntityDetail = {
+      ...detail,
+      record: {
+        ...record,
+        audience: 'public',
+        publicationStatus: 'published',
+        publishedAt: '2026-08-07T10:00:00.000Z',
+      },
+    };
+    let resolveSave!: (value: AdminMapEntityDetail) => void;
+    const pendingSave = new Promise<AdminMapEntityDetail>((resolve) => {
+      resolveSave = resolve;
+    });
+    const save = vi.fn<AdminMapEntityRepository['save']>(() => pendingSave);
+    const onPublicAudienceRevocationRequested = vi.fn();
+    const controller = new AdminMapEntityController(
+      repository({ load: vi.fn(async () => publicDetail), save }),
+      { onPublicAudienceRevocationRequested },
+    );
+    await authorize(controller);
+    await controller.openEditor(record.id);
+
+    const request = controller.save({
+      ...draft,
+      audience: 'master',
+      publicationStatus: 'draft',
+    });
+
+    expect(onPublicAudienceRevocationRequested).toHaveBeenCalledWith(record.id);
+    expect(save).toHaveBeenCalledTimes(1);
+    resolveSave({
+      ...publicDetail,
+      record: {
+        ...publicDetail.record,
+        audience: 'master',
+        publicationStatus: 'draft',
+        updatedAt: '2026-08-11T20:30:00.000Z',
+      },
+    });
+    await expect(request).resolves.toBe(true);
+  });
+
   it('creates a character with a portrait through the same entity save', async () => {
     const nextPath = 'portraits/123e4567-e89b-42d3-a456-426614174010.webp';
     const uploadPortrait = vi.fn(async () => nextPath);

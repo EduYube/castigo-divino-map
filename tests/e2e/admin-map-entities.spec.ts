@@ -653,6 +653,7 @@ test('MAP-045 edits coordinates and portrait in one character flow without chang
   await page.getByLabel('Coordenada X').fill('902');
   await page.getByLabel('Coordenada Y').fill('602');
   await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect.poll(() => backend.getSaveCount()).toBe(2);
   await expect.poll(() => backend.getStoredPortraits().length).toBe(1);
   const afterReplace = backend.getEntity('entity-aster-guide');
   expect(afterReplace).toMatchObject({
