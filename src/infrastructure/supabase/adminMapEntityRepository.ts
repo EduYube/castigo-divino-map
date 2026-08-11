@@ -337,7 +337,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
           Accept: 'application/json',
           'Content-Type': validated.mimeType,
           'x-upsert': 'false',
-          'Cache-Control': 'max-age=3600',
+          'Cache-Control': 'no-store',
         },
         body: validated.file,
       },
