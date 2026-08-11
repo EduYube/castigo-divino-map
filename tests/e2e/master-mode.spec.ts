@@ -300,6 +300,12 @@ async function signIn(page: Page): Promise<void> {
   await expect(page.getByRole('button', { name: 'Administración' })).toBeVisible();
 }
 
+async function expectMasterAbsentFromMapExperience(page: Page): Promise<void> {
+  await expect(page.locator('.campaign-marker-icon[data-audience="master"]')).toHaveCount(0);
+  await expect(page.locator(`[data-search-result-id="${MASTER_ID}"]`)).toHaveCount(0);
+  await expect(page.getByTestId('place-details')).not.toContainText(MASTER_NAME);
+}
+
 test('visitor and admin OFF cannot see master data; ON loads it ephemerally and logout purges it', async ({
   page,
 }) => {
@@ -314,7 +320,7 @@ test('visitor and admin OFF cannot see master data; ON loads it ephemerally and 
   const toggle = page.locator('[data-master-mode-toggle]');
   await expect(toggle).toBeVisible();
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.getByText(MASTER_NAME, { exact: true })).toHaveCount(0);
+  await expectMasterAbsentFromMapExperience(page);
 
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
@@ -382,8 +388,7 @@ test('turning Master Mode OFF prevents Back/Forward from restoring a private sel
   await expect(page.getByTestId('place-details')).toContainText(MASTER_NAME);
 
   await toggle.click();
-  await expect(page.locator('.campaign-marker-icon[data-audience="master"]')).toHaveCount(0);
-  await expect(page.getByTestId('place-details')).not.toContainText(MASTER_NAME);
+  await expectMasterAbsentFromMapExperience(page);
 
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   await searchbox.fill('paso');
@@ -391,13 +396,11 @@ test('turning Master Mode OFF prevents Back/Forward from restoring a private sel
   await expect(page).toHaveURL(/place=paso-de-demostracion/);
 
   await page.goBack();
-  await expect(page.locator('.campaign-marker-icon[data-audience="master"]')).toHaveCount(0);
-  await expect(page.getByText(MASTER_NAME, { exact: true })).toHaveCount(0);
+  await expectMasterAbsentFromMapExperience(page);
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
 
   await page.goForward();
-  await expect(page.locator('.campaign-marker-icon[data-audience="master"]')).toHaveCount(0);
-  await expect(page.getByText(MASTER_NAME, { exact: true })).toHaveCount(0);
+  await expectMasterAbsentFromMapExperience(page);
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
 });
 
@@ -442,6 +445,7 @@ test('detail audience transition requires confirmation, supports cancel and refr
   await expect(details).toContainText('Contenido del Máster');
   const start = details.getByRole('button', { name: 'Cambiar a Público' });
   await start.click();
+  await expect(details.getByRole('button', { name: 'Cancelar' })).toBeVisible();
   await expect(details).toContainText(/volverá a ser visible y buscable para jugadores/i);
   await details.getByRole('button', { name: 'Cancelar' }).click();
   expect(backend.getSaveCount()).toBe(0);
