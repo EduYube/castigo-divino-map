@@ -20,11 +20,20 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Instrument the single startup-race test
+      - name: Apply and instrument the focused projection fix
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
+
+          main = Path('src/main.ts')
+          main_text = main.read_text()
+          old = "publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state));"
+          new = "publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state, true));"
+          if main_text.count(old) != 1:
+              raise SystemExit(f'main subscription anchor mismatch: {main_text.count(old)}')
+          main.write_text(main_text.replace(old, new, 1))
+
           path = Path('tests/e2e/master-mode-startup-revocation.spec.ts')
           text = path.read_text()
           old = """  const backend = await configureStartupRaceBackend(page);\n  await page.goto('/');\n"""
