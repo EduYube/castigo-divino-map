@@ -462,7 +462,11 @@ test('detail audience transition requires confirmation, supports cancel and refr
   await expect.poll(() => backend.getSaveCount()).toBe(1);
   await expect.poll(() => backend.getAudience()).toBe('public');
   await expect(page.locator('.campaign-marker-icon[data-audience="master"]')).toHaveCount(0);
-  await expect(page.locator('.campaign-marker-icon[data-audience="public"]')).toContainText('');
+  await expect(
+    page.locator(
+      `.campaign-marker-icon[data-entity-id="${MASTER_ID}"][data-audience="public"]`,
+    ),
+  ).toHaveCount(1);
   await expect(page.locator('[data-master-mode-status]')).toContainText(/0 entidades privadas/i);
 });
 
