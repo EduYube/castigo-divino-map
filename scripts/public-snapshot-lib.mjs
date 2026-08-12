@@ -150,7 +150,7 @@ export function buildPublicSnapshotContent(raw) {
       })),
       summary,
       description,
-      portraitPath: portrait_path ?? null,
+      ...(portrait_path == null ? {} : { portraitPath: portrait_path }),
       coordinates: { x, y },
       categoryId: category_id,
       tagIds: (tagsByEntity.get(id) ?? []).map(({ tag_id }) => tag_id),
