@@ -113,6 +113,12 @@ export class AdminCatalogController {
     if (this.#destroyed) {
       return;
     }
+    if (
+      authorized === this.#state.authorized &&
+      backendConnected === this.#state.backendConnected
+    ) {
+      return;
+    }
 
     const wasAvailable = this.#state.authorized && this.#state.backendConnected;
     const isAvailable = authorized && backendConnected;
@@ -134,7 +140,7 @@ export class AdminCatalogController {
     }
 
     this.#publish({ ...this.#state, authorized, backendConnected, issue: null });
-    if (!wasAvailable || this.#state.records.length === 0) {
+    if (!wasAvailable) {
       void this.reload();
     }
   }
