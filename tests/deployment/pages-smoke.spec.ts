@@ -117,9 +117,7 @@ test('loads the Beta 0.2 public experience from the repository subdirectory', as
   const applicationOrigin = new URL(baseURL ?? page.url()).origin;
   const localRasterRequests = requests.filter((request) => {
     const url = new URL(request.url());
-    return (
-      url.origin === applicationOrigin && /\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname)
-    );
+    return url.origin === applicationOrigin && /\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname);
   });
   expect(localRasterRequests).toEqual([]);
   expect(failedResponses).toEqual([]);
