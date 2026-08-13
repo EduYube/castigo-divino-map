@@ -134,6 +134,18 @@ async function openEntityEditor(page: Page): Promise<void> {
   await expect(page.getByTestId('admin-coordinate-map')).toBeVisible();
 }
 
+async function expectTwoColumnEntityGrid(page: Page): Promise<void> {
+  const fieldsGrid = page.locator('.admin-map-entity__fields');
+  await expect
+    .poll(async () => {
+      return fieldsGrid.evaluate((element) => {
+        const columns = getComputedStyle(element).gridTemplateColumns.trim();
+        return columns ? columns.split(/\s+/).length : 0;
+      });
+    })
+    .toBeGreaterThanOrEqual(2);
+}
+
 async function exerciseCatalogSections(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Categorías' }).click();
   await page.getByRole('button', { name: 'Crear', exact: true }).click();
@@ -171,6 +183,7 @@ for (const viewport of DESKTOP_VIEWPORTS) {
     await expectNoHorizontalOverflow(page);
 
     await openEntityEditor(page);
+    await expectTwoColumnEntityGrid(page);
     const fields = page.locator('.admin-map-entity__fields > .admin-map-entity__field');
     const firstField = await fields.nth(0).boundingBox();
     const secondField = await fields.nth(1).boundingBox();
@@ -203,10 +216,18 @@ for (const viewport of DESKTOP_VIEWPORTS) {
     ).toBeFocused();
     await expectNoHorizontalOverflow(page);
 
-    await page.getByRole('button', { name: 'Cerrar editor' }).click();
-    await expect(page.getByRole('heading', { name: 'Crear character' })).toBeHidden();
-    await openEntityEditor(page);
+    if (viewport.width === 1440) {
+      await dialog.screenshot({ path: 'test-results/MAP-048-workspace-1440x900.png' });
+      await map.screenshot({ path: 'test-results/MAP-048-coordinate-map-1440x900.png' });
+    }
+
+    const entry = page.getByRole('button', { name: 'Administración' });
+    await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+    await expect(entry).toBeFocused();
+    await entry.click();
+    await expect(page.getByRole('heading', { name: 'Crear character' })).toBeVisible();
     await expect(map.locator('.leaflet-image-layer')).toBeVisible();
+    await expect(page.getByTestId('admin-coordinate-marker')).toBeVisible();
 
     if (viewport.width === 1440) {
       const beforeResize = await map.boundingBox();
@@ -252,6 +273,13 @@ for (const viewport of MOBILE_VIEWPORTS) {
     await expect(page.getByRole('button', { name: 'Cerrar editor' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
+    if (viewport.width === 320) {
+      await dialog.screenshot({ path: 'test-results/MAP-048-workspace-320x740.png' });
+      await page
+        .getByTestId('admin-coordinate-map')
+        .screenshot({ path: 'test-results/MAP-048-coordinate-map-320x740.png' });
+    }
+
     await page.getByRole('button', { name: 'Cerrar editor' }).click();
     const entry = page.getByRole('button', { name: 'Administración' });
     await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
@@ -262,3 +290,32 @@ for (const viewport of MOBILE_VIEWPORTS) {
     await expect(entry).toBeFocused();
   });
 }
+
+test('MAP-048 forced colors and 200% reflow equivalent remain usable', async ({ page }) => {
+  // A 512 CSS-pixel viewport exercises the same reflow pressure as a 1024px viewport at 200% zoom.
+  await page.setViewportSize({ width: 512, height: 768 });
+  await page.emulateMedia({ forcedColors: 'active' });
+  await configureBackend(page);
+  await page.goto('/');
+  await login(page);
+
+  const dialog = page.locator('.admin-auth-dialog');
+  const workspaceBox = await dialog.boundingBox();
+  expect(workspaceBox).not.toBeNull();
+  expect(workspaceBox!.x).toBeGreaterThanOrEqual(0);
+  expect(workspaceBox!.x + workspaceBox!.width).toBeLessThanOrEqual(513);
+  await expectNoHorizontalOverflow(page);
+
+  await openEntityEditor(page);
+  const map = page.getByTestId('admin-coordinate-map');
+  const mapBox = await map.boundingBox();
+  expect(mapBox).not.toBeNull();
+  expect(mapBox!.width).toBeGreaterThan(320);
+  await expect(map.locator('.leaflet-image-layer')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Cerrar editor' })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+
+  const entry = page.getByRole('button', { name: 'Administración' });
+  await page.keyboard.press('Escape');
+  await expect(entry).toBeFocused();
+});
