@@ -113,7 +113,7 @@ async function login(page: Page): Promise<void> {
 async function openAndCancelCatalogEditor(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Crear', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Crear registro' })).toBeVisible();
-  await expect(page.getByLabel('ID estable')).toBeFocused();
+  await expect(page.getByRole('textbox', { name: 'ID estable' })).toBeFocused();
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Crear registro' })).toBeHidden();
   await expect(page.getByRole('button', { name: 'Crear', exact: true })).toBeFocused();
