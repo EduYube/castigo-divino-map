@@ -1,7 +1,7 @@
 .admin-map-entity {
   display: grid;
   gap: 0.9rem;
-  width: min(100%, 76rem);
+  width: min(100%, var(--admin-workspace-width, 76rem));
   margin-block: 1rem;
   padding: 1rem;
   border: 1px solid var(--border-subtle, #c9c4b8);
@@ -192,7 +192,7 @@ textarea.admin-map-entity__control {
 
 .admin-map-entity__map {
   width: 100%;
-  min-height: 22rem;
+  min-height: clamp(22rem, 42vw, 34rem);
   overflow: hidden;
   border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
   border-radius: 0.5rem;
