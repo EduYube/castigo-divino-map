@@ -35,12 +35,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Emit canonical MAP-048 formatting
-        run: |
-          npx prettier --write tests/e2e/map048-admin-workspace.spec.ts
-          cat tests/e2e/map048-admin-workspace.spec.ts
-          exit 1
-
       - name: Check formatting
         run: npm run format:check
 
