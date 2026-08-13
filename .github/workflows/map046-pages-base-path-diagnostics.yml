@@ -1,0 +1,26 @@
+name: MAP-046 published Pages validation
+
+on:
+  push:
+    branches:
+      - agent/map-046-pages-base-path
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PAGES_URL: https://eduyube.github.io/castigo-divino-map/
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Validate already-published atlas with base-path-safe smoke
+        run: npm run test:e2e:pages
