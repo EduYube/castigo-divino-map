@@ -127,9 +127,22 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 }
 
 async function openEntityEditor(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Crear personaje' }).click();
+  const createCharacter = page.getByRole('button', { name: 'Crear personaje' });
+  await expect(createCharacter).toBeEnabled();
+  await createCharacter.click();
   await expect(page.getByRole('heading', { name: 'Crear character' })).toBeVisible();
   await expect(page.getByTestId('admin-coordinate-map')).toBeVisible();
+}
+
+async function exerciseCatalogSections(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Categorías' }).click();
+  await page.getByRole('button', { name: 'Crear', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Crear registro' })).toBeVisible();
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await page.getByRole('button', { name: 'Etiquetas' }).click();
+  await page.getByRole('button', { name: 'Crear', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Crear registro' })).toBeVisible();
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
 }
 
 for (const viewport of DESKTOP_VIEWPORTS) {
@@ -156,14 +169,6 @@ for (const viewport of DESKTOP_VIEWPORTS) {
     expect(workspaceBox!.x).toBeGreaterThanOrEqual(0);
     expect(workspaceBox!.x + workspaceBox!.width).toBeLessThanOrEqual(viewport.width + 1);
     await expectNoHorizontalOverflow(page);
-
-    await page.getByRole('button', { name: 'Crear', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Crear registro' })).toBeVisible();
-    await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
-    await page.getByRole('button', { name: 'Etiquetas' }).click();
-    await page.getByRole('button', { name: 'Crear', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Crear registro' })).toBeVisible();
-    await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
 
     await openEntityEditor(page);
     const fields = page.locator('.admin-map-entity__fields > .admin-map-entity__field');
@@ -193,6 +198,9 @@ for (const viewport of DESKTOP_VIEWPORTS) {
     await expect(page.locator('.admin-map-entity__editor .admin-map-entity__status')).toContainText(
       'No se ha publicado.',
     );
+    await expect(
+      page.locator('.admin-map-entity__editor [aria-invalid="true"]').first(),
+    ).toBeFocused();
     await expectNoHorizontalOverflow(page);
 
     await page.getByRole('button', { name: 'Cerrar editor' }).click();
@@ -208,6 +216,10 @@ for (const viewport of DESKTOP_VIEWPORTS) {
         .toBeLessThan(beforeResize!.width);
       await expect(map.locator('.leaflet-image-layer')).toBeVisible();
     }
+
+    await page.getByRole('button', { name: 'Cerrar editor' }).click();
+    await exerciseCatalogSections(page);
+    await expectNoHorizontalOverflow(page);
   });
 }
 
