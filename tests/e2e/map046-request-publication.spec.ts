@@ -124,8 +124,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     updated_at: '2026-08-13T07:00:00.000Z',
   };
 
-  const timestamp = (): string =>
-    `2026-08-13T08:00:${String(counter++).padStart(2, '0')}.000Z`;
+  const timestamp = (): string => `2026-08-13T08:00:${String(counter++).padStart(2, '0')}.000Z`;
   const detailFor = (entity: EntityRow): Record<string, unknown> => ({
     record: entity,
     tag_links: (entityTags.get(entity.id) ?? []).map((tagId) => ({
@@ -356,14 +355,11 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       entity.y = Number(body.p_y);
       entity.category_id = String(body.p_category_id);
       entity.publication_status = body.p_publication_status as PublicationStatus;
-      entity.published_at = entity.published_at ??
-        (entity.publication_status === 'published' ? updatedAt : null);
+      entity.published_at =
+        entity.published_at ?? (entity.publication_status === 'published' ? updatedAt : null);
       entity.archived_at = entity.publication_status === 'archived' ? updatedAt : null;
       entity.updated_at = updatedAt;
-      entityTags.set(
-        entity.id,
-        Array.isArray(body.p_tag_ids) ? body.p_tag_ids.map(String) : [],
-      );
+      entityTags.set(entity.id, Array.isArray(body.p_tag_ids) ? body.p_tag_ids.map(String) : []);
       saveCount += 1;
       await route.fulfill({
         status: 200,
@@ -496,7 +492,9 @@ async function convertRequest(page: Page): Promise<void> {
   const card = page.getByRole('heading', { name: 'MAP-046 Requested Character' }).locator('..');
   await card.getByRole('button', { name: 'Convertir en borrador' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Crear borrador' }).click();
-  await expect(page.getByRole('heading', { name: 'Editar MAP-046 Requested Character' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Editar MAP-046 Requested Character' }),
+  ).toBeVisible();
   await expect(page.getByLabel('Categoría', { exact: true })).toHaveValue('');
 }
 
@@ -517,7 +515,9 @@ for (const withPortrait of [false, true]) {
     await createPublishedCatalog(page);
     await convertRequest(page);
 
-    await page.getByLabel('Resumen').fill('The editor must preserve this value after a failed publish.');
+    await page
+      .getByLabel('Resumen')
+      .fill('The editor must preserve this value after a failed publish.');
     if (withPortrait) {
       await page.getByTestId('admin-character-portrait-input').setInputFiles({
         name: 'map046-portrait.png',
@@ -530,7 +530,9 @@ for (const withPortrait of [false, true]) {
     await page.getByRole('button', { name: 'Publicar', exact: true }).click();
     await expect(page.getByText('Selecciona una categoría disponible.')).toBeVisible();
     await expect(
-      page.getByText('No se ha publicado. Corrige los campos indicados antes de volver a intentarlo.'),
+      page.getByText(
+        'No se ha publicado. Corrige los campos indicados antes de volver a intentarlo.',
+      ),
     ).toBeVisible();
     await expect(page.getByLabel('Categoría', { exact: true })).toBeFocused();
     await expect(page.getByLabel('Resumen')).toHaveValue(
