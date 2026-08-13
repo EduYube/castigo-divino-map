@@ -2,19 +2,31 @@ import { expect, test, type Route } from '@playwright/test';
 
 const ACCESS_TOKEN = 'map046_pages_access_token';
 const REFRESH_TOKEN = 'map046_pages_refresh_token';
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers':
+    'authorization, apikey, content-type, prefer, range, range-unit, x-client-info',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+} as const;
 
 async function routeProductionBackend(route: Route): Promise<void> {
   const request = route.request();
   const url = new URL(request.url());
 
+  if (request.method() === 'OPTIONS') {
+    await route.fulfill({ status: 204, headers: CORS_HEADERS, body: '' });
+    return;
+  }
+
   if (url.pathname.includes('/auth/v1/')) {
     if (url.pathname.endsWith('/logout')) {
-      await route.fulfill({ status: 204, body: '' });
+      await route.fulfill({ status: 204, headers: CORS_HEADERS, body: '' });
       return;
     }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: CORS_HEADERS,
       body: JSON.stringify({
         access_token: ACCESS_TOKEN,
         refresh_token: REFRESH_TOKEN,
@@ -29,7 +41,12 @@ async function routeProductionBackend(route: Route): Promise<void> {
   }
 
   if (url.pathname.endsWith('/rest/v1/rpc/current_user_is_admin')) {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: CORS_HEADERS,
+      body: 'true',
+    });
     return;
   }
 
@@ -37,6 +54,8 @@ async function routeProductionBackend(route: Route): Promise<void> {
     await route.fulfill({
       status: 200,
       headers: {
+        ...CORS_HEADERS,
+        'Access-Control-Expose-Headers': 'Content-Range',
         'Content-Type': 'application/json',
         'Content-Range': '*/0',
       },
@@ -45,7 +64,12 @@ async function routeProductionBackend(route: Route): Promise<void> {
     return;
   }
 
-  await route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
+  await route.fulfill({
+    status: 404,
+    contentType: 'application/json',
+    headers: CORS_HEADERS,
+    body: '{}',
+  });
 }
 
 test('production-equivalent Pages artifact opens an empty catalog as the first admin action', async ({

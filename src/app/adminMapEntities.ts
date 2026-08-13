@@ -695,7 +695,9 @@ export function mountAdminMapEntities(
           (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) ||
             !input.readOnly),
       );
-      first?.input.focus();
+      if (!editor.contains(document.activeElement)) {
+        first?.input.focus();
+      }
     });
     showFieldErrors(draft);
   }
