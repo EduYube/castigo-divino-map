@@ -20,11 +20,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Run MAP-046 browser regressions only
+      - name: Run MAP-046 workspace regression
         shell: bash
         run: |
           set +e
-          npx playwright test tests/e2e/map046-admin-workspace.spec.ts tests/e2e/map046-request-publication.spec.ts --project=chromium --reporter=line > /tmp/map046-e2e.log 2>&1
+          npx playwright test tests/e2e/map046-admin-workspace.spec.ts --project=chromium --reporter=line --max-failures=1 > /tmp/map046-workspace.log 2>&1
           status=$?
-          tail -n 220 /tmp/map046-e2e.log
+          tail -n 120 /tmp/map046-workspace.log
+          exit $status
+      - name: Run MAP-046 request publication regression
+        shell: bash
+        run: |
+          set +e
+          npx playwright test tests/e2e/map046-request-publication.spec.ts --project=chromium --reporter=line --max-failures=1 > /tmp/map046-request.log 2>&1
+          status=$?
+          tail -n 160 /tmp/map046-request.log
           exit $status
