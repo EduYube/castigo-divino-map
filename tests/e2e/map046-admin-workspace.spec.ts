@@ -39,7 +39,7 @@ async function configureCleanBackend(page: Page): Promise<void> {
         projectUrl,
         publishableKey,
         timeoutMs: 2_000,
-        retryDelaysMs: [],
+        retryDelaysMs: [0],
       };
     },
     { projectUrl: PROJECT_URL, publishableKey: PUBLISHABLE_KEY },

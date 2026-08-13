@@ -152,7 +152,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         projectUrl,
         publishableKey,
         timeoutMs: 2_000,
-        retryDelaysMs: [],
+        retryDelaysMs: [0],
       };
       window.__MAP017_AUTH_TEST_CONFIG__ = {
         projectUrl,
