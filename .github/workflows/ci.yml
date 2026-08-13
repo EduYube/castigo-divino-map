@@ -51,6 +51,9 @@ jobs:
         run: npm run test
 
       - name: Build application for GitHub Pages
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
         run: npm run build:pages
 
       - name: Audit production artifact

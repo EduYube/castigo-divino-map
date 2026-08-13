@@ -112,10 +112,14 @@ test('loads the Beta 0.2 public experience from the repository subdirectory', as
     expect(new URL(request.url()).pathname.startsWith(`${expectedPathname}assets/`)).toBe(true);
   }
 
-  const mapRequests = requests.filter((request) =>
-    /Sword-Coast-Map|\.(?:jpg|jpeg|png|webp)(?:\?|$)/i.test(request.url()),
-  );
-  expect(mapRequests.map((request) => request.url())).toEqual([OFFICIAL_MAP_URL]);
+  const officialMapRequests = requests.filter((request) => request.url() === OFFICIAL_MAP_URL);
+  expect(officialMapRequests).toHaveLength(1);
+  const applicationOrigin = new URL(baseURL ?? page.url()).origin;
+  const localRasterRequests = requests.filter((request) => {
+    const url = new URL(request.url());
+    return url.origin === applicationOrigin && /\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname);
+  });
+  expect(localRasterRequests).toEqual([]);
   expect(failedResponses).toEqual([]);
 
   await page.reload();

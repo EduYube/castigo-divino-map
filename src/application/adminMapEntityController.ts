@@ -83,6 +83,12 @@ export class AdminMapEntityController {
 
   setAccess(authorized: boolean, backendConnected: boolean): void {
     if (this.#destroyed) return;
+    if (
+      authorized === this.#state.authorized &&
+      backendConnected === this.#state.backendConnected
+    ) {
+      return;
+    }
     const wasAvailable = this.#state.authorized && this.#state.backendConnected;
     const isAvailable = authorized && backendConnected;
     if (!isAvailable) {
@@ -102,7 +108,7 @@ export class AdminMapEntityController {
       return;
     }
     this.#publish({ ...this.#state, authorized, backendConnected, issue: null });
-    if (!wasAvailable || this.#state.records.length === 0) void this.reload();
+    if (!wasAvailable) void this.reload();
   }
 
   setPendingAudience(audience: MapEntityAudience): void {
