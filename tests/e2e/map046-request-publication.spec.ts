@@ -456,7 +456,10 @@ async function login(page: Page): Promise<void> {
   await expect(page.getByText(/solicitudes administrativas disponibles/)).toBeVisible();
 }
 
-async function createPublishedCatalog(page: Page): Promise<void> {
+async function createPublishedCatalog(
+  page: Page,
+  includeCharacterNavigation: boolean,
+): Promise<void> {
   await page.getByRole('button', { name: 'Crear', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Crear registro' })).toBeVisible();
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
@@ -466,9 +469,11 @@ async function createPublishedCatalog(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: 'Crear registro' })).toBeVisible();
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
 
-  await page.getByRole('button', { name: 'Crear personaje' }).click();
-  await expect(page.getByRole('heading', { name: 'Crear character' })).toBeVisible();
-  await page.getByRole('button', { name: 'Cerrar editor' }).click();
+  if (includeCharacterNavigation) {
+    await page.getByRole('button', { name: 'Crear personaje' }).click();
+    await expect(page.getByRole('heading', { name: 'Crear character' })).toBeVisible();
+    await page.getByRole('button', { name: 'Cerrar editor' }).click();
+  }
 
   await page.getByRole('button', { name: 'Categorías' }).click();
   await page.getByRole('button', { name: 'Crear', exact: true }).click();
@@ -499,7 +504,7 @@ async function convertRequest(page: Page): Promise<void> {
 }
 
 for (const withPortrait of [false, true]) {
-  test(`request converts, rejects invalid publication and later publishes ${withPortrait ? 'with' : 'without'} portrait`, async ({
+  test(`request converts, rejects invalid publication and later publishes ${withPortrait ? 'with portrait after repeated navigation' : 'without portrait or entity warm-up'}`, async ({
     page,
   }) => {
     const pageErrors: Error[] = [];
@@ -512,7 +517,7 @@ for (const withPortrait of [false, true]) {
     const backend = await configureBackend(page);
     await page.goto('/');
     await login(page);
-    await createPublishedCatalog(page);
+    await createPublishedCatalog(page, withPortrait);
     await convertRequest(page);
 
     await page
