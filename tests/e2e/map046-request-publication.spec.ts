@@ -477,7 +477,7 @@ async function createPublishedCatalog(
 
   await page.getByRole('button', { name: 'Categorías' }).click();
   await page.getByRole('button', { name: 'Crear', exact: true }).click();
-  await page.getByLabel('ID estable').fill('category-map046');
+  await page.getByRole('textbox', { name: 'ID estable' }).fill('category-map046');
   await page.getByRole('textbox', { name: 'Slug', exact: true }).fill('category-map046');
   await page.getByLabel('Nombre', { exact: true }).fill('MAP-046 Category');
   await page.getByLabel('Estado editorial').selectOption('published');
@@ -486,7 +486,7 @@ async function createPublishedCatalog(
 
   await page.getByRole('button', { name: 'Etiquetas' }).click();
   await page.getByRole('button', { name: 'Crear', exact: true }).click();
-  await page.getByLabel('ID estable').fill('tag-map046');
+  await page.getByRole('textbox', { name: 'ID estable' }).fill('tag-map046');
   await page.getByLabel('Nombre', { exact: true }).fill('MAP-046 Tag');
   await page.getByLabel('Estado editorial').selectOption('published');
   await page.getByRole('button', { name: 'Guardar', exact: true }).click();
