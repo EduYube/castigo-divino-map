@@ -12,6 +12,17 @@ const TEST_MAP = `
   </svg>
 `;
 
+const DESKTOP_VIEWPORTS = [
+  { width: 1440, height: 900 },
+  { width: 1024, height: 768 },
+] as const;
+
+const MOBILE_VIEWPORTS = [
+  { width: 320, height: 740 },
+  { width: 390, height: 844 },
+  { width: 430, height: 932 },
+] as const;
+
 async function configureBackend(page: Page): Promise<void> {
   await page.addInitScript(
     ({ projectUrl, publishableKey }) => {
@@ -31,7 +42,11 @@ async function configureBackend(page: Page): Promise<void> {
   );
 
   await page.route(OFFICIAL_MAP_URL, async (route) => {
-    await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: TEST_MAP });
+    await route.fulfill({
+      status: 200,
+      contentType: 'image/svg+xml',
+      body: TEST_MAP,
+    });
   });
 
   await page.route('**/auth/v1/**', async (route: Route) => {
@@ -56,7 +71,11 @@ async function configureBackend(page: Page): Promise<void> {
   });
 
   await page.route('**/rest/v1/rpc/current_user_is_admin', async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: 'true',
+    });
   });
 
   await page.route('**/rest/v1/**', async (route) => {
@@ -83,7 +102,9 @@ async function configureBackend(page: Page): Promise<void> {
 
 async function openLogin(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Administrar' }).click();
-  await expect(page.getByRole('dialog', { name: 'Acceso administrativo' })).toBeVisible();
+  await expect(
+    page.getByRole('dialog', { name: 'Acceso administrativo' }),
+  ).toBeVisible();
 }
 
 async function login(page: Page): Promise<void> {
@@ -92,15 +113,23 @@ async function login(page: Page): Promise<void> {
   await page.getByLabel('Contraseña').fill('test-password');
   await page.getByRole('button', { name: 'Iniciar sesión' }).click();
   await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeEnabled();
+  await expect(
+    page.getByRole('button', { name: 'Crear personaje' }),
+  ).toBeEnabled();
 }
 
 async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   const overflow = await page.evaluate(() => ({
-    document: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    document:
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
     dialog: (() => {
-      const dialog = document.querySelector<HTMLDialogElement>('.admin-auth-dialog');
-      return dialog ? dialog.scrollWidth - dialog.clientWidth : Number.POSITIVE_INFINITY;
+      const dialog = document.querySelector<HTMLDialogElement>(
+        '.admin-auth-dialog',
+      );
+      return dialog
+        ? dialog.scrollWidth - dialog.clientWidth
+        : Number.POSITIVE_INFINITY;
     })(),
   }));
   expect(overflow.document).toBeLessThanOrEqual(1);
@@ -109,15 +138,14 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 
 async function openEntityEditor(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Crear personaje' }).click();
-  await expect(page.getByRole('heading', { name: 'Crear character' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Crear character' }),
+  ).toBeVisible();
   await expect(page.getByTestId('admin-coordinate-map')).toBeVisible();
 }
 
-for (const viewport of [
-  { width: 1440, height: 900 },
-  { width: 1024, height: 768 },
-]) {
-  test(`authorized workspace uses useful desktop geometry at ${viewport.width}x${viewport.height}`, async ({
+for (const viewport of DESKTOP_VIEWPORTS) {
+  test(`MAP-048 desktop ${viewport.width}x${viewport.height}`, async ({
     page,
   }) => {
     await page.setViewportSize(viewport);
@@ -140,65 +168,79 @@ for (const viewport of [
     expect(workspaceBox!.width).toBeGreaterThan(loginBox!.width * 1.65);
     expect(workspaceBox!.width).toBeGreaterThan(viewport.width * 0.74);
     expect(workspaceBox!.x).toBeGreaterThanOrEqual(0);
-    expect(workspaceBox!.x + workspaceBox!.width).toBeLessThanOrEqual(viewport.width + 1);
+    expect(workspaceBox!.x + workspaceBox!.width).toBeLessThanOrEqual(
+      viewport.width + 1,
+    );
     await expectNoHorizontalOverflow(page);
 
     await page.getByRole('button', { name: 'Crear', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Crear registro' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Crear registro' }),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
     await page.getByRole('button', { name: 'Etiquetas' }).click();
     await page.getByRole('button', { name: 'Crear', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Crear registro' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Crear registro' }),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
 
     await openEntityEditor(page);
-    const fields = page.locator('.admin-map-entity__fields > .admin-map-entity__field');
+    const fields = page.locator(
+      '.admin-map-entity__fields > .admin-map-entity__field',
+    );
     const firstField = await fields.nth(0).boundingBox();
     const secondField = await fields.nth(1).boundingBox();
     expect(firstField).not.toBeNull();
     expect(secondField).not.toBeNull();
     expect(Math.abs(secondField!.y - firstField!.y)).toBeLessThan(4);
-    expect(secondField!.x).toBeGreaterThan(firstField!.x + firstField!.width * 0.8);
+    expect(secondField!.x).toBeGreaterThan(
+      firstField!.x + firstField!.width * 0.8,
+    );
 
     const map = page.getByTestId('admin-coordinate-map');
     const mapBox = await map.boundingBox();
     expect(mapBox).not.toBeNull();
-    expect(mapBox!.width).toBeGreaterThan(viewport.width === 1440 ? 900 : 650);
+    expect(mapBox!.width).toBeGreaterThan(
+      viewport.width === 1440 ? 900 : 650,
+    );
     expect(mapBox!.height).toBeGreaterThan(300);
     await expect(map.locator('.leaflet-image-layer')).toBeVisible();
 
-    await map.click({ position: { x: mapBox!.width * 0.55, y: mapBox!.height * 0.45 } });
+    await map.click({
+      position: {
+        x: mapBox!.width * 0.55,
+        y: mapBox!.height * 0.45,
+      },
+    });
     await expect(page.getByTestId('admin-coordinate-marker')).toBeVisible();
 
     await page.getByRole('button', { name: 'Publicar' }).click();
-    await expect(page.locator('.admin-map-entity__editor .admin-map-entity__status')).toContainText(
-      'No se ha publicado.',
-    );
+    await expect(
+      page.locator('.admin-map-entity__editor .admin-map-entity__status'),
+    ).toContainText('No se ha publicado.');
     await expectNoHorizontalOverflow(page);
 
     await page.getByRole('button', { name: 'Cerrar editor' }).click();
-    await expect(page.getByRole('heading', { name: 'Crear character' })).toBeHidden();
+    await expect(
+      page.getByRole('heading', { name: 'Crear character' }),
+    ).toBeHidden();
     await openEntityEditor(page);
     await expect(map.locator('.leaflet-image-layer')).toBeVisible();
 
     if (viewport.width === 1440) {
       const beforeResize = await map.boundingBox();
       await page.setViewportSize({ width: 1100, height: 780 });
-      await expect.poll(async () => (await map.boundingBox())?.width ?? 0).toBeLessThan(beforeResize!.width);
+      await expect
+        .poll(async () => (await map.boundingBox())?.width ?? 0)
+        .toBeLessThan(beforeResize!.width);
       await expect(map.locator('.leaflet-image-layer')).toBeVisible();
-      await expect(page.getByTestId('admin-coordinate-map')).toContainText('');
     }
   });
 }
 
-for (const viewport of [
-  { width: 320, height: 740 },
-  { width: 390, height: 844 },
-  { width: 430, height: 932 },
-]) {
-  test(`authorized workspace collapses safely at ${viewport.width}x${viewport.height}`, async ({
-    page,
-  }) => {
+for (const viewport of MOBILE_VIEWPORTS) {
+  test(`MAP-048 mobile ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await configureBackend(page);
     await page.goto('/');
@@ -209,26 +251,36 @@ for (const viewport of [
     expect(workspaceBox).not.toBeNull();
     expect(workspaceBox!.width).toBeGreaterThanOrEqual(viewport.width - 24);
     expect(workspaceBox!.x).toBeGreaterThanOrEqual(0);
-    expect(workspaceBox!.x + workspaceBox!.width).toBeLessThanOrEqual(viewport.width + 1);
+    expect(workspaceBox!.x + workspaceBox!.width).toBeLessThanOrEqual(
+      viewport.width + 1,
+    );
 
     await openEntityEditor(page);
-    const fields = page.locator('.admin-map-entity__fields > .admin-map-entity__field');
+    const fields = page.locator(
+      '.admin-map-entity__fields > .admin-map-entity__field',
+    );
     const firstField = await fields.nth(0).boundingBox();
     const secondField = await fields.nth(1).boundingBox();
     expect(firstField).not.toBeNull();
     expect(secondField).not.toBeNull();
-    expect(secondField!.y).toBeGreaterThan(firstField!.y + firstField!.height - 2);
+    expect(secondField!.y).toBeGreaterThan(
+      firstField!.y + firstField!.height - 2,
+    );
 
     const mapBox = await page.getByTestId('admin-coordinate-map').boundingBox();
     expect(mapBox).not.toBeNull();
     expect(mapBox!.width).toBeGreaterThan(viewport.width * 0.65);
     expect(mapBox!.width).toBeLessThanOrEqual(workspaceBox!.width);
-    await expect(page.getByRole('button', { name: 'Cerrar editor' })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Cerrar editor' }),
+    ).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
     await page.getByRole('button', { name: 'Cerrar editor' }).click();
     const entry = page.getByRole('button', { name: 'Administración' });
-    await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+    await page
+      .getByRole('button', { name: 'Cerrar acceso administrativo' })
+      .click();
     await expect(entry).toBeFocused();
     await entry.click();
     await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
