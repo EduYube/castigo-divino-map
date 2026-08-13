@@ -353,7 +353,7 @@ for (const source of [
     expect(before.markerWidth).toBeCloseTo(52, 1);
     expect(before.markerHeight).toBeCloseTo(52, 1);
 
-    await page.getByRole('link', { name: 'Acercar' }).click();
+    await page.locator('.leaflet-control-zoom-in').click();
     await expect(portraitMarker).toHaveAttribute('data-portrait-marker', 'true');
 
     const after = await markerGeometry(portraitMarker);
@@ -384,7 +384,7 @@ test('forced-colors keeps portrait and standard character on the same footprint'
   const portraitMarker = characterMarker(page);
   const standardMarker = standardCharacterMarker(page);
 
-  await page.getByRole('link', { name: 'Acercar' }).click();
+  await page.locator('.leaflet-control-zoom-in').click();
   await expect(portraitMarker).toHaveAttribute('data-portrait-marker', 'true');
   expectSameGeometry(await markerGeometry(portraitMarker), await markerGeometry(standardMarker));
 });
