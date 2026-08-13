@@ -8,6 +8,18 @@
       "description": "Accidentes geográficos y puntos de referencia públicos del mapa."
     },
     {
+      "id": "category-npc",
+      "slug": "npc",
+      "name": "NPC",
+      "description": ""
+    },
+    {
+      "id": "category-pj",
+      "slug": "personaje",
+      "name": "Personaje",
+      "description": "Personaje"
+    },
+    {
       "id": "category-settlement",
       "slug": "asentamientos",
       "name": "Asentamiento",
@@ -15,6 +27,11 @@
     }
   ],
   "tags": [
+    {
+      "id": "category-veyra",
+      "name": "Veyra",
+      "description": "Relacionado o perteneciente a Veyra"
+    },
     {
       "id": "coastal",
       "name": "Costero",
@@ -38,6 +55,24 @@
   ],
   "players": [],
   "entities": [
+    {
+      "id": "entity-request-07d26371bbff42d9b91e076d099891b0",
+      "slug": "request-07d26371bbff42d9b91e076d099891b0",
+      "entityType": "character",
+      "visibility": "pin",
+      "name": "Veyra",
+      "nameLanguage": "en",
+      "aliases": [],
+      "summary": "",
+      "description": "Posición inicial Veyra (dudo entre neverwinter y lidian)",
+      "portraitPath": "portraits/9d3dcfeb-0320-4bca-9f5d-941d68aa6410.jpg",
+      "coordinates": {
+        "x": 1438.727724022,
+        "y": 1837.31274570082
+      },
+      "categoryId": "category-pj",
+      "tagIds": ["category-veyra"]
+    },
     {
       "id": "place-demo-harbor",
       "slug": "puerto-de-demostracion",
@@ -3256,7 +3291,7 @@
     }
   ],
   "characterLocationEvents": [],
-  "generatedAt": "2026-08-10T16:53:10.094Z",
-  "sourceRevision": "sha256:b0a0c6f1351836d8549f80e05507d11a26a66d3e47b120a609757390653f44bb",
-  "checksum": "sha256:b0a0c6f1351836d8549f80e05507d11a26a66d3e47b120a609757390653f44bb"
+  "generatedAt": "2026-08-13T10:13:37.959Z",
+  "sourceRevision": "sha256:bfaacb9ace67b2399174891393f351bc2a24a9e3b6011b1e762ef549e98da976",
+  "checksum": "sha256:bfaacb9ace67b2399174891393f351bc2a24a9e3b6011b1e762ef549e98da976"
 }
