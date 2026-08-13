@@ -428,12 +428,8 @@ for (const viewport of [
     const standardGeometry = await markerGeometry(standardMarker);
     expect(portraitGeometry.markerWidth).toBeCloseTo(52, 1);
     expect(portraitGeometry.markerHeight).toBeCloseTo(52, 1);
-    expect(portraitGeometry.visualCssWidth).toBe(
-      standardGeometry.visualCssWidth,
-    );
-    expect(portraitGeometry.visualCssHeight).toBe(
-      standardGeometry.visualCssHeight,
-    );
+    expect(portraitGeometry.visualCssWidth).toBe(standardGeometry.visualCssWidth);
+    expect(portraitGeometry.visualCssHeight).toBe(standardGeometry.visualCssHeight);
     await expect(page.getByTestId('compact-character-portrait')).toBeVisible();
     await expect(page.getByTestId('map-shell')).toBeVisible();
     expect(
