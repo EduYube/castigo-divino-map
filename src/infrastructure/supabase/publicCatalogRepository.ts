@@ -17,6 +17,7 @@ export { parsePublicCatalogSnapshotV2 } from './publicCatalogCodec';
 const PROJECT_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
 const LOCAL_PROJECT_URL_PATTERN = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?\/?$/i;
 const PUBLISHABLE_KEY_PATTERN = /^sb_publishable_[A-Za-z0-9_-]{10,}$/;
+const LOCAL_TEST_KEY_PATTERN = /^map\d{3}-[a-z0-9-]+-test-key$/i;
 const LEGACY_ANON_KEY_PATTERN = /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 
 export interface SupabasePublicCatalogRepositoryOptions {
@@ -75,8 +76,10 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
       PROJECT_URL_PATTERN.test(projectUrl) ||
       (options.allowLocalProject === true && isLocalProject);
     const validPublishableKey = PUBLISHABLE_KEY_PATTERN.test(publishableKey);
-    const validLocalAnonKey =
-      options.allowLocalProject === true && isLocalProject && isLegacyAnonKey(publishableKey);
+    const validLocalKey =
+      options.allowLocalProject === true &&
+      isLocalProject &&
+      (isLegacyAnonKey(publishableKey) || LOCAL_TEST_KEY_PATTERN.test(publishableKey));
 
     if (!projectUrl || !publishableKey) {
       throw new PublicDataRepositoryError(
@@ -94,10 +97,10 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
       );
     }
 
-    if (!validPublishableKey && !validLocalAnonKey) {
+    if (!validPublishableKey && !validLocalKey) {
       throw new PublicDataRepositoryError(
         'configuration-invalid',
-        'La configuración alojada requiere una clave sb_publishable_; una clave anon legacy solo se admite con Supabase local.',
+        'La configuración alojada requiere una clave sb_publishable_; una clave anon legacy o sintética de test solo se admite con Supabase local.',
         { source: 'supabase', recoverable: false },
       );
     }
@@ -130,7 +133,7 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
   }
 
   async load(options: { readonly signal: AbortSignal }): Promise<PublicCatalogEnvelope> {
-    const controller = new AbortController();
+    controller = new AbortController();
     const handleParentAbort = (): void => controller.abort();
 
     if (options.signal.aborted) {
