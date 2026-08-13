@@ -1,3 +1,7 @@
+:root {
+  --admin-workspace-width: min(76rem, calc(var(--content-width) - (2 * var(--page-inline))));
+}
+
 .admin-auth-entry {
   display: grid;
   justify-items: end;
@@ -40,17 +44,28 @@
   text-align: right;
 }
 
+body:has(.admin-auth-dialog[open]) {
+  overflow: hidden;
+}
+
 .admin-auth-dialog {
   width: min(30rem, calc(100% - 1.5rem));
   max-width: 100%;
   max-height: calc(100svh - 1.5rem);
   padding: clamp(1rem, 4vw, 1.5rem);
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-padding-block: 4.5rem 1rem;
   color: var(--ink);
   background: #182019;
   border: 1px solid var(--line);
   border-radius: 1rem;
   box-shadow: var(--shadow);
+}
+
+.admin-auth-dialog:has(.admin-auth__shell:not([hidden])) {
+  width: min(var(--admin-workspace-width), calc(100% - 2rem));
 }
 
 .admin-auth-dialog::backdrop {
@@ -63,6 +78,15 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.admin-auth-dialog:has(.admin-auth__shell:not([hidden])) .admin-auth-dialog__header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  padding-bottom: 0.75rem;
+  background: #182019;
+  border-bottom: 1px solid var(--line);
 }
 
 .admin-auth-dialog__title {
@@ -97,6 +121,12 @@
 .admin-auth__shell {
   display: grid;
   gap: 1rem;
+  min-width: 0;
+}
+
+.admin-auth__shell > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .admin-auth__form[hidden],
@@ -183,6 +213,12 @@
   }
 }
 
+@media (max-width: 48rem) {
+  .admin-auth-dialog:has(.admin-auth__shell:not([hidden])) {
+    width: calc(100% - 1rem);
+  }
+}
+
 @media (max-width: 36rem) {
   .admin-auth-entry {
     justify-items: start;
@@ -193,5 +229,14 @@
     max-height: calc(100svh - 1rem);
     padding: 1rem;
     border-radius: 0.8rem;
+  }
+}
+
+@media (forced-colors: active) {
+  .admin-auth-dialog,
+  .admin-auth-dialog:has(.admin-auth__shell:not([hidden])) .admin-auth-dialog__header {
+    color: CanvasText;
+    background: Canvas;
+    border-color: CanvasText;
   }
 }
