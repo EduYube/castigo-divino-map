@@ -369,8 +369,10 @@ for (const source of [
     expect(after.imageWithinVisual).toBe(true);
 
     if (source.label === 'square') {
+      const screenshotPath = testInfo.outputPath('MAP-049-portrait-footprint.png');
+      await page.getByTestId('map-shell').screenshot({ path: screenshotPath });
       await testInfo.attach('MAP-049-portrait-footprint', {
-        body: await page.getByTestId('map-shell').screenshot(),
+        path: screenshotPath,
         contentType: 'image/png',
       });
     }
