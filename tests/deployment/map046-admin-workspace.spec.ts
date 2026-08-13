@@ -84,7 +84,7 @@ test('production-equivalent Pages artifact opens an empty catalog as the first a
 
   await page.route('**/auth/v1/**', routeProductionBackend);
   await page.route('**/rest/v1/**', routeProductionBackend);
-  await page.goto('/');
+  await page.goto('./');
 
   await expect(page.locator('.backend-status')).toHaveAttribute('data-backend-state', 'connected');
   await page.getByRole('button', { name: 'Administrar' }).click();
