@@ -115,7 +115,8 @@ async function configureBackend(
     slug: 'map049-standard-character',
     name: 'MAP049 Standard Character',
     portrait_path: null,
-    x: 1820,
+    x: 2700,
+    y: 1700,
   });
 
   await page.addInitScript(
