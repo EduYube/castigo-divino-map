@@ -853,7 +853,10 @@ export function mountAdminMapEntities(
       return;
     }
     if (!showFieldErrors(draft)) {
-      editorStatus.textContent = 'Revisa los campos indicados antes de guardar.';
+      editorStatus.textContent =
+        publicationStatus === 'published'
+          ? 'No se ha publicado. Corrige los campos indicados antes de volver a intentarlo.'
+          : 'Revisa los campos indicados antes de guardar.';
       const invalid = Array.from(controls.values()).find(
         ({ input }) => input.getAttribute('aria-invalid') === 'true',
       );
