@@ -170,14 +170,17 @@ async function configureBackend(
   await page.route('**/storage/v1/**', async (route: Route) => {
     const request = route.request();
     const url = new URL(request.url());
-    authorizationHeaders.push(request.headers()['authorization'] ?? '');
+    const targetPortraitRequest = url.pathname.endsWith(`/character-portraits/${PORTRAIT_PATH}`);
     const marker = url.pathname.includes('/render/image/authenticated/');
-    if (marker) markerRequestUrls.push(url.href);
-    else detailRequestUrls.push(url.href);
+    if (targetPortraitRequest) {
+      authorizationHeaders.push(request.headers()['authorization'] ?? '');
+      if (marker) markerRequestUrls.push(url.href);
+      else detailRequestUrls.push(url.href);
+    }
 
     if (
       portraitPath !== PORTRAIT_PATH ||
-      !url.pathname.endsWith(`/character-portraits/${PORTRAIT_PATH}`) ||
+      !targetPortraitRequest ||
       (request.headers()['authorization'] ?? '') !== `Bearer ${PUBLIC_KEY}` ||
       shouldFailImages
     ) {
