@@ -7,7 +7,7 @@ import { PUBLIC_CATALOG_TABLE_QUERIES } from '../../src/data-access/publicCatalo
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const PROJECT_URL = 'http://127.0.0.1:4173';
-const PUBLIC_KEY = 'sb_publishable_map045_public_portraits_key';
+const PUBLIC_KEY = 'map045-public-portrait-test-key';
 const CHARACTER_ID = 'entity-map045-portrait';
 const STANDARD_CHARACTER_ID = 'entity-map049-standard-character';
 const PORTRAIT_PATH = 'portraits/123e4567-e89b-42d3-a456-426614174000.png';
@@ -278,7 +278,7 @@ test('NPC without portrait keeps the standard marker and details have no image g
   expect(backend.detailRequests()).toHaveLength(0);
 });
 
-test('public portrait is lazy on initial map load, then becomes the selected circular marker and details image', async ({
+test('public portrait is visible on the initial minimum-zoom map and in character details', async ({
   page,
 }) => {
   const backend = await configureBackend(page, PORTRAIT_PATH);
@@ -286,21 +286,19 @@ test('public portrait is lazy on initial map load, then becomes the selected cir
 
   const marker = characterMarker(page);
   await expect(marker).toHaveCount(1);
-  await expect(marker).not.toHaveAttribute('data-portrait-marker', 'true');
-  expect(backend.markerRequests()).toHaveLength(0);
-  expect(backend.detailRequests()).toHaveLength(0);
-
-  await marker.focus();
-  await expect(marker).toBeFocused();
-  await page.keyboard.press('Enter');
-
   await expect(marker).toHaveAttribute('data-portrait-marker', 'true');
   await expect(marker.locator('.pin-visual--portrait')).toHaveCount(1);
-  expect(backend.markerRequests()).toHaveLength(1);
+  await expect.poll(() => backend.markerRequests().length).toBe(1);
+  expect(backend.detailRequests()).toHaveLength(0);
   expect(backend.markerRequests()[0]).toContain('width=96');
   expect(backend.markerRequests()[0]).toContain('height=96');
   expect(backend.authorizationHeaders()[0]).toBe(`Bearer ${PUBLIC_KEY}`);
   expect((await markerGeometry(marker)).markerWidth).toBeCloseTo(52, 1);
+
+  await marker.focus();
+  await expect(marker).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(marker).toHaveAttribute('data-portrait-marker', 'true');
 
   const compact = page.getByTestId('compact-character-portrait');
   await expect(compact).toBeVisible();
@@ -324,11 +322,10 @@ test('portrait authorization/storage failure degrades to the standard pin and no
   await page.goto('/');
 
   const marker = characterMarker(page);
-  expect(backend.markerRequests()).toHaveLength(0);
-  await marker.click();
   await expect.poll(() => backend.markerRequests().length).toBeGreaterThan(0);
   await expect(marker).not.toHaveAttribute('data-portrait-marker', 'true');
   await expect(marker.locator('.pin-visual--character:not(.pin-visual--portrait)')).toHaveCount(1);
+  await marker.click();
   await expect.poll(() => backend.detailRequests().length).toBeGreaterThan(0);
   await expect(page.getByTestId('compact-character-portrait')).toHaveCount(0);
   await expect(page.getByTestId('map-shell')).toBeVisible();
@@ -339,7 +336,9 @@ for (const source of [
   { width: 160, height: 96, label: 'horizontal' },
   { width: 96, height: 96, label: 'square' },
 ] as const) {
-  test(`portrait ${source.label} keeps the standard pin footprint`, async ({ page }, testInfo) => {
+  test(`portrait ${source.label} keeps the standard pin footprint at minimum zoom and after a zoom cycle`, async ({
+    page,
+  }, testInfo) => {
     const imageSource: PortraitImageSource = {
       body: Buffer.from(PORTRAIT_PNG_HEX[source.label], 'hex'),
       contentType: 'image/png',
@@ -349,28 +348,38 @@ for (const source of [
 
     const portraitMarker = characterMarker(page);
     const standardMarker = standardCharacterMarker(page);
-    const before = await markerGeometry(portraitMarker);
-    const standardBefore = await markerGeometry(standardMarker);
-    expectSameGeometry(before, standardBefore);
-    expect(before.markerWidth).toBeCloseTo(52, 1);
-    expect(before.markerHeight).toBeCloseTo(52, 1);
+    const mapShell = page.getByTestId('map-shell');
+    await expect(portraitMarker).toHaveAttribute('data-portrait-marker', 'true');
+    const initialZoom = await mapShell.getAttribute('data-map-zoom');
+    expect(initialZoom).toBeTruthy();
+
+    const atMinimumZoom = await markerGeometry(portraitMarker);
+    const standardAtMinimumZoom = await markerGeometry(standardMarker);
+    expectSameGeometry(atMinimumZoom, standardAtMinimumZoom);
+    expect(atMinimumZoom.markerWidth).toBeCloseTo(52, 1);
+    expect(atMinimumZoom.markerHeight).toBeCloseTo(52, 1);
+    expect(atMinimumZoom.imageObjectFit).toBe('cover');
+    expect(atMinimumZoom.imageClipPath).not.toBe('none');
+    expect(atMinimumZoom.imageNaturalWidth).toBe(source.width);
+    expect(atMinimumZoom.imageNaturalHeight).toBe(source.height);
+    expect(atMinimumZoom.imageWithinVisual).toBe(true);
 
     await page.locator('.leaflet-control-zoom-in').click();
     await expect(portraitMarker).toHaveAttribute('data-portrait-marker', 'true');
+    const afterZoomIn = await markerGeometry(portraitMarker);
+    expectSameGeometry(afterZoomIn, atMinimumZoom);
+    expectSameGeometry(afterZoomIn, await markerGeometry(standardMarker));
 
-    const after = await markerGeometry(portraitMarker);
-    const standardAfter = await markerGeometry(standardMarker);
-    expectSameGeometry(after, before);
-    expectSameGeometry(after, standardAfter);
-    expect(after.imageObjectFit).toBe('cover');
-    expect(after.imageClipPath).not.toBe('none');
-    expect(after.imageNaturalWidth).toBe(source.width);
-    expect(after.imageNaturalHeight).toBe(source.height);
-    expect(after.imageWithinVisual).toBe(true);
+    await page.locator('.leaflet-control-zoom-out').click();
+    await expect(mapShell).toHaveAttribute('data-map-zoom', initialZoom!);
+    await expect(portraitMarker).toHaveAttribute('data-portrait-marker', 'true');
+    const afterZoomOut = await markerGeometry(portraitMarker);
+    expectSameGeometry(afterZoomOut, atMinimumZoom);
+    expect(afterZoomOut.imageWithinVisual).toBe(true);
 
     if (source.label === 'square') {
       const screenshotPath = testInfo.outputPath('MAP-049-portrait-footprint.png');
-      await page.getByTestId('map-shell').screenshot({ path: screenshotPath });
+      await mapShell.screenshot({ path: screenshotPath });
       await testInfo.attach('MAP-049-portrait-footprint', {
         path: screenshotPath,
         contentType: 'image/png',
@@ -379,7 +388,7 @@ for (const source of [
   });
 }
 
-test('forced-colors keeps portrait and standard character on the same footprint', async ({
+test('forced-colors keeps the initial minimum-zoom portrait and standard character on the same footprint', async ({
   page,
 }) => {
   await page.emulateMedia({ forcedColors: 'active' });
@@ -388,7 +397,6 @@ test('forced-colors keeps portrait and standard character on the same footprint'
   const portraitMarker = characterMarker(page);
   const standardMarker = standardCharacterMarker(page);
 
-  await page.locator('.leaflet-control-zoom-in').click();
   await expect(portraitMarker).toHaveAttribute('data-portrait-marker', 'true');
   expectSameGeometry(await markerGeometry(portraitMarker), await markerGeometry(standardMarker));
 });
@@ -399,7 +407,7 @@ for (const viewport of [
   { width: 390, height: 844, label: '390×844' },
   { width: 430, height: 932, label: '430×932' },
 ] as const) {
-  test(`portrait marker/details remain compact and map-first at ${viewport.label}`, async ({
+  test(`portrait is visible at initial zoom and marker/details remain compact at ${viewport.label}`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -408,16 +416,16 @@ for (const viewport of [
 
     const marker = characterMarker(page);
     const standardMarker = standardCharacterMarker(page);
-    await expect(marker).not.toHaveAttribute('data-portrait-marker', 'true');
-    expect(backend.markerRequests()).toHaveLength(0);
-    await marker.click();
     await expect(marker).toHaveAttribute('data-portrait-marker', 'true');
+    await expect.poll(() => backend.markerRequests().length).toBe(1);
     const portraitGeometry = await markerGeometry(marker);
     const standardGeometry = await markerGeometry(standardMarker);
     expect(portraitGeometry.markerWidth).toBeCloseTo(52, 1);
     expect(portraitGeometry.markerHeight).toBeCloseTo(52, 1);
     expect(portraitGeometry.visualCssWidth).toBe(standardGeometry.visualCssWidth);
     expect(portraitGeometry.visualCssHeight).toBe(standardGeometry.visualCssHeight);
+    await marker.click();
+    await expect(marker).toHaveAttribute('data-portrait-marker', 'true');
     await expect(page.getByTestId('compact-character-portrait')).toBeVisible();
     await expect(page.getByTestId('map-shell')).toBeVisible();
     expect(
