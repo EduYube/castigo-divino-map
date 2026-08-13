@@ -20,17 +20,18 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Apply exact test-runtime fix
+      - name: Apply exact selector fix
         shell: bash
         run: |
-          sed -i 's/retryDelaysMs: \[\]/retryDelaysMs: [0]/g' tests/e2e/map046-admin-workspace.spec.ts tests/e2e/map046-request-publication.spec.ts
+          sed -i "s/page.getByLabel('ID estable')/page.getByRole('textbox', { name: 'ID estable' })/g" tests/e2e/map046-admin-workspace.spec.ts
           git diff --check
-          git diff --exit-code -- .github/workflows/ci.yml src || true
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add tests/e2e/map046-admin-workspace.spec.ts tests/e2e/map046-request-publication.spec.ts
-          git commit -m 'test: execute MAP-046 public runtime once'
-          git push origin HEAD:agent/map-046-admin-workspace-initialization
+          git add tests/e2e/map046-admin-workspace.spec.ts
+          if ! git diff --cached --quiet; then
+            git commit -m 'test: scope MAP-046 catalog focus assertion'
+            git push origin HEAD:agent/map-046-admin-workspace-initialization
+          fi
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - name: Run MAP-046 workspace regression
@@ -39,7 +40,7 @@ jobs:
           set +e
           npx playwright test tests/e2e/map046-admin-workspace.spec.ts --project=chromium --reporter=line --max-failures=1 > /tmp/map046-workspace.log 2>&1
           status=$?
-          tail -n 120 /tmp/map046-workspace.log
+          tail -n 100 /tmp/map046-workspace.log
           exit $status
       - name: Run MAP-046 request publication regression
         shell: bash
@@ -47,5 +48,5 @@ jobs:
           set +e
           npx playwright test tests/e2e/map046-request-publication.spec.ts --project=chromium --reporter=line --max-failures=1 > /tmp/map046-request.log 2>&1
           status=$?
-          tail -n 160 /tmp/map046-request.log
+          tail -n 140 /tmp/map046-request.log
           exit $status
