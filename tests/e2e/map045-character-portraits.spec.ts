@@ -1,6 +1,12 @@
 import { readFileSync } from 'node:fs';
 
-import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
+import {
+  expect,
+  test,
+  type Locator,
+  type Page,
+  type Route,
+} from '@playwright/test';
 
 import { PUBLIC_CATALOG_TABLE_QUERIES } from '../../src/data-access/publicCatalogQueryContract.js';
 
@@ -250,7 +256,10 @@ async function markerGeometry(marker: Locator): Promise<MarkerGeometry> {
   });
 }
 
-function expectSameGeometry(actual: MarkerGeometry, expected: MarkerGeometry): void {
+function expectSameGeometry(
+  actual: MarkerGeometry,
+  expected: MarkerGeometry,
+): void {
   expect(actual.markerWidth).toBeCloseTo(expected.markerWidth, 1);
   expect(actual.markerHeight).toBeCloseTo(expected.markerHeight, 1);
   expect(actual.visualWidth).toBeCloseTo(expected.visualWidth, 1);
@@ -338,42 +347,45 @@ for (const source of [
   { width: 160, height: 96, label: 'horizontal' },
   { width: 96, height: 96, label: 'square' },
 ] as const) {
-  test(`portrait ${source.label} keeps the standard pin footprint`, async ({ page }, testInfo) => {
-    const imageSource: PortraitImageSource = {
-      body: portraitSvg(source.width, source.height),
-      contentType: 'image/svg+xml',
-    };
-    await configureBackend(page, PORTRAIT_PATH, imageSource);
-    await page.goto('/');
+  test(
+    `portrait ${source.label} keeps the standard pin footprint`,
+    async ({ page }, testInfo) => {
+      const imageSource: PortraitImageSource = {
+        body: portraitSvg(source.width, source.height),
+        contentType: 'image/svg+xml',
+      };
+      await configureBackend(page, PORTRAIT_PATH, imageSource);
+      await page.goto('/');
 
-    const portraitMarker = characterMarker(page);
-    const standardMarker = standardCharacterMarker(page);
-    const before = await markerGeometry(portraitMarker);
-    const standardBefore = await markerGeometry(standardMarker);
-    expectSameGeometry(before, standardBefore);
-    expect(before.markerWidth).toBeCloseTo(52, 1);
-    expect(before.markerHeight).toBeCloseTo(52, 1);
+      const portraitMarker = characterMarker(page);
+      const standardMarker = standardCharacterMarker(page);
+      const before = await markerGeometry(portraitMarker);
+      const standardBefore = await markerGeometry(standardMarker);
+      expectSameGeometry(before, standardBefore);
+      expect(before.markerWidth).toBeCloseTo(52, 1);
+      expect(before.markerHeight).toBeCloseTo(52, 1);
 
-    await page.getByRole('link', { name: 'Acercar' }).click();
-    await expect(portraitMarker).toHaveAttribute('data-portrait-marker', 'true');
+      await page.getByRole('link', { name: 'Acercar' }).click();
+      await expect(portraitMarker).toHaveAttribute('data-portrait-marker', 'true');
 
-    const after = await markerGeometry(portraitMarker);
-    const standardAfter = await markerGeometry(standardMarker);
-    expectSameGeometry(after, before);
-    expectSameGeometry(after, standardAfter);
-    expect(after.imageObjectFit).toBe('cover');
-    expect(after.imageClipPath).not.toBe('none');
-    expect(after.imageNaturalWidth).toBe(source.width);
-    expect(after.imageNaturalHeight).toBe(source.height);
-    expect(after.imageWithinVisual).toBe(true);
+      const after = await markerGeometry(portraitMarker);
+      const standardAfter = await markerGeometry(standardMarker);
+      expectSameGeometry(after, before);
+      expectSameGeometry(after, standardAfter);
+      expect(after.imageObjectFit).toBe('cover');
+      expect(after.imageClipPath).not.toBe('none');
+      expect(after.imageNaturalWidth).toBe(source.width);
+      expect(after.imageNaturalHeight).toBe(source.height);
+      expect(after.imageWithinVisual).toBe(true);
 
-    if (source.label === 'square') {
-      await testInfo.attach('MAP-049-portrait-footprint', {
-        body: await page.getByTestId('map-shell').screenshot(),
-        contentType: 'image/png',
-      });
-    }
-  });
+      if (source.label === 'square') {
+        await testInfo.attach('MAP-049-portrait-footprint', {
+          body: await page.getByTestId('map-shell').screenshot(),
+          contentType: 'image/png',
+        });
+      }
+    },
+  );
 }
 
 test('forced-colors keeps portrait and standard character on the same footprint', async ({
@@ -416,8 +428,12 @@ for (const viewport of [
     const standardGeometry = await markerGeometry(standardMarker);
     expect(portraitGeometry.markerWidth).toBeCloseTo(52, 1);
     expect(portraitGeometry.markerHeight).toBeCloseTo(52, 1);
-    expect(portraitGeometry.visualCssWidth).toBe(standardGeometry.visualCssWidth);
-    expect(portraitGeometry.visualCssHeight).toBe(standardGeometry.visualCssHeight);
+    expect(portraitGeometry.visualCssWidth).toBe(
+      standardGeometry.visualCssWidth,
+    );
+    expect(portraitGeometry.visualCssHeight).toBe(
+      standardGeometry.visualCssHeight,
+    );
     await expect(page.getByTestId('compact-character-portrait')).toBeVisible();
     await expect(page.getByTestId('map-shell')).toBeVisible();
     expect(
