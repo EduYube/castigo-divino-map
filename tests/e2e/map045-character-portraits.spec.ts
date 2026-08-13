@@ -46,13 +46,41 @@ interface PortraitBackend {
   authorizationHeaders(): readonly string[];
 }
 
+interface PortraitImageSource {
+  readonly body: Buffer | string;
+  readonly contentType: string;
+}
+
+interface MarkerGeometry {
+  readonly markerWidth: number;
+  readonly markerHeight: number;
+  readonly visualWidth: number;
+  readonly visualHeight: number;
+  readonly imageObjectFit: string | null;
+  readonly imageClipPath: string | null;
+  readonly imageNaturalWidth: number | null;
+  readonly imageNaturalHeight: number | null;
+}
+
+const DEFAULT_IMAGE_SOURCE: PortraitImageSource = {
+  body: PNG,
+  contentType: 'image/png',
+};
+
 function contentRange(rows: readonly unknown[]): string {
   return rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
+}
+
+function portraitSvg(width: number, height: number): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <rect width="${width}" height="${height}" fill="#c5ad78" />
+  </svg>`;
 }
 
 async function configureBackend(
   page: Page,
   initialPortrait: string | null,
+  imageSource: PortraitImageSource = DEFAULT_IMAGE_SOURCE,
 ): Promise<PortraitBackend> {
   let portraitPath = initialPortrait;
   let shouldFailImages = false;
@@ -140,7 +168,11 @@ async function configureBackend(
       return;
     }
 
-    await route.fulfill({ status: 200, contentType: 'image/png', body: PNG });
+    await route.fulfill({
+      status: 200,
+      contentType: imageSource.contentType,
+      body: imageSource.body,
+    });
   });
 
   return {
@@ -158,6 +190,28 @@ async function configureBackend(
 
 function characterMarker(page: Page) {
   return page.locator(`.campaign-marker-icon[data-entity-id="${CHARACTER_ID}"]`);
+}
+
+async function markerGeometry(page: Page): Promise<MarkerGeometry> {
+  return characterMarker(page).evaluate((element) => {
+    const visual = element.querySelector<HTMLElement>('.pin-visual');
+    if (!visual) throw new Error('Missing .pin-visual');
+    const image = visual.querySelector<HTMLImageElement>('.pin-visual__portrait');
+    const markerRect = element.getBoundingClientRect();
+    const visualRect = visual.getBoundingClientRect();
+    const imageStyle = image ? getComputedStyle(image) : null;
+
+    return {
+      markerWidth: markerRect.width,
+      markerHeight: markerRect.height,
+      visualWidth: visualRect.width,
+      visualHeight: visualRect.height,
+      imageObjectFit: imageStyle?.objectFit ?? null,
+      imageClipPath: imageStyle?.clipPath ?? null,
+      imageNaturalWidth: image?.naturalWidth ?? null,
+      imageNaturalHeight: image?.naturalHeight ?? null,
+    };
+  });
 }
 
 test('NPC without portrait keeps the standard marker and details have no image gap', async ({
@@ -230,6 +284,38 @@ test('portrait authorization/storage failure degrades to the standard pin and no
   await expect(page.getByTestId('compact-character-portrait')).toHaveCount(0);
   await expect(page.getByTestId('map-shell')).toBeVisible();
 });
+
+for (const source of [
+  { width: 96, height: 160, label: 'vertical' },
+  { width: 160, height: 96, label: 'horizontal' },
+  { width: 96, height: 96, label: 'square' },
+] as const) {
+  test(`portrait ${source.label} keeps the standard pin footprint`, async ({ page }) => {
+    const imageSource: PortraitImageSource = {
+      body: portraitSvg(source.width, source.height),
+      contentType: 'image/svg+xml',
+    };
+    await configureBackend(page, PORTRAIT_PATH, imageSource);
+    await page.goto('/');
+
+    const before = await markerGeometry(page);
+    expect(before.markerWidth).toBeCloseTo(52, 1);
+    expect(before.markerHeight).toBeCloseTo(52, 1);
+
+    await page.getByRole('link', { name: 'Acercar' }).click();
+    await expect(characterMarker(page)).toHaveAttribute('data-portrait-marker', 'true');
+
+    const after = await markerGeometry(page);
+    expect(after.markerWidth).toBeCloseTo(before.markerWidth, 1);
+    expect(after.markerHeight).toBeCloseTo(before.markerHeight, 1);
+    expect(after.visualWidth).toBeCloseTo(before.visualWidth, 1);
+    expect(after.visualHeight).toBeCloseTo(before.visualHeight, 1);
+    expect(after.imageObjectFit).toBe('cover');
+    expect(after.imageClipPath).not.toBe('none');
+    expect(after.imageNaturalWidth).toBe(source.width);
+    expect(after.imageNaturalHeight).toBe(source.height);
+  });
+}
 
 for (const viewport of [
   { width: 1280, height: 800, label: 'desktop' },
