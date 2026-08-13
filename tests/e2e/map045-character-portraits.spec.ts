@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 
 import { PUBLIC_CATALOG_TABLE_QUERIES } from '../../src/data-access/publicCatalogQueryContract.js';
 
@@ -9,6 +9,7 @@ const OFFICIAL_MAP_URL =
 const PROJECT_URL = 'http://127.0.0.1:4173';
 const PUBLIC_KEY = 'sb_publishable_map045_public_portraits_key';
 const CHARACTER_ID = 'entity-map045-portrait';
+const STANDARD_CHARACTER_ID = 'entity-map049-standard-character';
 const PORTRAIT_PATH = 'portraits/123e4567-e89b-42d3-a456-426614174000.png';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
@@ -19,6 +20,14 @@ const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
   'base64',
 );
+const PORTRAIT_PNG_HEX = {
+  vertical:
+    '89504e470d0a1a0a0000000d4948445200000060000000a008020000007c12fedb000000d64944415478daedd001010000040020ac76ca0cbf2cf0a026943b1dfc4a812041820409122448108204091224489020410812244890204182042148902041820409122408418204091224489020040912244890204182102448902041820409128420418204091224481082040912244890204108122448902041820409429020418204091224084182040912244890200409122448902041820421489020418204091284204182040912244810820409122448902041821024489020418204094290204182040912240841820409122448902041fc0e6a3e032a36eca0c40000000049454e44ae426082',
+  horizontal:
+    '89504e470d0a1a0a0000000d49484452000000a00000006008020000001545eece000000ac4944415478daedd1010d003008c0b073d5984206be708000d24958a32b9feef62d002cc0022cc0022cc0020c58800558800558800518b0000bb0000bb0000bb00003166001166001166001062cc0022cc0022cc0020c5880055880055880055880010bb0000bb0000bb00003166001166001166001062cc0022cc0022cc0022cc080055880055880055880010bb0000bb0000bb0000b3060011660011660011660c0022cc0022cc002acad01accc02aa19dcf4ca0000000049454e44ae426082',
+  square:
+    '89504e470d0a1a0a0000000d49484452000000600000006008020000006dfae06f0000008e4944415478daedd0310100300800a0b9d4963286bd4ce0eb051188ae7cecbe02418204091224489020040912244890204182102448902041820409429020418204091224481082040912244890204108122448902041820421489020418204091224084182040912244890200409122448902041821024489020418204091284204182040912244810820409ba338b2102aa083749630000000049454e44ae426082',
+} as const;
 const FIXTURE = JSON.parse(
   readFileSync(new URL('../../scripts/fixtures/beta01-public-rows.json', import.meta.url), 'utf8'),
 ) as Record<string, unknown>;
@@ -46,6 +55,32 @@ interface PortraitBackend {
   authorizationHeaders(): readonly string[];
 }
 
+interface PortraitImageSource {
+  readonly body: Buffer | string;
+  readonly contentType: string;
+}
+
+interface MarkerGeometry {
+  readonly markerWidth: number;
+  readonly markerHeight: number;
+  readonly visualWidth: number;
+  readonly visualHeight: number;
+  readonly visualCssWidth: string;
+  readonly visualCssHeight: string;
+  readonly centerOffsetX: number;
+  readonly centerOffsetY: number;
+  readonly imageObjectFit: string | null;
+  readonly imageClipPath: string | null;
+  readonly imageNaturalWidth: number | null;
+  readonly imageNaturalHeight: number | null;
+  readonly imageWithinVisual: boolean | null;
+}
+
+const DEFAULT_IMAGE_SOURCE: PortraitImageSource = {
+  body: PNG,
+  contentType: 'image/png',
+};
+
 function contentRange(rows: readonly unknown[]): string {
   return rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
 }
@@ -53,6 +88,7 @@ function contentRange(rows: readonly unknown[]): string {
 async function configureBackend(
   page: Page,
   initialPortrait: string | null,
+  imageSource: PortraitImageSource = DEFAULT_IMAGE_SOURCE,
 ): Promise<PortraitBackend> {
   let portraitPath = initialPortrait;
   let shouldFailImages = false;
@@ -74,6 +110,15 @@ async function configureBackend(
     y: 1100,
     category_id: 'category-landmark',
     publication_status: 'published',
+  });
+  const standardCharacter = (): Record<string, unknown> => ({
+    ...character(),
+    id: STANDARD_CHARACTER_ID,
+    slug: 'map049-standard-character',
+    name: 'MAP049 Standard Character',
+    portrait_path: null,
+    x: 2700,
+    y: 1700,
   });
 
   await page.addInitScript(
@@ -108,7 +153,7 @@ async function configureBackend(
       fixtureKey && Array.isArray(FIXTURE[fixtureKey])
         ? [...(FIXTURE[fixtureKey] as Record<string, unknown>[])]
         : [];
-    if (table === 'map_entities') raw.push(character());
+    if (table === 'map_entities') raw.push(character(), standardCharacter());
     const rows = query
       ? raw.map((entry) =>
           Object.fromEntries(query.select.split(',').map((field) => [field, entry[field]])),
@@ -140,7 +185,11 @@ async function configureBackend(
       return;
     }
 
-    await route.fulfill({ status: 200, contentType: 'image/png', body: PNG });
+    await route.fulfill({
+      status: 200,
+      contentType: imageSource.contentType,
+      body: imageSource.body,
+    });
   });
 
   return {
@@ -158,6 +207,59 @@ async function configureBackend(
 
 function characterMarker(page: Page) {
   return page.locator(`.campaign-marker-icon[data-entity-id="${CHARACTER_ID}"]`);
+}
+
+function standardCharacterMarker(page: Page) {
+  return page.locator(`.campaign-marker-icon[data-entity-id="${STANDARD_CHARACTER_ID}"]`);
+}
+
+async function markerGeometry(marker: Locator): Promise<MarkerGeometry> {
+  return marker.evaluate((element) => {
+    const visual = element.querySelector<HTMLElement>('.pin-visual');
+    if (!visual) throw new Error('Missing .pin-visual');
+    const image = visual.querySelector<HTMLImageElement>('.pin-visual__portrait');
+    const markerRect = element.getBoundingClientRect();
+    const visualRect = visual.getBoundingClientRect();
+    const visualStyle = getComputedStyle(visual);
+    const imageStyle = image ? getComputedStyle(image) : null;
+    const imageRect = image?.getBoundingClientRect() ?? null;
+    const markerCenterX = markerRect.x + markerRect.width / 2;
+    const markerCenterY = markerRect.y + markerRect.height / 2;
+    const visualCenterX = visualRect.x + visualRect.width / 2;
+    const visualCenterY = visualRect.y + visualRect.height / 2;
+
+    return {
+      markerWidth: markerRect.width,
+      markerHeight: markerRect.height,
+      visualWidth: visualRect.width,
+      visualHeight: visualRect.height,
+      visualCssWidth: visualStyle.width,
+      visualCssHeight: visualStyle.height,
+      centerOffsetX: visualCenterX - markerCenterX,
+      centerOffsetY: visualCenterY - markerCenterY,
+      imageObjectFit: imageStyle?.objectFit ?? null,
+      imageClipPath: imageStyle?.clipPath ?? null,
+      imageNaturalWidth: image?.naturalWidth ?? null,
+      imageNaturalHeight: image?.naturalHeight ?? null,
+      imageWithinVisual: imageRect
+        ? imageRect.x >= visualRect.x - 0.5 &&
+          imageRect.y >= visualRect.y - 0.5 &&
+          imageRect.right <= visualRect.right + 0.5 &&
+          imageRect.bottom <= visualRect.bottom + 0.5
+        : null,
+    };
+  });
+}
+
+function expectSameGeometry(actual: MarkerGeometry, expected: MarkerGeometry): void {
+  expect(actual.markerWidth).toBeCloseTo(expected.markerWidth, 1);
+  expect(actual.markerHeight).toBeCloseTo(expected.markerHeight, 1);
+  expect(actual.visualWidth).toBeCloseTo(expected.visualWidth, 1);
+  expect(actual.visualHeight).toBeCloseTo(expected.visualHeight, 1);
+  expect(actual.visualCssWidth).toBe(expected.visualCssWidth);
+  expect(actual.visualCssHeight).toBe(expected.visualCssHeight);
+  expect(actual.centerOffsetX).toBeCloseTo(expected.centerOffsetX, 1);
+  expect(actual.centerOffsetY).toBeCloseTo(expected.centerOffsetY, 1);
 }
 
 test('NPC without portrait keeps the standard marker and details have no image gap', async ({
@@ -198,6 +300,7 @@ test('public portrait is lazy on initial map load, then becomes the selected cir
   expect(backend.markerRequests()[0]).toContain('width=96');
   expect(backend.markerRequests()[0]).toContain('height=96');
   expect(backend.authorizationHeaders()[0]).toBe(`Bearer ${PUBLIC_KEY}`);
+  expect((await markerGeometry(marker)).markerWidth).toBeCloseTo(52, 1);
 
   const compact = page.getByTestId('compact-character-portrait');
   await expect(compact).toBeVisible();
@@ -231,6 +334,63 @@ test('portrait authorization/storage failure degrades to the standard pin and no
   await expect(page.getByTestId('map-shell')).toBeVisible();
 });
 
+for (const source of [
+  { width: 96, height: 160, label: 'vertical' },
+  { width: 160, height: 96, label: 'horizontal' },
+  { width: 96, height: 96, label: 'square' },
+] as const) {
+  test(`portrait ${source.label} keeps the standard pin footprint`, async ({ page }, testInfo) => {
+    const imageSource: PortraitImageSource = {
+      body: Buffer.from(PORTRAIT_PNG_HEX[source.label], 'hex'),
+      contentType: 'image/png',
+    };
+    await configureBackend(page, PORTRAIT_PATH, imageSource);
+    await page.goto('/');
+
+    const portraitMarker = characterMarker(page);
+    const standardMarker = standardCharacterMarker(page);
+    const before = await markerGeometry(portraitMarker);
+    const standardBefore = await markerGeometry(standardMarker);
+    expectSameGeometry(before, standardBefore);
+    expect(before.markerWidth).toBeCloseTo(52, 1);
+    expect(before.markerHeight).toBeCloseTo(52, 1);
+
+    await page.locator('.leaflet-control-zoom-in').click();
+    await expect(portraitMarker).toHaveAttribute('data-portrait-marker', 'true');
+
+    const after = await markerGeometry(portraitMarker);
+    const standardAfter = await markerGeometry(standardMarker);
+    expectSameGeometry(after, before);
+    expectSameGeometry(after, standardAfter);
+    expect(after.imageObjectFit).toBe('cover');
+    expect(after.imageClipPath).not.toBe('none');
+    expect(after.imageNaturalWidth).toBe(source.width);
+    expect(after.imageNaturalHeight).toBe(source.height);
+    expect(after.imageWithinVisual).toBe(true);
+
+    if (source.label === 'square') {
+      await testInfo.attach('MAP-049-portrait-footprint', {
+        body: await page.getByTestId('map-shell').screenshot(),
+        contentType: 'image/png',
+      });
+    }
+  });
+}
+
+test('forced-colors keeps portrait and standard character on the same footprint', async ({
+  page,
+}) => {
+  await page.emulateMedia({ forcedColors: 'active' });
+  await configureBackend(page, PORTRAIT_PATH);
+  await page.goto('/');
+  const portraitMarker = characterMarker(page);
+  const standardMarker = standardCharacterMarker(page);
+
+  await page.locator('.leaflet-control-zoom-in').click();
+  await expect(portraitMarker).toHaveAttribute('data-portrait-marker', 'true');
+  expectSameGeometry(await markerGeometry(portraitMarker), await markerGeometry(standardMarker));
+});
+
 for (const viewport of [
   { width: 1280, height: 800, label: 'desktop' },
   { width: 320, height: 740, label: '320×740' },
@@ -245,10 +405,17 @@ for (const viewport of [
     await page.goto('/');
 
     const marker = characterMarker(page);
+    const standardMarker = standardCharacterMarker(page);
     await expect(marker).not.toHaveAttribute('data-portrait-marker', 'true');
     expect(backend.markerRequests()).toHaveLength(0);
     await marker.click();
     await expect(marker).toHaveAttribute('data-portrait-marker', 'true');
+    const portraitGeometry = await markerGeometry(marker);
+    const standardGeometry = await markerGeometry(standardMarker);
+    expect(portraitGeometry.markerWidth).toBeCloseTo(52, 1);
+    expect(portraitGeometry.markerHeight).toBeCloseTo(52, 1);
+    expect(portraitGeometry.visualCssWidth).toBe(standardGeometry.visualCssWidth);
+    expect(portraitGeometry.visualCssHeight).toBe(standardGeometry.visualCssHeight);
     await expect(page.getByTestId('compact-character-portrait')).toBeVisible();
     await expect(page.getByTestId('map-shell')).toBeVisible();
     expect(

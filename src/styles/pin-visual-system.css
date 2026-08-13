@@ -308,21 +308,35 @@
   }
 }
 
-/* MAP-045 portrait markers keep the existing 52×52 Leaflet interaction target. */
+/* MAP-045 portrait markers keep the existing 52×52 Leaflet interaction target.
+ * MAP-049 keeps portrait geometry inherited from the standard character pin. */
 .pin-visual--portrait {
-  width: 2.25rem;
-  height: 2.25rem;
   overflow: visible;
   background: Canvas;
   border-radius: 50%;
 }
 
 .pin-visual__portrait {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
   border-radius: inherit;
   object-fit: cover;
+  clip-path: circle(50% at 50% 50%);
+}
+
+/* Leaflet resets marker-pane images to width:auto and removes max dimensions.
+ * Scope the override to portrait images so map tiles and other marker images keep Leaflet defaults. */
+.leaflet-container .leaflet-marker-pane .pin-visual__portrait {
+  width: 100%;
+  max-width: 100% !important;
+  max-height: 100% !important;
 }
 
 @media (forced-colors: active) {
