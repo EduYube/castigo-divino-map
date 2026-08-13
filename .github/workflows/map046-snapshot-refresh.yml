@@ -27,6 +27,7 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0
         run: |
           npm run snapshot:generate
+          npx prettier --write public/data/public-catalog.snapshot.json
           npm run snapshot:verify:remote
           npm run snapshot:verify
           npx prettier --check --end-of-line auto public/data/public-catalog.snapshot.json
