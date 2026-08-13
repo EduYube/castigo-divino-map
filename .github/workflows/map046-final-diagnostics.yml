@@ -1,0 +1,102 @@
+name: MAP-046 final diagnostics
+
+on:
+  push:
+    branches:
+      - agent/map-046-admin-workspace-initialization
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: agent/map-046-admin-workspace-initialization
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply MAP-046 final fixes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, found {count}')
+              file.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              'src/app/adminMapEntities.ts',
+              '      first?.input.focus();',
+              "      if (!editor.contains(document.activeElement)) {\n        first?.input.focus();\n      }",
+          )
+
+          replace_once(
+              'tests/deployment/map046-admin-workspace.spec.ts',
+              "const REFRESH_TOKEN = 'map046_pages_refresh_token';\n\nasync function routeProductionBackend(route: Route): Promise<void> {\n  const request = route.request();\n  const url = new URL(request.url());\n",
+              "const REFRESH_TOKEN = 'map046_pages_refresh_token';\nconst CORS_HEADERS = {\n  'Access-Control-Allow-Origin': '*',\n  'Access-Control-Allow-Headers':\n    'authorization, apikey, content-type, prefer, range, range-unit, x-client-info',\n  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',\n} as const;\n\nasync function routeProductionBackend(route: Route): Promise<void> {\n  const request = route.request();\n  const url = new URL(request.url());\n\n  if (request.method() === 'OPTIONS') {\n    await route.fulfill({ status: 204, headers: CORS_HEADERS, body: '' });\n    return;\n  }\n",
+          )
+          replace_once(
+              'tests/deployment/map046-admin-workspace.spec.ts',
+              "      await route.fulfill({ status: 204, body: '' });",
+              "      await route.fulfill({ status: 204, headers: CORS_HEADERS, body: '' });",
+          )
+          replace_once(
+              'tests/deployment/map046-admin-workspace.spec.ts',
+              "      contentType: 'application/json',\n      body: JSON.stringify({",
+              "      contentType: 'application/json',\n      headers: CORS_HEADERS,\n      body: JSON.stringify({",
+          )
+          replace_once(
+              'tests/deployment/map046-admin-workspace.spec.ts',
+              "    await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });",
+              "    await route.fulfill({\n      status: 200,\n      contentType: 'application/json',\n      headers: CORS_HEADERS,\n      body: 'true',\n    });",
+          )
+          replace_once(
+              'tests/deployment/map046-admin-workspace.spec.ts',
+              "      headers: {\n        'Content-Type': 'application/json',\n        'Content-Range': '*/0',\n      },",
+              "      headers: {\n        ...CORS_HEADERS,\n        'Access-Control-Expose-Headers': 'Content-Range',\n        'Content-Type': 'application/json',\n        'Content-Range': '*/0',\n      },",
+          )
+          replace_once(
+              'tests/deployment/map046-admin-workspace.spec.ts',
+              "  await route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });",
+              "  await route.fulfill({\n    status: 404,\n    contentType: 'application/json',\n    headers: CORS_HEADERS,\n    body: '{}',\n  });",
+          )
+
+          replace_once(
+              'tests/deployment/pages-smoke.spec.ts',
+              "  const mapRequests = requests.filter((request) =>\n    /Sword-Coast-Map|\\.(?:jpg|jpeg|png|webp)(?:\\?|$)/i.test(request.url()),\n  );\n  expect(mapRequests.map((request) => request.url())).toEqual([OFFICIAL_MAP_URL]);",
+              "  const officialMapRequests = requests.filter((request) => request.url() === OFFICIAL_MAP_URL);\n  expect(officialMapRequests).toHaveLength(1);\n  const applicationOrigin = new URL(baseURL ?? page.url()).origin;\n  const localRasterRequests = requests.filter((request) => {\n    const url = new URL(request.url());\n    return (\n      url.origin === applicationOrigin && /\\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname)\n    );\n  });\n  expect(localRasterRequests).toEqual([]);",
+          )
+          PY
+          git diff --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/app/adminMapEntities.ts tests/deployment/map046-admin-workspace.spec.ts tests/deployment/pages-smoke.spec.ts
+          if ! git diff --cached --quiet; then
+            git commit -m 'fix: harden MAP-046 focus and Pages smoke'
+            git push origin HEAD:agent/map-046-admin-workspace-initialization
+          fi
+      - run: npm ci
+      - name: Check formatting and lint
+        run: |
+          npm run format:check
+          npm run lint
+      - name: Build production-equivalent Pages artifact
+        env:
+          VITE_SUPABASE_URL: https://ehpouvbzmvwbkkoypgfa.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0
+        run: npm run build:pages
+      - run: npx playwright install --with-deps chromium
+      - name: Repeat MAP-046 publication focus regression
+        run: npx playwright test tests/e2e/map046-request-publication.spec.ts --project=chromium --repeat-each=5 --reporter=line --max-failures=1
+      - name: Run production Pages smoke
+        run: npm run test:e2e:pages
