@@ -129,6 +129,7 @@ test('submits a valid anonymous request through the closed RPC without publishin
 
   const initialUrl = page.url();
   const initialPinCount = await page.getByTestId('place-marker').count();
+  const initialEntityPinCount = await page.locator('[data-testid="entity-pin"]').count();
   const form = await openRequestForm(page);
   await fillValidRequest(form);
 
@@ -186,7 +187,7 @@ test('submits a valid anonymous request through the closed RPC without publishin
     p_honeypot: '',
   });
   await expect(page.getByTestId('place-marker')).toHaveCount(initialPinCount);
-  await expect(page.locator('[data-testid="entity-pin"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="entity-pin"]')).toHaveCount(initialEntityPinCount);
   expect(page.url()).toBe(initialUrl);
 });
 
