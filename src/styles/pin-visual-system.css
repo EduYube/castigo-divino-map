@@ -331,6 +331,14 @@
   clip-path: circle(50% at 50% 50%);
 }
 
+/* Leaflet resets marker-pane images to width:auto and removes max dimensions.
+ * Scope the override to portrait images so map tiles and other marker images keep Leaflet defaults. */
+.leaflet-container .leaflet-marker-pane .pin-visual__portrait {
+  width: 100%;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
 @media (forced-colors: active) {
   .pin-visual--portrait {
     border: 3px solid CanvasText;
