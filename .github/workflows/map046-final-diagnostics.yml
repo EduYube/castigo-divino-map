@@ -20,72 +20,19 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Apply MAP-046 final fixes
+      - run: npm ci
+      - name: Apply canonical formatting
         shell: bash
         run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          def replace_once(path: str, old: str, new: str) -> None:
-              file = Path(path)
-              text = file.read_text()
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{path}: expected exactly one match, found {count}')
-              file.write_text(text.replace(old, new, 1))
-
-          replace_once(
-              'src/app/adminMapEntities.ts',
-              '      first?.input.focus();',
-              "      if (!editor.contains(document.activeElement)) {\n        first?.input.focus();\n      }",
-          )
-
-          replace_once(
-              'tests/deployment/map046-admin-workspace.spec.ts',
-              "const REFRESH_TOKEN = 'map046_pages_refresh_token';\n\nasync function routeProductionBackend(route: Route): Promise<void> {\n  const request = route.request();\n  const url = new URL(request.url());\n",
-              "const REFRESH_TOKEN = 'map046_pages_refresh_token';\nconst CORS_HEADERS = {\n  'Access-Control-Allow-Origin': '*',\n  'Access-Control-Allow-Headers':\n    'authorization, apikey, content-type, prefer, range, range-unit, x-client-info',\n  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',\n} as const;\n\nasync function routeProductionBackend(route: Route): Promise<void> {\n  const request = route.request();\n  const url = new URL(request.url());\n\n  if (request.method() === 'OPTIONS') {\n    await route.fulfill({ status: 204, headers: CORS_HEADERS, body: '' });\n    return;\n  }\n",
-          )
-          replace_once(
-              'tests/deployment/map046-admin-workspace.spec.ts',
-              "      await route.fulfill({ status: 204, body: '' });",
-              "      await route.fulfill({ status: 204, headers: CORS_HEADERS, body: '' });",
-          )
-          replace_once(
-              'tests/deployment/map046-admin-workspace.spec.ts',
-              "      contentType: 'application/json',\n      body: JSON.stringify({",
-              "      contentType: 'application/json',\n      headers: CORS_HEADERS,\n      body: JSON.stringify({",
-          )
-          replace_once(
-              'tests/deployment/map046-admin-workspace.spec.ts',
-              "    await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });",
-              "    await route.fulfill({\n      status: 200,\n      contentType: 'application/json',\n      headers: CORS_HEADERS,\n      body: 'true',\n    });",
-          )
-          replace_once(
-              'tests/deployment/map046-admin-workspace.spec.ts',
-              "      headers: {\n        'Content-Type': 'application/json',\n        'Content-Range': '*/0',\n      },",
-              "      headers: {\n        ...CORS_HEADERS,\n        'Access-Control-Expose-Headers': 'Content-Range',\n        'Content-Type': 'application/json',\n        'Content-Range': '*/0',\n      },",
-          )
-          replace_once(
-              'tests/deployment/map046-admin-workspace.spec.ts',
-              "  await route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });",
-              "  await route.fulfill({\n    status: 404,\n    contentType: 'application/json',\n    headers: CORS_HEADERS,\n    body: '{}',\n  });",
-          )
-
-          replace_once(
-              'tests/deployment/pages-smoke.spec.ts',
-              "  const mapRequests = requests.filter((request) =>\n    /Sword-Coast-Map|\\.(?:jpg|jpeg|png|webp)(?:\\?|$)/i.test(request.url()),\n  );\n  expect(mapRequests.map((request) => request.url())).toEqual([OFFICIAL_MAP_URL]);",
-              "  const officialMapRequests = requests.filter((request) => request.url() === OFFICIAL_MAP_URL);\n  expect(officialMapRequests).toHaveLength(1);\n  const applicationOrigin = new URL(baseURL ?? page.url()).origin;\n  const localRasterRequests = requests.filter((request) => {\n    const url = new URL(request.url());\n    return (\n      url.origin === applicationOrigin && /\\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname)\n    );\n  });\n  expect(localRasterRequests).toEqual([]);",
-          )
-          PY
+          npx prettier --write src/app/adminMapEntities.ts tests/deployment/map046-admin-workspace.spec.ts tests/deployment/pages-smoke.spec.ts
           git diff --check
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add src/app/adminMapEntities.ts tests/deployment/map046-admin-workspace.spec.ts tests/deployment/pages-smoke.spec.ts
           if ! git diff --cached --quiet; then
-            git commit -m 'fix: harden MAP-046 focus and Pages smoke'
+            git commit -m 'style: format MAP-046 final fixes'
             git push origin HEAD:agent/map-046-admin-workspace-initialization
           fi
-      - run: npm ci
       - name: Check formatting and lint
         run: |
           npm run format:check
