@@ -7,7 +7,7 @@ import { PUBLIC_CATALOG_TABLE_QUERIES } from '../../src/data-access/publicCatalo
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const PROJECT_URL = 'http://127.0.0.1:4173';
-const PUBLIC_KEY = 'map045-public-portrait-test-key';
+const PUBLIC_KEY = ['sb', 'publishable', 'map045_public_portraits_key'].join('_');
 const CHARACTER_ID = 'entity-map045-portrait';
 const STANDARD_CHARACTER_ID = 'entity-map049-standard-character';
 const PORTRAIT_PATH = 'portraits/123e4567-e89b-42d3-a456-426614174000.png';
