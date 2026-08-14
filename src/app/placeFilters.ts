@@ -1,12 +1,17 @@
-import { getPublicPlaceFilterTagIds, type PublicPlaceFilterState } from '../data/filters';
-import type { CampaignCatalog, CampaignCategory, TagId } from '../data/model';
+import type { CategoryId, PublicCatalogSnapshotV2, TagId } from '../data/beta02-model';
+import {
+  derivePublicFilterFacets,
+  getPublicPlaceFilterTagIds,
+  type PublicPlaceFilterState,
+} from '../data/filters';
+import type { CampaignCatalog } from '../data/model';
 
 export interface PlaceFiltersController {
   getState(): PublicPlaceFilterState;
   setState(state: PublicPlaceFilterState, options?: PlaceFiltersStateUpdateOptions): void;
-  setCatalog(catalog: CampaignCatalog): void;
+  setCatalogState(catalog: CampaignCatalog, beta02Catalog: PublicCatalogSnapshotV2 | null): void;
   clear(): void;
-  setMatchSummary(matchCount: number, activePlaceMatches: boolean | null): void;
+  setMatchSummary(matchCount: number, activeResultMatches: boolean | null): void;
   destroy(): void;
 }
 
@@ -16,6 +21,7 @@ export interface PlaceFiltersStateUpdateOptions {
 
 export interface PlaceFiltersOptions {
   readonly catalog: CampaignCatalog;
+  readonly beta02Catalog?: PublicCatalogSnapshotV2 | null;
   readonly onChange: () => void;
 }
 
@@ -26,6 +32,18 @@ interface PlaceFiltersElements {
   readonly clearButton: HTMLButtonElement;
   readonly status: HTMLElement;
   readonly summary: HTMLElement;
+}
+
+interface FilterOptionModel {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly count: number;
+}
+
+interface FilterOptionsModel {
+  readonly categories: readonly FilterOptionModel[];
+  readonly tags: readonly FilterOptionModel[];
 }
 
 function getRequiredElement<T extends HTMLElement>(root: ParentNode, selector: string): T {
@@ -51,10 +69,10 @@ function resolveElements(root: ParentNode): PlaceFiltersElements {
 
 function createFilterOption(
   kind: 'category' | 'tag',
-  id: CampaignCategory['id'] | TagId,
+  id: string,
   name: string,
   description: string,
-  placeCount: number,
+  resultCount: number,
 ): HTMLLabelElement {
   const label = document.createElement('label');
   const input = document.createElement('input');
@@ -71,7 +89,7 @@ function createFilterOption(
   input.value = id;
   input.dataset.placeFilterKind = kind;
   input.dataset.placeFilterId = id;
-  input.disabled = placeCount === 0;
+  input.disabled = resultCount === 0;
   input.setAttribute('aria-describedby', `${descriptionId} ${countId}`);
 
   text.className = 'place-filters__option-text';
@@ -80,11 +98,11 @@ function createFilterOption(
   countElement.id = countId;
   countElement.className = 'place-filters__option-count';
   countElement.textContent =
-    placeCount === 0
-      ? 'Sin lugares asociados'
-      : placeCount === 1
-        ? '1 lugar'
-        : `${placeCount} lugares`;
+    resultCount === 0
+      ? 'Sin resultados públicos'
+      : resultCount === 1
+        ? '1 resultado'
+        : `${resultCount} resultados`;
   descriptionElement.id = descriptionId;
   descriptionElement.className = 'visually-hidden';
   descriptionElement.textContent = description;
@@ -101,20 +119,92 @@ function setText(element: HTMLElement, message: string): void {
   }
 }
 
+function deriveFilterOptions(
+  catalog: CampaignCatalog,
+  beta02Catalog: PublicCatalogSnapshotV2 | null,
+): FilterOptionsModel {
+  if (beta02Catalog) {
+    const facets = derivePublicFilterFacets(beta02Catalog);
+
+    return {
+      categories: facets.categories,
+      tags: facets.tags,
+    };
+  }
+
+  return {
+    categories: catalog.categories.map((category) => ({
+      ...category,
+      count: catalog.places.filter(({ categoryId }) => categoryId === category.id).length,
+    })),
+    tags: catalog.tags.map((tag) => ({
+      ...tag,
+      count: catalog.places.filter((place) =>
+        getPublicPlaceFilterTagIds(catalog, place).includes(tag.id),
+      ).length,
+    })),
+  };
+}
+
+function getFocusedFilterKey(root: HTMLElement): string | null {
+  const activeElement = document.activeElement;
+
+  if (!(activeElement instanceof HTMLInputElement) || !root.contains(activeElement)) {
+    return null;
+  }
+
+  const kind = activeElement.dataset.placeFilterKind;
+  const id = activeElement.dataset.placeFilterId;
+  return kind && id ? `${kind}:${id}` : null;
+}
+
+function restoreFocusedFilter(root: HTMLElement, key: string | null): void {
+  if (!key) return;
+
+  const [kind, id] = key.split(':', 2);
+  const target = Array.from(root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')).find(
+    (input) => input.dataset.placeFilterKind === kind && input.dataset.placeFilterId === id,
+  );
+
+  target?.focus({ preventScroll: true });
+}
+
 export function mountPlaceFilters(
   root: ParentNode = document,
   options: PlaceFiltersOptions,
 ): PlaceFiltersController {
   const elements = resolveElements(root);
-  const selectedCategoryIds = new Set<CampaignCategory['id']>();
+  const selectedCategoryIds = new Set<CategoryId>();
   const selectedTagIds = new Set<TagId>();
   let catalog = options.catalog;
+  let beta02Catalog = options.beta02Catalog ?? null;
+  let filterOptions = deriveFilterOptions(catalog, beta02Catalog);
+  let previousOptionsSignature = '';
+  let removedFilterCount = 0;
+
+  const createOptionsSignature = (): string =>
+    JSON.stringify({
+      categories: filterOptions.categories.map(({ id, name, description, count }) => [
+        id,
+        name,
+        description,
+        count,
+      ]),
+      tags: filterOptions.tags.map(({ id, name, description, count }) => [
+        id,
+        name,
+        description,
+        count,
+      ]),
+    });
 
   const getState = (): PublicPlaceFilterState => ({
-    selectedCategoryIds: catalog.categories
-      .filter(({ id }) => selectedCategoryIds.has(id))
+    selectedCategoryIds: filterOptions.categories
+      .filter(({ id }) => selectedCategoryIds.has(id as CategoryId))
+      .map(({ id }) => id as CategoryId),
+    selectedTagIds: filterOptions.tags
+      .filter(({ id }) => selectedTagIds.has(id))
       .map(({ id }) => id),
-    selectedTagIds: catalog.tags.filter(({ id }) => selectedTagIds.has(id)).map(({ id }) => id),
   });
 
   const renderCollapsedSummary = (): void => {
@@ -131,8 +221,8 @@ export function mountPlaceFilters(
       matchCount === null || !Number.isFinite(matchCount)
         ? ''
         : matchCount === 1
-          ? ' · 1 lugar coincide'
-          : ` · ${matchCount} lugares coinciden`;
+          ? ' · 1 resultado coincide'
+          : ` · ${matchCount} resultados coinciden`;
 
     setText(elements.summary, `${filterMessage}${matchMessage}.`);
   };
@@ -145,7 +235,7 @@ export function mountPlaceFilters(
       input.checked =
         Boolean(id) &&
         (kind === 'category'
-          ? selectedCategoryIds.has(id as CampaignCategory['id'])
+          ? selectedCategoryIds.has(id as CategoryId)
           : kind === 'tag'
             ? selectedTagIds.has(id as TagId)
             : false);
@@ -153,44 +243,32 @@ export function mountPlaceFilters(
   };
 
   const renderOptions = (): void => {
-    const categoryPlaceCounts = new Map(
-      catalog.categories.map((category) => [
-        category.id,
-        catalog.places.filter(({ categoryId }) => categoryId === category.id).length,
-      ]),
-    );
-    const tagPlaceCounts = new Map(
-      catalog.tags.map((tag) => [
-        tag.id,
-        catalog.places.filter((place) =>
-          getPublicPlaceFilterTagIds(catalog, place).includes(tag.id),
-        ).length,
-      ]),
-    );
+    const nextSignature = createOptionsSignature();
+    if (nextSignature === previousOptionsSignature) {
+      synchronizeControls();
+      return;
+    }
 
+    const focusedFilterKey = getFocusedFilterKey(elements.root);
+    previousOptionsSignature = nextSignature;
     elements.categories.replaceChildren(
-      ...catalog.categories.map((category) =>
+      ...filterOptions.categories.map((category) =>
         createFilterOption(
           'category',
           category.id,
           category.name,
           category.description,
-          categoryPlaceCounts.get(category.id) ?? 0,
+          category.count,
         ),
       ),
     );
     elements.tags.replaceChildren(
-      ...catalog.tags.map((tag) =>
-        createFilterOption(
-          'tag',
-          tag.id,
-          tag.name,
-          tag.description,
-          tagPlaceCounts.get(tag.id) ?? 0,
-        ),
+      ...filterOptions.tags.map((tag) =>
+        createFilterOption('tag', tag.id, tag.name, tag.description, tag.count),
       ),
     );
     synchronizeControls();
+    restoreFocusedFilter(elements.root, focusedFilterKey);
   };
 
   const setState = (
@@ -199,18 +277,16 @@ export function mountPlaceFilters(
   ): void => {
     const nextCategoryIds = new Set(state.selectedCategoryIds);
     const nextTagIds = new Set(state.selectedTagIds);
+    const validCategoryIds = new Set(filterOptions.categories.map(({ id }) => id));
+    const validTagIds = new Set(filterOptions.tags.map(({ id }) => id));
 
     selectedCategoryIds.clear();
     selectedTagIds.clear();
-    catalog.categories.forEach(({ id }) => {
-      if (nextCategoryIds.has(id)) {
-        selectedCategoryIds.add(id);
-      }
+    nextCategoryIds.forEach((id) => {
+      if (validCategoryIds.has(id)) selectedCategoryIds.add(id);
     });
-    catalog.tags.forEach(({ id }) => {
-      if (nextTagIds.has(id)) {
-        selectedTagIds.add(id);
-      }
+    nextTagIds.forEach((id) => {
+      if (validTagIds.has(id)) selectedTagIds.add(id);
     });
     synchronizeControls();
     renderCollapsedSummary();
@@ -220,21 +296,30 @@ export function mountPlaceFilters(
     }
   };
 
-  const setCatalog = (nextCatalog: CampaignCatalog): void => {
+  const setCatalogState = (
+    nextCatalog: CampaignCatalog,
+    nextBeta02Catalog: PublicCatalogSnapshotV2 | null,
+  ): void => {
     catalog = nextCatalog;
-    const validCategoryIds = new Set(catalog.categories.map(({ id }) => id));
-    const validTagIds = new Set(catalog.tags.map(({ id }) => id));
+    beta02Catalog = nextBeta02Catalog;
+    filterOptions = deriveFilterOptions(catalog, beta02Catalog);
+    const validCategoryIds = new Set(filterOptions.categories.map(({ id }) => id));
+    const validTagIds = new Set(filterOptions.tags.map(({ id }) => id));
+    let removed = 0;
 
     selectedCategoryIds.forEach((id) => {
       if (!validCategoryIds.has(id)) {
         selectedCategoryIds.delete(id);
+        removed += 1;
       }
     });
     selectedTagIds.forEach((id) => {
       if (!validTagIds.has(id)) {
         selectedTagIds.delete(id);
+        removed += 1;
       }
     });
+    removedFilterCount += removed;
     renderOptions();
     renderCollapsedSummary();
   };
@@ -252,7 +337,7 @@ export function mountPlaceFilters(
     }
 
     if (kind === 'category') {
-      const categoryId = id as CampaignCategory['id'];
+      const categoryId = id as CategoryId;
 
       if (event.target.checked) {
         selectedCategoryIds.add(categoryId);
@@ -291,24 +376,31 @@ export function mountPlaceFilters(
   return {
     getState,
     setState,
-    setCatalog,
+    setCatalogState,
     clear,
-    setMatchSummary(matchCount: number, activePlaceMatches: boolean | null): void {
+    setMatchSummary(matchCount: number, activeResultMatches: boolean | null): void {
       elements.root.dataset.matchCount = String(matchCount);
       elements.root.dataset.hasMatches = matchCount === 0 ? 'false' : 'true';
 
       const countMessage =
         matchCount === 0
-          ? 'Ningún lugar coincide con la búsqueda y los filtros actuales.'
+          ? 'Ningún resultado coincide con la búsqueda y los filtros actuales.'
           : matchCount === 1
-            ? '1 lugar coincide con la búsqueda y los filtros actuales.'
-            : `${matchCount} lugares coinciden con la búsqueda y los filtros actuales.`;
+            ? '1 resultado coincide con la búsqueda y los filtros actuales.'
+            : `${matchCount} resultados coinciden con la búsqueda y los filtros actuales.`;
       const activeMessage =
-        activePlaceMatches === false
-          ? ' El lugar activo no coincide, pero permanece disponible y se puede consultar.'
+        activeResultMatches === false
+          ? ' El elemento activo no coincide, pero permanece disponible y se puede consultar.'
           : '';
-      const message = `${countMessage}${activeMessage}`;
+      const removedMessage =
+        removedFilterCount === 0
+          ? ''
+          : removedFilterCount === 1
+            ? ' Se ha retirado un filtro que ya no está disponible en el catálogo público.'
+            : ` Se han retirado ${removedFilterCount} filtros que ya no están disponibles en el catálogo público.`;
+      const message = `${countMessage}${activeMessage}${removedMessage}`;
 
+      removedFilterCount = 0;
       setText(elements.status, message);
       renderCollapsedSummary();
     },

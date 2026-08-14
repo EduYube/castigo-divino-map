@@ -192,7 +192,9 @@ test('restores a valid no-match state and keeps the active marker operable', asy
 
   const harbor = marker(page, 'place-demo-harbor');
 
-  await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún lugar coincide');
+  await expect(page.locator('[data-place-filters-status]')).toContainText(
+    'Ningún resultado coincide',
+  );
   await expect(harbor).toHaveAttribute('aria-pressed', 'true');
   await expect(harbor).toHaveAttribute('data-filter-match', 'false');
   await expect(harbor).toHaveClass(/campaign-marker-icon--active/);
