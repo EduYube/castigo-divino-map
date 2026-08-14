@@ -1,61 +1,16 @@
 import L, { type LatLngBounds, type Map as LeafletMap } from 'leaflet';
 
 import '../styles/expanded-map-layout.css';
+import { bindExpandedMapToggle, type ExpandToggleBinding } from './expandToggle';
 import { synchronizeMapAfterLayoutChange } from './layoutSync';
-
-const EXPAND_LABEL = 'Expandir mapa';
-const RESTORE_LABEL = 'Restaurar tamaño del mapa';
 
 export interface ExpandedMapLayoutController {
   isResizeSynchronizationPending(): boolean;
   destroy(): void;
 }
 
-interface ExpandToggleBinding {
-  setExpanded(expanded: boolean): void;
-  destroy(): void;
-}
-
-export function bindExpandedMapToggle(
-  button: HTMLButtonElement,
-  onToggle: (expanded: boolean) => void,
-): ExpandToggleBinding {
-  let expanded = false;
-
-  const render = (): void => {
-    const label = expanded ? RESTORE_LABEL : EXPAND_LABEL;
-    button.setAttribute('aria-label', label);
-    button.setAttribute('aria-pressed', expanded ? 'true' : 'false');
-    button.title = label;
-
-    const icon = button.querySelector<HTMLElement>('[data-map-expand-icon]');
-    if (icon) icon.textContent = expanded ? '↙' : '⛶';
-  };
-
-  const handleClick = (event: MouseEvent): void => {
-    event.preventDefault();
-    event.stopPropagation();
-    onToggle(!expanded);
-  };
-
-  button.addEventListener('click', handleClick);
-  render();
-
-  return {
-    setExpanded(nextExpanded): void {
-      if (expanded === nextExpanded) return;
-      expanded = nextExpanded;
-      render();
-    },
-    destroy(): void {
-      button.removeEventListener('click', handleClick);
-    },
-  };
-}
-
 class ExpandedMapLeafletControl extends L.Control {
   private binding: ExpandToggleBinding | null = null;
-  private button: HTMLButtonElement | null = null;
 
   constructor(private readonly onToggle: (expanded: boolean) => void) {
     super({ position: 'topright' });
@@ -78,7 +33,6 @@ class ExpandedMapLeafletControl extends L.Control {
     L.DomEvent.disableClickPropagation(container);
     L.DomEvent.disableScrollPropagation(container);
 
-    this.button = button;
     this.binding = bindExpandedMapToggle(button, this.onToggle);
     return container;
   }
@@ -86,7 +40,6 @@ class ExpandedMapLeafletControl extends L.Control {
   override onRemove(): void {
     this.binding?.destroy();
     this.binding = null;
-    this.button = null;
   }
 
   setExpanded(expanded: boolean): void {
