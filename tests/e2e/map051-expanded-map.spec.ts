@@ -43,7 +43,7 @@ async function readMapView(page: Page): Promise<MapViewState> {
   await expect(shell).toHaveAttribute('data-map-zoom', /-?\d/);
   const centerText = (await shell.getAttribute('data-map-center')) ?? '0,0';
   const zoomText = (await shell.getAttribute('data-map-zoom')) ?? '0';
-  const [lat, lng] = centerText.split(',').map(Number);
+  const [lat = 0, lng = 0] = centerText.split(',').map(Number);
   return { center: [lat, lng], zoom: Number(zoomText) };
 }
 
