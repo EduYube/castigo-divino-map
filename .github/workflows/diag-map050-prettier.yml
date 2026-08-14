@@ -52,7 +52,6 @@ jobs:
           } from './data/filters';""",
               'filters import',
           )
-
           text = replace_once(
               text,
               "  let isRestoringFromHistory = false;\n  let catalogState = initialCatalogState;",
@@ -118,24 +117,26 @@ jobs:
               'apply pending filters',
           )
 
-          old_subscription = """    } finally {
-            isRestoringFromHistory = false;
-          }
-
-          writePublicStateToHistory('replace');
-          }
-
-          publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state, true));"""
-          new_subscription = """    } finally {
-            isRestoringFromHistory = false;
-          }
-
-          if (initialPublicRefreshSettled || !pendingInitialFilterUrl) {
+          subscriber = "  publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state, true));"
+          subscriber_index = text.find(subscriber)
+          if subscriber_index < 0:
+              raise SystemExit('catalog subscriber anchor missing')
+          before_subscriber = text[:subscriber_index]
+          write_anchor = "    writePublicStateToHistory('replace');\n  }\n\n"
+          write_index = before_subscriber.rfind(write_anchor)
+          if write_index < 0:
+              raise SystemExit('applyCatalogState history anchor missing')
+          before_subscriber = (
+              before_subscriber[:write_index]
+              + """    if (initialPublicRefreshSettled || !pendingInitialFilterUrl) {
             writePublicStateToHistory('replace');
           }
           }
 
-          publicDataRuntime?.subscribeCatalogState((state) => {
+          """
+          )
+          after_subscriber = text[subscriber_index + len(subscriber):]
+          subscription = """  publicDataRuntime?.subscribeCatalogState((state) => {
             initialPublicRefreshSettled = true;
             applyCatalogState(state, true);
           });
@@ -163,7 +164,7 @@ jobs:
               { once: true },
             );
           }"""
-          text = replace_once(text, old_subscription, new_subscription, 'public refresh subscription')
+          text = before_subscriber + subscription + after_subscriber
 
           text = replace_once(
               text,
@@ -182,27 +183,29 @@ jobs:
               'restore start',
           )
 
-          text = replace_once(
-              text,
-              """    writePublicStateToHistory('replace');
+          selection_anchor = "  selection.subscribe((activePlaceId) => {"
+          selection_index = text.find(selection_anchor)
+          if selection_index < 0:
+              raise SystemExit('selection subscriber anchor missing')
+          before_selection = text[:selection_index]
+          restore_write_index = before_selection.rfind(write_anchor)
+          if restore_write_index < 0:
+              raise SystemExit('restore history anchor missing')
+          before_selection = (
+              before_selection[:restore_write_index]
+              + """    if (!shouldPreserveUnknownFilters) {
+            writePublicStateToHistory('replace');
+          }
           }
 
-          selection.subscribe((activePlaceId) => {""",
-              """    if (!shouldPreserveUnknownFilters) {
-              writePublicStateToHistory('replace');
-            }
-          }
-
-          selection.subscribe((activePlaceId) => {""",
-              'restore canonicalization',
+          """
           )
-
+          text = before_selection + text[selection_index:]
           path.write_text(text)
 
           url_test = Path('tests/e2e/url-state.spec.ts')
-          test_text = url_test.read_text()
           test_text = replace_once(
-              test_text,
+              url_test.read_text(),
               "await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún lugar coincide');",
               "await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún resultado coincide');",
               'url-state wording',
