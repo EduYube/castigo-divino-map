@@ -37,6 +37,27 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
 }
 
+async function expectFullMapVisible(page: Page): Promise<void> {
+  const mapBox = await page.locator('[data-map-canvas]').boundingBox();
+  const imageBox = await page.locator('.faerun-map__image').boundingBox();
+  const tolerance = 3;
+
+  expect(mapBox).not.toBeNull();
+  expect(imageBox).not.toBeNull();
+  if (mapBox && imageBox) {
+    expect(imageBox.x).toBeGreaterThanOrEqual(mapBox.x - tolerance);
+    expect(imageBox.y).toBeGreaterThanOrEqual(mapBox.y - tolerance);
+    expect(imageBox.x + imageBox.width).toBeLessThanOrEqual(
+      mapBox.x + mapBox.width + tolerance,
+    );
+    expect(imageBox.y + imageBox.height).toBeLessThanOrEqual(
+      mapBox.y + mapBox.height + tolerance,
+    );
+  }
+
+  await expect(page.locator('.leaflet-control-zoom-out')).toHaveClass(/leaflet-disabled/);
+}
+
 async function readMapView(page: Page): Promise<MapViewState> {
   const shell = page.getByTestId('map-shell');
   await expect(shell).toHaveAttribute('data-map-center', /,/);
@@ -78,7 +99,7 @@ async function toggleExpanded(page: Page, expanded: boolean): Promise<void> {
   await expect(control).toBeFocused();
 }
 
-test('desktop wide expands the cartographic surface and restores its geometry and full view', async ({
+test('desktop wide expands the cartographic surface and restores its geometry and full zoom-out', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
@@ -95,6 +116,7 @@ test('desktop wide expands the cartographic surface and restores its geometry an
   await expect(page.locator('[data-place-search]')).toBeVisible();
   await expect(page.locator('[data-place-filters]')).toBeVisible();
   await expect(page.locator('[data-map-help-summary]')).toBeVisible();
+  await expectFullMapVisible(page);
   await captureReference(page, testInfo, 'desktop-normal-1920x1080');
 
   await toggleExpanded(page, true);
@@ -134,10 +156,13 @@ test('desktop wide expands the cartographic surface and restores its geometry an
     );
   }
   await expect
-    .poll(async () => viewsAreEquivalent(await readMapView(page), initialView))
-    .toBe(true);
-  expectEquivalentView(await readMapView(page), initialView);
+    .poll(async () => Math.abs((await readMapView(page)).zoom - initialView.zoom))
+    .toBeLessThanOrEqual(0.02);
+  const restoredView = await readMapView(page);
+  expect(Math.abs(restoredView.zoom - initialView.zoom)).toBeLessThanOrEqual(0.02);
+  await expectFullMapVisible(page);
   await expectNoHorizontalOverflow(page);
+  await captureReference(page, testInfo, 'desktop-restored-1920x1080');
 });
 
 test('pan and zoom survive expansion while restore returns to the full normal view', async ({
