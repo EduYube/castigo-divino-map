@@ -143,19 +143,22 @@ test('pan and zoom survive expanded and restored transitions', async ({ page }) 
   const zoomed = await readMapView(page);
 
   const map = page.locator('[data-map-canvas]');
-  const box = await map.boundingBox();
-  expect(box).not.toBeNull();
-  if (!box) return;
+  await map.focus();
+  await expect(map).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowDown');
 
-  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.56, box.y + box.height * 0.46, { steps: 5 });
-  await page.mouse.up();
+  await expect
+    .poll(async () => {
+      const panned = await readMapView(page);
+      return (
+        Math.abs(panned.center[0] - zoomed.center[0]) +
+        Math.abs(panned.center[1] - zoomed.center[1])
+      );
+    })
+    .toBeGreaterThan(10);
 
   const before = await readMapView(page);
-  const panDistance =
-    Math.abs(before.center[0] - zoomed.center[0]) + Math.abs(before.center[1] - zoomed.center[1]);
-  expect(panDistance).toBeGreaterThan(10);
   expect(Math.abs(before.zoom - zoomed.zoom)).toBeLessThanOrEqual(0.02);
 
   await toggleExpanded(page, true);
