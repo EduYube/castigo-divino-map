@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { LatLng, LatLngBounds, Map as LeafletMap } from 'leaflet';
 
-import {
-  synchronizeMapAfterLayoutChange,
-  synchronizeMapAfterLayoutRestore,
-} from './layoutSync';
+import { synchronizeMapAfterLayoutChange, synchronizeMapAfterLayoutRestore } from './layoutSync';
 
 function createBounds(): LatLngBounds {
   return {
@@ -103,11 +100,7 @@ describe('synchronizeMapAfterLayoutRestore', () => {
     const map = createMapDouble(1.25, 3.5);
     const bounds = createBounds();
 
-    const targetZoom = synchronizeMapAfterLayoutRestore(
-      map as unknown as LeafletMap,
-      bounds,
-      5,
-    );
+    const targetZoom = synchronizeMapAfterLayoutRestore(map as unknown as LeafletMap, bounds, 5);
 
     expect(targetZoom).toBe(1.25);
     expect(map.invalidateSize).toHaveBeenCalledTimes(1);
@@ -115,11 +108,7 @@ describe('synchronizeMapAfterLayoutRestore', () => {
     expect(map.getBoundsZoom).toHaveBeenCalledTimes(1);
     expect(map.getBoundsZoom).toHaveBeenCalledWith(bounds, false);
     expect(map.setMinZoom).toHaveBeenCalledWith(1.25);
-    expect(map.setView).toHaveBeenCalledWith(
-      { lat: -1164.5, lng: 1800 },
-      1.25,
-      { animate: false },
-    );
+    expect(map.setView).toHaveBeenCalledWith({ lat: -1164.5, lng: 1800 }, 1.25, { animate: false });
     expect(map.panInsideBounds).toHaveBeenCalledWith(bounds, { animate: false });
   });
 });

@@ -2,10 +2,7 @@ import L, { type LatLngBounds, type Map as LeafletMap } from 'leaflet';
 
 import '../styles/expanded-map-layout.css';
 import { bindExpandedMapToggle, type ExpandToggleBinding } from './expandToggle';
-import {
-  synchronizeMapAfterLayoutChange,
-  synchronizeMapAfterLayoutRestore,
-} from './layoutSync';
+import { synchronizeMapAfterLayoutChange, synchronizeMapAfterLayoutRestore } from './layoutSync';
 
 export interface ExpandedMapLayoutController {
   isResizeSynchronizationPending(): boolean;

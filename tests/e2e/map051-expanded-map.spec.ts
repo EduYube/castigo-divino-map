@@ -133,7 +133,9 @@ test('desktop wide expands the cartographic surface and restores its geometry an
       2,
     );
   }
-  await expect.poll(async () => viewsAreEquivalent(await readMapView(page), initialView)).toBe(true);
+  await expect
+    .poll(async () => viewsAreEquivalent(await readMapView(page), initialView))
+    .toBe(true);
   expectEquivalentView(await readMapView(page), initialView);
   await expectNoHorizontalOverflow(page);
 });
