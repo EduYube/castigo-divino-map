@@ -47,12 +47,8 @@ async function expectFullMapVisible(page: Page): Promise<void> {
   if (mapBox && imageBox) {
     expect(imageBox.x).toBeGreaterThanOrEqual(mapBox.x - tolerance);
     expect(imageBox.y).toBeGreaterThanOrEqual(mapBox.y - tolerance);
-    expect(imageBox.x + imageBox.width).toBeLessThanOrEqual(
-      mapBox.x + mapBox.width + tolerance,
-    );
-    expect(imageBox.y + imageBox.height).toBeLessThanOrEqual(
-      mapBox.y + mapBox.height + tolerance,
-    );
+    expect(imageBox.x + imageBox.width).toBeLessThanOrEqual(mapBox.x + mapBox.width + tolerance);
+    expect(imageBox.y + imageBox.height).toBeLessThanOrEqual(mapBox.y + mapBox.height + tolerance);
   }
 
   await expect(page.locator('.leaflet-control-zoom-out')).toHaveClass(/leaflet-disabled/);
