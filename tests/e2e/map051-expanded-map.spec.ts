@@ -78,7 +78,7 @@ async function toggleExpanded(page: Page, expanded: boolean): Promise<void> {
   await expect(control).toBeFocused();
 }
 
-test('desktop wide expands the cartographic surface and restores its geometry', async ({
+test('desktop wide expands the cartographic surface and restores its geometry and full view', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
@@ -88,6 +88,7 @@ test('desktop wide expands the cartographic surface and restores its geometry', 
   const experience = page.locator('.map-experience');
   const initialMapBox = await map.boundingBox();
   const initialExperienceBox = await experience.boundingBox();
+  const initialView = await readMapView(page);
   expect(initialMapBox).not.toBeNull();
   expect(initialExperienceBox).not.toBeNull();
 
@@ -99,6 +100,7 @@ test('desktop wide expands the cartographic surface and restores its geometry', 
   await toggleExpanded(page, true);
   const expandedMapBox = await map.boundingBox();
   const expandedExperienceBox = await experience.boundingBox();
+  const expandedView = await readMapView(page);
   expect(expandedMapBox).not.toBeNull();
   expect(expandedExperienceBox).not.toBeNull();
 
@@ -109,6 +111,7 @@ test('desktop wide expands the cartographic surface and restores its geometry', 
     expect(expandedExperienceBox.x).toBeGreaterThanOrEqual(0);
     expect(expandedExperienceBox.x + expandedExperienceBox.width).toBeLessThanOrEqual(1920);
   }
+  expect(expandedView.zoom).toBeGreaterThanOrEqual(initialView.zoom);
   await expect(page.locator('.leaflet-control-zoom')).toBeVisible();
   await expect(page.locator('[data-place-search]')).toBeVisible();
   await expect(page.locator('[data-place-filters]')).toBeVisible();
@@ -130,10 +133,14 @@ test('desktop wide expands the cartographic surface and restores its geometry', 
       2,
     );
   }
+  await expect.poll(async () => viewsAreEquivalent(await readMapView(page), initialView)).toBe(true);
+  expectEquivalentView(await readMapView(page), initialView);
   await expectNoHorizontalOverflow(page);
 });
 
-test('pan and zoom survive expanded and restored transitions', async ({ page }) => {
+test('pan and zoom survive expansion while restore returns to the full normal view', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   await openReadyMap(page);
 
@@ -173,8 +180,8 @@ test('pan and zoom survive expanded and restored transitions', async ({ page }) 
   expectEquivalentView(await readMapView(page), before);
 
   await toggleExpanded(page, false);
-  await expect.poll(async () => viewsAreEquivalent(await readMapView(page), before)).toBe(true);
-  expectEquivalentView(await readMapView(page), before);
+  await expect.poll(async () => viewsAreEquivalent(await readMapView(page), initial)).toBe(true);
+  expectEquivalentView(await readMapView(page), initial);
 });
 
 test('Beta 0.2 filters, search results, matching and URL remain unchanged', async ({
