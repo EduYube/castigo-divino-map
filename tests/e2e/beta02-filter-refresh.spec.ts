@@ -253,9 +253,7 @@ test('adds, restores and revokes Beta 0.2 facets dynamically without exposing st
   await expect(page.locator('[data-place-filters-status]')).toHaveText(
     '1 resultado coincide con la búsqueda y los filtros actuales.',
   );
-  await expect(
-    page.locator('[data-search-result-id="entity-map050-search-only"]'),
-  ).toBeVisible();
+  await expect(page.locator('[data-search-result-id="entity-map050-search-only"]')).toBeVisible();
   await expect(page.locator('[data-testid="entity-pin"][data-filter-match="true"]')).toHaveCount(0);
 
   await page.reload();

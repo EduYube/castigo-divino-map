@@ -28,10 +28,7 @@ import {
 import type { EntityId, GeographicNameId, PublicGeographicName } from './data/beta02-model';
 import { campaignCatalog } from './data/catalog';
 import { buildCompactPinDetailModel } from './data/compactPinDetails';
-import {
-  deriveMatchingPublicEntityIds,
-  deriveMatchingPublicPlaceIds,
-} from './data/filters';
+import { deriveMatchingPublicEntityIds, deriveMatchingPublicPlaceIds } from './data/filters';
 import { resolveFullEntityDetail } from './data/fullEntityDetails';
 import { createAuthorizedMasterCatalogView } from './data/masterCatalogView';
 import type { CampaignCatalog, PlaceId } from './data/model';
@@ -455,12 +452,7 @@ function mountPublicExperience(
         ? ('geographic-navigation' as const)
         : ('entity-search' as const),
     };
-    const matchingPlaceIds = deriveMatchingPublicPlaceIds(
-      catalog,
-      query,
-      filters,
-      matchingOptions,
-    );
+    const matchingPlaceIds = deriveMatchingPublicPlaceIds(catalog, query, filters, matchingOptions);
     const matchingPlaceIdSet = new Set(matchingPlaceIds);
     const activePlaceId = selection.getActivePlaceId();
 
@@ -489,7 +481,7 @@ function mountPublicExperience(
       const activePin =
         activeSupplementalPin ??
         (activePlaceId
-          ? renderedMarkers.find(({ legacyPlaceId }) => legacyPlaceId === activePlaceId) ?? null
+          ? (renderedMarkers.find(({ legacyPlaceId }) => legacyPlaceId === activePlaceId) ?? null)
           : null);
 
       mapController.setMatchingPins(
@@ -505,13 +497,11 @@ function mountPublicExperience(
 
     const matchingPinIds = new Set(
       renderedMarkers
-        .filter(
-          (pin) => pin.legacyPlaceId !== null && matchingPlaceIdSet.has(pin.legacyPlaceId),
-        )
+        .filter((pin) => pin.legacyPlaceId !== null && matchingPlaceIdSet.has(pin.legacyPlaceId))
         .map(({ id }) => id),
     );
     const activePin = activePlaceId
-      ? renderedMarkers.find(({ legacyPlaceId }) => legacyPlaceId === activePlaceId) ?? null
+      ? (renderedMarkers.find(({ legacyPlaceId }) => legacyPlaceId === activePlaceId) ?? null)
       : null;
 
     mapController.setMatchingPins(

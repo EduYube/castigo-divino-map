@@ -90,9 +90,7 @@ test('persists Beta 0.2-only category and tag selections in the canonical URL an
   await category.check();
   await tag.check();
 
-  await expect
-    .poll(() => new URL(page.url()).searchParams.get('category'))
-    .toBe('personaje');
+  await expect.poll(() => new URL(page.url()).searchParams.get('category')).toBe('personaje');
   await expect.poll(() => new URL(page.url()).searchParams.get('tag')).toBe('category-veyra');
   await expect(beta02CharacterPin(page)).toHaveAttribute('data-filter-match', 'true');
 
@@ -139,7 +137,9 @@ test('combines search, categories and tags with AND without hiding search result
   await page.getByRole('checkbox', { name: /Asentamiento/ }).check();
   await page.getByRole('searchbox', { name: 'Buscar lugares' }).fill('paso');
 
-  await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún resultado coincide');
+  await expect(page.locator('[data-place-filters-status]')).toContainText(
+    'Ningún resultado coincide',
+  );
   await expect(marker(page, 'place-demo-harbor')).toHaveAttribute('data-filter-match', 'false');
   await expect(marker(page, 'place-demo-pass')).toHaveAttribute('data-filter-match', 'false');
 

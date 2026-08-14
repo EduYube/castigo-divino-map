@@ -372,10 +372,7 @@ describe('Beta 0.2 public entity filters', () => {
     const guide = beta02FilterCatalog.entities[2];
     const pass = beta02FilterCatalog.entities[1];
 
-    expect(getPublicEntityFilterTagIds(beta02FilterCatalog, guide)).toEqual([
-      'trade',
-      'note-only',
-    ]);
+    expect(getPublicEntityFilterTagIds(beta02FilterCatalog, guide)).toEqual(['trade', 'note-only']);
     expect(getPublicEntityFilterTagIds(beta02FilterCatalog, pass)).toEqual(['note-only']);
     expect(
       publicEntityMatchesFilters(beta02FilterCatalog, guide, {

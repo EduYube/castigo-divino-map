@@ -83,7 +83,10 @@ function findPlaceId(catalog: CampaignCatalog, value: string): PlaceId | null {
 }
 
 function findCategoryId(facets: UrlFacetCatalog, value: string): CategoryId | null {
-  return facets.categories.find((category) => category.slug === value || category.id === value)?.id ?? null;
+  return (
+    facets.categories.find((category) => category.slug === value || category.id === value)?.id ??
+    null
+  );
 }
 
 function getFirstValidPlaceId(catalog: CampaignCatalog, values: readonly string[]): PlaceId | null {
