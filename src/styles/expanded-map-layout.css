@@ -1,0 +1,59 @@
+@media (min-width: 48.001rem) {
+  .atlas-main > .map-experience[data-map-expanded='true'] {
+    width: min(120rem, calc(100vw - clamp(1.5rem, 3vw, 3rem)));
+    max-width: calc(100vw - 1.5rem);
+    justify-self: center;
+  }
+}
+
+.map-expand-control {
+  overflow: hidden;
+  border: 1px solid rgba(247, 241, 227, 0.25) !important;
+  border-radius: 0.7rem !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.32) !important;
+}
+
+.map-expand-control__button {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  padding: 0;
+  color: #f7f1e3;
+  cursor: pointer;
+  background: rgba(17, 23, 19, 0.92);
+  border: 0;
+  touch-action: manipulation;
+}
+
+.map-expand-control__button:hover,
+.map-expand-control__button:focus-visible,
+.map-expand-control__button[aria-pressed='true'] {
+  color: #172018;
+  background: var(--accent-strong);
+}
+
+.map-expand-control__icon {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+@media (max-width: 48rem) {
+  .map-expand-control {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .map-expand-control {
+    border-color: ButtonText !important;
+    forced-color-adjust: auto;
+  }
+
+  .map-expand-control__button[aria-pressed='true'] {
+    color: HighlightText;
+    background: Highlight;
+  }
+}
