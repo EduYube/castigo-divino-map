@@ -21,6 +21,7 @@ function createMapDouble(fitZoom: number, centerSafeZoom = fitZoom) {
     ),
     setMinZoom: vi.fn(),
     setView: vi.fn(),
+    setZoom: vi.fn(),
     fitBounds: vi.fn(),
     panInsideBounds: vi.fn(),
   };
@@ -97,19 +98,19 @@ describe('synchronizeMapAfterLayoutChange', () => {
 });
 
 describe('synchronizeMapAfterLayoutRestore', () => {
-  it('returns to Leaflet full-bounds framing for the restored viewport', () => {
+  it('returns to the captured full-map zoom from the normal layout', () => {
     const map = createMapDouble(1.25, 3.5);
     const bounds = createBounds();
 
-    const targetZoom = synchronizeMapAfterLayoutRestore(map as unknown as LeafletMap, bounds, 5);
+    const targetZoom = synchronizeMapAfterLayoutRestore(map as unknown as LeafletMap, bounds, 1, 5);
 
-    expect(targetZoom).toBe(1.25);
+    expect(targetZoom).toBe(1);
     expect(map.invalidateSize).toHaveBeenCalledTimes(1);
     expect(map.invalidateSize).toHaveBeenCalledWith({ animate: false, pan: false });
-    expect(map.getBoundsZoom).toHaveBeenCalledTimes(1);
-    expect(map.getBoundsZoom).toHaveBeenCalledWith(bounds, false);
-    expect(map.setMinZoom).toHaveBeenCalledWith(1.25);
+    expect(map.getBoundsZoom).not.toHaveBeenCalled();
+    expect(map.setMinZoom).toHaveBeenCalledWith(1);
     expect(map.fitBounds).toHaveBeenCalledWith(bounds, { animate: false });
+    expect(map.setZoom).toHaveBeenCalledWith(1, { animate: false });
     expect(map.setView).not.toHaveBeenCalled();
     expect(map.panInsideBounds).not.toHaveBeenCalled();
   });
