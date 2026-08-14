@@ -1,10 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  bindExpandedMapToggle,
-  EXPAND_MAP_LABEL,
-  RESTORE_MAP_LABEL,
-} from './expandToggle';
+import { bindExpandedMapToggle, EXPAND_MAP_LABEL, RESTORE_MAP_LABEL } from './expandToggle';
 
 class FakeButton extends EventTarget {
   title = '';

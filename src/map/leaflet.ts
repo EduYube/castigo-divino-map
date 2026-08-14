@@ -326,12 +326,7 @@ export function mountFaerunMap(
   nameZoomControls(zoomControl);
   map.fitBounds(bounds, { animate: false });
   constrainViewport(map, bounds, true);
-  const expandedMapLayout = mountExpandedMapLayout(
-    root,
-    map,
-    bounds,
-    FAERUN_MAP_CONFIG.maxZoom,
-  );
+  const expandedMapLayout = mountExpandedMapLayout(root, map, bounds, FAERUN_MAP_CONFIG.maxZoom);
 
   const groupMarkers = new Set<Marker>();
   const groupMarkerByPinId = new Map<string, Marker>();

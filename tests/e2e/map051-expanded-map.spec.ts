@@ -189,7 +189,9 @@ test('Beta 0.2 filters, search results, matching and URL remain unchanged', asyn
   await captureReference(page, testInfo, 'desktop-expanded-filters-search-1440x900');
 });
 
-test('compact details stay visible and do not disable expanded mode', async ({ page }, testInfo) => {
+test('compact details stay visible and do not disable expanded mode', async ({
+  page,
+}, testInfo) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   await openReadyMap(page);
 
@@ -223,7 +225,9 @@ for (const viewport of [
   { width: 1366, height: 768 },
   { width: 1024, height: 768 },
 ] as const) {
-  test(`expanded layout remains bounded at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+  test(`expanded layout remains bounded at ${viewport.width}x${viewport.height}`, async ({
+    page,
+  }) => {
     await page.setViewportSize(viewport);
     await openReadyMap(page);
 
