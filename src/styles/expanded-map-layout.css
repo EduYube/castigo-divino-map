@@ -1,8 +1,10 @@
 @media (min-width: 48.001rem) {
   .atlas-main > .map-experience[data-map-expanded='true'] {
-    width: min(120rem, calc(100vw - clamp(1.5rem, 3vw, 3rem)));
-    max-width: calc(100vw - 1.5rem);
-    justify-self: center;
+    --expanded-map-width: min(120rem, calc(100vw - 1.5rem));
+
+    width: var(--expanded-map-width);
+    max-width: none;
+    margin-inline: calc((100% - var(--expanded-map-width)) / 2);
   }
 }
 
