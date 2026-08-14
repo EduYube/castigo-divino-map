@@ -28,7 +28,10 @@ import {
 import type { EntityId, GeographicNameId, PublicGeographicName } from './data/beta02-model';
 import { campaignCatalog } from './data/catalog';
 import { buildCompactPinDetailModel } from './data/compactPinDetails';
-import { deriveMatchingPublicPlaceIds } from './data/filters';
+import {
+  deriveMatchingPublicEntityIds,
+  deriveMatchingPublicPlaceIds,
+} from './data/filters';
 import { resolveFullEntityDetail } from './data/fullEntityDetails';
 import { createAuthorizedMasterCatalogView } from './data/masterCatalogView';
 import type { CampaignCatalog, PlaceId } from './data/model';
@@ -79,7 +82,7 @@ function createPortraitResources(): CharacterPortraitResources | null {
     __MAP017_AUTH_TEST_CONFIG__?: PortraitRuntimeTestConfig;
   };
   const testConfig = import.meta.env.DEV
-    ? (testWindow.__MAP016_PUBLIC_DATA_TEST_CONFIG__ ?? testWindow.__MAP017_AUTH_TEST_CONFIG__)
+    ? (testWindow.__MAP016_PUBLIC_DATA_TEST_CONFIG__ ?? window.__MAP017_AUTH_TEST_CONFIG__)
     : undefined;
   try {
     return new SupabaseCharacterPortraitResources({
@@ -125,6 +128,7 @@ function mountPublicExperience(
   let isRestoringFromHistory = false;
   let catalogState = initialCatalogState;
   let catalog = initialCatalogState.compatibility;
+  let publicBeta02Catalog = initialCatalogState.beta02;
   let beta02Catalog = initialCatalogState.beta02;
   let renderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
   let activeSupplementalPin: AtlasPinMarkerModel | null = null;
@@ -334,6 +338,7 @@ function mountPublicExperience(
 
   const placeFiltersController = mountPlaceFilters(app, {
     catalog,
+    beta02Catalog: publicBeta02Catalog,
     onChange(): void {
       updateMatchingPlaces();
       writePublicStateToHistory('push');
@@ -425,7 +430,12 @@ function mountPublicExperience(
     if (isRestoringFromHistory) return;
 
     const currentUrl = new URL(window.location.href);
-    const nextUrl = createCanonicalPublicAppUrl(catalog, currentUrl, getCurrentPublicState());
+    const nextUrl = createCanonicalPublicAppUrl(
+      catalog,
+      currentUrl,
+      getCurrentPublicState(),
+      publicBeta02Catalog,
+    );
 
     if (nextUrl.href === currentUrl.href) return;
 
@@ -438,24 +448,77 @@ function mountPublicExperience(
 
   function updateMatchingPlaces(): void {
     const isGeographicNavigation = geographicNameId !== null;
+    const query = placeSearchController.getQuery();
+    const filters = placeFiltersController.getState();
+    const matchingOptions = {
+      searchIntent: isGeographicNavigation ? ('geographic-navigation' as const) : ('entity-search' as const),
+    };
     const matchingPlaceIds = deriveMatchingPublicPlaceIds(
       catalog,
-      placeSearchController.getQuery(),
-      placeFiltersController.getState(),
-      {
-        searchIntent: isGeographicNavigation ? 'geographic-navigation' : 'entity-search',
-      },
+      query,
+      filters,
+      matchingOptions,
     );
     const matchingPlaceIdSet = new Set(matchingPlaceIds);
     const activePlaceId = selection.getActivePlaceId();
 
-    mapController.setMatchingPlaces(
-      matchingPlaceIdSet,
+    if (publicBeta02Catalog) {
+      const matchingEntityIds = deriveMatchingPublicEntityIds(
+        catalog,
+        publicBeta02Catalog,
+        query,
+        filters,
+        matchingOptions,
+      );
+      const matchingEntityIdSet = new Set(matchingEntityIds);
+      const matchingPinIds = new Set(
+        renderedMarkers
+          .filter((pin) => {
+            if (pin.entityId) {
+              // Private pins are outside the public facet universe. When authorized they remain
+              // operable and are never allowed to influence public counts or URL state.
+              return masterEntityIds.has(pin.entityId) || matchingEntityIdSet.has(pin.entityId);
+            }
+
+            return Boolean(pin.legacyPlaceId && matchingPlaceIdSet.has(pin.legacyPlaceId));
+          })
+          .map(({ id }) => id),
+      );
+      const activePin =
+        activeSupplementalPin ??
+        (activePlaceId
+          ? renderedMarkers.find(({ legacyPlaceId }) => legacyPlaceId === activePlaceId) ?? null
+          : null);
+
+      mapController.setMatchingPins(
+        matchingPinIds,
+        isGeographicNavigation ? 'filters-only' : 'search-and-filters',
+      );
+      placeFiltersController.setMatchSummary(
+        matchingEntityIds.length,
+        activePin ? matchingPinIds.has(activePin.id) : null,
+      );
+      return;
+    }
+
+    const matchingPinIds = new Set(
+      renderedMarkers
+        .filter(
+          (pin) => pin.legacyPlaceId !== null && matchingPlaceIdSet.has(pin.legacyPlaceId),
+        )
+        .map(({ id }) => id),
+    );
+    const activePin = activePlaceId
+      ? renderedMarkers.find(({ legacyPlaceId }) => legacyPlaceId === activePlaceId) ?? null
+      : null;
+
+    mapController.setMatchingPins(
+      matchingPinIds,
       isGeographicNavigation ? 'filters-only' : 'search-and-filters',
     );
     placeFiltersController.setMatchSummary(
       matchingPlaceIds.length,
-      activePlaceId ? matchingPlaceIdSet.has(activePlaceId) : null,
+      activePin ? matchingPinIds.has(activePin.id) : null,
     );
   }
 
@@ -536,8 +599,9 @@ function mountPublicExperience(
 
     try {
       catalog = nextCatalogState.compatibility;
+      publicBeta02Catalog = nextCatalogState.beta02;
       beta02Catalog = effectiveBeta02;
-      placeFiltersController.setCatalog(catalog);
+      placeFiltersController.setCatalogState(catalog, publicBeta02Catalog);
       placeSearchController.setCatalogState(catalog, beta02Catalog);
       const previousMarkersById = new Map(renderedMarkers.map((pin) => [pin.id, pin]));
       const nextRenderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
@@ -684,7 +748,7 @@ function mountPublicExperience(
   }
 
   function restorePublicStateFromUrl(sourceUrl: URL): void {
-    const parsed = parsePublicAppUrlState(catalog, sourceUrl);
+    const parsed = parsePublicAppUrlState(catalog, sourceUrl, publicBeta02Catalog);
     const requestedGeographicName = resolveGeographicName(parsed.state.geographicNameId);
 
     isRestoringFromHistory = true;
