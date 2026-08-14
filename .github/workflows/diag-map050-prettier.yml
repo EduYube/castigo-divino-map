@@ -32,36 +32,28 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('src/main.ts')
           text = path.read_text()
 
-          replacements = [
+          patches = [
               (
-                  """    if (initialPublicRefreshSettled || !pendingInitialFilterUrl) {
-                      writePublicStateToHistory('replace');
-                    }
-                  }""",
-                  """    writePublicStateToHistory('replace');
-                  }""",
+                  r"\n    if \(initialPublicRefreshSettled \|\| !pendingInitialFilterUrl\) \{\n      writePublicStateToHistory\('replace'\);\n    \}\n  \}\n",
+                  "\n    writePublicStateToHistory('replace');\n  }\n",
                   'applyCatalogState canonicalization',
               ),
               (
-                  """    if (!shouldPreserveUnknownFilters) {
-                      writePublicStateToHistory('replace');
-                    }
-                  }""",
-                  """    writePublicStateToHistory('replace');
-                  }""",
+                  r"\n    if \(!shouldPreserveUnknownFilters\) \{\n      writePublicStateToHistory\('replace'\);\n    \}\n  \}\n",
+                  "\n    writePublicStateToHistory('replace');\n  }\n",
                   'initial URL canonicalization',
               ),
           ]
 
-          for old, new, label in replacements:
-              count = text.count(old)
+          for pattern, replacement, label in patches:
+              text, count = re.subn(pattern, replacement, text, count=1)
               if count != 1:
                   raise SystemExit(f'{label}: expected one anchor, found {count}')
-              text = text.replace(old, new)
 
           path.write_text(text)
           PY
