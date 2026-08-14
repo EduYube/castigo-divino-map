@@ -140,18 +140,24 @@ test('pan and zoom survive expanded and restored transitions', async ({ page }) 
   const zoomIn = page.locator('.leaflet-control-zoom-in');
   await zoomIn.click();
   await zoomIn.click();
+  const zoomed = await readMapView(page);
 
   const map = page.locator('[data-map-canvas]');
   const box = await map.boundingBox();
   expect(box).not.toBeNull();
   if (!box) return;
 
-  await page.mouse.move(box.x + box.width * 0.55, box.y + box.height * 0.55);
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.68, box.y + box.height * 0.42, { steps: 5 });
+  await page.mouse.move(box.x + box.width * 0.56, box.y + box.height * 0.46, { steps: 5 });
   await page.mouse.up();
 
   const before = await readMapView(page);
+  const panDistance =
+    Math.abs(before.center[0] - zoomed.center[0]) + Math.abs(before.center[1] - zoomed.center[1]);
+  expect(panDistance).toBeGreaterThan(10);
+  expect(Math.abs(before.zoom - zoomed.zoom)).toBeLessThanOrEqual(0.02);
+
   await toggleExpanded(page, true);
   await expect.poll(async () => viewsAreEquivalent(await readMapView(page), before)).toBe(true);
   expectEquivalentView(await readMapView(page), before);
