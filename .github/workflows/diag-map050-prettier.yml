@@ -166,21 +166,28 @@ jobs:
           }"""
           text = before_subscriber + subscription + after_subscriber
 
-          text = replace_once(
-              text,
-              """  function restorePublicStateFromUrl(sourceUrl: URL): void {
-            const parsed = parsePublicAppUrlState(catalog, sourceUrl, publicBeta02Catalog);
-            const requestedGeographicName = resolveGeographicName(parsed.state.geographicNameId);""",
-              """  function restorePublicStateFromUrl(sourceUrl: URL): void {
+          restore_anchor = "  function restorePublicStateFromUrl(sourceUrl: URL): void => {"
+          if restore_anchor in text:
+              raise SystemExit('unexpected arrow restore signature')
+          restore_anchor = "  function restorePublicStateFromUrl(sourceUrl: URL): void {\n"
+          restore_insert = """  function restorePublicStateFromUrl(sourceUrl: URL): void {
             const shouldPreserveUnknownFilters =
               !initialPublicRefreshSettled &&
               publicDataRuntime !== undefined &&
               hasUnknownPublicFilterParameters(sourceUrl);
-            const parsed = parsePublicAppUrlState(catalog, sourceUrl, publicBeta02Catalog);
-            const requestedGeographicName = resolveGeographicName(parsed.state.geographicNameId);
+          """
+          text = replace_once(text, restore_anchor, restore_insert, 'restore function')
 
-            pendingInitialFilterUrl = shouldPreserveUnknownFilters ? new URL(sourceUrl) : null;""",
-              'restore start',
+          geographic_anchor = (
+              "    const requestedGeographicName = "
+              "resolveGeographicName(parsed.state.geographicNameId);\n"
+          )
+          text = replace_once(
+              text,
+              geographic_anchor,
+              geographic_anchor
+              + "\n    pendingInitialFilterUrl = shouldPreserveUnknownFilters ? new URL(sourceUrl) : null;\n",
+              'restore pending assignment',
           )
 
           selection_anchor = "  selection.subscribe((activePlaceId) => {"
