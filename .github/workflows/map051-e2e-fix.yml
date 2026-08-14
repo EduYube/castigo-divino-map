@@ -1,0 +1,60 @@
+name: MAP-051 E2E fixer
+
+on:
+  push:
+    branches:
+      - agent/map-051-expanded-map-layout
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    name: Make navigation zoom deterministic
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: agent/map-051-expanded-map-layout
+
+      - name: Replace rapid zoom clicks with settled transitions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/e2e/map051-expanded-map.spec.ts')
+          text = path.read_text()
+          old = """  const initial = await readMapView(page);
+          const zoomIn = page.locator('.leaflet-control-zoom-in');
+          await zoomIn.click();
+          await zoomIn.click();
+          await zoomIn.click();
+          await zoomIn.click();
+          await expect.poll(async () => (await readMapView(page)).zoom).toBeGreaterThan(initial.zoom + 0.9);
+          const zoomed = await readMapView(page);"""
+          new = """  const initial = await readMapView(page);
+          const zoomIn = page.locator('.leaflet-control-zoom-in');
+          let zoomed = initial;
+          for (let step = 0; step < 4; step += 1) {
+            const previousZoom = zoomed.zoom;
+            await zoomIn.click();
+            await expect
+              .poll(async () => (await readMapView(page)).zoom)
+              .toBeGreaterThan(previousZoom + 0.4);
+            zoomed = await readMapView(page);
+          }"""
+          if old not in text:
+              raise SystemExit('expected MAP-051 navigation zoom block not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Remove temporary fixer and commit
+        run: |
+          rm .github/workflows/map051-e2e-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/map051-expanded-map.spec.ts .github/workflows/map051-e2e-fix.yml
+          git commit -m "MAP-051: wait for each navigation zoom step"
+          git push origin HEAD:agent/map-051-expanded-map-layout
