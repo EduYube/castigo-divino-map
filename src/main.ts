@@ -28,7 +28,11 @@ import {
 import type { EntityId, GeographicNameId, PublicGeographicName } from './data/beta02-model';
 import { campaignCatalog } from './data/catalog';
 import { buildCompactPinDetailModel } from './data/compactPinDetails';
-import { deriveMatchingPublicEntityIds, deriveMatchingPublicPlaceIds } from './data/filters';
+import {
+  deriveMatchingPublicEntityIds,
+  deriveMatchingPublicPlaceIds,
+  derivePublicFilterFacets,
+} from './data/filters';
 import { resolveFullEntityDetail } from './data/fullEntityDetails';
 import { createAuthorizedMasterCatalogView } from './data/masterCatalogView';
 import type { CampaignCatalog, PlaceId } from './data/model';
@@ -123,6 +127,8 @@ function mountPublicExperience(
   adminRuntime?: AdminAuthRuntime,
 ): void {
   let isRestoringFromHistory = false;
+  let pendingInitialFilterUrl: URL | null = null;
+  let initialPublicRefreshSettled = publicDataRuntime === undefined;
   let catalogState = initialCatalogState;
   let catalog = initialCatalogState.compatibility;
   let publicBeta02Catalog = initialCatalogState.beta02;
@@ -324,6 +330,26 @@ function mountPublicExperience(
     return beta02Catalog.geographicNames.find((geographicName) => geographicName.id === id) ?? null;
   };
 
+  const hasUnknownPublicFilterParameters = (sourceUrl: URL): boolean => {
+    const facets = publicBeta02Catalog ? derivePublicFilterFacets(publicBeta02Catalog) : null;
+    const categories = facets?.categories ?? catalog.categories;
+    const tags = facets?.tags ?? catalog.tags;
+    const requestedCategories = sourceUrl.searchParams
+      .getAll('category')
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const requestedTags = sourceUrl.searchParams
+      .getAll('tag')
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    return (
+      requestedCategories.some(
+        (value) => !categories.some(({ id, slug }) => id === value || slug === value),
+      ) || requestedTags.some((value) => !tags.some(({ id }) => id === value))
+    );
+  };
+
   const locateGeographicName = (geographicName: PublicGeographicName): void => {
     mapController.locateSearchTarget({
       coordinates: geographicName.coordinates,
@@ -514,6 +540,21 @@ function mountPublicExperience(
     );
   }
 
+  function restorePendingInitialFilters(): void {
+    const pendingUrl = pendingInitialFilterUrl;
+    if (!pendingUrl) return;
+
+    pendingInitialFilterUrl = null;
+    const parsed = parsePublicAppUrlState(catalog, pendingUrl, publicBeta02Catalog);
+    placeFiltersController.setState(
+      {
+        selectedCategoryIds: parsed.state.selectedCategoryIds,
+        selectedTagIds: parsed.state.selectedTagIds,
+      },
+      { notify: false },
+    );
+  }
+
   function renderActivePlace(
     activePlaceId: PlaceId | null,
     options: { readonly focusDetails: boolean; readonly locate: boolean },
@@ -625,6 +666,9 @@ function mountPublicExperience(
       mapController.setMarkers(renderedMarkers, { eagerPortraitPinIds });
       masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
       masterSearchVisuals.refresh(masterEntityIds);
+      if (initialPublicRefreshSettled) {
+        restorePendingInitialFilters();
+      }
       geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;
       if (previousGeographicNameId && !geographicNameId) {
         mapController.clearSearchFocus();
@@ -655,10 +699,39 @@ function mountPublicExperience(
       isRestoringFromHistory = false;
     }
 
-    writePublicStateToHistory('replace');
+    if (initialPublicRefreshSettled || !pendingInitialFilterUrl) {
+      writePublicStateToHistory('replace');
+    }
   }
 
-  publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state, true));
+  publicDataRuntime?.subscribeCatalogState((state) => {
+    initialPublicRefreshSettled = true;
+    applyCatalogState(state, true);
+  });
+
+  if (publicDataRuntime) {
+    window.addEventListener(
+      'atlas:public-data-status',
+      () => {
+        queueMicrotask(() => {
+          if (initialPublicRefreshSettled) return;
+
+          initialPublicRefreshSettled = true;
+          if (!pendingInitialFilterUrl) return;
+
+          isRestoringFromHistory = true;
+          try {
+            restorePendingInitialFilters();
+            updateMatchingPlaces();
+          } finally {
+            isRestoringFromHistory = false;
+          }
+          writePublicStateToHistory('replace');
+        });
+      },
+      { once: true },
+    );
+  }
 
   const refreshAfterAudienceChange = async (audience: MapEntityAudience): Promise<void> => {
     if (!publicDataRuntime) return;
@@ -740,8 +813,14 @@ function mountPublicExperience(
   }
 
   function restorePublicStateFromUrl(sourceUrl: URL): void {
+    const shouldPreserveUnknownFilters =
+      !initialPublicRefreshSettled &&
+      publicDataRuntime !== undefined &&
+      hasUnknownPublicFilterParameters(sourceUrl);
     const parsed = parsePublicAppUrlState(catalog, sourceUrl, publicBeta02Catalog);
     const requestedGeographicName = resolveGeographicName(parsed.state.geographicNameId);
+
+    pendingInitialFilterUrl = shouldPreserveUnknownFilters ? new URL(sourceUrl) : null;
 
     isRestoringFromHistory = true;
 
@@ -783,7 +862,9 @@ function mountPublicExperience(
       isRestoringFromHistory = false;
     }
 
-    writePublicStateToHistory('replace');
+    if (!shouldPreserveUnknownFilters) {
+      writePublicStateToHistory('replace');
+    }
   }
 
   selection.subscribe((activePlaceId) => {
