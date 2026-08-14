@@ -33,39 +33,38 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one anchor, found {count}')
+              return text.replace(old, new)
+
           path = Path('src/main.ts')
           text = path.read_text()
 
-          replacements = [
-              (
-                  "import { deriveMatchingPublicEntityIds, deriveMatchingPublicPlaceIds } from './data/filters';",
-                  """import {
+          text = replace_once(
+              text,
+              "import { deriveMatchingPublicEntityIds, deriveMatchingPublicPlaceIds } from './data/filters';",
+              """import {
             deriveMatchingPublicEntityIds,
             deriveMatchingPublicPlaceIds,
             derivePublicFilterFacets,
           } from './data/filters';""",
-              ),
-              (
-                  """  let isRestoringFromHistory = false;
-            let catalogState = initialCatalogState;""",
-                  """  let isRestoringFromHistory = false;
+              'filters import',
+          )
+
+          text = replace_once(
+              text,
+              "  let isRestoringFromHistory = false;\n  let catalogState = initialCatalogState;",
+              """  let isRestoringFromHistory = false;
             let pendingInitialFilterUrl: URL | null = null;
             let initialPublicRefreshSettled = publicDataRuntime === undefined;
             let catalogState = initialCatalogState;""",
-              ),
-              (
-                  """  const resolveGeographicName = (id: GeographicNameId | null): PublicGeographicName | null => {
-            if (!id || !beta02Catalog) return null;
-            return beta02Catalog.geographicNames.find((geographicName) => geographicName.id === id) ?? null;
-          };
+              'runtime state',
+          )
 
-          const locateGeographicName""",
-                  """  const resolveGeographicName = (id: GeographicNameId | null): PublicGeographicName | null => {
-            if (!id || !beta02Catalog) return null;
-            return beta02Catalog.geographicNames.find((geographicName) => geographicName.id === id) ?? null;
-          };
-
-          const hasUnknownPublicFilterParameters = (sourceUrl: URL): boolean => {
+          locate_anchor = "  const locateGeographicName = (geographicName: PublicGeographicName): void => {"
+          filter_helper = """  const hasUnknownPublicFilterParameters = (sourceUrl: URL): boolean => {
             const facets = publicBeta02Catalog ? derivePublicFilterFacets(publicBeta02Catalog) : null;
             const categories = facets?.categories ?? catalog.categories;
             const tags = facets?.tags ?? catalog.tags;
@@ -85,12 +84,11 @@ jobs:
             );
           };
 
-          const locateGeographicName""",
-              ),
-              (
-                  """  function renderActivePlace(
-            activePlaceId: PlaceId | null,""",
-                  """  function restorePendingInitialFilters(): void {
+          """
+          text = replace_once(text, locate_anchor, filter_helper + locate_anchor, 'filter helper')
+
+          render_anchor = "  function renderActivePlace(\n"
+          pending_helper = """  function restorePendingInitialFilters(): void {
             const pendingUrl = pendingInitialFilterUrl;
             if (!pendingUrl) return;
 
@@ -105,28 +103,36 @@ jobs:
             );
           }
 
-          function renderActivePlace(
-            activePlaceId: PlaceId | null,""",
-              ),
-              (
-                  """      masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
-            masterSearchVisuals.refresh(masterEntityIds);
-            geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;""",
-                  """      masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
+          """
+          text = replace_once(text, render_anchor, pending_helper + render_anchor, 'pending helper')
+
+          text = replace_once(
+              text,
+              "      masterPinVisuals.refresh(renderedMarkers, masterEntityIds);\n      masterSearchVisuals.refresh(masterEntityIds);\n      geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;",
+              """      masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
             masterSearchVisuals.refresh(masterEntityIds);
             if (initialPublicRefreshSettled) {
               restorePendingInitialFilters();
             }
             geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;""",
-              ),
-              (
-                  """    writePublicStateToHistory('replace');
+              'apply pending filters',
+          )
+
+          old_subscription = """    } finally {
+            isRestoringFromHistory = false;
           }
 
-          publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state, true));""",
-                  """    if (initialPublicRefreshSettled || !pendingInitialFilterUrl) {
-              writePublicStateToHistory('replace');
-            }
+          writePublicStateToHistory('replace');
+          }
+
+          publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state, true));"""
+          new_subscription = """    } finally {
+            isRestoringFromHistory = false;
+          }
+
+          if (initialPublicRefreshSettled || !pendingInitialFilterUrl) {
+            writePublicStateToHistory('replace');
+          }
           }
 
           publicDataRuntime?.subscribeCatalogState((state) => {
@@ -156,13 +162,15 @@ jobs:
               },
               { once: true },
             );
-          }""",
-              ),
-              (
-                  """  function restorePublicStateFromUrl(sourceUrl: URL): void {
+          }"""
+          text = replace_once(text, old_subscription, new_subscription, 'public refresh subscription')
+
+          text = replace_once(
+              text,
+              """  function restorePublicStateFromUrl(sourceUrl: URL): void {
             const parsed = parsePublicAppUrlState(catalog, sourceUrl, publicBeta02Catalog);
             const requestedGeographicName = resolveGeographicName(parsed.state.geographicNameId);""",
-                  """  function restorePublicStateFromUrl(sourceUrl: URL): void {
+              """  function restorePublicStateFromUrl(sourceUrl: URL): void {
             const shouldPreserveUnknownFilters =
               !initialPublicRefreshSettled &&
               publicDataRuntime !== undefined &&
@@ -171,37 +179,35 @@ jobs:
             const requestedGeographicName = resolveGeographicName(parsed.state.geographicNameId);
 
             pendingInitialFilterUrl = shouldPreserveUnknownFilters ? new URL(sourceUrl) : null;""",
-              ),
-              (
-                  """    writePublicStateToHistory('replace');
+              'restore start',
+          )
+
+          text = replace_once(
+              text,
+              """    writePublicStateToHistory('replace');
           }
 
           selection.subscribe((activePlaceId) => {""",
-                  """    if (!shouldPreserveUnknownFilters) {
+              """    if (!shouldPreserveUnknownFilters) {
               writePublicStateToHistory('replace');
             }
           }
 
           selection.subscribe((activePlaceId) => {""",
-              ),
-          ]
-
-          for old, new in replacements:
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'Expected exactly one main.ts anchor, found {count}: {old[:80]!r}')
-              text = text.replace(old, new)
+              'restore canonicalization',
+          )
 
           path.write_text(text)
 
           url_test = Path('tests/e2e/url-state.spec.ts')
           test_text = url_test.read_text()
-          old = "await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún lugar coincide');"
-          new = "await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún resultado coincide');"
-          count = test_text.count(old)
-          if count != 1:
-              raise SystemExit(f'Expected exactly one url-state assertion, found {count}')
-          url_test.write_text(test_text.replace(old, new))
+          test_text = replace_once(
+              test_text,
+              "await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún lugar coincide');",
+              "await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún resultado coincide');",
+              'url-state wording',
+          )
+          url_test.write_text(test_text)
           PY
 
       - name: Format patched files
