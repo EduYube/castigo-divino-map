@@ -34,6 +34,7 @@ test('keeps Beta 0.2 filters usable without horizontal overflow at 320px', async
 
   await expect(characterFilter).toBeChecked();
   await expect(characterFilter).toBeFocused();
+  // The canonical filter URL must stay synchronized at the narrowest supported viewport.
   await expect.poll(() => new URL(page.url()).searchParams.get('category')).toBe('personaje');
   await expect(page.locator('[data-place-filters-status]')).toHaveText(
     '1 resultado coincide con la búsqueda y los filtros actuales.',
