@@ -50,8 +50,8 @@ export function synchronizeMapAfterLayoutChange(
 
 /**
  * Re-synchronizes Leaflet after restoring the normal layout and deliberately returns to the
- * complete-map view for that viewport. This prevents the larger expanded viewport's minimum
- * zoom from leaking into the normal layout.
+ * complete-map view for that viewport. Reusing Leaflet's fitBounds policy mirrors the initial
+ * map framing exactly and prevents the expanded viewport's minimum zoom from leaking back.
  */
 export function synchronizeMapAfterLayoutRestore(
   map: LeafletMap,
@@ -62,8 +62,7 @@ export function synchronizeMapAfterLayoutRestore(
 
   const fitZoom = getFullMapZoom(map, bounds, maxZoom);
   map.setMinZoom(fitZoom);
-  map.setView(bounds.getCenter(), fitZoom, { animate: false });
-  map.panInsideBounds(bounds, { animate: false });
+  map.fitBounds(bounds, { animate: false });
 
   return fitZoom;
 }
