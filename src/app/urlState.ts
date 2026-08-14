@@ -1,11 +1,17 @@
-import type { GeographicNameId } from '../data/beta02-model';
-import type { CampaignCatalog, CampaignCategory, PlaceId, TagId } from '../data/model';
+import type {
+  CategoryId,
+  GeographicNameId,
+  PublicCatalogSnapshotV2,
+  TagId,
+} from '../data/beta02-model';
+import { derivePublicFilterFacets } from '../data/filters';
+import type { CampaignCatalog, PlaceId } from '../data/model';
 
 export interface PublicAppUrlState {
   readonly activePlaceId: PlaceId | null;
   readonly query: string;
   readonly geographicNameId: GeographicNameId | null;
-  readonly selectedCategoryIds: readonly CampaignCategory['id'][];
+  readonly selectedCategoryIds: readonly CategoryId[];
   readonly selectedTagIds: readonly TagId[];
 }
 
@@ -13,6 +19,16 @@ export interface ParsedPublicAppUrlState {
   readonly state: PublicAppUrlState;
   readonly canonicalUrl: URL;
   readonly isCanonical: boolean;
+}
+
+interface UrlFacetCatalog {
+  readonly categories: readonly {
+    readonly id: CategoryId;
+    readonly slug: string;
+  }[];
+  readonly tags: readonly {
+    readonly id: TagId;
+  }[];
 }
 
 export const EMPTY_PUBLIC_APP_URL_STATE: PublicAppUrlState = {
@@ -43,15 +59,31 @@ function normalizeGeographicNameId(value: GeographicNameId | null): GeographicNa
     : null;
 }
 
+function resolveUrlFacetCatalog(
+  catalog: CampaignCatalog,
+  beta02Catalog: PublicCatalogSnapshotV2 | null,
+): UrlFacetCatalog {
+  if (beta02Catalog) {
+    const facets = derivePublicFilterFacets(beta02Catalog);
+
+    return {
+      categories: facets.categories,
+      tags: facets.tags,
+    };
+  }
+
+  return {
+    categories: catalog.categories,
+    tags: catalog.tags,
+  };
+}
+
 function findPlaceId(catalog: CampaignCatalog, value: string): PlaceId | null {
   return catalog.places.find((place) => place.slug === value || place.id === value)?.id ?? null;
 }
 
-function findCategoryId(catalog: CampaignCatalog, value: string): CampaignCategory['id'] | null {
-  return (
-    catalog.categories.find((category) => category.slug === value || category.id === value)?.id ??
-    null
-  );
+function findCategoryId(facets: UrlFacetCatalog, value: string): CategoryId | null {
+  return facets.categories.find((category) => category.slug === value || category.id === value)?.id ?? null;
 }
 
 function getFirstValidPlaceId(catalog: CampaignCatalog, values: readonly string[]): PlaceId | null {
@@ -82,7 +114,9 @@ function getFirstGeographicNameId(values: readonly string[]): GeographicNameId |
 export function normalizePublicAppUrlState(
   catalog: CampaignCatalog,
   state: PublicAppUrlState,
+  beta02Catalog: PublicCatalogSnapshotV2 | null = null,
 ): PublicAppUrlState {
+  const facets = resolveUrlFacetCatalog(catalog, beta02Catalog);
   const selectedCategoryIds = new Set(state.selectedCategoryIds);
   const selectedTagIds = new Set(state.selectedTagIds);
   const validPlaceIds = new Set(catalog.places.map(({ id }) => id));
@@ -92,18 +126,20 @@ export function normalizePublicAppUrlState(
       state.activePlaceId && validPlaceIds.has(state.activePlaceId) ? state.activePlaceId : null,
     query: normalizeQuery(state.query),
     geographicNameId: normalizeGeographicNameId(state.geographicNameId),
-    selectedCategoryIds: catalog.categories
+    selectedCategoryIds: facets.categories
       .filter(({ id }) => selectedCategoryIds.has(id))
       .map(({ id }) => id),
-    selectedTagIds: catalog.tags.filter(({ id }) => selectedTagIds.has(id)).map(({ id }) => id),
+    selectedTagIds: facets.tags.filter(({ id }) => selectedTagIds.has(id)).map(({ id }) => id),
   };
 }
 
 export function serializePublicAppUrlState(
   catalog: CampaignCatalog,
   state: PublicAppUrlState,
+  beta02Catalog: PublicCatalogSnapshotV2 | null = null,
 ): URLSearchParams {
-  const normalizedState = normalizePublicAppUrlState(catalog, state);
+  const facets = resolveUrlFacetCatalog(catalog, beta02Catalog);
+  const normalizedState = normalizePublicAppUrlState(catalog, state, beta02Catalog);
   const parameters = new URLSearchParams();
   const activePlace = catalog.places.find(({ id }) => id === normalizedState.activePlaceId);
 
@@ -120,7 +156,7 @@ export function serializePublicAppUrlState(
   }
 
   normalizedState.selectedCategoryIds.forEach((categoryId) => {
-    const category = catalog.categories.find(({ id }) => id === categoryId);
+    const category = facets.categories.find(({ id }) => id === categoryId);
 
     if (category) {
       parameters.append(URL_PARAMETERS.category, category.slug);
@@ -138,9 +174,10 @@ export function createCanonicalPublicAppUrl(
   catalog: CampaignCatalog,
   baseUrl: URL,
   state: PublicAppUrlState,
+  beta02Catalog: PublicCatalogSnapshotV2 | null = null,
 ): URL {
   const canonicalUrl = new URL(baseUrl.href);
-  const parameters = serializePublicAppUrlState(catalog, state);
+  const parameters = serializePublicAppUrlState(catalog, state, beta02Catalog);
 
   canonicalUrl.search = parameters.toString();
   canonicalUrl.hash = '';
@@ -151,35 +188,41 @@ export function createCanonicalPublicAppUrl(
 export function parsePublicAppUrlState(
   catalog: CampaignCatalog,
   sourceUrl: URL,
+  beta02Catalog: PublicCatalogSnapshotV2 | null = null,
 ): ParsedPublicAppUrlState {
   const source = new URL(sourceUrl.href);
+  const facets = resolveUrlFacetCatalog(catalog, beta02Catalog);
   const categoryValues = new Set(
     source.searchParams
       .getAll(URL_PARAMETERS.category)
-      .map((value) => findCategoryId(catalog, value.trim()))
-      .filter((value): value is CampaignCategory['id'] => value !== null),
+      .map((value) => findCategoryId(facets, value.trim()))
+      .filter((value): value is CategoryId => value !== null),
   );
   const tagValues = new Set(
     source.searchParams
       .getAll(URL_PARAMETERS.tag)
       .map((value) => value.trim())
-      .filter((value) => catalog.tags.some((tag) => tag.id === value)),
+      .filter((value) => facets.tags.some((tag) => tag.id === value)),
   );
-  const state = normalizePublicAppUrlState(catalog, {
-    activePlaceId: getFirstValidPlaceId(
-      catalog,
-      source.searchParams.getAll(URL_PARAMETERS.activePlace),
-    ),
-    query: getFirstNonEmptyValue(source.searchParams.getAll(URL_PARAMETERS.query)),
-    geographicNameId: getFirstGeographicNameId(
-      source.searchParams.getAll(URL_PARAMETERS.geographicName),
-    ),
-    selectedCategoryIds: catalog.categories
-      .filter(({ id }) => categoryValues.has(id))
-      .map(({ id }) => id),
-    selectedTagIds: catalog.tags.filter(({ id }) => tagValues.has(id)).map(({ id }) => id),
-  });
-  const canonicalUrl = createCanonicalPublicAppUrl(catalog, source, state);
+  const state = normalizePublicAppUrlState(
+    catalog,
+    {
+      activePlaceId: getFirstValidPlaceId(
+        catalog,
+        source.searchParams.getAll(URL_PARAMETERS.activePlace),
+      ),
+      query: getFirstNonEmptyValue(source.searchParams.getAll(URL_PARAMETERS.query)),
+      geographicNameId: getFirstGeographicNameId(
+        source.searchParams.getAll(URL_PARAMETERS.geographicName),
+      ),
+      selectedCategoryIds: facets.categories
+        .filter(({ id }) => categoryValues.has(id))
+        .map(({ id }) => id),
+      selectedTagIds: facets.tags.filter(({ id }) => tagValues.has(id)).map(({ id }) => id),
+    },
+    beta02Catalog,
+  );
+  const canonicalUrl = createCanonicalPublicAppUrl(catalog, source, state, beta02Catalog);
 
   return {
     state,
@@ -192,9 +235,10 @@ export function arePublicAppUrlStatesEqual(
   catalog: CampaignCatalog,
   left: PublicAppUrlState,
   right: PublicAppUrlState,
+  beta02Catalog: PublicCatalogSnapshotV2 | null = null,
 ): boolean {
-  const normalizedLeft = normalizePublicAppUrlState(catalog, left);
-  const normalizedRight = normalizePublicAppUrlState(catalog, right);
+  const normalizedLeft = normalizePublicAppUrlState(catalog, left, beta02Catalog);
+  const normalizedRight = normalizePublicAppUrlState(catalog, right, beta02Catalog);
 
   return (
     normalizedLeft.activePlaceId === normalizedRight.activePlaceId &&
