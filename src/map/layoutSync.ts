@@ -50,19 +50,21 @@ export function synchronizeMapAfterLayoutChange(
 
 /**
  * Re-synchronizes Leaflet after restoring the normal layout and deliberately returns to the
- * complete-map view for that viewport. Reusing Leaflet's fitBounds policy mirrors the initial
- * map framing exactly and prevents the expanded viewport's minimum zoom from leaking back.
+ * complete-map view that was available before expansion. The normal layout minimum is captured
+ * when expansion begins so the expanded viewport cannot leak its higher minimum zoom back.
  */
 export function synchronizeMapAfterLayoutRestore(
   map: LeafletMap,
   bounds: LatLngBounds,
+  normalMinZoom: number,
   maxZoom: number,
 ): number {
   map.invalidateSize({ animate: false, pan: false });
 
-  const fitZoom = getFullMapZoom(map, bounds, maxZoom);
-  map.setMinZoom(fitZoom);
+  const targetZoom = Math.min(normalMinZoom, maxZoom);
+  map.setMinZoom(targetZoom);
   map.fitBounds(bounds, { animate: false });
+  map.setZoom(targetZoom, { animate: false });
 
-  return fitZoom;
+  return targetZoom;
 }
