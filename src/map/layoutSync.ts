@@ -16,8 +16,12 @@ function createCenteredSafeBounds(bounds: LatLngBounds, center: LatLng): LatLngB
   ];
 }
 
+function getFullMapZoom(map: LeafletMap, bounds: LatLngBounds, maxZoom: number): number {
+  return Math.min(map.getBoundsZoom(bounds, false), maxZoom);
+}
+
 /**
- * Re-synchronizes Leaflet after a CSS layout change without resetting navigation state.
+ * Re-synchronizes Leaflet after expanding the CSS layout without resetting navigation state.
  * Center has priority: when the resized viewport cannot keep the saved center at the saved
  * zoom inside maxBounds, zoom is raised only as far as necessary before Leaflet can clamp it.
  */
@@ -30,7 +34,7 @@ export function synchronizeMapAfterLayoutChange(
 ): number {
   map.invalidateSize({ animate: false, pan: false });
 
-  const fitZoom = Math.min(map.getBoundsZoom(bounds, false), maxZoom);
+  const fitZoom = getFullMapZoom(map, bounds, maxZoom);
   const centerSafeZoom = Math.min(
     map.getBoundsZoom(createCenteredSafeBounds(bounds, center), true),
     maxZoom,
@@ -42,4 +46,24 @@ export function synchronizeMapAfterLayoutChange(
   map.panInsideBounds(bounds, { animate: false });
 
   return targetZoom;
+}
+
+/**
+ * Re-synchronizes Leaflet after restoring the normal layout and deliberately returns to the
+ * complete-map view for that viewport. This prevents the larger expanded viewport's minimum
+ * zoom from leaking into the normal layout.
+ */
+export function synchronizeMapAfterLayoutRestore(
+  map: LeafletMap,
+  bounds: LatLngBounds,
+  maxZoom: number,
+): number {
+  map.invalidateSize({ animate: false, pan: false });
+
+  const fitZoom = getFullMapZoom(map, bounds, maxZoom);
+  map.setMinZoom(fitZoom);
+  map.setView(bounds.getCenter(), fitZoom, { animate: false });
+  map.panInsideBounds(bounds, { animate: false });
+
+  return fitZoom;
 }
