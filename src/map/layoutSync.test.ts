@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { LatLng, LatLngBounds, Map as LeafletMap } from 'leaflet';
 
-import { synchronizeMapAfterLayoutChange } from './layoutSync';
+import { synchronizeMapAfterLayoutChange, synchronizeMapAfterLayoutRestore } from './layoutSync';
 
 function createBounds(): LatLngBounds {
   return {
@@ -9,6 +9,7 @@ function createBounds(): LatLngBounds {
     getNorth: () => 0,
     getWest: () => 0,
     getEast: () => 3600,
+    getCenter: () => ({ lat: -1164.5, lng: 1800 }),
   } as unknown as LatLngBounds;
 }
 
@@ -20,6 +21,8 @@ function createMapDouble(fitZoom: number, centerSafeZoom = fitZoom) {
     ),
     setMinZoom: vi.fn(),
     setView: vi.fn(),
+    setZoom: vi.fn(),
+    fitBounds: vi.fn(),
     panInsideBounds: vi.fn(),
   };
 
@@ -91,5 +94,24 @@ describe('synchronizeMapAfterLayoutChange', () => {
     expect(targetZoom).toBe(3.25);
     expect(map.setMinZoom).toHaveBeenCalledWith(3.25);
     expect(map.setView).toHaveBeenCalledWith(center, 3.25, { animate: false });
+  });
+});
+
+describe('synchronizeMapAfterLayoutRestore', () => {
+  it('returns to the captured full-map zoom from the normal layout', () => {
+    const map = createMapDouble(1.25, 3.5);
+    const bounds = createBounds();
+
+    const targetZoom = synchronizeMapAfterLayoutRestore(map as unknown as LeafletMap, bounds, 1, 5);
+
+    expect(targetZoom).toBe(1);
+    expect(map.invalidateSize).toHaveBeenCalledTimes(1);
+    expect(map.invalidateSize).toHaveBeenCalledWith({ animate: false, pan: false });
+    expect(map.getBoundsZoom).not.toHaveBeenCalled();
+    expect(map.setMinZoom).toHaveBeenCalledWith(1);
+    expect(map.fitBounds).toHaveBeenCalledWith(bounds, { animate: false });
+    expect(map.setZoom).toHaveBeenCalledWith(1, { animate: false });
+    expect(map.setView).not.toHaveBeenCalled();
+    expect(map.panInsideBounds).not.toHaveBeenCalled();
   });
 });

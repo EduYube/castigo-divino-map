@@ -37,6 +37,23 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
 }
 
+async function expectFullMapVisible(page: Page): Promise<void> {
+  const mapBox = await page.locator('[data-map-canvas]').boundingBox();
+  const imageBox = await page.locator('.faerun-map__image').boundingBox();
+  const tolerance = 3;
+
+  expect(mapBox).not.toBeNull();
+  expect(imageBox).not.toBeNull();
+  if (mapBox && imageBox) {
+    expect(imageBox.x).toBeGreaterThanOrEqual(mapBox.x - tolerance);
+    expect(imageBox.y).toBeGreaterThanOrEqual(mapBox.y - tolerance);
+    expect(imageBox.x + imageBox.width).toBeLessThanOrEqual(mapBox.x + mapBox.width + tolerance);
+    expect(imageBox.y + imageBox.height).toBeLessThanOrEqual(mapBox.y + mapBox.height + tolerance);
+  }
+
+  await expect(page.locator('.leaflet-control-zoom-out')).toHaveClass(/leaflet-disabled/);
+}
+
 async function readMapView(page: Page): Promise<MapViewState> {
   const shell = page.getByTestId('map-shell');
   await expect(shell).toHaveAttribute('data-map-center', /,/);
@@ -78,7 +95,7 @@ async function toggleExpanded(page: Page, expanded: boolean): Promise<void> {
   await expect(control).toBeFocused();
 }
 
-test('desktop wide expands the cartographic surface and restores its geometry', async ({
+test('desktop wide expands the cartographic surface and restores its geometry and full zoom-out', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
@@ -88,17 +105,20 @@ test('desktop wide expands the cartographic surface and restores its geometry', 
   const experience = page.locator('.map-experience');
   const initialMapBox = await map.boundingBox();
   const initialExperienceBox = await experience.boundingBox();
+  const initialView = await readMapView(page);
   expect(initialMapBox).not.toBeNull();
   expect(initialExperienceBox).not.toBeNull();
 
   await expect(page.locator('[data-place-search]')).toBeVisible();
   await expect(page.locator('[data-place-filters]')).toBeVisible();
   await expect(page.locator('[data-map-help-summary]')).toBeVisible();
+  await expectFullMapVisible(page);
   await captureReference(page, testInfo, 'desktop-normal-1920x1080');
 
   await toggleExpanded(page, true);
   const expandedMapBox = await map.boundingBox();
   const expandedExperienceBox = await experience.boundingBox();
+  const expandedView = await readMapView(page);
   expect(expandedMapBox).not.toBeNull();
   expect(expandedExperienceBox).not.toBeNull();
 
@@ -109,6 +129,7 @@ test('desktop wide expands the cartographic surface and restores its geometry', 
     expect(expandedExperienceBox.x).toBeGreaterThanOrEqual(0);
     expect(expandedExperienceBox.x + expandedExperienceBox.width).toBeLessThanOrEqual(1920);
   }
+  expect(expandedView.zoom).toBeGreaterThanOrEqual(initialView.zoom);
   await expect(page.locator('.leaflet-control-zoom')).toBeVisible();
   await expect(page.locator('[data-place-search]')).toBeVisible();
   await expect(page.locator('[data-place-filters]')).toBeVisible();
@@ -130,10 +151,19 @@ test('desktop wide expands the cartographic surface and restores its geometry', 
       2,
     );
   }
+  await expect
+    .poll(async () => Math.abs((await readMapView(page)).zoom - initialView.zoom))
+    .toBeLessThanOrEqual(0.02);
+  const restoredView = await readMapView(page);
+  expect(Math.abs(restoredView.zoom - initialView.zoom)).toBeLessThanOrEqual(0.02);
+  await expectFullMapVisible(page);
   await expectNoHorizontalOverflow(page);
+  await captureReference(page, testInfo, 'desktop-restored-1920x1080');
 });
 
-test('pan and zoom survive expanded and restored transitions', async ({ page }) => {
+test('pan and zoom survive expansion while restore returns to the full normal view', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   await openReadyMap(page);
 
@@ -173,8 +203,8 @@ test('pan and zoom survive expanded and restored transitions', async ({ page }) 
   expectEquivalentView(await readMapView(page), before);
 
   await toggleExpanded(page, false);
-  await expect.poll(async () => viewsAreEquivalent(await readMapView(page), before)).toBe(true);
-  expectEquivalentView(await readMapView(page), before);
+  await expect.poll(async () => viewsAreEquivalent(await readMapView(page), initial)).toBe(true);
+  expectEquivalentView(await readMapView(page), initial);
 });
 
 test('Beta 0.2 filters, search results, matching and URL remain unchanged', async ({

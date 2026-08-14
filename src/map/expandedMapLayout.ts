@@ -2,7 +2,7 @@ import L, { type LatLngBounds, type Map as LeafletMap } from 'leaflet';
 
 import '../styles/expanded-map-layout.css';
 import { bindExpandedMapToggle, type ExpandToggleBinding } from './expandToggle';
-import { synchronizeMapAfterLayoutChange } from './layoutSync';
+import { synchronizeMapAfterLayoutChange, synchronizeMapAfterLayoutRestore } from './layoutSync';
 
 export interface ExpandedMapLayoutController {
   isResizeSynchronizationPending(): boolean;
@@ -62,6 +62,7 @@ export function mountExpandedMapLayout(
   const experience = getMapExperience(root);
   let expanded = false;
   let destroyed = false;
+  let normalMinZoom = map.getMinZoom();
   let synchronizeFrame: number | undefined;
   let releaseFrame: number | undefined;
   let suppressObservedResize = false;
@@ -73,6 +74,7 @@ export function mountExpandedMapLayout(
 
     const center = map.getCenter();
     const zoom = map.getZoom();
+    if (!expanded && nextExpanded) normalMinZoom = map.getMinZoom();
     expanded = nextExpanded;
     suppressObservedResize = true;
     experience.dataset.mapExpanded = expanded ? 'true' : 'false';
@@ -85,7 +87,11 @@ export function mountExpandedMapLayout(
       synchronizeFrame = undefined;
       if (destroyed) return;
 
-      synchronizeMapAfterLayoutChange(map, bounds, center, zoom, maxZoom);
+      if (expanded) {
+        synchronizeMapAfterLayoutChange(map, bounds, center, zoom, maxZoom);
+      } else {
+        synchronizeMapAfterLayoutRestore(map, bounds, normalMinZoom, maxZoom);
+      }
       releaseFrame = window.requestAnimationFrame(() => {
         releaseFrame = undefined;
         suppressObservedResize = false;
