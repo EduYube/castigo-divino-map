@@ -77,11 +77,16 @@ interface Map044BackendOptions {
   readonly includeCoincidentMaster?: boolean;
 }
 
+interface PortraitRequest {
+  readonly path: string;
+  readonly authorization: string;
+}
+
 interface Map044Backend {
   getAudience(): 'public' | 'master';
   getSaveCount(): number;
   setMasterCatalogStatus(status: 200 | 401 | 403): void;
-  getPortraitAuthorizations(): readonly string[];
+  getPortraitRequests(): readonly PortraitRequest[];
 }
 
 function projectRows(
@@ -179,7 +184,7 @@ async function configureMap044Backend(
   let audience: 'public' | 'master' = 'master';
   let saveCount = 0;
   let masterCatalogStatus: 200 | 401 | 403 = 200;
-  const portraitAuthorizations: string[] = [];
+  const portraitRequests: PortraitRequest[] = [];
   const includeCoincidentMaster = options.includeCoincidentMaster === true;
 
   await page.addInitScript(
@@ -226,13 +231,13 @@ async function configureMap044Backend(
     const request = route.request();
     const url = new URL(request.url());
     const authorization = request.headers()['authorization'] ?? '';
-    portraitAuthorizations.push(authorization);
     const encodedPath = url.pathname.split('/character-portraits/')[1] ?? '';
     const path = decodeURIComponent(encodedPath);
+    portraitRequests.push({ path, authorization });
     const authorized =
-      path === MASTER_PORTRAIT_PATH &&
-      (authorization === `Bearer ${ADMIN_TOKEN}` ||
-        (authorization === PUBLIC_PORTRAIT_AUTHORIZATION && audience === 'public'));
+      authorization === PUBLIC_PORTRAIT_AUTHORIZATION
+        ? path !== MASTER_PORTRAIT_PATH || audience === 'public'
+        : path === MASTER_PORTRAIT_PATH && authorization === `Bearer ${ADMIN_TOKEN}`;
     if (!authorized) {
       await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
       return;
@@ -314,7 +319,7 @@ async function configureMap044Backend(
     setMasterCatalogStatus(status): void {
       masterCatalogStatus = status;
     },
-    getPortraitAuthorizations: () => portraitAuthorizations,
+    getPortraitRequests: () => portraitRequests,
   };
 }
 
@@ -342,7 +347,9 @@ test('visitor and admin OFF cannot see master data; ON loads it ephemerally and 
   await page.goto('/');
 
   await expect(page.locator('[data-master-mode-toggle]')).toHaveCount(0);
-  expect(backend.getPortraitAuthorizations()).toHaveLength(0);
+  expect(backend.getPortraitRequests().filter(({ path }) => path === MASTER_PORTRAIT_PATH)).toEqual(
+    [],
+  );
   await expect(page.getByText(MASTER_NAME, { exact: true })).toHaveCount(0);
   await expect(page.locator('.campaign-marker-icon[data-audience="master"]')).toHaveCount(0);
 
@@ -358,7 +365,16 @@ test('visitor and admin OFF cannot see master data; ON loads it ephemerally and 
   await expect(privateMarker).toHaveCount(1);
   await expect(privateMarker).toHaveAttribute('aria-label', /Contenido del Máster/);
   await expect(privateMarker).toHaveAttribute('data-portrait-marker', 'true');
-  await expect.poll(() => backend.getPortraitAuthorizations()).toContain(`Bearer ${ADMIN_TOKEN}`);
+  await expect
+    .poll(() =>
+      backend
+        .getPortraitRequests()
+        .some(
+          ({ path, authorization }) =>
+            path === MASTER_PORTRAIT_PATH && authorization === `Bearer ${ADMIN_TOKEN}`,
+        ),
+    )
+    .toBe(true);
 
   await page.getByRole('searchbox', { name: 'Buscar lugares' }).fill('Xanathar oculto');
   const masterResult = page.locator(`[data-search-result-id="${MASTER_ID}"]`);
@@ -500,8 +516,15 @@ test('detail audience transition requires confirmation, supports cancel and refr
   await expect(transitionedPublicMarker).toHaveCount(1);
   await expect(transitionedPublicMarker).toHaveAttribute('data-portrait-marker', 'true');
   await expect
-    .poll(() => backend.getPortraitAuthorizations())
-    .toContain(PUBLIC_PORTRAIT_AUTHORIZATION);
+    .poll(() =>
+      backend
+        .getPortraitRequests()
+        .some(
+          ({ path, authorization }) =>
+            path === MASTER_PORTRAIT_PATH && authorization === PUBLIC_PORTRAIT_AUTHORIZATION,
+        ),
+    )
+    .toBe(true);
   await expect(page.locator('[data-master-mode-status]')).toContainText(
     /No hay entidades Máster publicadas/i,
   );

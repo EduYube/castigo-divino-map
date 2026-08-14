@@ -6,6 +6,10 @@ const PROJECT_URL = 'http://127.0.0.1:4173';
 const ACCESS_TOKEN = 'map046_e2e_access_token';
 const REFRESH_TOKEN = 'map046_e2e_refresh_token';
 const PUBLISHABLE_KEY = 'sb_publishable_map046_e2e_key';
+const PORTRAIT_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -68,6 +72,21 @@ async function configureCleanBackend(page: Page): Promise<void> {
         },
       }),
     });
+  });
+
+  await page.route('**/storage/v1/**', async (route) => {
+    const request = route.request();
+    const authorization = request.headers()['authorization'] ?? '';
+    const url = new URL(request.url());
+    const publicPortraitRead =
+      request.method() === 'GET' &&
+      authorization === `Bearer ${PUBLISHABLE_KEY}` &&
+      url.pathname.includes('/character-portraits/');
+    if (!publicPortraitRead) {
+      await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: 'image/png', body: PORTRAIT_PNG });
   });
 
   await page.route('**/rest/v1/rpc/current_user_is_admin', async (route) => {

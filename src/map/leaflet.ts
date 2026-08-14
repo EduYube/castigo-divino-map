@@ -557,8 +557,7 @@ export function mountFaerunMap(
 
   refreshPortraitMarkers = (eagerPortraitPinIds: ReadonlySet<string> = new Set()): void => {
     if (!options.loadPortrait || destroyed) return;
-    const canLoadViewportPortraits = map.getZoom() > map.getMinZoom() + 0.01;
-    const visibleBounds = canLoadViewportPortraits ? map.getBounds().pad(0.08) : null;
+    const visibleBounds = map.getBounds().pad(0.08);
     const generation = portraitGeneration;
 
     for (const pin of renderedMarkers) {
@@ -569,7 +568,7 @@ export function mountFaerunMap(
       if (
         !eagerPortraitPinIds.has(pin.id) &&
         !isPinActive(pin) &&
-        !visibleBounds?.contains(leafletMarker.getLatLng())
+        !visibleBounds.contains(leafletMarker.getLatLng())
       ) {
         continue;
       }
