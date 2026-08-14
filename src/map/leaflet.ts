@@ -10,6 +10,7 @@ import {
   type CoordinatePinGroup,
 } from '../domain/pinVisualSystem';
 import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './config';
+import { mountExpandedMapLayout } from './expandedMapLayout';
 import { clearMapSearchFocus, locateMapSearchTarget } from './searchFocus';
 
 export type MapLoadState = 'loading' | 'ready' | 'error';
@@ -325,6 +326,7 @@ export function mountFaerunMap(
   nameZoomControls(zoomControl);
   map.fitBounds(bounds, { animate: false });
   constrainViewport(map, bounds, true);
+  const expandedMapLayout = mountExpandedMapLayout(root, map, bounds, FAERUN_MAP_CONFIG.maxZoom);
 
   const groupMarkers = new Set<Marker>();
   const groupMarkerByPinId = new Map<string, Marker>();
@@ -693,6 +695,7 @@ export function mountFaerunMap(
 
   let resizeFrame: number | undefined;
   const handleResize = (): void => {
+    if (expandedMapLayout.isResizeSynchronizationPending()) return;
     if (resizeFrame !== undefined) window.cancelAnimationFrame(resizeFrame);
     resizeFrame = window.requestAnimationFrame(() => {
       resizeFrame = undefined;
@@ -770,6 +773,7 @@ export function mountFaerunMap(
       resizeObserver?.disconnect();
       window.removeEventListener('resize', handleResize);
       if (resizeFrame !== undefined) window.cancelAnimationFrame(resizeFrame);
+      expandedMapLayout.destroy();
       map.remove();
     },
   };
