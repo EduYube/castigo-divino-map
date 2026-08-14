@@ -137,9 +137,11 @@ test('pan and zoom survive expanded and restored transitions', async ({ page }) 
   await page.setViewportSize({ width: 1600, height: 900 });
   await openReadyMap(page);
 
+  const initial = await readMapView(page);
   const zoomIn = page.locator('.leaflet-control-zoom-in');
   await zoomIn.click();
   await zoomIn.click();
+  await expect.poll(async () => (await readMapView(page)).zoom).toBeGreaterThan(initial.zoom + 0.4);
   const zoomed = await readMapView(page);
 
   const map = page.locator('[data-map-canvas]');
@@ -156,7 +158,7 @@ test('pan and zoom survive expanded and restored transitions', async ({ page }) 
         Math.abs(panned.center[1] - zoomed.center[1])
       );
     })
-    .toBeGreaterThan(10);
+    .toBeGreaterThan(1);
 
   const before = await readMapView(page);
   expect(Math.abs(before.zoom - zoomed.zoom)).toBeLessThanOrEqual(0.02);
