@@ -40,7 +40,7 @@ export interface FaerunMapController {
   setMarkers(markers: readonly AtlasPinMarkerModel[], options?: FaerunMapMarkerUpdateOptions): void;
   setActivePlace(placeId: PlaceId | null): void;
   clearSupplementalPinSelection(): void;
-  setMatchingPlaces(placeIds: ReadonlySet<PlaceId>, semantics?: PinMatchingSemantics): void;
+  setMatchingPins(pinIds: ReadonlySet<string>, semantics?: PinMatchingSemantics): void;
   locatePlace(placeId: PlaceId): void;
   locateSearchTarget(target: MapSearchTarget): void;
   clearSearchFocus(): void;
@@ -339,7 +339,7 @@ export function mountFaerunMap(
   let renderedMarkers: readonly AtlasPinMarkerModel[] = [];
   let activePlaceId: PlaceId | null = null;
   let activeSupplementalPinId: string | null = null;
-  let matchingPlaceIds = new Set<PlaceId>();
+  let matchingPinIds = new Set<string>();
   let matchingSemantics: PinMatchingSemantics = 'search-and-filters';
   let destroyed = false;
 
@@ -348,8 +348,7 @@ export function mountFaerunMap(
       ? pin.legacyPlaceId === activePlaceId
       : pin.id === activeSupplementalPinId;
 
-  const isPinMatching = (pin: AtlasPinMarkerModel): boolean =>
-    pin.legacyPlaceId === null || matchingPlaceIds.has(pin.legacyPlaceId);
+  const isPinMatching = (pin: AtlasPinMarkerModel): boolean => matchingPinIds.has(pin.id);
 
   const getGroupFilterState = (pins: readonly AtlasPinMarkerModel[]): FilterMatchState => {
     const matches = pins.map(isPinMatching);
@@ -660,11 +659,7 @@ export function mountFaerunMap(
     refreshPortraitMarkers(eagerPortraitPinIds);
   };
 
-  matchingPlaceIds = new Set(
-    (options.markers ?? [])
-      .map(({ legacyPlaceId }) => legacyPlaceId)
-      .filter((placeId): placeId is PlaceId => placeId !== null),
-  );
+  matchingPinIds = new Set((options.markers ?? []).map(({ id }) => id));
   renderMarkers(options.markers ?? []);
 
   const imageOverlay = L.imageOverlay(OFFICIAL_MAP_URL, bounds, {
@@ -724,16 +719,11 @@ export function mountFaerunMap(
   return {
     map,
     setMarkers(markers, updateOptions = {}): void {
-      const previousMatching = matchingPlaceIds;
       const eagerPortraitPinIds = new Set(updateOptions.eagerPortraitPinIds ?? []);
       for (const pin of renderedMarkers) {
         const element = groupMarkerByPinId.get(pin.id)?.getElement();
         if (element?.dataset.portraitMarker === 'true') eagerPortraitPinIds.add(pin.id);
       }
-      const legacyIds = markers
-        .map(({ legacyPlaceId }) => legacyPlaceId)
-        .filter((placeId): placeId is PlaceId => placeId !== null);
-      if (previousMatching.size === 0) matchingPlaceIds = new Set(legacyIds);
       renderMarkers(markers, eagerPortraitPinIds);
       refreshMarkerPresentation();
     },
@@ -747,8 +737,8 @@ export function mountFaerunMap(
       activeSupplementalPinId = null;
       refreshMarkerPresentation();
     },
-    setMatchingPlaces(placeIds, semantics = 'search-and-filters'): void {
-      matchingPlaceIds = new Set(placeIds);
+    setMatchingPins(pinIds, semantics = 'search-and-filters'): void {
+      matchingPinIds = new Set(pinIds);
       matchingSemantics = semantics;
       refreshMarkerPresentation();
     },
