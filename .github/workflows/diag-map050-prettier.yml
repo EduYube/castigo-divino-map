@@ -1,4 +1,4 @@
-name: DIAG MAP-050 Prettier
+name: DIAG MAP-050 Pending Filter Canonicalization
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  format-map050:
+  patch-map050:
     if: github.head_ref == 'agent/map-050-prettier-diagnostic'
     runs-on: ubuntu-24.04
     steps:
@@ -27,18 +27,75 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Format 320px spec
-        run: npx prettier --write tests/e2e/beta02-filters-320.spec.ts
+      - name: Canonicalize immediately while retaining unknown filters in memory
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
 
-      - name: Commit formatting to feature branch
+          path = Path('src/main.ts')
+          text = path.read_text()
+
+          replacements = [
+              (
+                  """    if (initialPublicRefreshSettled || !pendingInitialFilterUrl) {
+                      writePublicStateToHistory('replace');
+                    }
+                  }""",
+                  """    writePublicStateToHistory('replace');
+                  }""",
+                  'applyCatalogState canonicalization',
+              ),
+              (
+                  """    if (!shouldPreserveUnknownFilters) {
+                      writePublicStateToHistory('replace');
+                    }
+                  }""",
+                  """    writePublicStateToHistory('replace');
+                  }""",
+                  'initial URL canonicalization',
+              ),
+          ]
+
+          for old, new, label in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one anchor, found {count}')
+              text = text.replace(old, new)
+
+          path.write_text(text)
+          PY
+
+      - name: Format patched source
+        run: npx prettier --write src/main.ts
+
+      - name: Verify focused quality gates
+        run: |
+          npm run format:check
+          npm run lint
+          npm run test
+          npm run build:pages
+
+      - name: Install focused Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify canonicalization and dynamic filter reload
+        run: >-
+          npx playwright test
+          tests/e2e/url-state.spec.ts
+          tests/e2e/beta02-filter-refresh.spec.ts
+          tests/e2e/beta02-filters-320.spec.ts
+          --project=chromium
+
+      - name: Commit fix to feature branch
         shell: bash
         run: |
           if git diff --quiet; then
-            echo 'No formatting changes required.'
+            echo 'No patch changes required.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tests/e2e/beta02-filters-320.spec.ts
-          git commit -m 'MAP-050 format 320px filter test'
+          git add src/main.ts
+          git commit -m 'MAP-050 canonicalize pending filters immediately'
           git push origin HEAD:refs/heads/agent/map-050-beta02-public-filters
