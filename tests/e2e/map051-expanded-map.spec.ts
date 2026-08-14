@@ -138,13 +138,16 @@ test('pan and zoom survive expanded and restored transitions', async ({ page }) 
   await openReadyMap(page);
 
   const initial = await readMapView(page);
-  const zoomIn = page.locator('.leaflet-control-zoom-in');
+const zoomIn = page.locator('.leaflet-control-zoom-in');
+let zoomed = initial;
+for (let step = 0; step < 4; step += 1) {
+  const previousZoom = zoomed.zoom;
   await zoomIn.click();
-  await zoomIn.click();
-  await zoomIn.click();
-  await zoomIn.click();
-  await expect.poll(async () => (await readMapView(page)).zoom).toBeGreaterThan(initial.zoom + 0.9);
-  const zoomed = await readMapView(page);
+  await expect
+    .poll(async () => (await readMapView(page)).zoom)
+    .toBeGreaterThan(previousZoom + 0.4);
+  zoomed = await readMapView(page);
+}
 
   const map = page.locator('[data-map-canvas]');
   await map.focus();
