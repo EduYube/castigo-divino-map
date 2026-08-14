@@ -1,4 +1,4 @@
-name: DIAG MAP-050 Initial Filter Restore
+name: DIAG MAP-050 Prettier
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  patch-map050:
+  format-map050:
     if: github.head_ref == 'agent/map-050-prettier-diagnostic'
     runs-on: ubuntu-24.04
     steps:
@@ -27,218 +27,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Patch initial public-filter restoration
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
+      - name: Format 320px spec
+        run: npx prettier --write tests/e2e/beta02-filters-320.spec.ts
 
-          def replace_once(text: str, old: str, new: str, label: str) -> str:
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{label}: expected one anchor, found {count}')
-              return text.replace(old, new)
-
-          path = Path('src/main.ts')
-          text = path.read_text()
-
-          text = replace_once(
-              text,
-              "import { deriveMatchingPublicEntityIds, deriveMatchingPublicPlaceIds } from './data/filters';",
-              """import {
-            deriveMatchingPublicEntityIds,
-            deriveMatchingPublicPlaceIds,
-            derivePublicFilterFacets,
-          } from './data/filters';""",
-              'filters import',
-          )
-          text = replace_once(
-              text,
-              "  let isRestoringFromHistory = false;\n  let catalogState = initialCatalogState;",
-              """  let isRestoringFromHistory = false;
-            let pendingInitialFilterUrl: URL | null = null;
-            let initialPublicRefreshSettled = publicDataRuntime === undefined;
-            let catalogState = initialCatalogState;""",
-              'runtime state',
-          )
-
-          locate_anchor = "  const locateGeographicName = (geographicName: PublicGeographicName): void => {"
-          filter_helper = """  const hasUnknownPublicFilterParameters = (sourceUrl: URL): boolean => {
-            const facets = publicBeta02Catalog ? derivePublicFilterFacets(publicBeta02Catalog) : null;
-            const categories = facets?.categories ?? catalog.categories;
-            const tags = facets?.tags ?? catalog.tags;
-            const requestedCategories = sourceUrl.searchParams
-              .getAll('category')
-              .map((value) => value.trim())
-              .filter(Boolean);
-            const requestedTags = sourceUrl.searchParams
-              .getAll('tag')
-              .map((value) => value.trim())
-              .filter(Boolean);
-
-            return (
-              requestedCategories.some(
-                (value) => !categories.some(({ id, slug }) => id === value || slug === value),
-              ) || requestedTags.some((value) => !tags.some(({ id }) => id === value))
-            );
-          };
-
-          """
-          text = replace_once(text, locate_anchor, filter_helper + locate_anchor, 'filter helper')
-
-          render_anchor = "  function renderActivePlace(\n"
-          pending_helper = """  function restorePendingInitialFilters(): void {
-            const pendingUrl = pendingInitialFilterUrl;
-            if (!pendingUrl) return;
-
-            pendingInitialFilterUrl = null;
-            const parsed = parsePublicAppUrlState(catalog, pendingUrl, publicBeta02Catalog);
-            placeFiltersController.setState(
-              {
-                selectedCategoryIds: parsed.state.selectedCategoryIds,
-                selectedTagIds: parsed.state.selectedTagIds,
-              },
-              { notify: false },
-            );
-          }
-
-          """
-          text = replace_once(text, render_anchor, pending_helper + render_anchor, 'pending helper')
-
-          text = replace_once(
-              text,
-              "      masterPinVisuals.refresh(renderedMarkers, masterEntityIds);\n      masterSearchVisuals.refresh(masterEntityIds);\n      geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;",
-              """      masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
-            masterSearchVisuals.refresh(masterEntityIds);
-            if (initialPublicRefreshSettled) {
-              restorePendingInitialFilters();
-            }
-            geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;""",
-              'apply pending filters',
-          )
-
-          subscriber = "  publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state, true));"
-          subscriber_index = text.find(subscriber)
-          if subscriber_index < 0:
-              raise SystemExit('catalog subscriber anchor missing')
-          before_subscriber = text[:subscriber_index]
-          write_anchor = "    writePublicStateToHistory('replace');\n  }\n\n"
-          write_index = before_subscriber.rfind(write_anchor)
-          if write_index < 0:
-              raise SystemExit('applyCatalogState history anchor missing')
-          before_subscriber = (
-              before_subscriber[:write_index]
-              + """    if (initialPublicRefreshSettled || !pendingInitialFilterUrl) {
-            writePublicStateToHistory('replace');
-          }
-          }
-
-          """
-          )
-          after_subscriber = text[subscriber_index + len(subscriber):]
-          subscription = """  publicDataRuntime?.subscribeCatalogState((state) => {
-            initialPublicRefreshSettled = true;
-            applyCatalogState(state, true);
-          });
-
-          if (publicDataRuntime) {
-            window.addEventListener(
-              'atlas:public-data-status',
-              () => {
-                queueMicrotask(() => {
-                  if (initialPublicRefreshSettled) return;
-
-                  initialPublicRefreshSettled = true;
-                  if (!pendingInitialFilterUrl) return;
-
-                  isRestoringFromHistory = true;
-                  try {
-                    restorePendingInitialFilters();
-                    updateMatchingPlaces();
-                  } finally {
-                    isRestoringFromHistory = false;
-                  }
-                  writePublicStateToHistory('replace');
-                });
-              },
-              { once: true },
-            );
-          }"""
-          text = before_subscriber + subscription + after_subscriber
-
-          restore_anchor = "  function restorePublicStateFromUrl(sourceUrl: URL): void => {"
-          if restore_anchor in text:
-              raise SystemExit('unexpected arrow restore signature')
-          restore_anchor = "  function restorePublicStateFromUrl(sourceUrl: URL): void {\n"
-          restore_insert = """  function restorePublicStateFromUrl(sourceUrl: URL): void {
-            const shouldPreserveUnknownFilters =
-              !initialPublicRefreshSettled &&
-              publicDataRuntime !== undefined &&
-              hasUnknownPublicFilterParameters(sourceUrl);
-          """
-          text = replace_once(text, restore_anchor, restore_insert, 'restore function')
-
-          geographic_anchor = (
-              "    const requestedGeographicName = "
-              "resolveGeographicName(parsed.state.geographicNameId);\n"
-          )
-          text = replace_once(
-              text,
-              geographic_anchor,
-              geographic_anchor
-              + "\n    pendingInitialFilterUrl = shouldPreserveUnknownFilters ? new URL(sourceUrl) : null;\n",
-              'restore pending assignment',
-          )
-
-          selection_anchor = "  selection.subscribe((activePlaceId) => {"
-          selection_index = text.find(selection_anchor)
-          if selection_index < 0:
-              raise SystemExit('selection subscriber anchor missing')
-          before_selection = text[:selection_index]
-          restore_write_index = before_selection.rfind(write_anchor)
-          if restore_write_index < 0:
-              raise SystemExit('restore history anchor missing')
-          before_selection = (
-              before_selection[:restore_write_index]
-              + """    if (!shouldPreserveUnknownFilters) {
-            writePublicStateToHistory('replace');
-          }
-          }
-
-          """
-          )
-          text = before_selection + text[selection_index:]
-          path.write_text(text)
-
-          url_test = Path('tests/e2e/url-state.spec.ts')
-          test_text = replace_once(
-              url_test.read_text(),
-              "await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún lugar coincide');",
-              "await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún resultado coincide');",
-              'url-state wording',
-          )
-          url_test.write_text(test_text)
-          PY
-
-      - name: Format patched files
-        run: npx prettier --write src/main.ts tests/e2e/url-state.spec.ts
-
-      - name: Verify focused quality gates
-        run: |
-          npm run format:check
-          npm run lint
-          npm run test
-          npm run build:pages
-
-      - name: Commit patch to feature branch
+      - name: Commit formatting to feature branch
         shell: bash
         run: |
           if git diff --quiet; then
-            echo 'No patch changes required.'
+            echo 'No formatting changes required.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/main.ts tests/e2e/url-state.spec.ts
-          git commit -m 'MAP-050 preserve dynamic filters through bootstrap'
+          git add tests/e2e/beta02-filters-320.spec.ts
+          git commit -m 'MAP-050 format 320px filter test'
           git push origin HEAD:refs/heads/agent/map-050-beta02-public-filters
