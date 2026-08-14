@@ -699,9 +699,7 @@ function mountPublicExperience(
       isRestoringFromHistory = false;
     }
 
-    if (initialPublicRefreshSettled || !pendingInitialFilterUrl) {
-      writePublicStateToHistory('replace');
-    }
+    writePublicStateToHistory('replace');
   }
 
   publicDataRuntime?.subscribeCatalogState((state) => {
@@ -862,9 +860,7 @@ function mountPublicExperience(
       isRestoringFromHistory = false;
     }
 
-    if (!shouldPreserveUnknownFilters) {
-      writePublicStateToHistory('replace');
-    }
+    writePublicStateToHistory('replace');
   }
 
   selection.subscribe((activePlaceId) => {
