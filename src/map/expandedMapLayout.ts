@@ -62,7 +62,7 @@ export function mountExpandedMapLayout(
   const experience = getMapExperience(root);
   let expanded = false;
   let destroyed = false;
-  let layoutFrame: number | undefined;
+  let normalMinZoom = map.getMinZoom();
   let synchronizeFrame: number | undefined;
   let releaseFrame: number | undefined;
   let suppressObservedResize = false;
@@ -74,35 +74,27 @@ export function mountExpandedMapLayout(
 
     const center = map.getCenter();
     const zoom = map.getZoom();
+    if (!expanded && nextExpanded) normalMinZoom = map.getMinZoom();
     expanded = nextExpanded;
     suppressObservedResize = true;
     experience.dataset.mapExpanded = expanded ? 'true' : 'false';
     control.setExpanded(expanded);
 
-    if (layoutFrame !== undefined) window.cancelAnimationFrame(layoutFrame);
     if (synchronizeFrame !== undefined) window.cancelAnimationFrame(synchronizeFrame);
     if (releaseFrame !== undefined) window.cancelAnimationFrame(releaseFrame);
 
-    // Give the browser one full paint opportunity to settle the CSS grid width before Leaflet
-    // reads its container size. At wide viewports the normal and expanded layouts can straddle a
-    // 0.25 zoomSnap boundary, so measuring one frame too early preserves the expanded zoom.
-    layoutFrame = window.requestAnimationFrame(() => {
-      layoutFrame = undefined;
+    synchronizeFrame = window.requestAnimationFrame(() => {
+      synchronizeFrame = undefined;
       if (destroyed) return;
 
-      synchronizeFrame = window.requestAnimationFrame(() => {
-        synchronizeFrame = undefined;
-        if (destroyed) return;
-
-        if (expanded) {
-          synchronizeMapAfterLayoutChange(map, bounds, center, zoom, maxZoom);
-        } else {
-          synchronizeMapAfterLayoutRestore(map, bounds, maxZoom);
-        }
-        releaseFrame = window.requestAnimationFrame(() => {
-          releaseFrame = undefined;
-          suppressObservedResize = false;
-        });
+      if (expanded) {
+        synchronizeMapAfterLayoutChange(map, bounds, center, zoom, maxZoom);
+      } else {
+        synchronizeMapAfterLayoutRestore(map, bounds, normalMinZoom, maxZoom);
+      }
+      releaseFrame = window.requestAnimationFrame(() => {
+        releaseFrame = undefined;
+        suppressObservedResize = false;
       });
     });
   });
@@ -117,7 +109,6 @@ export function mountExpandedMapLayout(
       if (destroyed) return;
       destroyed = true;
       suppressObservedResize = false;
-      if (layoutFrame !== undefined) window.cancelAnimationFrame(layoutFrame);
       if (synchronizeFrame !== undefined) window.cancelAnimationFrame(synchronizeFrame);
       if (releaseFrame !== undefined) window.cancelAnimationFrame(releaseFrame);
       experience.dataset.mapExpanded = 'false';
