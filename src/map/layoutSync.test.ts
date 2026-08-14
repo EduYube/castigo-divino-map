@@ -21,6 +21,7 @@ function createMapDouble(fitZoom: number, centerSafeZoom = fitZoom) {
     ),
     setMinZoom: vi.fn(),
     setView: vi.fn(),
+    fitBounds: vi.fn(),
     panInsideBounds: vi.fn(),
   };
 
@@ -96,7 +97,7 @@ describe('synchronizeMapAfterLayoutChange', () => {
 });
 
 describe('synchronizeMapAfterLayoutRestore', () => {
-  it('returns to the complete-map zoom and center for the restored viewport', () => {
+  it('returns to Leaflet full-bounds framing for the restored viewport', () => {
     const map = createMapDouble(1.25, 3.5);
     const bounds = createBounds();
 
@@ -108,7 +109,8 @@ describe('synchronizeMapAfterLayoutRestore', () => {
     expect(map.getBoundsZoom).toHaveBeenCalledTimes(1);
     expect(map.getBoundsZoom).toHaveBeenCalledWith(bounds, false);
     expect(map.setMinZoom).toHaveBeenCalledWith(1.25);
-    expect(map.setView).toHaveBeenCalledWith({ lat: -1164.5, lng: 1800 }, 1.25, { animate: false });
-    expect(map.panInsideBounds).toHaveBeenCalledWith(bounds, { animate: false });
+    expect(map.fitBounds).toHaveBeenCalledWith(bounds, { animate: false });
+    expect(map.setView).not.toHaveBeenCalled();
+    expect(map.panInsideBounds).not.toHaveBeenCalled();
   });
 });
