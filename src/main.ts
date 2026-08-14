@@ -82,7 +82,7 @@ function createPortraitResources(): CharacterPortraitResources | null {
     __MAP017_AUTH_TEST_CONFIG__?: PortraitRuntimeTestConfig;
   };
   const testConfig = import.meta.env.DEV
-    ? (testWindow.__MAP016_PUBLIC_DATA_TEST_CONFIG__ ?? window.__MAP017_AUTH_TEST_CONFIG__)
+    ? (testWindow.__MAP016_PUBLIC_DATA_TEST_CONFIG__ ?? testWindow.__MAP017_AUTH_TEST_CONFIG__)
     : undefined;
   try {
     return new SupabaseCharacterPortraitResources({
@@ -451,7 +451,9 @@ function mountPublicExperience(
     const query = placeSearchController.getQuery();
     const filters = placeFiltersController.getState();
     const matchingOptions = {
-      searchIntent: isGeographicNavigation ? ('geographic-navigation' as const) : ('entity-search' as const),
+      searchIntent: isGeographicNavigation
+        ? ('geographic-navigation' as const)
+        : ('entity-search' as const),
     };
     const matchingPlaceIds = deriveMatchingPublicPlaceIds(
       catalog,
