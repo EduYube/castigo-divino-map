@@ -1,0 +1,45 @@
+name: Temporary MAP-051 formatting
+
+on:
+  push:
+    branches:
+      - agent/map-051-restore-full-zoomout
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/map-051-restore-full-zoomout
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply repository formatting
+        run: >-
+          npx prettier --write
+          src/map/expandedMapLayout.ts
+          src/map/layoutSync.ts
+          src/map/layoutSync.test.ts
+          tests/e2e/map051-expanded-map.spec.ts
+
+      - name: Remove temporary workflow and commit
+        run: |
+          rm .github/workflows/tmp-map051-format.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/map/expandedMapLayout.ts src/map/layoutSync.ts src/map/layoutSync.test.ts tests/e2e/map051-expanded-map.spec.ts .github/workflows/tmp-map051-format.yml
+          git commit -m "MAP-051 apply repository formatting"
+          git push origin HEAD:agent/map-051-restore-full-zoomout
