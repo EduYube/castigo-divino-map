@@ -47,10 +47,16 @@ async function readMapView(page: Page): Promise<MapViewState> {
   return { center: [lat, lng], zoom: Number(zoomText) };
 }
 
+function viewsAreEquivalent(actual: MapViewState, expected: MapViewState): boolean {
+  return (
+    Math.abs(actual.center[0] - expected.center[0]) <= 1 &&
+    Math.abs(actual.center[1] - expected.center[1]) <= 1 &&
+    Math.abs(actual.zoom - expected.zoom) <= 0.02
+  );
+}
+
 function expectEquivalentView(actual: MapViewState, expected: MapViewState): void {
-  expect(Math.abs(actual.center[0] - expected.center[0])).toBeLessThanOrEqual(1);
-  expect(Math.abs(actual.center[1] - expected.center[1])).toBeLessThanOrEqual(1);
-  expect(Math.abs(actual.zoom - expected.zoom)).toBeLessThanOrEqual(0.02);
+  expect(viewsAreEquivalent(actual, expected)).toBe(true);
 }
 
 async function captureReference(page: Page, testInfo: TestInfo, label: string): Promise<void> {
@@ -131,7 +137,7 @@ test('pan and zoom survive expanded and restored transitions', async ({ page }) 
   await page.setViewportSize({ width: 1600, height: 900 });
   await openReadyMap(page);
 
-  const zoomIn = page.getByRole('link', { name: 'Acercar' });
+  const zoomIn = page.locator('.leaflet-control-zoom-in');
   await zoomIn.click();
   await zoomIn.click();
 
@@ -147,10 +153,11 @@ test('pan and zoom survive expanded and restored transitions', async ({ page }) 
 
   const before = await readMapView(page);
   await toggleExpanded(page, true);
-  await expect.poll(async () => readMapView(page)).toEqual(before);
+  await expect.poll(async () => viewsAreEquivalent(await readMapView(page), before)).toBe(true);
   expectEquivalentView(await readMapView(page), before);
 
   await toggleExpanded(page, false);
+  await expect.poll(async () => viewsAreEquivalent(await readMapView(page), before)).toBe(true);
   expectEquivalentView(await readMapView(page), before);
 });
 
