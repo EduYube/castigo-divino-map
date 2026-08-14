@@ -1,4 +1,4 @@
-name: DIAG MAP-050 Prettier
+name: DIAG MAP-050 Initial Filter Restore
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  format-map050:
+  patch-map050:
     if: github.head_ref == 'agent/map-050-prettier-diagnostic'
     runs-on: ubuntu-24.04
     steps:
@@ -27,24 +27,202 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Format MAP-050 files
-        run: >-
-          npx prettier --write
-          src/app/urlState.ts
-          src/data/filters.test.ts
-          src/main.ts
-          tests/e2e/beta02-filter-refresh.spec.ts
-          tests/e2e/filters.spec.ts
+      - name: Patch initial public-filter restoration
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
 
-      - name: Commit formatting to feature branch
+          path = Path('src/main.ts')
+          text = path.read_text()
+
+          replacements = [
+              (
+                  "import { deriveMatchingPublicEntityIds, deriveMatchingPublicPlaceIds } from './data/filters';",
+                  """import {
+            deriveMatchingPublicEntityIds,
+            deriveMatchingPublicPlaceIds,
+            derivePublicFilterFacets,
+          } from './data/filters';""",
+              ),
+              (
+                  """  let isRestoringFromHistory = false;
+            let catalogState = initialCatalogState;""",
+                  """  let isRestoringFromHistory = false;
+            let pendingInitialFilterUrl: URL | null = null;
+            let initialPublicRefreshSettled = publicDataRuntime === undefined;
+            let catalogState = initialCatalogState;""",
+              ),
+              (
+                  """  const resolveGeographicName = (id: GeographicNameId | null): PublicGeographicName | null => {
+            if (!id || !beta02Catalog) return null;
+            return beta02Catalog.geographicNames.find((geographicName) => geographicName.id === id) ?? null;
+          };
+
+          const locateGeographicName""",
+                  """  const resolveGeographicName = (id: GeographicNameId | null): PublicGeographicName | null => {
+            if (!id || !beta02Catalog) return null;
+            return beta02Catalog.geographicNames.find((geographicName) => geographicName.id === id) ?? null;
+          };
+
+          const hasUnknownPublicFilterParameters = (sourceUrl: URL): boolean => {
+            const facets = publicBeta02Catalog ? derivePublicFilterFacets(publicBeta02Catalog) : null;
+            const categories = facets?.categories ?? catalog.categories;
+            const tags = facets?.tags ?? catalog.tags;
+            const requestedCategories = sourceUrl.searchParams
+              .getAll('category')
+              .map((value) => value.trim())
+              .filter(Boolean);
+            const requestedTags = sourceUrl.searchParams
+              .getAll('tag')
+              .map((value) => value.trim())
+              .filter(Boolean);
+
+            return (
+              requestedCategories.some(
+                (value) => !categories.some(({ id, slug }) => id === value || slug === value),
+              ) || requestedTags.some((value) => !tags.some(({ id }) => id === value))
+            );
+          };
+
+          const locateGeographicName""",
+              ),
+              (
+                  """  function renderActivePlace(
+            activePlaceId: PlaceId | null,""",
+                  """  function restorePendingInitialFilters(): void {
+            const pendingUrl = pendingInitialFilterUrl;
+            if (!pendingUrl) return;
+
+            pendingInitialFilterUrl = null;
+            const parsed = parsePublicAppUrlState(catalog, pendingUrl, publicBeta02Catalog);
+            placeFiltersController.setState(
+              {
+                selectedCategoryIds: parsed.state.selectedCategoryIds,
+                selectedTagIds: parsed.state.selectedTagIds,
+              },
+              { notify: false },
+            );
+          }
+
+          function renderActivePlace(
+            activePlaceId: PlaceId | null,""",
+              ),
+              (
+                  """      masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
+            masterSearchVisuals.refresh(masterEntityIds);
+            geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;""",
+                  """      masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
+            masterSearchVisuals.refresh(masterEntityIds);
+            if (initialPublicRefreshSettled) {
+              restorePendingInitialFilters();
+            }
+            geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;""",
+              ),
+              (
+                  """    writePublicStateToHistory('replace');
+          }
+
+          publicDataRuntime?.subscribeCatalogState((state) => applyCatalogState(state, true));""",
+                  """    if (initialPublicRefreshSettled || !pendingInitialFilterUrl) {
+              writePublicStateToHistory('replace');
+            }
+          }
+
+          publicDataRuntime?.subscribeCatalogState((state) => {
+            initialPublicRefreshSettled = true;
+            applyCatalogState(state, true);
+          });
+
+          if (publicDataRuntime) {
+            window.addEventListener(
+              'atlas:public-data-status',
+              () => {
+                queueMicrotask(() => {
+                  if (initialPublicRefreshSettled) return;
+
+                  initialPublicRefreshSettled = true;
+                  if (!pendingInitialFilterUrl) return;
+
+                  isRestoringFromHistory = true;
+                  try {
+                    restorePendingInitialFilters();
+                    updateMatchingPlaces();
+                  } finally {
+                    isRestoringFromHistory = false;
+                  }
+                  writePublicStateToHistory('replace');
+                });
+              },
+              { once: true },
+            );
+          }""",
+              ),
+              (
+                  """  function restorePublicStateFromUrl(sourceUrl: URL): void {
+            const parsed = parsePublicAppUrlState(catalog, sourceUrl, publicBeta02Catalog);
+            const requestedGeographicName = resolveGeographicName(parsed.state.geographicNameId);""",
+                  """  function restorePublicStateFromUrl(sourceUrl: URL): void {
+            const shouldPreserveUnknownFilters =
+              !initialPublicRefreshSettled &&
+              publicDataRuntime !== undefined &&
+              hasUnknownPublicFilterParameters(sourceUrl);
+            const parsed = parsePublicAppUrlState(catalog, sourceUrl, publicBeta02Catalog);
+            const requestedGeographicName = resolveGeographicName(parsed.state.geographicNameId);
+
+            pendingInitialFilterUrl = shouldPreserveUnknownFilters ? new URL(sourceUrl) : null;""",
+              ),
+              (
+                  """    writePublicStateToHistory('replace');
+          }
+
+          selection.subscribe((activePlaceId) => {""",
+                  """    if (!shouldPreserveUnknownFilters) {
+              writePublicStateToHistory('replace');
+            }
+          }
+
+          selection.subscribe((activePlaceId) => {""",
+              ),
+          ]
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected exactly one main.ts anchor, found {count}: {old[:80]!r}')
+              text = text.replace(old, new)
+
+          path.write_text(text)
+
+          url_test = Path('tests/e2e/url-state.spec.ts')
+          test_text = url_test.read_text()
+          old = "await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún lugar coincide');"
+          new = "await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún resultado coincide');"
+          count = test_text.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one url-state assertion, found {count}')
+          url_test.write_text(test_text.replace(old, new))
+          PY
+
+      - name: Format patched files
+        run: npx prettier --write src/main.ts tests/e2e/url-state.spec.ts
+
+      - name: Verify focused quality gates
+        run: |
+          npm run format:check
+          npm run lint
+          npm run test
+          npm run build:pages
+
+      - name: Commit patch to feature branch
         shell: bash
         run: |
           if git diff --quiet; then
-            echo 'No formatting changes required.'
+            echo 'No patch changes required.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/app/urlState.ts src/data/filters.test.ts src/main.ts tests/e2e/beta02-filter-refresh.spec.ts tests/e2e/filters.spec.ts
-          git commit -m 'MAP-050 apply Prettier formatting'
+          git add src/main.ts tests/e2e/url-state.spec.ts
+          git commit -m 'MAP-050 preserve dynamic filters through bootstrap'
           git push origin HEAD:refs/heads/agent/map-050-beta02-public-filters
