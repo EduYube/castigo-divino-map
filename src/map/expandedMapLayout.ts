@@ -2,7 +2,10 @@ import L, { type LatLngBounds, type Map as LeafletMap } from 'leaflet';
 
 import '../styles/expanded-map-layout.css';
 import { bindExpandedMapToggle, type ExpandToggleBinding } from './expandToggle';
-import { synchronizeMapAfterLayoutChange } from './layoutSync';
+import {
+  synchronizeMapAfterLayoutChange,
+  synchronizeMapAfterLayoutRestore,
+} from './layoutSync';
 
 export interface ExpandedMapLayoutController {
   isResizeSynchronizationPending(): boolean;
@@ -85,7 +88,11 @@ export function mountExpandedMapLayout(
       synchronizeFrame = undefined;
       if (destroyed) return;
 
-      synchronizeMapAfterLayoutChange(map, bounds, center, zoom, maxZoom);
+      if (expanded) {
+        synchronizeMapAfterLayoutChange(map, bounds, center, zoom, maxZoom);
+      } else {
+        synchronizeMapAfterLayoutRestore(map, bounds, maxZoom);
+      }
       releaseFrame = window.requestAnimationFrame(() => {
         releaseFrame = undefined;
         suppressObservedResize = false;
