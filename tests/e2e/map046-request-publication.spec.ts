@@ -192,6 +192,14 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     const requestInfo = route.request();
     const url = new URL(requestInfo.url());
     const authorization = requestInfo.headers()['authorization'] ?? '';
+    if (
+      requestInfo.method() === 'GET' &&
+      authorization === `Bearer ${PUBLISHABLE_KEY}` &&
+      url.pathname.includes('/character-portraits/')
+    ) {
+      await route.fulfill({ status: 200, contentType: 'image/png', body: PORTRAIT_PNG });
+      return;
+    }
     if (authorization !== `Bearer ${ACCESS_TOKEN}`) {
       await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
       return;
