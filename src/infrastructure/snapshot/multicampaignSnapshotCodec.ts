@@ -78,7 +78,9 @@ function parseCampaign(value: unknown, index: number): PublicCampaignV3 {
   if (!UUID_PATTERN.test(id)) invalid(`${path}.id debe ser un UUID estable.`);
   const slug = string(item.slug, `${path}.slug`);
   const name = string(item.name, `${path}.name`);
-  if (item.status !== 'active') invalid(`${path}.status debe ser “active” en la proyección pública.`);
+  if (item.status !== 'active') {
+    invalid(`${path}.status debe ser “active” en la proyección pública.`);
+  }
 
   return {
     id,
@@ -152,9 +154,10 @@ function parseCampaignCatalog(value: unknown, index: number): PublicCampaignCata
       item.characterLocationEvents,
       `${path}.characterLocationEvents`,
     ) as PublicCampaignCatalogV3['characterLocationEvents'],
-    geographicEntityLinks: array(item.geographicEntityLinks, `${path}.geographicEntityLinks`).map(
-      (link, linkIndex) => parseLink(link, linkIndex, campaignId),
-    ),
+    geographicEntityLinks: array(
+      item.geographicEntityLinks,
+      `${path}.geographicEntityLinks`,
+    ).map((link, linkIndex) => parseLink(link, linkIndex, campaignId)),
   };
 }
 
@@ -215,7 +218,9 @@ function validateLinks(
   geographicNames: readonly PublicGlobalGeographicNameV3[],
 ): void {
   const geographicIds = new Set(geographicNames.map(({ id }) => id));
-  const entitiesById = new Map(catalog.entities.map((entity) => [entity.id, entity] as const));
+  const entitiesById = new Map(
+    catalog.entities.map((entity) => [entity.id, entity] as const),
+  );
   unique(
     catalog.geographicEntityLinks.map(({ geographicNameId }) => geographicNameId),
     `campaignCatalogs.${catalog.campaignId}.geographicEntityLinks.geographicNameId`,
@@ -223,7 +228,9 @@ function validateLinks(
 
   for (const link of catalog.geographicEntityLinks) {
     if (!geographicIds.has(link.geographicNameId as never)) {
-      invalid(`El vínculo geográfico “${link.geographicNameId}” apunta a un nombre global ausente.`);
+      invalid(
+        `El vínculo geográfico “${link.geographicNameId}” apunta a un nombre global ausente.`,
+      );
     }
     const entity = entitiesById.get(link.entityId as never);
     if (!entity || entity.entityType !== 'location') {
@@ -278,10 +285,15 @@ export async function parsePublicCatalogSnapshotV3(
     (name) => record(name, 'snapshot.geographicNames[]') as unknown as PublicGlobalGeographicNameV3,
   );
 
-  if (campaigns.length === 0) invalid('El snapshot v3 debe contener al menos una campaña pública.');
+  if (campaigns.length === 0) {
+    invalid('El snapshot v3 debe contener al menos una campaña pública.');
+  }
   unique(campaigns.map(({ id }) => id), 'campaigns.id');
   unique(campaigns.map(({ slug }) => slug), 'campaigns.slug');
-  unique(campaignCatalogs.map(({ campaignId }) => campaignId), 'campaignCatalogs.campaignId');
+  unique(
+    campaignCatalogs.map(({ campaignId }) => campaignId),
+    'campaignCatalogs.campaignId',
+  );
   unique(geographicNames.map(({ id }) => id), 'geographicNames.id');
 
   const campaignIds = new Set(campaigns.map(({ id }) => id));
@@ -325,9 +337,13 @@ export async function parsePublicCatalogSnapshotV3(
       left.displayOrder - right.displayOrder ||
       left.id.localeCompare(right.id),
   )[0];
-  if (!selectedCampaign) invalid('No se pudo resolver la campaña pública inicial.');
+  if (!selectedCampaign) {
+    invalid('No se pudo resolver la campaña pública inicial.');
+  }
   const selectedCatalog = catalogsByCampaign.get(selectedCampaign.id);
-  if (!selectedCatalog) invalid('No se pudo resolver el catálogo de la campaña pública inicial.');
+  if (!selectedCatalog) {
+    invalid('No se pudo resolver el catálogo de la campaña pública inicial.');
+  }
   const projectedCatalog = await validatedV2Projection(
     selectedCatalog,
     geographicNames,
