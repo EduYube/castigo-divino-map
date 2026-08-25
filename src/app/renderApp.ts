@@ -8,7 +8,7 @@ export function renderApp(): string {
         <span>Castigo Divino</span>
       </a>
       <div class="site-header__badges" aria-label="Estado de la aplicación">
-        <span class="release-badge">Beta 0.2</span>
+        <span class="release-badge">v1.0</span>
         <span class="fan-badge">Contenido de fans no oficial</span>
       </div>
     </header>
@@ -17,7 +17,7 @@ export function renderApp(): string {
       <section class="map-experience" aria-labelledby="atlas-title">
         <div class="map-experience__heading">
           <div>
-            <p class="eyebrow">Mapa interactivo de Faerûn · Beta 0.2</p>
+            <p class="eyebrow">Mapa interactivo de Faerûn · v1.0</p>
             <h1 id="atlas-title">El Atlas de los Nuevos Dioses</h1>
           </div>
           <details class="map-help" data-map-help>
