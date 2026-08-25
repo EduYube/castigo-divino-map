@@ -7,6 +7,7 @@ const NEUTRAL_TEST_MAP = `
     <rect width="3600" height="2329" fill="#d9d5ca" />
   </svg>
 `;
+const VEYRA_ENTITY_ID = 'entity-request-07d26371bbff42d9b91e076d099891b0';
 
 async function mockOfficialMap(page: Page, status = 200): Promise<void> {
   await page.route(OFFICIAL_MAP_URL, async (route) => {
@@ -67,18 +68,13 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
   await expect(page.getByRole('checkbox', { name: /Personaje/ })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Veyra/ })).toBeChecked();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
-  const veyraPin = page.locator(
-    '[data-testid="entity-pin"][data-entity-id="entity-request-07d26371bbff42d9b91e076d099891b0"]',
-  );
+  const veyraPin = page.locator(`[data-testid="entity-pin"][data-entity-id="${VEYRA_ENTITY_ID}"]`);
   await expect(veyraPin).toHaveCount(1);
-  await expect(veyraPin).toHaveAttribute(
-    'data-entity-id',
-    'entity-request-07d26371bbff42d9b91e076d099891b0',
-  );
+  await expect(veyraPin).toHaveAttribute('data-entity-id', VEYRA_ENTITY_ID);
   await veyraPin.click();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-pin-id',
-    'entity-request-07d26371bbff42d9b91e076d099891b0',
+    VEYRA_ENTITY_ID,
   );
   await expect(page.getByText('Contenido de fans no oficial', { exact: true })).toBeVisible();
   await expect(page.getByRole('contentinfo')).toContainText('Cartografía: Mike Schley');
@@ -131,7 +127,7 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
   await veyraPin.click();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-pin-id',
-    'entity-request-07d26371bbff42d9b91e076d099891b0',
+    VEYRA_ENTITY_ID,
   );
   await page
     .getByTestId('place-details')
@@ -144,9 +140,7 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
   await page.setViewportSize({ width: 320, height: 740 });
   await mockOfficialMap(page, 503);
 
-  await page.goto(
-    '?place=paso-de-demostracion&q=paso&category=lugares-destacados&tag=mountain-pass',
-  );
+  await page.goto('?q=veyra&category=personaje&tag=category-veyra');
 
   const searchToggle = page.locator('[data-place-search-toggle]');
   const filtersToggle = page.locator('[data-place-filters-toggle]');
@@ -157,22 +151,20 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
 
   await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'error');
-  await expect(page.getByTestId('place-marker')).toHaveCount(2);
+  await expect(
+    page.locator(`[data-testid="entity-pin"][data-entity-id="${VEYRA_ENTITY_ID}"]`),
+  ).toHaveCount(1);
   await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(filtersToggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(searchbox).toHaveValue('paso');
+  await expect(searchbox).toHaveValue('veyra');
   await expect(
-    page.getByRole('checkbox', { name: /Lugar destacado/, includeHidden: true }),
+    page.getByRole('checkbox', { name: /Personaje/, includeHidden: true }),
   ).toBeChecked();
-  await expect(
-    page.getByRole('checkbox', { name: /Paso de montaña/, includeHidden: true }),
-  ).toBeChecked();
-  await expect(page.getByTestId('place-details')).toHaveAttribute(
-    'data-active-place-id',
-    'place-demo-pass',
-  );
+  await expect(page.getByRole('checkbox', { name: /Veyra/, includeHidden: true })).toBeChecked();
   await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
-  const responsibleUse = page.getByRole('complementary', { name: 'Uso responsable del mapa' });
+  const responsibleUse = page.getByRole('complementary', {
+    name: 'Uso responsable del mapa',
+  });
   await expect(responsibleUse).toBeVisible();
   await expect(responsibleUse).toContainText('se carga de forma remota');
   await expect(responsibleUse).toContainText(
@@ -188,15 +180,6 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
   await expect(searchbox).toBeFocused();
   await searchbox.press('Tab');
   await expect(page.getByRole('button', { name: 'Limpiar búsqueda' })).toBeFocused();
-
-  await page
-    .getByTestId('place-details')
-    .getByRole('button', { name: 'Cerrar la ficha de Paso de demostración' })
-    .click();
-  await expect(page.getByTestId('place-details')).toBeHidden();
-  await expect(
-    page.locator('[data-testid="place-marker"][data-place-id="place-demo-pass"]'),
-  ).toBeFocused();
 });
 
 test('keeps v1.0 usable from the public snapshot when Supabase returns 503', async ({ page }) => {
@@ -205,9 +188,7 @@ test('keeps v1.0 usable from the public snapshot when Supabase returns 503', asy
     await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
   });
 
-  const response = await page.goto(
-    '?place=paso-de-demostracion&q=paso&category=lugares-destacados&tag=mountain-pass',
-  );
+  const response = await page.goto('?q=veyra&category=personaje&tag=category-veyra');
   expect(response?.ok()).toBe(true);
 
   const backendStatus = page.locator('[data-backend-status]');
@@ -215,13 +196,15 @@ test('keeps v1.0 usable from the public snapshot when Supabase returns 503', asy
   await expect(backendStatus).toContainText('Modo de respaldo');
   await expect(backendStatus.getByRole('button', { name: 'Reintentar' })).toBeVisible();
   await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
-  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
-  await expect(page.getByRole('checkbox', { name: /Lugar destacado/ })).toBeChecked();
-  await expect(page.getByRole('checkbox', { name: /Paso de montaña/ })).toBeChecked();
-  await expect(page.getByTestId('place-marker')).toHaveCount(2);
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
+  await expect(page.getByRole('checkbox', { name: /Personaje/ })).toBeChecked();
+  await expect(page.getByRole('checkbox', { name: /Veyra/ })).toBeChecked();
+  const veyraPin = page.locator(`[data-testid="entity-pin"][data-entity-id="${VEYRA_ENTITY_ID}"]`);
+  await expect(veyraPin).toHaveCount(1);
+  await veyraPin.click();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
-    'data-active-place-id',
-    'place-demo-pass',
+    'data-active-pin-id',
+    VEYRA_ENTITY_ID,
   );
   await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
 });

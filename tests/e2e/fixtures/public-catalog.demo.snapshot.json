@@ -28,16 +28,6 @@
   ],
   "tags": [
     {
-      "id": "category-skade",
-      "name": "Skade",
-      "description": "Entidades relacionadas con Skade"
-    },
-    {
-      "id": "category-ura",
-      "name": "Ura",
-      "description": "Entidades relacionadas con Ura"
-    },
-    {
       "id": "category-veyra",
       "name": "Veyra",
       "description": "Relacionado o perteneciente a Veyra"
@@ -66,164 +56,6 @@
   "players": [],
   "entities": [
     {
-      "id": "entity-agamen",
-      "slug": "agamen",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Agamen",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Primer clerigo de la Fe de Skade",
-      "description": "",
-      "coordinates": {
-        "x": 2904.26,
-        "y": 814.17
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-asentamiento-thar",
-      "slug": "asentamiento-thar",
-      "entityType": "location",
-      "visibility": "pin",
-      "name": "Primer Asentamiento de Skade",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Primer asentamiento de seguidores de la Fe de Skade",
-      "description": "Ahora se encuentran en la region de Cromryn, tambien seguidora de Skade, despues de huir de un ataque todavia por catalogar",
-      "coordinates": {
-        "x": 2912.91,
-        "y": 804.09
-      },
-      "categoryId": "category-settlement",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-bring",
-      "slug": "bring",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Bring",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Druida Eladrin seguidor de Skade. Ultima vez avistado en forma de fuego",
-      "description": "",
-      "portraitPath": "portraits/afebb91a-5ab8-4a08-a136-ad96ddf6cf1f.png",
-      "coordinates": {
-        "x": 2834.68,
-        "y": 1921.5
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-captitan",
-      "slug": "captitan",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Captitan",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Capitan de un navio mercante de los mares del sur de los reinos olvidados. A quien el siga, su barco lo sigue. Seguidor de Skade tras aparicion",
-      "description": "",
-      "portraitPath": "portraits/bf7c5e3e-1ad3-4513-9587-9cdef099d871.png",
-      "coordinates": {
-        "x": 1382.01,
-        "y": 305.5
-      },
-      "categoryId": "category-npc",
-      "tagIds": []
-    },
-    {
-      "id": "entity-jhonny",
-      "slug": "jhonny",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Jhonny Labios Sellados",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Marinero de la tripulacion del Captitan. Hibrido de Gnoll, lizzard, drow. Seguidor de Ura",
-      "description": "",
-      "portraitPath": "portraits/b1573807-7832-4691-8283-2d2d24df440b.png",
-      "coordinates": {
-        "x": 1450.96,
-        "y": 292.28
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-ura"]
-    },
-    {
-      "id": "entity-masred",
-      "slug": "masred",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Masred",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Paladin de guerra enano. Antiguo seguidor de Moradin. Actual seguidor de Skade. Expulsado del consejo de paladines y atacado por la Sombra de Moradin",
-      "description": "",
-      "portraitPath": "portraits/40d5b702-8dc4-42a4-bd65-5eb71b594eff.jpg",
-      "coordinates": {
-        "x": 2000.3,
-        "y": 1722.1
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-memnon",
-      "slug": "memnon",
-      "entityType": "location",
-      "visibility": "pin",
-      "name": "Memnon",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Ciudad seguidora de la fe de Ura tras la defensa contra la Sombra de Moradin",
-      "description": "Ciudad costera gemela de Myrtah con transito fluvial y comercio activo",
-      "coordinates": {
-        "x": 1912.82,
-        "y": 402.69
-      },
-      "categoryId": "category-settlement",
-      "tagIds": ["category-ura", "coastal"]
-    },
-    {
-      "id": "entity-myrath",
-      "slug": "myrath",
-      "entityType": "location",
-      "visibility": "pin",
-      "name": "Myrath",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Ciudad gemela de Memnon. Entregada a la fe de Skade tras la defensa contra la sombra",
-      "description": "Ciudad costera con trnasito fluvial y comercio activo",
-      "coordinates": {
-        "x": 1901.27,
-        "y": 428.21
-      },
-      "categoryId": "category-settlement",
-      "tagIds": ["category-skade", "coastal"]
-    },
-    {
-      "id": "entity-ojos-tempestad",
-      "slug": "ojos-tempestad",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Ojos de la Tempestad",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Seguidor aferrimo de Ura. Hibrido de Kenku, elfo de la noche e indeterminado",
-      "description": "",
-      "portraitPath": "portraits/33f9ba70-198f-4142-b474-ffce8a744966.png",
-      "coordinates": {
-        "x": 2796.59,
-        "y": 1156.98
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-ura"]
-    },
-    {
       "id": "entity-request-07d26371bbff42d9b91e076d099891b0",
       "slug": "request-07d26371bbff42d9b91e076d099891b0",
       "entityType": "character",
@@ -235,111 +67,83 @@
       "description": "Posición inicial Veyra (dudo entre neverwinter y lidian)",
       "portraitPath": "portraits/9d3dcfeb-0320-4bca-9f5d-941d68aa6410.jpg",
       "coordinates": {
-        "x": 1425.88,
-        "y": 1855.21
+        "x": 1438.727724022,
+        "y": 1837.31274570082
       },
       "categoryId": "category-pj",
       "tagIds": ["category-veyra"]
     },
     {
-      "id": "entity-skade",
-      "slug": "skade",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Skade",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Antigua paladina de Tyr. Nuevo deida de la justicia y la tormenta",
-      "description": "personaje jugable por Jesus",
-      "portraitPath": "portraits/ec8a33ec-3607-4347-805a-4808227e00f9.jpg",
-      "coordinates": {
-        "x": 2816.05,
-        "y": 1282.32
-      },
-      "categoryId": "category-pj",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-thalasis",
-      "slug": "thalasis",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Thalasis",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Paladin Aaracrocka. Anteriormente seguidora de Akadi. Actual seguidora de SSkade. Todavia forma parte del consejo de paladines, no ha sido descubierta",
-      "description": "",
-      "portraitPath": "portraits/9d504070-26c0-40dd-ba04-5587bd1cd545.jpg",
-      "coordinates": {
-        "x": 1941.97,
-        "y": 1188.15
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-thar",
-      "slug": "thar",
+      "id": "place-demo-harbor",
+      "slug": "puerto-de-demostracion",
       "entityType": "location",
       "visibility": "pin",
-      "name": "Thar",
+      "name": "Puerto de demostración",
       "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Region inicialmente protegida y fervorosa de Skade ahora en ruinas y deshabitada",
-      "description": "Zona pantanosa sin lores ni dueños. Recientemente ha habido un enfrentamiento que ha derruido distintas edificaciones aunque no se han reportado muertos",
+      "aliases": [
+        {
+          "id": "alias-demo-harbor-puerto-ejemplo",
+          "entityId": "place-demo-harbor",
+          "language": "en",
+          "value": "Puerto de ejemplo"
+        }
+      ],
+      "summary": "",
+      "description": "",
       "coordinates": {
-        "x": 3475.44,
-        "y": 1366.13
+        "x": 1080.5,
+        "y": 820
+      },
+      "categoryId": "category-settlement",
+      "tagIds": ["coastal", "demo-data", "trade-route"]
+    },
+    {
+      "id": "place-demo-pass",
+      "slug": "paso-de-demostracion",
+      "entityType": "location",
+      "visibility": "pin",
+      "name": "Paso de demostración",
+      "nameLanguage": "en",
+      "aliases": [
+        {
+          "id": "alias-demo-pass-desfiladero-ejemplo",
+          "entityId": "place-demo-pass",
+          "language": "en",
+          "value": "Desfiladero de ejemplo"
+        }
+      ],
+      "summary": "",
+      "description": "",
+      "coordinates": {
+        "x": 2240,
+        "y": 1240.25
       },
       "categoryId": "category-landmark",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-tulu",
-      "slug": "tulu",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Cutu",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Ser liberado por Ura y Skade, seguidor de la fe de Ura y protector de las islas del mar de Moonshae",
-      "description": "",
-      "portraitPath": "portraits/2bbc52d6-24dc-43ec-9f07-193229a0e14a.png",
-      "coordinates": {
-        "x": 1260.76,
-        "y": 1074.78
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-ura"]
-    },
-    {
-      "id": "entity-ura",
-      "slug": "ura",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Ura",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Antiguo clerigo de Umberlee. Nuevo Dios de la tempestad y el Agua. Afin a seres hibridos",
-      "description": "Personaje jugable por Aitor",
-      "portraitPath": "portraits/33647250-df27-4954-8449-620c0431e47b.jpg",
-      "coordinates": {
-        "x": 2813.51,
-        "y": 1287.91
-      },
-      "categoryId": "category-pj",
-      "tagIds": ["category-ura"]
+      "tagIds": ["demo-data", "mountain-pass", "trade-route"]
     }
   ],
   "dispositions": [],
-  "characterLocationRelations": [
+  "characterLocationRelations": [],
+  "notes": [
     {
-      "characterId": "entity-agamen",
-      "locationId": "entity-asentamiento-thar",
-      "relationStatus": "associated"
+      "id": "note-demo-harbor-overview",
+      "slug": "puerto-de-demostracion-resumen",
+      "entityId": "place-demo-harbor",
+      "title": "Información pública de demostración",
+      "body": "Este puerto ficticio sirve para comprobar fichas, búsquedas y filtros sin representar hechos secretos ni confirmados de la campaña.",
+      "sortOrder": 0,
+      "tagIds": ["coastal", "demo-data"]
+    },
+    {
+      "id": "note-demo-pass-travel",
+      "slug": "paso-de-demostracion-viaje",
+      "entityId": "place-demo-pass",
+      "title": "Referencia pública de viaje",
+      "body": "Este paso ficticio demuestra cómo una nota pública puede relacionar un lugar con etiquetas de viaje y terreno.",
+      "sortOrder": 0,
+      "tagIds": ["demo-data", "mountain-pass", "trade-route"]
     }
   ],
-  "notes": [],
   "geographicNames": [
     {
       "id": "geo-alaron",
@@ -3487,7 +3291,7 @@
     }
   ],
   "characterLocationEvents": [],
-  "generatedAt": "2026-08-25T12:19:10.584Z",
-  "sourceRevision": "sha256:c4273d1cfc796da94fa68ff2d250291531211eededdd63f519ff242031cb41ae",
-  "checksum": "sha256:c4273d1cfc796da94fa68ff2d250291531211eededdd63f519ff242031cb41ae"
+  "generatedAt": "2026-08-13T10:13:37.959Z",
+  "sourceRevision": "sha256:bfaacb9ace67b2399174891393f351bc2a24a9e3b6011b1e762ef549e98da976",
+  "checksum": "sha256:bfaacb9ace67b2399174891393f351bc2a24a9e3b6011b1e762ef549e98da976"
 }
