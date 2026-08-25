@@ -48,11 +48,11 @@ $$;
 
 revoke all on function private.enforce_campaign_identity() from public;
 
-create trigger 10_campaign_identity
+create trigger "10_campaign_identity"
 before update on public.campaigns
 for each row execute function private.enforce_campaign_identity();
 
-create trigger 90_campaign_updated_at
+create trigger "90_campaign_updated_at"
 before update on public.campaigns
 for each row execute function private.set_updated_at();
 
@@ -63,7 +63,7 @@ set search_path = ''
 as $$
 begin
   if new.campaign_id is distinct from old.campaign_id then
-    raise exception using errcode = '23514', message = format('%s campaign_id is immutable', tg_table_name);
+    raise exception using errcode = '23514', message = pg_catalog.format('%s campaign_id is immutable', tg_table_name);
   end if;
 
   return new;
@@ -216,11 +216,11 @@ $$;
 
 revoke all on function private.validate_campaign_geographic_entity_link() from public;
 
-create trigger 20_campaign_geographic_entity_link_validate
+create trigger "20_campaign_geographic_entity_link_validate"
 before insert or update on public.campaign_geographic_entity_links
 for each row execute function private.validate_campaign_geographic_entity_link();
 
-create trigger 90_campaign_geographic_entity_link_updated_at
+create trigger "90_campaign_geographic_entity_link_updated_at"
 before update on public.campaign_geographic_entity_links
 for each row execute function private.set_updated_at();
 
@@ -240,10 +240,10 @@ select
 from public.geographic_names geographic_name
 where geographic_name.entity_id is not null;
 
-drop trigger if exists 25_geographic_name_identity on public.geographic_names;
-alter table public.geographic_names disable trigger 90_geographic_name_updated_at;
+drop trigger if exists "25_geographic_name_identity" on public.geographic_names;
+alter table public.geographic_names disable trigger "90_geographic_name_updated_at";
 update public.geographic_names set entity_id = null where entity_id is not null;
-alter table public.geographic_names enable trigger 90_geographic_name_updated_at;
+alter table public.geographic_names enable trigger "90_geographic_name_updated_at";
 alter table public.geographic_names
   add constraint geographic_names_legacy_entity_id_is_null check (entity_id is null);
 
@@ -256,7 +256,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  perform pg_advisory_xact_lock(hashtext('entity-player-disposition-matrix'));
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('entity-player-disposition-matrix'));
 
   if tg_table_name = 'map_entities' then
     insert into public.entity_player_dispositions (entity_id, player_id, campaign_id)
@@ -299,8 +299,8 @@ begin
     'character_location_events',
     'public_requests'
   ] loop
-    execute format(
-      'create trigger 05_campaign_scope_immutable before update on public.%I for each row execute function private.enforce_campaign_scope_immutability()',
+    execute pg_catalog.format(
+      'create trigger "05_campaign_scope_immutable" before update on public.%I for each row execute function private.enforce_campaign_scope_immutability()',
       scoped_table
     );
   end loop;
