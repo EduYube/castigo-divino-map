@@ -323,9 +323,7 @@ export async function fetchCompletePublicCatalogTable(options) {
     offset += pageRows.length;
 
     if (offset > expectedTotal) {
-      partialResponse(
-        `Supabase devolvió más filas de las declaradas para ${options.query.name}.`,
-      );
+      partialResponse(`Supabase devolvió más filas de las declaradas para ${options.query.name}.`);
     }
   } while (expectedTotal === null || offset < expectedTotal);
 
