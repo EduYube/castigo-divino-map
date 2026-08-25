@@ -38,7 +38,7 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
 
   await mockOfficialMap(page);
   const response = await page.goto(
-    '?place=paso-de-demostracion&q=paso&category=lugares-destacados&tag=mountain-pass',
+    '?place=paso-de-demostracion&q=paso&category=lugares-destacados',
   );
 
   expect(response?.ok()).toBe(true);
@@ -67,7 +67,6 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
 
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
   await expect(page.getByRole('checkbox', { name: /Lugar destacado/ })).toBeChecked();
-  await expect(page.getByRole('checkbox', { name: /Paso de montaña/ })).toBeChecked();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
   await expect(page.getByTestId('place-details')).toHaveAttribute(
@@ -209,7 +208,9 @@ test('keeps v1.0 usable from the public snapshot when Supabase returns 503', asy
     await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
   });
 
-  const response = await page.goto('?q=puerto');
+  const response = await page.goto(
+    '?place=paso-de-demostracion&q=paso&category=lugares-destacados&tag=mountain-pass',
+  );
   expect(response?.ok()).toBe(true);
 
   const backendStatus = page.locator('[data-backend-status]');
@@ -217,7 +218,13 @@ test('keeps v1.0 usable from the public snapshot when Supabase returns 503', asy
   await expect(backendStatus).toContainText('Modo de respaldo');
   await expect(backendStatus.getByRole('button', { name: 'Reintentar' })).toBeVisible();
   await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
+  await expect(page.getByRole('checkbox', { name: /Lugar destacado/ })).toBeChecked();
+  await expect(page.getByRole('checkbox', { name: /Paso de montaña/ })).toBeChecked();
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
-  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('puerto');
+  await expect(page.getByTestId('place-details')).toHaveAttribute(
+    'data-active-place-id',
+    'place-demo-pass',
+  );
   await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
 });
