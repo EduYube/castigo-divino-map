@@ -155,7 +155,10 @@ function parseCampaignCatalog(value: unknown, index: number): PublicCampaignCata
 
   return {
     campaignId,
-    categories: array(item.categories, `${path}.categories`) as PublicCampaignCatalogV3['categories'],
+    categories: array(
+      item.categories,
+      `${path}.categories`,
+    ) as PublicCampaignCatalogV3['categories'],
     tags: array(item.tags, `${path}.tags`) as PublicCampaignCatalogV3['tags'],
     players: array(item.players, `${path}.players`) as PublicCampaignCatalogV3['players'],
     entities: array(item.entities, `${path}.entities`) as PublicCampaignCatalogV3['entities'],
@@ -172,10 +175,9 @@ function parseCampaignCatalog(value: unknown, index: number): PublicCampaignCata
       item.characterLocationEvents,
       `${path}.characterLocationEvents`,
     ) as PublicCampaignCatalogV3['characterLocationEvents'],
-    geographicEntityLinks: array(
-      item.geographicEntityLinks,
-      `${path}.geographicEntityLinks`,
-    ).map((link, linkIndex) => parseLink(link, linkIndex, campaignId)),
+    geographicEntityLinks: array(item.geographicEntityLinks, `${path}.geographicEntityLinks`).map(
+      (link, linkIndex) => parseLink(link, linkIndex, campaignId),
+    ),
   };
 }
 
@@ -244,7 +246,9 @@ function validateLinks(
 
   for (const link of catalog.geographicEntityLinks) {
     if (!geographicIds.has(link.geographicNameId as never)) {
-      invalid(`El vínculo geográfico “${link.geographicNameId}” apunta a un nombre global ausente.`);
+      invalid(
+        `El vínculo geográfico “${link.geographicNameId}” apunta a un nombre global ausente.`,
+      );
     }
 
     const entity = entitiesById.get(link.entityId as never);
@@ -309,22 +313,10 @@ export async function parsePublicCatalogSnapshotV3(
     invalid('El snapshot v3 debe contener al menos una campaña pública.');
   }
 
-  unique(
-    campaigns.map(({ id }) => id),
-    'campaigns.id',
-  );
-  unique(
-    campaigns.map(({ slug }) => slug),
-    'campaigns.slug',
-  );
-  unique(
-    campaignCatalogs.map(({ campaignId }) => campaignId),
-    'campaignCatalogs.campaignId',
-  );
-  unique(
-    geographicNames.map(({ id }) => id),
-    'geographicNames.id',
-  );
+  unique(campaigns.map(({ id }) => id), 'campaigns.id');
+  unique(campaigns.map(({ slug }) => slug), 'campaigns.slug');
+  unique(campaignCatalogs.map(({ campaignId }) => campaignId), 'campaignCatalogs.campaignId');
+  unique(geographicNames.map(({ id }) => id), 'geographicNames.id');
 
   const campaignIds = new Set(campaigns.map(({ id }) => id));
 
