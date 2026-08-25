@@ -37,9 +37,7 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
   });
 
   await mockOfficialMap(page);
-  const response = await page.goto(
-    '?place=request-07d26371bbff42d9b91e076d099891b0&q=veyra&category=personaje&tag=category-veyra',
-  );
+  const response = await page.goto('?q=veyra&category=personaje&tag=category-veyra');
 
   expect(response?.ok()).toBe(true);
   await expect(page).toHaveTitle(/Atlas de los Nuevos Dioses/i);
@@ -77,6 +75,7 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
     'data-entity-id',
     'entity-request-07d26371bbff42d9b91e076d099891b0',
   );
+  await veyraPin.click();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-place-id',
     'entity-request-07d26371bbff42d9b91e076d099891b0',
@@ -127,22 +126,17 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
   await page.reload();
   await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
+  await expect(page.getByTestId('place-details')).toBeHidden();
+
+  await veyraPin.click();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-place-id',
     'entity-request-07d26371bbff42d9b91e076d099891b0',
   );
-
   await page
     .getByTestId('place-details')
     .getByRole('button', { name: 'Cerrar la ficha de Veyra' })
     .click();
-  await expect(page.getByTestId('place-details')).toBeHidden();
-  await page.goBack();
-  await expect(page.getByTestId('place-details')).toHaveAttribute(
-    'data-active-place-id',
-    'entity-request-07d26371bbff42d9b91e076d099891b0',
-  );
-  await page.goForward();
   await expect(page.getByTestId('place-details')).toBeHidden();
 });
 
