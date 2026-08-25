@@ -3,7 +3,6 @@ import type {
   PublicCampaignCatalogV3,
   PublicCampaignGeographicEntityLinkV3,
   PublicCampaignV3,
-  PublicCatalogSnapshotV3,
   PublicGlobalGeographicNameV3,
 } from '../../data/beta03-model';
 import {
@@ -14,7 +13,8 @@ import {
 import { parsePublicCatalogSnapshotV2 } from '../supabase/publicCatalogCodec';
 
 const INITIAL_CAMPAIGN_SLUG = 'castigo-divino';
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CHECKSUM_PATTERN = /^sha256:[0-9a-f]{64}$/;
 
 function invalid(message: string, cause?: unknown): never {
@@ -132,7 +132,10 @@ function parseCampaignCatalog(value: unknown, index: number): PublicCampaignCata
 
   return {
     campaignId,
-    categories: array(item.categories, `${path}.categories`) as PublicCampaignCatalogV3['categories'],
+    categories: array(
+      item.categories,
+      `${path}.categories`,
+    ) as PublicCampaignCatalogV3['categories'],
     tags: array(item.tags, `${path}.tags`) as PublicCampaignCatalogV3['tags'],
     players: array(item.players, `${path}.players`) as PublicCampaignCatalogV3['players'],
     entities: array(item.entities, `${path}.entities`) as PublicCampaignCatalogV3['entities'],
@@ -165,7 +168,8 @@ function geographicWithCampaignLink(
 
   return geographicNames.map((name) => ({
     ...name,
-    entityId: (entityByGeographicName.get(name.id) ?? null) as PublicCatalogSnapshotV2['geographicNames'][number]['entityId'],
+    entityId: (entityByGeographicName.get(name.id) ??
+      null) as PublicCatalogSnapshotV2['geographicNames'][number]['entityId'],
   }));
 }
 
@@ -223,7 +227,9 @@ function validateLinks(
     }
     const entity = entitiesById.get(link.entityId as never);
     if (!entity || entity.entityType !== 'location') {
-      invalid(`El vínculo geográfico “${link.geographicNameId}” no apunta a una ubicación pública de su campaña.`);
+      invalid(
+        `El vínculo geográfico “${link.geographicNameId}” no apunta a una ubicación pública de su campaña.`,
+      );
     }
   }
 }
@@ -255,7 +261,9 @@ export async function parsePublicCatalogSnapshotV3(
   }
 
   const generatedAt = string(snapshotRecord.generatedAt, 'snapshot.generatedAt');
-  if (!Number.isFinite(Date.parse(generatedAt))) invalid('snapshot.generatedAt no contiene una fecha válida.');
+  if (!Number.isFinite(Date.parse(generatedAt))) {
+    invalid('snapshot.generatedAt no contiene una fecha válida.');
+  }
   const sourceRevision = string(snapshotRecord.sourceRevision, 'snapshot.sourceRevision');
   const checksum = string(snapshotRecord.checksum, 'snapshot.checksum');
   if (!CHECKSUM_PATTERN.test(sourceRevision) || !CHECKSUM_PATTERN.test(checksum)) {
@@ -291,10 +299,10 @@ export async function parsePublicCatalogSnapshotV3(
     geographicNames,
   };
   const calculatedChecksum = await createSha256Checksum(content);
-  if (calculatedChecksum !== checksum) {
+  if (calculatedChecksum !== checksum || sourceRevision !== calculatedChecksum) {
     throw new PublicDataRepositoryError(
       'checksum-mismatch',
-      'El snapshot multicampaña no coincide con su checksum.',
+      'El snapshot multicampaña no coincide con su checksum/sourceRevision.',
       { source: 'snapshot' },
     );
   }
@@ -317,8 +325,9 @@ export async function parsePublicCatalogSnapshotV3(
       left.displayOrder - right.displayOrder ||
       left.id.localeCompare(right.id),
   )[0];
+  if (!selectedCampaign) invalid('No se pudo resolver la campaña pública inicial.');
   const selectedCatalog = catalogsByCampaign.get(selectedCampaign.id);
-  if (!selectedCatalog) invalid('No se pudo resolver la campaña pública inicial.');
+  if (!selectedCatalog) invalid('No se pudo resolver el catálogo de la campaña pública inicial.');
   const projectedCatalog = await validatedV2Projection(
     selectedCatalog,
     geographicNames,
@@ -326,14 +335,6 @@ export async function parsePublicCatalogSnapshotV3(
     sourceRevision,
     now,
   );
-
-  const parsedSnapshot: PublicCatalogSnapshotV3 = {
-    ...content,
-    generatedAt,
-    sourceRevision,
-    checksum,
-  };
-  void parsedSnapshot;
 
   return {
     data: { contract: 'beta02', catalog: projectedCatalog },
