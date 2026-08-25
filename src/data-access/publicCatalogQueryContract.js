@@ -1,3 +1,4 @@
+export const INITIAL_PUBLIC_CAMPAIGN_ID = '00000000-0000-4000-8000-000000000053';
 export const PUBLIC_CATALOG_PAGE_SIZE = 1000;
 
 export const PUBLIC_CATALOG_TABLE_QUERIES = {
@@ -6,18 +7,21 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
     select: 'id,slug,name,description',
     order: 'id.asc',
     published: true,
+    campaignScoped: true,
   },
   tags: {
     name: 'tags',
     select: 'id,name,description',
     order: 'id.asc',
     published: true,
+    campaignScoped: true,
   },
   players: {
     name: 'players',
     select: 'id,slug,display_name,name_language',
     order: 'id.asc',
     published: true,
+    campaignScoped: true,
   },
   entities: {
     name: 'map_entities',
@@ -25,42 +29,49 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
       'id,slug,entity_type,visibility,name,name_language,summary,description,portrait_path,x,y,category_id',
     order: 'id.asc',
     published: true,
+    campaignScoped: true,
   },
   entityAliases: {
     name: 'entity_aliases',
     select: 'id,entity_id,language,value',
     order: 'id.asc',
     published: true,
+    campaignScoped: true,
   },
   entityTags: {
     name: 'entity_tags',
     select: 'entity_id,tag_id',
     order: 'entity_id.asc,tag_id.asc',
     published: true,
+    campaignScoped: true,
   },
   dispositions: {
     name: 'entity_player_dispositions',
     select: 'entity_id,player_id,disposition',
     order: 'entity_id.asc,player_id.asc',
     published: false,
+    campaignScoped: true,
   },
   characterLocationRelations: {
     name: 'character_location_relations',
     select: 'character_id,location_id,relation_status',
     order: 'location_id.asc,character_id.asc',
     published: false,
+    campaignScoped: true,
   },
   notes: {
     name: 'public_notes',
     select: 'id,slug,entity_id,title,body,sort_order',
     order: 'entity_id.asc,sort_order.asc,id.asc',
     published: true,
+    campaignScoped: true,
   },
   noteTags: {
     name: 'public_note_tags',
     select: 'note_id,tag_id',
     order: 'note_id.asc,tag_id.asc',
     published: true,
+    campaignScoped: true,
   },
   geographicNames: {
     name: 'geographic_names',
@@ -68,12 +79,14 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
       'id,slug,name,language,x,y,recommended_zoom,entity_id,search_min_x,search_max_x,search_min_y,search_max_y',
     order: 'id.asc',
     published: true,
+    campaignScoped: false,
   },
   geographicAliases: {
     name: 'geographic_name_aliases',
     select: 'id,geographic_name_id,language,value',
     order: 'id.asc',
     published: true,
+    campaignScoped: false,
   },
   locationEvents: {
     name: 'character_location_events',
@@ -81,7 +94,23 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
       'id,character_id,event_type,location_entity_id,geographic_name_id,x,y,location_label,summary,language,observed_at,related_sighting_id',
     order: 'id.asc',
     published: true,
+    campaignScoped: true,
   },
+  geographicEntityLinks: {
+    name: 'campaign_geographic_entity_links',
+    select: 'campaign_id,geographic_name_id,entity_id',
+    order: 'geographic_name_id.asc',
+    published: false,
+    campaignScoped: true,
+  },
+};
+
+export const PUBLIC_CAMPAIGNS_QUERY = {
+  name: 'campaigns',
+  select: 'id,slug,name,status,display_order',
+  order: 'display_order.asc,id.asc',
+  published: false,
+  campaignScoped: false,
 };
 
 export class PublicCatalogReadError extends Error {
@@ -155,11 +184,50 @@ function expectRecordRows(value, table) {
   });
 }
 
+export function projectCampaignGeographicEntityLinks(
+  geographicNames,
+  links,
+  campaignId = INITIAL_PUBLIC_CAMPAIGN_ID,
+) {
+  const geographicRows = expectRecordRows(geographicNames, 'geographic_names');
+  const linkRows = expectRecordRows(links, 'campaign_geographic_entity_links');
+  const entityByGeographicName = new Map();
+
+  for (const [index, link] of linkRows.entries()) {
+    if (
+      link.campaign_id !== campaignId ||
+      typeof link.geographic_name_id !== 'string' ||
+      typeof link.entity_id !== 'string'
+    ) {
+      throw new PublicCatalogReadError(
+        'invalid-response',
+        `campaign_geographic_entity_links[${index}] no respeta la proyección de campaña.`,
+      );
+    }
+
+    if (entityByGeographicName.has(link.geographic_name_id)) {
+      throw new PublicCatalogReadError(
+        'invalid-response',
+        `campaign_geographic_entity_links contiene un vínculo geográfico duplicado ` +
+          `para ${campaignId}.`,
+      );
+    }
+
+    entityByGeographicName.set(link.geographic_name_id, link.entity_id);
+  }
+
+  return geographicRows.map((row) => ({
+    ...row,
+    entity_id: entityByGeographicName.get(row.id) ?? null,
+  }));
+}
+
 export async function fetchCompletePublicCatalogTable(options) {
   const rows = [];
   let expectedTotal = null;
   let offset = 0;
   const pageSize = options.pageSize ?? PUBLIC_CATALOG_PAGE_SIZE;
+  const campaignId = options.campaignId ?? INITIAL_PUBLIC_CAMPAIGN_ID;
 
   do {
     const url = new URL(`${options.projectUrl.replace(/\/$/, '')}/rest/v1/${options.query.name}`);
@@ -168,6 +236,9 @@ export async function fetchCompletePublicCatalogTable(options) {
 
     if (options.query.published) {
       url.searchParams.set('publication_status', 'eq.published');
+    }
+    if (options.query.campaignScoped) {
+      url.searchParams.set('campaign_id', `eq.${campaignId}`);
     }
 
     let response;
@@ -252,7 +323,9 @@ export async function fetchCompletePublicCatalogTable(options) {
     offset += pageRows.length;
 
     if (offset > expectedTotal) {
-      partialResponse(`Supabase devolvió más filas de las declaradas para ${options.query.name}.`);
+      partialResponse(
+        `Supabase devolvió más filas de las declaradas para ${options.query.name}.`,
+      );
     }
   } while (expectedTotal === null || offset < expectedTotal);
 
