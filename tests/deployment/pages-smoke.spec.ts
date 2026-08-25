@@ -68,7 +68,9 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
   await expect(page.getByRole('checkbox', { name: /Personaje/ })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Veyra/ })).toBeChecked();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
-  const veyraPin = page.locator(`[data-testid="entity-pin"][data-entity-id="${VEYRA_ENTITY_ID}"]`);
+  const veyraPin = page.locator(
+    `[data-testid="entity-pin"][data-entity-id="${VEYRA_ENTITY_ID}"]`,
+  );
   await expect(veyraPin).toHaveCount(1);
   await expect(veyraPin).toHaveAttribute('data-entity-id', VEYRA_ENTITY_ID);
   await veyraPin.click();
@@ -160,7 +162,9 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
   await expect(
     page.getByRole('checkbox', { name: /Personaje/, includeHidden: true }),
   ).toBeChecked();
-  await expect(page.getByRole('checkbox', { name: /Veyra/, includeHidden: true })).toBeChecked();
+  await expect(
+    page.getByRole('checkbox', { name: /Veyra/, includeHidden: true }),
+  ).toBeChecked();
   await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
   const responsibleUse = page.getByRole('complementary', {
     name: 'Uso responsable del mapa',
@@ -199,7 +203,9 @@ test('keeps v1.0 usable from the public snapshot when Supabase returns 503', asy
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
   await expect(page.getByRole('checkbox', { name: /Personaje/ })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Veyra/ })).toBeChecked();
-  const veyraPin = page.locator(`[data-testid="entity-pin"][data-entity-id="${VEYRA_ENTITY_ID}"]`);
+  const veyraPin = page.locator(
+    `[data-testid="entity-pin"][data-entity-id="${VEYRA_ENTITY_ID}"]`,
+  );
   await expect(veyraPin).toHaveCount(1);
   await veyraPin.click();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
