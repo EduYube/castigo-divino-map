@@ -22,7 +22,7 @@ function generatedResourceRequests(requests: readonly Request[]): readonly Reque
   return requests.filter((request) => /\.(?:css|js)(?:\?|$)/.test(request.url()));
 }
 
-test('loads the Beta 0.2 public experience from the repository subdirectory', async ({
+test('loads the v1.0 public experience from the repository subdirectory', async ({
   page,
   baseURL,
 }) => {
@@ -44,7 +44,7 @@ test('loads the Beta 0.2 public experience from the repository subdirectory', as
   expect(response?.ok()).toBe(true);
   await expect(page).toHaveTitle(/Atlas de los Nuevos Dioses/i);
   await expect(page.getByRole('banner')).toBeVisible();
-  await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
+  await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
 
   const backendStatus = page.locator('[data-backend-status]');
   if (process.env.PAGES_URL) {
@@ -123,7 +123,7 @@ test('loads the Beta 0.2 public experience from the repository subdirectory', as
   expect(failedResponses).toEqual([]);
 
   await page.reload();
-  await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
+  await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-place-id',
@@ -159,7 +159,7 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
     includeHidden: true,
   });
 
-  await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
+  await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'error');
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
   await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
@@ -203,9 +203,7 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
   ).toBeFocused();
 });
 
-test('keeps Beta 0.2 usable from the public snapshot when Supabase returns 503', async ({
-  page,
-}) => {
+test('keeps v1.0 usable from the public snapshot when Supabase returns 503', async ({ page }) => {
   await mockOfficialMap(page);
   await page.route('**/rest/v1/**', async (route) => {
     await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
@@ -218,7 +216,7 @@ test('keeps Beta 0.2 usable from the public snapshot when Supabase returns 503',
   await expect(backendStatus).toHaveAttribute('data-backend-state', 'degraded');
   await expect(backendStatus).toContainText('Modo de respaldo');
   await expect(backendStatus.getByRole('button', { name: 'Reintentar' })).toBeVisible();
-  await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
+  await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('puerto');
   await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
