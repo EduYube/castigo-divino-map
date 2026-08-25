@@ -22,7 +22,7 @@ function generatedResourceRequests(requests: readonly Request[]): readonly Reque
   return requests.filter((request) => /\.(?:css|js)(?:\?|$)/.test(request.url()));
 }
 
-test('loads the Beta 0.2 public experience from the repository subdirectory', async ({
+test('loads the v1.0 public experience from the repository subdirectory', async ({
   page,
   baseURL,
 }) => {
@@ -37,14 +37,12 @@ test('loads the Beta 0.2 public experience from the repository subdirectory', as
   });
 
   await mockOfficialMap(page);
-  const response = await page.goto(
-    '?place=paso-de-demostracion&q=paso&category=lugares-destacados&tag=mountain-pass',
-  );
+  const response = await page.goto('?q=veyra&category=personaje&tag=category-veyra');
 
   expect(response?.ok()).toBe(true);
   await expect(page).toHaveTitle(/Atlas de los Nuevos Dioses/i);
   await expect(page.getByRole('banner')).toBeVisible();
-  await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
+  await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
 
   const backendStatus = page.locator('[data-backend-status]');
   if (process.env.PAGES_URL) {
@@ -65,31 +63,34 @@ test('loads the Beta 0.2 public experience from the repository subdirectory', as
       .toBe('accepted');
   }
 
-  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
-  await expect(page.getByRole('checkbox', { name: /Lugar destacado/ })).toBeChecked();
-  await expect(page.getByRole('checkbox', { name: /Paso de montaña/ })).toBeChecked();
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
+  await expect(page.getByRole('checkbox', { name: /Personaje/ })).toBeChecked();
+  await expect(page.getByRole('checkbox', { name: /Veyra/ })).toBeChecked();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
-  await expect(page.getByTestId('place-marker')).toHaveCount(2);
+  const veyraPin = page.locator(
+    '[data-testid="entity-pin"][data-entity-id="entity-request-07d26371bbff42d9b91e076d099891b0"]',
+  );
+  await expect(veyraPin).toHaveCount(1);
+  await expect(veyraPin).toHaveAttribute(
+    'data-entity-id',
+    'entity-request-07d26371bbff42d9b91e076d099891b0',
+  );
+  await veyraPin.click();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
-    'data-active-place-id',
-    'place-demo-pass',
+    'data-active-pin-id',
+    'entity-request-07d26371bbff42d9b91e076d099891b0',
   );
   await expect(page.getByText('Contenido de fans no oficial', { exact: true })).toBeVisible();
   await expect(page.getByRole('contentinfo')).toContainText('Cartografía: Mike Schley');
 
   const detailsPanel = page.getByTestId('place-details');
   const popupPromise = page.waitForEvent('popup');
-  await detailsPanel
-    .getByRole('link', { name: /Abrir ficha completa de Paso de demostración/ })
-    .click();
+  await detailsPanel.getByRole('link', { name: /Abrir ficha completa de Veyra/ }).click();
   const detailsPage = await popupPromise;
-  await expect(
-    detailsPage.getByRole('heading', { level: 1, name: 'Paso de demostración' }),
-  ).toBeVisible();
-  await expect(
-    detailsPage.getByRole('heading', { level: 2, name: 'Notas públicas' }),
-  ).toBeVisible();
-  expect(new URL(detailsPage.url()).searchParams.get('entity')).toBe('paso-de-demostracion');
+  await expect(detailsPage.getByRole('heading', { level: 1, name: 'Veyra' })).toBeVisible();
+  expect(new URL(detailsPage.url()).searchParams.get('entity')).toBe(
+    'request-07d26371bbff42d9b91e076d099891b0',
+  );
   await detailsPage.close();
 
   const requestOpen = page.getByRole('button', { name: 'Proponer un pin' });
@@ -123,24 +124,19 @@ test('loads the Beta 0.2 public experience from the repository subdirectory', as
   expect(failedResponses).toEqual([]);
 
   await page.reload();
-  await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
-  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
-  await expect(page.getByTestId('place-details')).toHaveAttribute(
-    'data-active-place-id',
-    'place-demo-pass',
-  );
+  await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
+  await expect(page.getByTestId('place-details')).toBeHidden();
 
+  await veyraPin.click();
+  await expect(page.getByTestId('place-details')).toHaveAttribute(
+    'data-active-pin-id',
+    'entity-request-07d26371bbff42d9b91e076d099891b0',
+  );
   await page
     .getByTestId('place-details')
-    .getByRole('button', { name: 'Cerrar la ficha de Paso de demostración' })
+    .getByRole('button', { name: 'Cerrar la ficha de Veyra' })
     .click();
-  await expect(page.getByTestId('place-details')).toBeHidden();
-  await page.goBack();
-  await expect(page.getByTestId('place-details')).toHaveAttribute(
-    'data-active-place-id',
-    'place-demo-pass',
-  );
-  await page.goForward();
   await expect(page.getByTestId('place-details')).toBeHidden();
 });
 
@@ -159,7 +155,7 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
     includeHidden: true,
   });
 
-  await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
+  await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'error');
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
   await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
@@ -203,23 +199,29 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
   ).toBeFocused();
 });
 
-test('keeps Beta 0.2 usable from the public snapshot when Supabase returns 503', async ({
-  page,
-}) => {
+test('keeps v1.0 usable from the public snapshot when Supabase returns 503', async ({ page }) => {
   await mockOfficialMap(page);
   await page.route('**/rest/v1/**', async (route) => {
     await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
   });
 
-  const response = await page.goto('?q=puerto');
+  const response = await page.goto(
+    '?place=paso-de-demostracion&q=paso&category=lugares-destacados&tag=mountain-pass',
+  );
   expect(response?.ok()).toBe(true);
 
   const backendStatus = page.locator('[data-backend-status]');
   await expect(backendStatus).toHaveAttribute('data-backend-state', 'degraded');
   await expect(backendStatus).toContainText('Modo de respaldo');
   await expect(backendStatus.getByRole('button', { name: 'Reintentar' })).toBeVisible();
-  await expect(page.getByText('Beta 0.2', { exact: true })).toBeVisible();
+  await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
+  await expect(page.getByRole('checkbox', { name: /Lugar destacado/ })).toBeChecked();
+  await expect(page.getByRole('checkbox', { name: /Paso de montaña/ })).toBeChecked();
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
-  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('puerto');
+  await expect(page.getByTestId('place-details')).toHaveAttribute(
+    'data-active-place-id',
+    'place-demo-pass',
+  );
   await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
 });

@@ -2,26 +2,28 @@
 
 Aplicación web pública de la campaña **Castigo Divino** para explorar Faerûn mediante mapa interactivo, búsqueda, filtros, pines, fichas públicas y solicitudes de nuevos pines. La administración usa Supabase Auth y autorización PostgreSQL/RLS separada de la experiencia pública.
 
-## Beta 0.2
+## v1.0
 
 URL pública:
 
 `https://eduyube.github.io/castigo-divino-map/`
 
-Beta 0.2 mantiene los contratos públicos de Beta 0.1 y añade el backend resiliente de Supabase, catálogo persistente, administración autenticada, entidades `character`/`location`, búsqueda geográfica, sistema visual de pines, fichas compactas y completas, controles responsive, solicitudes públicas y moderación administrativa.
+**v1.0** consolida como estable el estado funcional actual del Atlas. Mantiene los contratos públicos y de compatibilidad construidos durante Beta 0.1 y Beta 0.2 —backend resiliente de Supabase, catálogo persistente, administración autenticada, entidades `character`/`location`, búsqueda geográfica, sistema visual de pines, fichas compactas y completas, controles responsive, solicitudes públicas y moderación administrativa— sin reinterpretar datos ni introducir una feature nueva por el cambio de versión.
 
 El frontend es estático y se publica con GitHub Pages. El catálogo público se lee mediante la Data API de Supabase usando únicamente la URL del proyecto y una clave `sb_publishable_*`; si Supabase no responde, la aplicación conserva una instantánea pública versionada y entra en modo degradado.
 
 Documentación principal:
 
 - [`docs/project-status.md`](docs/project-status.md)
-- [`docs/map-030-release.md`](docs/map-030-release.md)
+- [`docs/map-052-release.md`](docs/map-052-release.md)
 - [`docs/deployment-and-rollback.md`](docs/deployment-and-rollback.md)
 - [`docs/architecture.md`](docs/architecture.md)
 - [`docs/security.md`](docs/security.md)
 - [`docs/data-model.md`](docs/data-model.md)
 - [`docs/admin-auth.md`](docs/admin-auth.md)
 - [`docs/public-pin-requests.md`](docs/public-pin-requests.md)
+
+La evidencia histórica de Beta 0.2 permanece en [`docs/map-030-release.md`](docs/map-030-release.md) y los documentos/fixtures/migraciones con nombres Beta conservan su nomenclatura cuando forma parte de un contrato o de la historia del proyecto.
 
 ## Requisitos
 
@@ -60,7 +62,7 @@ npm run test:e2e:pages
 
 ## Datos públicos y Supabase
 
-El contrato Beta 0.2 separa:
+El contrato estable de v1.0 separa:
 
 - catálogo público publicado;
 - estado editorial `draft | published | archived`;
@@ -161,7 +163,7 @@ El rollback no reescribe `master` ni borra datos de producción. Ante una regres
 
 Las migraciones son forward-only. Si frontend y base quedan desalineados, se prioriza desplegar un frontend compatible o una migración correctiva hacia delante. Los datos Beta 0.1 migrados disponen de rollback lógico por archivado, no de borrado físico.
 
-Consulta [`docs/deployment-and-rollback.md`](docs/deployment-and-rollback.md) para el procedimiento coordinado y [`docs/map-030-release.md`](docs/map-030-release.md) para la evidencia de Beta 0.2.
+Consulta [`docs/deployment-and-rollback.md`](docs/deployment-and-rollback.md) para el procedimiento coordinado, [`docs/map-052-release.md`](docs/map-052-release.md) para el baseline estable v1.0 y [`docs/map-030-release.md`](docs/map-030-release.md) para la evidencia histórica de Beta 0.2.
 
 ## Licencia y contenido de fans
 

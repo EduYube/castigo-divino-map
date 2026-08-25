@@ -1,8 +1,8 @@
-# Despliegue y rollback de Beta 0.2
+# Despliegue y rollback de v1.0
 
 ## Objetivo
 
-Publicar **El Atlas de los Nuevos Dioses — Beta 0.2** en GitHub Pages desde un SHA de `master` completamente validado, con la proyección pública de Supabase sincronizada con el snapshot versionado y con un procedimiento de recuperación que no reescriba `master` ni destruya datos.
+Publicar **El Atlas de los Nuevos Dioses — v1.0** en GitHub Pages desde un SHA de `master` completamente validado, con la proyección pública de Supabase sincronizada con el snapshot versionado y con un procedimiento de recuperación que no reescriba `master` ni destruya datos.
 
 URL pública:
 
@@ -57,25 +57,13 @@ Ese comando compara contenido y checksum contra la Data API pública de Supabase
 
 El snapshot excluye estados editoriales, solicitudes públicas, remitentes, motivos, notas de moderación y cualquier dato administrativo. No se regenera solo para cambiar `generatedAt`: si el contenido público de Supabase no cambia y la igualdad remota sigue siendo exacta, se conserva el snapshot versionado existente.
 
-## Estado de Supabase para MAP-030
+MAP-052 no define DDL ni migraciones y no modifica Auth, RLS, grants, policies o Storage. El cambio de release a v1.0 no justifica ejecutar `seed.sql`, recrear datos o modificar Supabase de producción.
 
-Producción:
-
-- proyecto: `atlas-nuevos-dioses-prod`;
-- project id: `ehpouvbzmvwbkkoypgfa`;
-- las migraciones alojadas llegan hasta:
-  - `20260808172454_add_public_request_moderation`;
-  - `20260809003008_migrate_beta01_public_catalog`.
-
-MAP-030 no define una migración nueva. Antes de publicar se compara el historial alojado con las migraciones ya aprobadas del repositorio. Si no existe una migración pendiente, no se reaplica ninguna ni se ejecuta `seed.sql`.
-
-Cualquier DDL nuevo, cambio de RLS/Auth/roles/grants o migración destructiva descubierto durante un release debe tratarse como cambio sensible y no puede introducirse silenciosamente dentro de MAP-030.
-
-## Smoke publicado de Beta 0.2
+## Smoke publicado de v1.0
 
 `tests/deployment/pages-smoke.spec.ts` valida sobre la URL real:
 
-- badge visible `Beta 0.2`;
+- badge visible `v1.0`;
 - backend conectado a Supabase;
 - búsqueda, filtros, mapa y pines;
 - ficha compacta y apertura de ficha completa;
@@ -86,18 +74,13 @@ Cualquier DDL nuevo, cambio de RLS/Auth/roles/grants o migración destructiva de
 - experiencia a 320 px cuando falla la imagen remota;
 - fallback desde el snapshot cuando Supabase devuelve HTTP 503.
 
-La suite E2E completa mantiene además los escenarios de 429, timeout, conexión rechazada, JSON inválido, respuesta parcial, recuperación por retry, XSS, administración, responsive y accesibilidad.
+La suite E2E completa mantiene además los escenarios de 429, timeout, conexión rechazada, JSON inválido, respuesta parcial, recuperación por retry, XSS, administración, Modo Máster, retratos, responsive y accesibilidad.
 
-## Baseline anterior a la publicación final
+## Compatibilidad histórica
 
-El último estado publicado y validado antes de iniciar MAP-030 es:
+La promoción a v1.0 conserva los contratos de Beta 0.1/Beta 0.2. Por ello no se renombran migraciones, fixtures, tests o identificadores de runtime cuyo nombre `beta01`/`beta02` expresa el origen del contrato.
 
-- SHA de `master`: `3f4052027a511da63b84886498b25edc12ca3b43`;
-- Pages run: `31290640876`;
-- `github-pages/deployment = success`;
-- smoke publicado: `success`.
-
-Este SHA es la referencia de frontend para comparar y, si fuese necesario, construir un revert explícito.
+Los datos migrados durante Beta, los IDs/slugs publicados, las rutas de Storage, las URLs compartibles y el snapshot público mantienen su significado. Los detalles históricos del release Beta 0.2 siguen en [`map-030-release.md`](map-030-release.md).
 
 ## Rollback coordinado
 
@@ -117,7 +100,7 @@ Si el código correcto ya está en `master` y el fallo es exclusivamente de infr
 
 ### Frontend y base de datos desalineados
 
-MAP-030 no añade DDL. Las migraciones de Beta 0.2 se diseñaron hacia delante y el frontend publicado debe ser compatible con el estado alojado aprobado.
+MAP-052 no añade DDL. Las migraciones existentes son forward-only y el frontend publicado debe seguir siendo compatible con el estado alojado aprobado.
 
 Si una incidencia futura deja frontend y DB desalineados:
 
@@ -129,7 +112,7 @@ Si una incidencia futura deja frontend y DB desalineados:
 
 ### Catálogo migrado y snapshot
 
-La migración de catálogo de MAP-028 dispone de rollback lógico por archivado (`supabase/rollback/map-028_archive_beta01_catalog.sql`). Ese mecanismo retira el contenido de la proyección pública sin borrado físico ni liberación de IDs/slugs reservados.
+La migración de catálogo de MAP-028 dispone de rollback lógico por archivado (`supabase/rollback/map-028_archive_beta01_catalog.sql`). Ese mecanismo histórico retira contenido de la proyección pública sin borrado físico ni liberación de IDs/slugs reservados.
 
 Tras cualquier corrección de contenido:
 
@@ -141,7 +124,7 @@ Tras cualquier corrección de contenido:
 
 ## Criterio de release completado
 
-Beta 0.2 solo se considera publicada cuando existe evidencia sobre el SHA final de `master` de que:
+v1.0 solo se considera publicada cuando existe evidencia sobre el SHA final de `master` de que:
 
 - CI está verde;
 - Pages reconstruyó ese SHA;
@@ -150,7 +133,9 @@ Beta 0.2 solo se considera publicada cuando existe evidencia sobre el SHA final 
 - deploy terminó correctamente;
 - smoke contra la URL publicada pasó;
 - `github-pages/deployment = success`;
-- Supabase permanece en el estado esperado;
-- `docs/project-status.md` registra la publicación, límites, rollback y evidencia final.
+- la UI publicada muestra `v1.0`;
+- el snapshot y los datos siguen funcionalmente intactos;
+- `docs/project-status.md` identifica v1.0 como baseline estable;
+- #148 contiene el SHA y la evidencia final y queda cerrado como completado.
 
-La evidencia concreta del release se conserva en [`map-030-release.md`](map-030-release.md).
+La definición de la consolidación estable vive en [`map-052-release.md`](map-052-release.md). La evidencia histórica de Beta 0.2 permanece en [`map-030-release.md`](map-030-release.md).
