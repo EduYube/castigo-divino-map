@@ -154,15 +154,12 @@ using (
     select 1 from public.campaigns campaign
     where campaign.id = map_entities.campaign_id and campaign.status = 'active'
   )
-  and (
-    category_id is null
-    or exists (
-      select 1
-      from public.categories category
-      where category.id = map_entities.category_id
-        and category.campaign_id = map_entities.campaign_id
-        and category.publication_status = 'published'::public.publication_status
-    )
+  and exists (
+    select 1
+    from public.categories category
+    where category.id = map_entities.category_id
+      and category.campaign_id = map_entities.campaign_id
+      and category.publication_status = 'published'::public.publication_status
   )
 );
 
