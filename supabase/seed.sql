@@ -255,7 +255,6 @@ insert into public.geographic_names (
   x,
   y,
   recommended_zoom,
-  entity_id,
   publication_status
 )
 values
@@ -267,7 +266,6 @@ values
     2200,
     1400,
     1,
-    null,
     'published'
   ),
   (
@@ -278,7 +276,6 @@ values
     1800,
     1200,
     1,
-    'entity-bramble-fort',
     'published'
   ),
   (
@@ -289,9 +286,19 @@ values
     1600,
     1000,
     0,
-    null,
     'draft'
   );
+
+insert into public.campaign_geographic_entity_links (
+  campaign_id,
+  geographic_name_id,
+  entity_id
+)
+values (
+  '00000000-0000-4000-8000-000000000053',
+  'geo-bramble-fort',
+  'entity-bramble-fort'
+);
 
 insert into public.geographic_name_aliases (
   id,
