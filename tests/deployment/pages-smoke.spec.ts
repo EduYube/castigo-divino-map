@@ -37,7 +37,9 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
   });
 
   await mockOfficialMap(page);
-  const response = await page.goto('?q=veyra&category=personaje&tag=category-veyra');
+  const response = await page.goto(
+    '?q=veyra&category=personaje&tag=category-veyra',
+  );
 
   expect(response?.ok()).toBe(true);
   await expect(page).toHaveTitle(/Atlas de los Nuevos Dioses/i);
