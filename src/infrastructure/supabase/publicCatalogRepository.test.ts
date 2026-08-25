@@ -134,9 +134,7 @@ describe('SupabasePublicCatalogRepository', () => {
 
   test('rehydrates the selected campaign geographic link over global geography', async () => {
     const rowsByTable: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
-      categories: [
-        { id: 'category-places', slug: 'places', name: 'Places', description: '' },
-      ],
+      categories: [{ id: 'category-places', slug: 'places', name: 'Places', description: '' }],
       tags: [],
       players: [],
       map_entities: [
@@ -202,111 +200,103 @@ describe('SupabasePublicCatalogRepository', () => {
     expect(result.data.catalog.geographicNames[0]?.entityId).toBe('entity-location');
   });
 
-  test(
-    'rejects a geographic association that does not belong to the selected campaign',
-    async () => {
-      const repository = new SupabasePublicCatalogRepository({
-        projectUrl: PROJECT_URL,
-        publishableKey: PUBLISHABLE_KEY,
-        fetchImplementation: async (input) => {
-          if (tableName(new URL(String(input))) === 'campaign_geographic_entity_links') {
-            return jsonResponse([
-              {
-                campaign_id: CAMPAIGN_B_ID,
-                geographic_name_id: 'geo-location',
-                entity_id: 'entity-location',
-              },
-            ]);
-          }
-          return jsonResponse([]);
-        },
-      });
+  test('rejects a geographic association that does not belong to the selected campaign', async () => {
+    const repository = new SupabasePublicCatalogRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      fetchImplementation: async (input) => {
+        if (tableName(new URL(String(input))) === 'campaign_geographic_entity_links') {
+          return jsonResponse([
+            {
+              campaign_id: CAMPAIGN_B_ID,
+              geographic_name_id: 'geo-location',
+              entity_id: 'entity-location',
+            },
+          ]);
+        }
+        return jsonResponse([]);
+      },
+    });
 
-      await expect(
-        repository.load({ signal: new AbortController().signal }),
-      ).rejects.toMatchObject({
-        code: 'invalid-response',
-      });
-    },
-  );
+    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject({
+      code: 'invalid-response',
+    });
+  });
 
-  test(
-    'parses a safe character-location relation and validates both public endpoints',
-    async () => {
-      const rowsByTable: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
-        categories: [
-          { id: 'category-people', slug: 'people', name: 'People', description: '' },
-          { id: 'category-places', slug: 'places', name: 'Places', description: '' },
-        ],
-        tags: [],
-        players: [],
-        map_entities: [
-          {
-            id: 'entity-character',
-            slug: 'character',
-            entity_type: 'character',
-            visibility: 'pin',
-            name: 'Character',
-            name_language: 'en',
-            summary: '',
-            description: '',
-            x: 10,
-            y: 20,
-            category_id: 'category-people',
-          },
-          {
-            id: 'entity-location',
-            slug: 'location',
-            entity_type: 'location',
-            visibility: 'pin',
-            name: 'Location',
-            name_language: 'en',
-            summary: '',
-            description: '',
-            x: 30,
-            y: 40,
-            category_id: 'category-places',
-          },
-        ],
-        entity_aliases: [],
-        entity_tags: [],
-        entity_player_dispositions: [],
-        character_location_relations: [
-          {
-            character_id: 'entity-character',
-            location_id: 'entity-location',
-            relation_status: 'present',
-          },
-        ],
-        public_notes: [],
-        public_note_tags: [],
-        geographic_names: [],
-        geographic_name_aliases: [],
-        character_location_events: [],
-        campaign_geographic_entity_links: [],
-      };
-      const repository = new SupabasePublicCatalogRepository({
-        projectUrl: PROJECT_URL,
-        publishableKey: PUBLISHABLE_KEY,
-        fetchImplementation: async (input) => {
-          const table = tableName(new URL(String(input)));
-          return jsonResponse(rowsByTable[table] ?? []);
-        },
-      });
-
-      const result = await repository.load({ signal: new AbortController().signal });
-      if (result.data.contract !== 'beta02') {
-        throw new Error('Expected Beta 0.2 projection.');
-      }
-      expect(result.data.catalog.characterLocationRelations).toEqual([
+  test('parses a safe character-location relation and validates both public endpoints', async () => {
+    const rowsByTable: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
+      categories: [
+        { id: 'category-people', slug: 'people', name: 'People', description: '' },
+        { id: 'category-places', slug: 'places', name: 'Places', description: '' },
+      ],
+      tags: [],
+      players: [],
+      map_entities: [
         {
-          characterId: 'entity-character',
-          locationId: 'entity-location',
-          relationStatus: 'present',
+          id: 'entity-character',
+          slug: 'character',
+          entity_type: 'character',
+          visibility: 'pin',
+          name: 'Character',
+          name_language: 'en',
+          summary: '',
+          description: '',
+          x: 10,
+          y: 20,
+          category_id: 'category-people',
         },
-      ]);
-    },
-  );
+        {
+          id: 'entity-location',
+          slug: 'location',
+          entity_type: 'location',
+          visibility: 'pin',
+          name: 'Location',
+          name_language: 'en',
+          summary: '',
+          description: '',
+          x: 30,
+          y: 40,
+          category_id: 'category-places',
+        },
+      ],
+      entity_aliases: [],
+      entity_tags: [],
+      entity_player_dispositions: [],
+      character_location_relations: [
+        {
+          character_id: 'entity-character',
+          location_id: 'entity-location',
+          relation_status: 'present',
+        },
+      ],
+      public_notes: [],
+      public_note_tags: [],
+      geographic_names: [],
+      geographic_name_aliases: [],
+      character_location_events: [],
+      campaign_geographic_entity_links: [],
+    };
+    const repository = new SupabasePublicCatalogRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      fetchImplementation: async (input) => {
+        const table = tableName(new URL(String(input)));
+        return jsonResponse(rowsByTable[table] ?? []);
+      },
+    });
+
+    const result = await repository.load({ signal: new AbortController().signal });
+    if (result.data.contract !== 'beta02') {
+      throw new Error('Expected Beta 0.2 projection.');
+    }
+    expect(result.data.catalog.characterLocationRelations).toEqual([
+      {
+        characterId: 'entity-character',
+        locationId: 'entity-location',
+        relationStatus: 'present',
+      },
+    ]);
+  });
 
   test('paginates and verifies a projection with more than one thousand dispositions', async () => {
     const categoryRows = [
