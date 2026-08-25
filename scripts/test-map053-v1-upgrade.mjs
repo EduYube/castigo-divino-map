@@ -6,6 +6,7 @@ const V1_BASELINE_VERSION = '20260811213000';
 const INITIAL_CAMPAIGN_ID = '00000000-0000-4000-8000-000000000053';
 const MODERATOR_ID = '00000000-0000-4000-8000-0000000000a1';
 const REQUEST_ID = '20000000-0000-4000-8000-000000000053';
+const REQUEST_DRAFT_ID = 'entity-request-20000000000040008000000000000053';
 
 function fail(message) {
   throw new Error(`MAP-053 v1.0 upgrade rehearsal failed: ${message}`);
@@ -103,6 +104,8 @@ runPsql(
   containerName,
   `insert into auth.users (id, email, raw_user_meta_data)
    values ('${MODERATOR_ID}', 'map053-upgrade-moderator@example.invalid', '{}'::jsonb);
+
+   insert into private.admin_users (user_id) values ('${MODERATOR_ID}');
 
    insert into public.categories (
      id, slug, name, description, publication_status, created_at, updated_at
@@ -232,13 +235,12 @@ runPsql(
      false
    );
 
-   update public.public_requests
-   set request_status = 'accepted', moderation_note = 'Legacy moderation note.'
-   where id = '${REQUEST_ID}';
-
-   update public.public_requests
-   set request_status = 'converted', converted_entity_id = 'entity-map053-upgrade-location'
-   where id = '${REQUEST_ID}';
+   select public.admin_moderate_public_request(
+     '${REQUEST_ID}'::uuid,
+     (select updated_at from public.public_requests where id = '${REQUEST_ID}'::uuid),
+     'convert',
+     'Legacy moderation note.'
+   );
 
    alter table public.public_requests disable trigger "20_validate_public_request";
    alter table public.public_requests disable trigger "90_public_request_updated_at";
@@ -262,7 +264,7 @@ runPsql(
          and request_status = 'converted'
          and moderator_user_id = '${MODERATOR_ID}'::uuid
          and moderation_note = 'Legacy moderation note.'
-         and converted_entity_id = 'entity-map053-upgrade-location'
+         and converted_entity_id = '${REQUEST_DRAFT_ID}'
          and moderated_at = '2026-07-03T10:00:00Z'::timestamptz
          and created_at = '2026-06-02T10:00:00Z'::timestamptz
          and updated_at = '2026-07-03T10:01:00Z'::timestamptz
@@ -332,6 +334,18 @@ runPsql(
          and updated_at = '2026-07-02T00:04:00Z'::timestamptz
      ) then
        raise exception 'master entity boundary or history changed';
+     end if;
+
+     if not exists (
+       select 1 from public.map_entities
+       where id = '${REQUEST_DRAFT_ID}'
+         and slug = 'request-20000000000040008000000000000053'
+         and entity_type = 'location'
+         and visibility = 'pin'
+         and publication_status = 'draft'
+         and campaign_id = initial_campaign
+     ) then
+       raise exception 'legacy converted request draft was not preserved';
      end if;
 
      if not exists (
@@ -450,7 +464,7 @@ runPsql(
          and request_status = 'converted'
          and moderator_user_id = '${MODERATOR_ID}'::uuid
          and moderation_note = 'Legacy moderation note.'
-         and converted_entity_id = 'entity-map053-upgrade-location'
+         and converted_entity_id = '${REQUEST_DRAFT_ID}'
          and moderated_at = '2026-07-03T10:00:00Z'::timestamptz
          and created_at = '2026-06-02T10:00:00Z'::timestamptz
          and updated_at = '2026-07-03T10:01:00Z'::timestamptz
