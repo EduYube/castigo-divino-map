@@ -13,8 +13,7 @@ import {
 import { parsePublicCatalogSnapshotV2 } from '../supabase/publicCatalogCodec';
 
 const INITIAL_CAMPAIGN_SLUG = 'castigo-divino';
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CHECKSUM_PATTERN = /^sha256:[0-9a-f]{64}$/;
 
 function invalid(message: string, cause?: unknown): never {
@@ -313,10 +312,22 @@ export async function parsePublicCatalogSnapshotV3(
     invalid('El snapshot v3 debe contener al menos una campaña pública.');
   }
 
-  unique(campaigns.map(({ id }) => id), 'campaigns.id');
-  unique(campaigns.map(({ slug }) => slug), 'campaigns.slug');
-  unique(campaignCatalogs.map(({ campaignId }) => campaignId), 'campaignCatalogs.campaignId');
-  unique(geographicNames.map(({ id }) => id), 'geographicNames.id');
+  unique(
+    campaigns.map(({ id }) => id),
+    'campaigns.id',
+  );
+  unique(
+    campaigns.map(({ slug }) => slug),
+    'campaigns.slug',
+  );
+  unique(
+    campaignCatalogs.map(({ campaignId }) => campaignId),
+    'campaignCatalogs.campaignId',
+  );
+  unique(
+    geographicNames.map(({ id }) => id),
+    'geographicNames.id',
+  );
 
   const campaignIds = new Set(campaigns.map(({ id }) => id));
 
