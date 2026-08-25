@@ -29,7 +29,7 @@ begin
 end;
 $$;
 
-select plan(39);
+select plan(41);
 
 select is(
   (select column_default from information_schema.columns
@@ -139,18 +139,19 @@ where tag.publication_status = 'published'
 order by tag.id
 limit 1;
 
+-- Geography is global after MAP-053. The global canary remains player-safe while
+-- its campaign-specific link to a Master entity must stay hidden.
 insert into public.geographic_names (
-  id, slug, name, language, x, y, recommended_zoom, entity_id, publication_status
+  id, slug, name, language, x, y, recommended_zoom, publication_status
 )
 values (
   'geo-master-canary',
-  'master-canary-geography',
-  'MAP044 MASTER CANARY GEOGRAPHY',
+  'global-canary-geography',
+  'MAP044 GLOBAL CANARY GEOGRAPHY',
   'en',
   322,
   655,
   1,
-  'place-master-canary-location',
   'published'
 );
 
@@ -161,8 +162,17 @@ values (
   'geo-alias-master-canary',
   'geo-master-canary',
   'en',
-  'MAP044 MASTER CANARY GEO ALIAS',
+  'MAP044 GLOBAL CANARY GEO ALIAS',
   'published'
+);
+
+insert into public.campaign_geographic_entity_links (
+  campaign_id, geographic_name_id, entity_id
+)
+values (
+  '00000000-0000-4000-8000-000000000053',
+  'geo-master-canary',
+  'place-master-canary-location'
 );
 
 insert into public.character_location_events (
@@ -249,8 +259,9 @@ select is((select count(*) from public.entity_tags where id = 'entity-tag-master
 select is((select count(*) from public.public_notes where id = 'note-master-canary'), 0::bigint, 'anon cannot receive master notes');
 select is((select count(*) from public.public_note_tags where id = 'note-tag-master-canary'), 0::bigint, 'anon cannot receive master note tags');
 select is((select count(*) from public.entity_player_dispositions where entity_id = 'entity-master-canary-character'), 0::bigint, 'anon cannot infer master entities from dispositions');
-select is((select count(*) from public.geographic_names where id = 'geo-master-canary'), 0::bigint, 'anon cannot receive a geographic name linked to a master entity');
-select is((select count(*) from public.geographic_name_aliases where id = 'geo-alias-master-canary'), 0::bigint, 'anon cannot receive a geographic alias linked to a master entity');
+select is((select count(*) from public.geographic_names where id = 'geo-master-canary'), 1::bigint, 'anon retains the global geographic index');
+select is((select count(*) from public.geographic_name_aliases where id = 'geo-alias-master-canary'), 1::bigint, 'anon retains global geographic aliases');
+select is((select count(*) from public.campaign_geographic_entity_links where geographic_name_id = 'geo-master-canary'), 0::bigint, 'anon cannot infer a master entity through a geographic association');
 select is((select count(*) from public.character_location_events where id = 'location-event-master-canary'), 0::bigint, 'anon cannot receive an event whose endpoints are master');
 select is((select count(*) from public.character_location_relations where character_id = 'entity-master-canary-character'), 0::bigint, 'anon cannot receive a relation whose endpoints are master');
 select ok(
@@ -292,8 +303,9 @@ select is((select count(*) from public.entity_tags where id = 'entity-tag-master
 select is((select count(*) from public.public_notes where id = 'note-master-canary'), 0::bigint, 'authenticated non-admin cannot receive master notes');
 select is((select count(*) from public.public_note_tags where id = 'note-tag-master-canary'), 0::bigint, 'authenticated non-admin cannot receive master note tags');
 select is((select count(*) from public.entity_player_dispositions where entity_id = 'entity-master-canary-character'), 0::bigint, 'authenticated non-admin cannot infer master entities from dispositions');
-select is((select count(*) from public.geographic_names where id = 'geo-master-canary'), 0::bigint, 'authenticated non-admin cannot receive a geographic name linked to a master entity');
-select is((select count(*) from public.geographic_name_aliases where id = 'geo-alias-master-canary'), 0::bigint, 'authenticated non-admin cannot receive a geographic alias linked to a master entity');
+select is((select count(*) from public.geographic_names where id = 'geo-master-canary'), 1::bigint, 'authenticated non-admin retains the global geographic index');
+select is((select count(*) from public.geographic_name_aliases where id = 'geo-alias-master-canary'), 1::bigint, 'authenticated non-admin retains global geographic aliases');
+select is((select count(*) from public.campaign_geographic_entity_links where geographic_name_id = 'geo-master-canary'), 0::bigint, 'authenticated non-admin cannot infer a master geographic association');
 select is((select count(*) from public.character_location_events where id = 'location-event-master-canary'), 0::bigint, 'authenticated non-admin cannot receive an event whose endpoints are master');
 select is((select count(*) from public.character_location_relations where character_id = 'entity-master-canary-character'), 0::bigint, 'authenticated non-admin cannot receive a relation whose endpoints are master');
 select is(
