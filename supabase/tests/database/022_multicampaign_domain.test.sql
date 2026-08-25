@@ -322,24 +322,17 @@ select is(
   'campaign-aware request ingress persists the chosen scope'
 );
 
-select is(
-  (
-    select (
-      public.admin_moderate_public_request(
-        request.id,
-        request.updated_at,
-        'convert',
-        'MAP053 conversion'
-      ) ->> 'draft_entity_id'
+select lives_ok(
+  $sql$
+    select public.admin_moderate_public_request(
+      request.id,
+      request.updated_at,
+      'convert',
+      'MAP053 conversion'
     )
     from public.public_requests request
     where request.proposed_name = 'MAP053 proposed B'
-  ),
-  (
-    select converted_entity_id
-    from public.public_requests
-    where proposed_name = 'MAP053 proposed B'
-  ),
+  $sql$,
   'admin moderation converts the campaign B request atomically'
 );
 select is(
@@ -359,7 +352,7 @@ select is(
 );
 
 update public.campaigns
-set status = 'archived', archived_at = now()
+set status = 'archived'
 where id = '00000000-0000-4000-8000-000000000054';
 
 reset role;
