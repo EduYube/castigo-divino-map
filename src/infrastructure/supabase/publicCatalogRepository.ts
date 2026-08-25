@@ -12,9 +12,7 @@ import {
   type PublicCatalogTableQuery,
 } from '../../data-access/publicCatalogQueryContract.js';
 import { buildPublicCatalogEnvelopeV2 } from './publicCatalogCodec';
-import type {
-  PublicCatalogTablePayloadsWithCharacterLocations,
-} from './publicCharacterLocationRelations';
+import type { PublicCatalogTablePayloadsWithCharacterLocations } from './publicCharacterLocationRelations';
 
 export { parsePublicCatalogSnapshotV2 } from './publicCatalogCodec';
 
@@ -25,10 +23,9 @@ const LEGACY_ANON_KEY_PATTERN = /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_
 const CAMPAIGN_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-type PublicCatalogPayloadsWithGeographicLinks =
-  PublicCatalogTablePayloadsWithCharacterLocations & {
-    readonly geographicEntityLinks: readonly Record<string, unknown>[];
-  };
+type PublicCatalogPayloadsWithGeographicLinks = PublicCatalogTablePayloadsWithCharacterLocations & {
+  readonly geographicEntityLinks: readonly Record<string, unknown>[];
+};
 
 export interface SupabasePublicCatalogRepositoryOptions {
   readonly projectUrl: string;
