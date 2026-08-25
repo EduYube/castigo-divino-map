@@ -69,7 +69,12 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
   await expect(page.getByRole('checkbox', { name: /Personaje/ })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Veyra/ })).toBeChecked();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
-  await expect(page.getByTestId('place-marker')).toHaveCount(1);
+  const veyraPin = page.getByTestId('entity-pin');
+  await expect(veyraPin).toHaveCount(1);
+  await expect(veyraPin).toHaveAttribute(
+    'data-entity-id',
+    'entity-request-07d26371bbff42d9b91e076d099891b0',
+  );
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-place-id',
     'entity-request-07d26371bbff42d9b91e076d099891b0',
