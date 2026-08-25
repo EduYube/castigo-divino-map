@@ -1,0 +1,3297 @@
+{
+  "schemaVersion": 2,
+  "categories": [
+    {
+      "id": "category-landmark",
+      "slug": "lugares-destacados",
+      "name": "Lugar destacado",
+      "description": "Accidentes geográficos y puntos de referencia públicos del mapa."
+    },
+    {
+      "id": "category-npc",
+      "slug": "npc",
+      "name": "NPC",
+      "description": ""
+    },
+    {
+      "id": "category-pj",
+      "slug": "personaje",
+      "name": "Personaje",
+      "description": "Personaje"
+    },
+    {
+      "id": "category-settlement",
+      "slug": "asentamientos",
+      "name": "Asentamiento",
+      "description": "Ciudades, villas y otros núcleos habitados conocidos públicamente."
+    }
+  ],
+  "tags": [
+    {
+      "id": "category-veyra",
+      "name": "Veyra",
+      "description": "Relacionado o perteneciente a Veyra"
+    },
+    {
+      "id": "coastal",
+      "name": "Costero",
+      "description": "Lugar situado junto a la costa o relacionado con navegación marítima."
+    },
+    {
+      "id": "demo-data",
+      "name": "Dato de demostración",
+      "description": "Contenido neutro creado únicamente para demostrar el modelo de datos."
+    },
+    {
+      "id": "mountain-pass",
+      "name": "Paso de montaña",
+      "description": "Ruta pública que atraviesa una zona montañosa."
+    },
+    {
+      "id": "trade-route",
+      "name": "Ruta comercial",
+      "description": "Lugar relacionado públicamente con una ruta de intercambio o viaje."
+    }
+  ],
+  "players": [],
+  "entities": [
+    {
+      "id": "entity-request-07d26371bbff42d9b91e076d099891b0",
+      "slug": "request-07d26371bbff42d9b91e076d099891b0",
+      "entityType": "character",
+      "visibility": "pin",
+      "name": "Veyra",
+      "nameLanguage": "en",
+      "aliases": [],
+      "summary": "",
+      "description": "Posición inicial Veyra (dudo entre neverwinter y lidian)",
+      "portraitPath": "portraits/9d3dcfeb-0320-4bca-9f5d-941d68aa6410.jpg",
+      "coordinates": {
+        "x": 1438.727724022,
+        "y": 1837.31274570082
+      },
+      "categoryId": "category-pj",
+      "tagIds": ["category-veyra"]
+    },
+    {
+      "id": "place-demo-harbor",
+      "slug": "puerto-de-demostracion",
+      "entityType": "location",
+      "visibility": "pin",
+      "name": "Puerto de demostración",
+      "nameLanguage": "en",
+      "aliases": [
+        {
+          "id": "alias-demo-harbor-puerto-ejemplo",
+          "entityId": "place-demo-harbor",
+          "language": "en",
+          "value": "Puerto de ejemplo"
+        }
+      ],
+      "summary": "",
+      "description": "",
+      "coordinates": {
+        "x": 1080.5,
+        "y": 820
+      },
+      "categoryId": "category-settlement",
+      "tagIds": ["coastal", "demo-data", "trade-route"]
+    },
+    {
+      "id": "place-demo-pass",
+      "slug": "paso-de-demostracion",
+      "entityType": "location",
+      "visibility": "pin",
+      "name": "Paso de demostración",
+      "nameLanguage": "en",
+      "aliases": [
+        {
+          "id": "alias-demo-pass-desfiladero-ejemplo",
+          "entityId": "place-demo-pass",
+          "language": "en",
+          "value": "Desfiladero de ejemplo"
+        }
+      ],
+      "summary": "",
+      "description": "",
+      "coordinates": {
+        "x": 2240,
+        "y": 1240.25
+      },
+      "categoryId": "category-landmark",
+      "tagIds": ["demo-data", "mountain-pass", "trade-route"]
+    }
+  ],
+  "dispositions": [],
+  "characterLocationRelations": [],
+  "notes": [
+    {
+      "id": "note-demo-harbor-overview",
+      "slug": "puerto-de-demostracion-resumen",
+      "entityId": "place-demo-harbor",
+      "title": "Información pública de demostración",
+      "body": "Este puerto ficticio sirve para comprobar fichas, búsquedas y filtros sin representar hechos secretos ni confirmados de la campaña.",
+      "sortOrder": 0,
+      "tagIds": ["coastal", "demo-data"]
+    },
+    {
+      "id": "note-demo-pass-travel",
+      "slug": "paso-de-demostracion-viaje",
+      "entityId": "place-demo-pass",
+      "title": "Referencia pública de viaje",
+      "body": "Este paso ficticio demuestra cómo una nota pública puede relacionar un lugar con etiquetas de viaje y terreno.",
+      "sortOrder": 0,
+      "tagIds": ["demo-data", "mountain-pass", "trade-route"]
+    }
+  ],
+  "geographicNames": [
+    {
+      "id": "geo-alaron",
+      "slug": "alaron",
+      "name": "Alaron",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1260,
+        "y": 914
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-amn",
+      "slug": "amn",
+      "name": "Amn",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2160,
+        "y": 369
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-amphail",
+      "slug": "amphail",
+      "name": "Amphail",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1630,
+        "y": 1549
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-anauroch",
+      "slug": "anauroch",
+      "name": "Anauroch",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2700,
+        "y": 1329
+      },
+      "searchExtent": {
+        "minX": 2450,
+        "maxX": 3100,
+        "minY": 1050,
+        "maxY": 1700
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-arabel",
+      "slug": "arabel",
+      "name": "Arabel",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2870,
+        "y": 899
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-archwood",
+      "slug": "archwood",
+      "name": "Archwood",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3230,
+        "y": 879
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-arn-forest",
+      "slug": "arn-forest",
+      "name": "Arn Forest",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2380,
+        "y": 1984
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-ascore",
+      "slug": "ascore",
+      "name": "Ascore",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2390,
+        "y": 2019
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-baldurs-gate",
+      "slug": "baldurs-gate",
+      "name": "Baldur's Gate",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-baldurs-gate-es",
+          "geographicNameId": "geo-baldurs-gate",
+          "language": "es",
+          "value": "Puerta de Baldur"
+        }
+      ],
+      "coordinates": {
+        "x": 1889,
+        "y": 824
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-beorunnas-well",
+      "slug": "beorunnas-well",
+      "name": "Beorunna's Well",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2100,
+        "y": 2144
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-berdusk",
+      "slug": "berdusk",
+      "name": "Berdusk",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2300,
+        "y": 729
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-blackford-crossing",
+      "slug": "blackford-crossing",
+      "name": "Blackford Crossing",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1430,
+        "y": 2014
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-blackford-road",
+      "slug": "blackford-road",
+      "name": "Blackford Road",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1460,
+        "y": 2044
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-boareskyr-bridge",
+      "slug": "boareskyr-bridge",
+      "name": "Boareskyr Bridge",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2090,
+        "y": 1059
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-border-forest",
+      "slug": "border-forest",
+      "name": "Border Forest",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3125,
+        "y": 1364
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-caer-corwell",
+      "slug": "caer-corwell",
+      "name": "Caer Corwell",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1150,
+        "y": 739
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-caer-moray",
+      "slug": "caer-moray",
+      "name": "Caer Moray",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1008,
+        "y": 884
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-caer-westphal",
+      "slug": "caer-westphal",
+      "name": "Caer Westphal",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1295,
+        "y": 724
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-candlekeep",
+      "slug": "candlekeep",
+      "name": "Candlekeep",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-candlekeep-es",
+          "geographicNameId": "geo-candlekeep",
+          "language": "es",
+          "value": "Candelero"
+        }
+      ],
+      "coordinates": {
+        "x": 1830,
+        "y": 659
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-castle-hartwick",
+      "slug": "castle-hartwick",
+      "name": "Castle Hartwick",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2335,
+        "y": 2164
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-citadel-adbar",
+      "slug": "citadel-adbar",
+      "name": "Citadel Adbar",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2310,
+        "y": 2094
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-citadel-felbarr",
+      "slug": "citadel-felbarr",
+      "name": "Citadel Felbarr",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2110,
+        "y": 2059
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-coast-way",
+      "slug": "coast-way",
+      "name": "Coast Way",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1900,
+        "y": 749
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-cold-wood",
+      "slug": "cold-wood",
+      "name": "Cold Wood",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2130,
+        "y": 2184
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-cormanthor",
+      "slug": "cormanthor",
+      "name": "Cormanthor",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3360,
+        "y": 1104
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-cormyr",
+      "slug": "cormyr",
+      "name": "Cormyr",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2870,
+        "y": 769
+      },
+      "searchExtent": {
+        "minX": 2700,
+        "maxX": 3290,
+        "minY": 600,
+        "maxY": 950
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-daggerford",
+      "slug": "daggerford",
+      "name": "Daggerford",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1742,
+        "y": 1386
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-darkhold",
+      "slug": "darkhold",
+      "name": "Darkhold",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2465,
+        "y": 901
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-deepwing-mountains",
+      "slug": "deepwing-mountains",
+      "name": "Deepwing Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3100,
+        "y": 94
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-delimbiyr-river",
+      "slug": "delimbiyr-river",
+      "name": "Delimbiyr River",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1855,
+        "y": 1429
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-dernall-forest",
+      "slug": "dernall-forest",
+      "name": "Dernall Forest",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1250,
+        "y": 979
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-desertsmouth-mountains",
+      "slug": "desertsmouth-mountains",
+      "name": "Desertsmouth Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2900,
+        "y": 1114
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-dessarin-river",
+      "slug": "dessarin-river",
+      "name": "Dessarin River",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1820,
+        "y": 1809
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-dragonspear-castle",
+      "slug": "dragonspear-castle",
+      "name": "Dragonspear Castle",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1925,
+        "y": 1169
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-dynnegall",
+      "slug": "dynnegall",
+      "name": "Dynnegall",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1010,
+        "y": 855
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-easting",
+      "slug": "easting",
+      "name": "Easting",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2500,
+        "y": 644
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-elturel",
+      "slug": "elturel",
+      "name": "Elturel",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2145,
+        "y": 879
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-elturgard",
+      "slug": "elturgard",
+      "name": "Elturgard",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2180,
+        "y": 814
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-elversult",
+      "slug": "elversult",
+      "name": "Elversult",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2720,
+        "y": 624
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-evereska",
+      "slug": "evereska",
+      "name": "Evereska",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2482,
+        "y": 1249
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-evermoors",
+      "slug": "the-evermoors",
+      "name": "The Evermoors",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-evermoors",
+          "geographicNameId": "geo-evermoors",
+          "language": "en",
+          "value": "Evermoors"
+        }
+      ],
+      "coordinates": {
+        "x": 1890,
+        "y": 1921
+      },
+      "searchExtent": {
+        "minX": 1720,
+        "maxX": 2030,
+        "minY": 1810,
+        "maxY": 2020
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-fairheight-range",
+      "slug": "fairheight-range",
+      "name": "Fairheight Range",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1240,
+        "y": 1044
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-fairview",
+      "slug": "fairview",
+      "name": "Fairview",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 976,
+        "y": 834
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-fields-of-the-dead",
+      "slug": "the-fields-of-the-dead",
+      "name": "The Fields of the Dead",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-fields-of-the-dead",
+          "geographicNameId": "geo-fields-of-the-dead",
+          "language": "en",
+          "value": "Fields of the Dead"
+        }
+      ],
+      "coordinates": {
+        "x": 2016,
+        "y": 959
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-finback",
+      "slug": "finback",
+      "name": "Finback",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1210,
+        "y": 1447
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-fireshear",
+      "slug": "fireshear",
+      "name": "Fireshear",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1250,
+        "y": 2059
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-flint-rock",
+      "slug": "flint-rock",
+      "name": "Flint Rock",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1770,
+        "y": 1864
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-forest-of-tethir",
+      "slug": "forest-of-tethir",
+      "name": "Forest of Tethir",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2180,
+        "y": 139
+      },
+      "searchExtent": {
+        "minX": 1880,
+        "maxX": 2580,
+        "minY": 0,
+        "maxY": 300
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-forest-of-wyrms",
+      "slug": "forest-of-wyrms",
+      "name": "Forest of Wyrms",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2165,
+        "y": 1084
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-fort-morninglord",
+      "slug": "fort-morninglord",
+      "name": "Fort Morninglord",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2100,
+        "y": 859
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-gauntlgrym",
+      "slug": "gauntlgrym",
+      "name": "Gauntlgrym",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1465,
+        "y": 1944
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-giants-run-mountains",
+      "slug": "giants-run-mountains",
+      "name": "Giant's Run Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2820,
+        "y": 499
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-grandfather-tree",
+      "slug": "grandfather-tree",
+      "name": "Grandfather Tree",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1980,
+        "y": 1836
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-great-worm-cavern",
+      "slug": "great-worm-cavern",
+      "name": "Great Worm Cavern",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1670,
+        "y": 2119
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-greycloak-hills",
+      "slug": "greycloak-hills",
+      "name": "Greycloak Hills",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2440,
+        "y": 1319
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-greypeak-mountains",
+      "slug": "greypeak-mountains",
+      "name": "Greypeak Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2220,
+        "y": 1539
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-gulthmere",
+      "slug": "gulthmere",
+      "name": "Gulthmere",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3130,
+        "y": 489
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-gundarlun",
+      "slug": "gundarlun",
+      "name": "Gundarlun",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 950,
+        "y": 1824
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-gundbarg",
+      "slug": "gundbarg",
+      "name": "Gundbarg",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 978,
+        "y": 1861
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-gwynneth",
+      "slug": "gwynneth",
+      "name": "Gwynneth",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1160,
+        "y": 839
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-hardbuckler",
+      "slug": "hardbuckler",
+      "name": "Hardbuckler",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2310,
+        "y": 979
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-hartsvale",
+      "slug": "hartsvale",
+      "name": "Hartsvale",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2420,
+        "y": 2169
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-hellgate-dell",
+      "slug": "hellgate-dell",
+      "name": "Hellgate Dell",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2240,
+        "y": 1874
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-helms-hold",
+      "slug": "helms-hold",
+      "name": "Helm's Hold",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1475,
+        "y": 1829
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-high-forest",
+      "slug": "the-high-forest",
+      "name": "The High Forest",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-high-forest",
+          "geographicNameId": "geo-high-forest",
+          "language": "en",
+          "value": "High Forest"
+        }
+      ],
+      "coordinates": {
+        "x": 2098,
+        "y": 1809
+      },
+      "searchExtent": {
+        "minX": 1700,
+        "maxX": 2250,
+        "minY": 1500,
+        "maxY": 2010
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-high-moor",
+      "slug": "the-high-moor",
+      "name": "The High Moor",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-high-moor",
+          "geographicNameId": "geo-high-moor",
+          "language": "en",
+          "value": "High Moor"
+        }
+      ],
+      "coordinates": {
+        "x": 2010,
+        "y": 1279
+      },
+      "searchExtent": {
+        "minX": 1750,
+        "maxX": 2300,
+        "minY": 1100,
+        "maxY": 1450
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-high-road",
+      "slug": "high-road",
+      "name": "High Road",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1470,
+        "y": 1789
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-hillsfar",
+      "slug": "hillsfar",
+      "name": "Hillsfar",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3370,
+        "y": 1229
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-hlondeth",
+      "slug": "hlondeth",
+      "name": "Hlondeth",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3300,
+        "y": 139
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-hullack-forest",
+      "slug": "hullack-forest",
+      "name": "Hullack Forest",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2960,
+        "y": 879
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-ice-spires",
+      "slug": "ice-spires",
+      "name": "Ice Spires",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2255,
+        "y": 2134
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-icewind-dale",
+      "slug": "icewind-dale",
+      "name": "Icewind Dale",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-icewind-dale-es",
+          "geographicNameId": "geo-icewind-dale",
+          "language": "es",
+          "value": "Valle del Viento Helado"
+        }
+      ],
+      "coordinates": {
+        "x": 1250,
+        "y": 2209
+      },
+      "searchExtent": {
+        "minX": 1120,
+        "maxX": 1450,
+        "minY": 2010,
+        "maxY": 2290
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-iriaebor",
+      "slug": "iriaebor",
+      "name": "Iriaebor",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2450,
+        "y": 689
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-iron-keep",
+      "slug": "iron-keep",
+      "name": "Iron Keep",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1105,
+        "y": 951
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-ironmaster",
+      "slug": "ironmaster",
+      "name": "Ironmaster",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1250,
+        "y": 2147
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-karse",
+      "slug": "karse",
+      "name": "Karse",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2080,
+        "y": 1744
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-kelvins-cairn",
+      "slug": "kelvins-cairn",
+      "name": "Kelvin's Cairn",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1290,
+        "y": 2184
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-kingdom-of-many-arrows",
+      "slug": "kingdom-of-many-arrows",
+      "name": "Kingdom of Many Arrows",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1850,
+        "y": 2169
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-korinn-archipelago",
+      "slug": "korinn-archipelago",
+      "name": "Korinn Archipelago",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1280,
+        "y": 1359
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-lake-of-dragons",
+      "slug": "lake-of-dragons",
+      "name": "Lake of Dragons",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2830,
+        "y": 659
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-long-road",
+      "slug": "long-road",
+      "name": "Long Road",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1650,
+        "y": 1679
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-longsaddle",
+      "slug": "longsaddle",
+      "name": "Longsaddle",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1630,
+        "y": 1922
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-luskan",
+      "slug": "luskan",
+      "name": "Luskan",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1416,
+        "y": 2011
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-marsember",
+      "slug": "marsember",
+      "name": "Marsember",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2760,
+        "y": 699
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-marsh-of-chelimber",
+      "slug": "marsh-of-chelimber",
+      "name": "Marsh of Chelimber",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2280,
+        "y": 1319
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-menzoberranzan",
+      "slug": "menzoberranzan",
+      "name": "Menzoberranzan",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1935,
+        "y": 2019
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-mere-of-dead-men",
+      "slug": "mere-of-dead-men",
+      "name": "Mere of Dead Men",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1470,
+        "y": 1677
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-mintarn",
+      "slug": "mintarn",
+      "name": "Mintarn",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1300,
+        "y": 1099
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-mirabar",
+      "slug": "mirabar",
+      "name": "Mirabar",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1562,
+        "y": 2093
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-misty-forest",
+      "slug": "misty-forest",
+      "name": "Misty Forest",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1850,
+        "y": 1351
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-mithral-hall",
+      "slug": "mithral-hall",
+      "name": "Mithral Hall",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1880,
+        "y": 2044
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-moonshae-isles",
+      "slug": "moonshae-isles",
+      "name": "Moonshae Isles",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-moonshae-isles-es",
+          "geographicNameId": "geo-moonshae-isles",
+          "language": "es",
+          "value": "Islas Lunshaes"
+        }
+      ],
+      "coordinates": {
+        "x": 1110,
+        "y": 1099
+      },
+      "searchExtent": {
+        "minX": 850,
+        "maxX": 1390,
+        "minY": 570,
+        "maxY": 1250
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-moray",
+      "slug": "moray",
+      "name": "Moray",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 995,
+        "y": 806
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-morgurs-mound",
+      "slug": "morgurs-mound",
+      "name": "Morgur's Mound",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1510,
+        "y": 1974
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-mount-hotenow",
+      "slug": "mount-hotenow",
+      "name": "Mount Hotenow",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1425,
+        "y": 1919
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-mulhessen",
+      "slug": "mulhessen",
+      "name": "Mulhessen",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3150,
+        "y": 779
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-murann",
+      "slug": "murann",
+      "name": "Murann",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1930,
+        "y": 249
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-myrloch-vale",
+      "slug": "myrloch-vale",
+      "name": "Myrloch Vale",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1130,
+        "y": 789
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-myth-drannor",
+      "slug": "myth-drannor",
+      "name": "Myth Drannor",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3298,
+        "y": 1149
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-najara",
+      "slug": "najara",
+      "name": "Najara",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2230,
+        "y": 1159
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-nether-mountains",
+      "slug": "nether-mountains",
+      "name": "Nether Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2310,
+        "y": 1944
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-neverwinter",
+      "slug": "neverwinter",
+      "name": "Neverwinter",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-neverwinter-es",
+          "geographicNameId": "geo-neverwinter",
+          "language": "es",
+          "value": "Nuncainvierno"
+        }
+      ],
+      "coordinates": {
+        "x": 1433,
+        "y": 1853
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-neverwinter-wood",
+      "slug": "neverwinter-wood",
+      "name": "Neverwinter Wood",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1530,
+        "y": 1874
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-norland",
+      "slug": "norland",
+      "name": "Norland",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1000,
+        "y": 994
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-northdark-wood",
+      "slug": "northdark-wood",
+      "name": "Northdark Wood",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2300,
+        "y": 1019
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-northlander-isles",
+      "slug": "northlander-isles",
+      "name": "Northlander Isles",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1100,
+        "y": 1394
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-omans-isle",
+      "slug": "omans-isle",
+      "name": "Omans Isle",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1090,
+        "y": 899
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-one-stone",
+      "slug": "one-stone",
+      "name": "One Stone",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1975,
+        "y": 2064
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-ordulin",
+      "slug": "ordulin",
+      "name": "Ordulin",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3370,
+        "y": 879
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-orlumbor",
+      "slug": "orlumbor",
+      "name": "Orlumbor",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1690,
+        "y": 1199
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-ormath",
+      "slug": "ormath",
+      "name": "Ormath",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2980,
+        "y": 184
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-orogoth",
+      "slug": "orogoth",
+      "name": "Orogoth",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2100,
+        "y": 1319
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-orsraun-mountains",
+      "slug": "orsraun-mountains",
+      "name": "Orsraun Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3230,
+        "y": 319
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-priapurl",
+      "slug": "priapurl",
+      "name": "Priapurl",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2600,
+        "y": 604
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-proskur",
+      "slug": "proskur",
+      "name": "Proskur",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2670,
+        "y": 664
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-raven-rock",
+      "slug": "raven-rock",
+      "name": "Raven Rock",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1455,
+        "y": 2124
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-reghed-glacier",
+      "slug": "reghed-glacier",
+      "name": "Reghed Glacier",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1390,
+        "y": 2224
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-riatavin",
+      "slug": "riatavin",
+      "name": "Riatavin",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2480,
+        "y": 189
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-river-chionthar",
+      "slug": "river-chionthar",
+      "name": "River Chionthar",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2050,
+        "y": 879
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-river-mirar",
+      "slug": "river-mirar",
+      "name": "River Mirar",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1570,
+        "y": 2044
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-river-rauvin",
+      "slug": "river-rauvin",
+      "name": "River Rauvin",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2080,
+        "y": 1939
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-river-surbrin",
+      "slug": "river-surbrin",
+      "name": "River Surbrin",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1725,
+        "y": 1864
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-rogarsheim",
+      "slug": "rogarsheim",
+      "name": "Rogarsheim",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1135,
+        "y": 1044
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-ruathym",
+      "slug": "ruathym",
+      "name": "Ruathym",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 950,
+        "y": 1479
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-ruins-of-ascarle",
+      "slug": "ruins-of-ascarle",
+      "name": "Ruins of Ascarle",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 523,
+        "y": 1936
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-saerloon",
+      "slug": "saerloon",
+      "name": "Saerloon",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3230,
+        "y": 709
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-scornubel",
+      "slug": "scornubel",
+      "name": "Scornubel",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2290,
+        "y": 854
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-sea-of-fallen-stars",
+      "slug": "sea-of-fallen-stars",
+      "name": "Sea of Fallen Stars",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3450,
+        "y": 679
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-sea-of-moonshae",
+      "slug": "sea-of-moonshae",
+      "name": "Sea of Moonshae",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1100,
+        "y": 1039
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-sea-of-moving-ice",
+      "slug": "sea-of-moving-ice",
+      "name": "Sea of Moving Ice",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1140,
+        "y": 2194
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-sea-of-swords",
+      "slug": "sea-of-swords",
+      "name": "Sea of Swords",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1570,
+        "y": 889
+      },
+      "searchExtent": {
+        "minX": 1370,
+        "maxX": 1740,
+        "minY": 680,
+        "maxY": 1180
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-secomber",
+      "slug": "secomber",
+      "name": "Secomber",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1890,
+        "y": 1449
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-selgaunt",
+      "slug": "selgaunt",
+      "name": "Selgaunt",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3300,
+        "y": 749
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-sembia",
+      "slug": "sembia",
+      "name": "Sembia",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3310,
+        "y": 759
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-serpent-hills",
+      "slug": "serpent-hills",
+      "name": "Serpent Hills",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2150,
+        "y": 1239
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-settlestone",
+      "slug": "settlestone",
+      "name": "Settlestone",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1900,
+        "y": 2024
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-shilmista-forest",
+      "slug": "shilmista-forest",
+      "name": "Shilmista Forest",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2580,
+        "y": 309
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-silverymoon",
+      "slug": "silverymoon",
+      "name": "Silverymoon",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-silverymoon-es",
+          "geographicNameId": "geo-silverymoon",
+          "language": "es",
+          "value": "Luna Plateada"
+        }
+      ],
+      "coordinates": {
+        "x": 1998,
+        "y": 1969
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-skadaurak",
+      "slug": "skadaurak",
+      "name": "Skadaurak",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1225,
+        "y": 1199
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-snowdown",
+      "slug": "snowdown",
+      "name": "Snowdown",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1290,
+        "y": 759
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-snowflake-mountains",
+      "slug": "snowflake-mountains",
+      "name": "Snowflake Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2690,
+        "y": 259
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-southwood",
+      "slug": "southwood",
+      "name": "Southwood",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2060,
+        "y": 1469
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-spiderhaunt-woods",
+      "slug": "spiderhaunt-woods",
+      "name": "Spiderhaunt Woods",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3020,
+        "y": 1144
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-ssthartissssun",
+      "slug": "ssthartissssun",
+      "name": "Ss'thar'tiss'ssun",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2275,
+        "y": 1179
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-star-mountains",
+      "slug": "star-mountains",
+      "name": "Star Mounts",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-star-mountains-legacy",
+          "geographicNameId": "geo-star-mountains",
+          "language": "en",
+          "value": "Star Mountains"
+        }
+      ],
+      "coordinates": {
+        "x": 2000,
+        "y": 1746
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-stone-stand",
+      "slug": "stone-stand",
+      "name": "Stone Stand",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2120,
+        "y": 1909
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-sundabar",
+      "slug": "sundabar",
+      "name": "Sundabar",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2145,
+        "y": 1984
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-sunset-mountains",
+      "slug": "sunset-mountains",
+      "name": "Sunset Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2500,
+        "y": 829
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-sword-coast",
+      "slug": "sword-coast",
+      "name": "Sword Coast",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-sword-coast-es",
+          "geographicNameId": "geo-sword-coast",
+          "language": "es",
+          "value": "Costa de la Espada"
+        }
+      ],
+      "coordinates": {
+        "x": 1450,
+        "y": 1049
+      },
+      "searchExtent": {
+        "minX": 1380,
+        "maxX": 1710,
+        "minY": 750,
+        "maxY": 1500
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-sword-mountains",
+      "slug": "sword-mountains",
+      "name": "Sword Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1610,
+        "y": 1569
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-tejarn-hills",
+      "slug": "tejarn-hills",
+      "name": "Tejarn Hills",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2290,
+        "y": 249
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-ten-towns",
+      "slug": "ten-towns",
+      "name": "Ten-Towns",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1300,
+        "y": 2149
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-thar",
+      "slug": "thar",
+      "name": "Thar",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3470,
+        "y": 1379
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-aphrunn-mountains",
+      "slug": "the-aphrunn-mountains",
+      "name": "The Aphrunn Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3455,
+        "y": 199
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-cloakwood",
+      "slug": "the-cloakwood",
+      "name": "The Cloakwood",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1880,
+        "y": 764
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-cloud-peaks",
+      "slug": "the-cloud-peaks",
+      "name": "The Cloud Peaks",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1950,
+        "y": 479
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-dalelands",
+      "slug": "the-dalelands",
+      "name": "The Dalelands",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3180,
+        "y": 1009
+      },
+      "searchExtent": {
+        "minX": 3050,
+        "maxX": 3430,
+        "minY": 850,
+        "maxY": 1200
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-endless-ice-sea",
+      "slug": "the-endless-ice-sea",
+      "name": "The Endless Ice Sea",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1740,
+        "y": 2239
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-far-forest",
+      "slug": "the-far-forest",
+      "name": "The Far Forest",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2290,
+        "y": 1847
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-far-hills",
+      "slug": "the-far-hills",
+      "name": "The Far Hills",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2470,
+        "y": 859
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-flooded-forest",
+      "slug": "the-flooded-forest",
+      "name": "The Flooded Forest",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3050,
+        "y": 289
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-frozen-forest",
+      "slug": "the-frozen-forest",
+      "name": "The Frozen Forest",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3260,
+        "y": 1924
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-frozen-sea",
+      "slug": "the-frozen-sea",
+      "name": "The Frozen Sea",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2470,
+        "y": 1809
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-giants-plain",
+      "slug": "the-giants-plain",
+      "name": "The Giant's Plain",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2630,
+        "y": 479
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-green-fields",
+      "slug": "the-green-fields",
+      "name": "The Green Fields",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2280,
+        "y": 584
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-high-ice",
+      "slug": "the-high-ice",
+      "name": "The High Ice",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2760,
+        "y": 2054
+      },
+      "searchExtent": {
+        "minX": 2350,
+        "maxX": 3130,
+        "minY": 1650,
+        "maxY": 2290
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-high-moors",
+      "slug": "the-high-moors",
+      "name": "The High Moors",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2800,
+        "y": 1004
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-laughingflow",
+      "slug": "the-laughingflow",
+      "name": "The Laughingflow",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1860,
+        "y": 1909
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-lurkwood",
+      "slug": "the-lurkwood",
+      "name": "The Lurkwood",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1775,
+        "y": 2069
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-nelanther",
+      "slug": "the-nelanther",
+      "name": "The Nelanther",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1530,
+        "y": 419
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-plain-of-standing-stones",
+      "slug": "the-plain-of-standing-stones",
+      "name": "The Plain of Standing Stones",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2770,
+        "y": 1579
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-purple-rocks",
+      "slug": "the-purple-rocks",
+      "name": "The Purple Rocks",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 620,
+        "y": 1919
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-reaching-woods",
+      "slug": "the-reaching-woods",
+      "name": "The Reaching Woods",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2320,
+        "y": 879
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-ride",
+      "slug": "the-ride",
+      "name": "The Ride",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3270,
+        "y": 1459
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-shining-plains",
+      "slug": "the-shining-plains",
+      "name": "The Shining Plains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2860,
+        "y": 219
+      },
+      "searchExtent": {
+        "minX": 2700,
+        "maxX": 3270,
+        "minY": 70,
+        "maxY": 380
+      },
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-small-teeth",
+      "slug": "the-small-teeth",
+      "name": "The Small Teeth",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1930,
+        "y": 309
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-snakewood",
+      "slug": "the-snakewood",
+      "name": "The Snakewood",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2320,
+        "y": 469
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-spine-of-the-world",
+      "slug": "the-spine-of-the-world",
+      "name": "The Spine of the World",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1600,
+        "y": 2159
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-storm-horns",
+      "slug": "the-storm-horns",
+      "name": "The Storm Horns",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2680,
+        "y": 899
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-tortured-land",
+      "slug": "the-tortured-land",
+      "name": "The Tortured Land",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3250,
+        "y": 1639
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-trollclaws",
+      "slug": "the-trollclaws",
+      "name": "The Trollclaws",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1980,
+        "y": 1069
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-vilhon-reach",
+      "slug": "the-vilhon-reach",
+      "name": "The Vilhon Reach",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3400,
+        "y": 89
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-the-whale-bones",
+      "slug": "the-whale-bones",
+      "name": "The Whale Bones",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1215,
+        "y": 1489
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-thornhold",
+      "slug": "thornhold",
+      "name": "Thornhold",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1515,
+        "y": 1596
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-thunder-peaks",
+      "slug": "thunder-peaks",
+      "name": "Thunder Peaks",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3100,
+        "y": 859
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-trackless-sea",
+      "slug": "trackless-sea",
+      "name": "Trackless Sea",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 610,
+        "y": 1649
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-trade-way",
+      "slug": "trade-way",
+      "name": "Trade Way",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2010,
+        "y": 1229
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-triboar",
+      "slug": "triboar",
+      "name": "Triboar",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1675,
+        "y": 1814
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-triel",
+      "slug": "triel",
+      "name": "Triel",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2225,
+        "y": 899
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-trielta-hills",
+      "slug": "trielta-hills",
+      "name": "Trielta Hills",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2260,
+        "y": 989
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-trisk",
+      "slug": "trisk",
+      "name": "Trisk",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 520,
+        "y": 1909
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-troll-mountains",
+      "slug": "troll-mountains",
+      "name": "Troll Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2460,
+        "y": 514
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-trollbark-forest",
+      "slug": "trollbark-forest",
+      "name": "Trollbark Forest",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1800,
+        "y": 1201
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-trollclaw-ford",
+      "slug": "trollclaw-ford",
+      "name": "Trollclaw Ford",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1980,
+        "y": 1039
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-trollclaw-range",
+      "slug": "trollclaw-range",
+      "name": "Trollclaw Range",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 950,
+        "y": 869
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-tuern",
+      "slug": "tuern",
+      "name": "Tuern",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 385,
+        "y": 2134
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-turmish",
+      "slug": "turmish",
+      "name": "Turmish",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3460,
+        "y": 334
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-turnback-mountains",
+      "slug": "turnback-mountains",
+      "name": "Turnback Mountains",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3130,
+        "y": 1759
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-ulf-of-thuger",
+      "slug": "ulf-of-thuger",
+      "name": "Ulf of Thuger",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 515,
+        "y": 1891
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-unicorn-run",
+      "slug": "unicorn-run",
+      "name": "Unicorn Run",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2010,
+        "y": 1639
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-utherall",
+      "slug": "utherall",
+      "name": "Utherall",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 550,
+        "y": 1869
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-uttersea",
+      "slug": "uttersea",
+      "name": "Uttersea",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 395,
+        "y": 2164
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-vercy-wood",
+      "slug": "vercy-wood",
+      "name": "Vercy Wood",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3470,
+        "y": 1524
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-vilkstead",
+      "slug": "vilkstead",
+      "name": "Vilkstead",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 592,
+        "y": 1874
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-warlocks-crypt",
+      "slug": "warlocks-crypt",
+      "name": "Warlock's Crypt",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1790,
+        "y": 1139
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-waterdeep",
+      "slug": "waterdeep",
+      "name": "Waterdeep",
+      "language": "en",
+      "aliases": [
+        {
+          "id": "geo-alias-waterdeep-city-of-splendors",
+          "geographicNameId": "geo-waterdeep",
+          "language": "en",
+          "value": "City of Splendors"
+        },
+        {
+          "id": "geo-alias-waterdeep-es",
+          "geographicNameId": "geo-waterdeep",
+          "language": "es",
+          "value": "Aguas Profundas"
+        }
+      ],
+      "coordinates": {
+        "x": 1626,
+        "y": 1465
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-westgate",
+      "slug": "westgate",
+      "name": "Westgate",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3030,
+        "y": 679
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-white-peaks",
+      "slug": "white-peaks",
+      "name": "White Peaks",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3175,
+        "y": 1549
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-winding-water",
+      "slug": "winding-water",
+      "name": "Winding Water",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1830,
+        "y": 1069
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-wood-of-sharp-teeth",
+      "slug": "wood-of-sharp-teeth",
+      "name": "Wood of Sharp Teeth",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 2090,
+        "y": 739
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.5,
+      "entityId": null
+    },
+    {
+      "id": "geo-yartar",
+      "slug": "yartar",
+      "name": "Yartar",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 1755,
+        "y": 1809
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-yhaunn",
+      "slug": "yhaunn",
+      "name": "Yhaunn",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3470,
+        "y": 869
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    },
+    {
+      "id": "geo-zhentil-keep",
+      "slug": "zhentil-keep",
+      "name": "Zhentil Keep",
+      "language": "en",
+      "aliases": [],
+      "coordinates": {
+        "x": 3280,
+        "y": 1314
+      },
+      "searchExtent": null,
+      "recommendedZoom": 0.75,
+      "entityId": null
+    }
+  ],
+  "characterLocationEvents": [],
+  "generatedAt": "2026-08-13T10:13:37.959Z",
+  "sourceRevision": "sha256:bfaacb9ace67b2399174891393f351bc2a24a9e3b6011b1e762ef549e98da976",
+  "checksum": "sha256:bfaacb9ace67b2399174891393f351bc2a24a9e3b6011b1e762ef549e98da976"
+}
