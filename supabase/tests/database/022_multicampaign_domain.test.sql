@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(35);
+select plan(37);
 
 select is(
   (select id from public.campaigns where slug = 'castigo-divino'),
@@ -122,7 +122,7 @@ select ok(
     ) values (
       '00000000-0000-4000-8000-000000000054', 'entity-map053-b-bad-category',
       'map053-b-bad-category', 'location', 'pin', 'public', 'Bad category', '', '', 510, 510,
-      'category-settlement', 'draft'
+      'category-places', 'draft'
     )
   $sql$),
   'an entity cannot use a category from another campaign'
@@ -142,7 +142,7 @@ select ok(
     insert into public.entity_tags (campaign_id, id, entity_id, tag_id, publication_status)
     values (
       '00000000-0000-4000-8000-000000000054', 'entity-tag-map053-cross',
-      'entity-map053-b-character', 'tag-featured', 'draft'
+      'entity-map053-b-character', 'notable', 'draft'
     )
   $sql$),
   'an entity tag cannot join campaign B to a campaign A tag'
@@ -174,7 +174,7 @@ select ok(
       campaign_id, id, character_id, event_type, location_entity_id,
       location_label, summary, language, publication_status
     ) values (
-      '00000000-0000-4000-8000-000000000054', 'event-map053-cross',
+      '00000000-0000-4000-8000-000000000054', 'location-event-map053-cross',
       'entity-map053-b-character', 'sighting', 'entity-bramble-fort',
       'Cross event', 'Forbidden', 'en', 'draft'
     )
@@ -189,6 +189,25 @@ select ok(
   $sql$),
   'an existing entity cannot be moved between campaigns'
 );
+
+-- Run one negative test as the database owner so the failure is structural and
+-- cannot be explained by RLS/grant denial.
+reset role;
+select ok(
+  pg_temp.statement_fails($sql$
+    insert into public.entity_player_dispositions (campaign_id, entity_id, player_id, disposition)
+    values (
+      '00000000-0000-4000-8000-000000000054',
+      'entity-aster-guide',
+      'player-map053-b',
+      'neutral'
+    )
+  $sql$),
+  'the storage FK rejects a campaign B player disposition over a campaign A entity'
+);
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}';
+set local role authenticated;
 
 insert into public.geographic_names (
   id, slug, name, language, x, y, recommended_zoom, publication_status
