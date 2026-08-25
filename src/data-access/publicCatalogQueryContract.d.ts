@@ -3,6 +3,7 @@ export interface PublicCatalogTableQuery {
   readonly select: string;
   readonly order: string;
   readonly published: boolean;
+  readonly campaignScoped: boolean;
 }
 
 export interface ParsedPublicCatalogContentRange {
@@ -30,13 +31,21 @@ export class PublicCatalogReadError extends Error {
   );
 }
 
+export const INITIAL_PUBLIC_CAMPAIGN_ID: string;
 export const PUBLIC_CATALOG_PAGE_SIZE: number;
 export const PUBLIC_CATALOG_TABLE_QUERIES: Readonly<Record<string, PublicCatalogTableQuery>>;
+export const PUBLIC_CAMPAIGNS_QUERY: PublicCatalogTableQuery;
 
 export function parsePublicCatalogContentRange(
   value: string | null,
   table: string,
 ): ParsedPublicCatalogContentRange;
+
+export function projectCampaignGeographicEntityLinks(
+  geographicNames: readonly Record<string, unknown>[],
+  links: readonly Record<string, unknown>[],
+  campaignId?: string,
+): readonly Record<string, unknown>[];
 
 export function fetchCompletePublicCatalogTable(options: {
   readonly projectUrl: string;
@@ -45,4 +54,5 @@ export function fetchCompletePublicCatalogTable(options: {
   readonly fetchImplementation: typeof fetch;
   readonly signal: AbortSignal;
   readonly pageSize?: number;
+  readonly campaignId?: string;
 }): Promise<readonly Record<string, unknown>[]>;
