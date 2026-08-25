@@ -74,7 +74,10 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
   await expect(veyraPin).toHaveCount(1);
   await expect(veyraPin).toHaveAttribute('data-entity-id', VEYRA_ENTITY_ID);
   await veyraPin.click();
-  await expect(page.getByTestId('place-details')).toHaveAttribute('data-active-pin-id', VEYRA_ENTITY_ID);
+  await expect(page.getByTestId('place-details')).toHaveAttribute(
+    'data-active-pin-id',
+    VEYRA_ENTITY_ID,
+  );
   await expect(page.getByText('Contenido de fans no oficial', { exact: true })).toBeVisible();
   await expect(page.getByRole('contentinfo')).toContainText('Cartografía: Mike Schley');
 
@@ -124,7 +127,10 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
   await expect(page.getByTestId('place-details')).toBeHidden();
 
   await veyraPin.click();
-  await expect(page.getByTestId('place-details')).toHaveAttribute('data-active-pin-id', VEYRA_ENTITY_ID);
+  await expect(page.getByTestId('place-details')).toHaveAttribute(
+    'data-active-pin-id',
+    VEYRA_ENTITY_ID,
+  );
   await page
     .getByTestId('place-details')
     .getByRole('button', { name: 'Cerrar la ficha de Veyra' })
@@ -156,9 +162,13 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
   await expect(
     page.getByRole('checkbox', { name: /Personaje/, includeHidden: true }),
   ).toBeChecked();
-  await expect(page.getByRole('checkbox', { name: /Veyra/, includeHidden: true })).toBeChecked();
+  await expect(
+    page.getByRole('checkbox', { name: /Veyra/, includeHidden: true }),
+  ).toBeChecked();
   await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
-  const responsibleUse = page.getByRole('complementary', { name: 'Uso responsable del mapa' });
+  const responsibleUse = page.getByRole('complementary', {
+    name: 'Uso responsable del mapa',
+  });
   await expect(responsibleUse).toBeVisible();
   await expect(responsibleUse).toContainText('se carga de forma remota');
   await expect(responsibleUse).toContainText(
@@ -198,6 +208,9 @@ test('keeps v1.0 usable from the public snapshot when Supabase returns 503', asy
   );
   await expect(veyraPin).toHaveCount(1);
   await veyraPin.click();
-  await expect(page.getByTestId('place-details')).toHaveAttribute('data-active-pin-id', VEYRA_ENTITY_ID);
+  await expect(page.getByTestId('place-details')).toHaveAttribute(
+    'data-active-pin-id',
+    VEYRA_ENTITY_ID,
+  );
   await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
 });
