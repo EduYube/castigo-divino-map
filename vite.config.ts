@@ -28,18 +28,21 @@ function createE2ePublicSnapshotPlugin(): Plugin {
   return {
     name: 'e2e-public-catalog-fixture',
     configureServer(server) {
-      server.middlewares.use('/data/public-catalog.snapshot.json', async (_request, response, next) => {
-        try {
-          const fixture = await readFile(E2E_PUBLIC_SNAPSHOT_URL, 'utf8');
+      server.middlewares.use(
+        '/data/public-catalog.snapshot.json',
+        async (_request, response, next) => {
+          try {
+            const fixture = await readFile(E2E_PUBLIC_SNAPSHOT_URL, 'utf8');
 
-          response.statusCode = 200;
-          response.setHeader('Content-Type', 'application/json; charset=utf-8');
-          response.setHeader('Cache-Control', 'no-store');
-          response.end(fixture);
-        } catch (error) {
-          next(error);
-        }
-      });
+            response.statusCode = 200;
+            response.setHeader('Content-Type', 'application/json; charset=utf-8');
+            response.setHeader('Cache-Control', 'no-store');
+            response.end(fixture);
+          } catch (error) {
+            next(error);
+          }
+        },
+      );
     },
   };
 }
