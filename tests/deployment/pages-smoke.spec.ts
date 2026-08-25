@@ -77,7 +77,7 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
   );
   await veyraPin.click();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
-    'data-active-place-id',
+    'data-active-pin-id',
     'entity-request-07d26371bbff42d9b91e076d099891b0',
   );
   await expect(page.getByText('Contenido de fans no oficial', { exact: true })).toBeVisible();
@@ -130,7 +130,7 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
 
   await veyraPin.click();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
-    'data-active-place-id',
+    'data-active-pin-id',
     'entity-request-07d26371bbff42d9b91e076d099891b0',
   );
   await page
