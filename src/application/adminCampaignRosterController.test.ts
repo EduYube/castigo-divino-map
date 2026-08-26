@@ -68,13 +68,11 @@ class FakeRepository implements AdminCampaignRosterRepository {
     name: draft.name,
     displayOrder: draft.displayOrder,
   }));
-  updateCampaign = vi.fn(
-    async (original: AdminCampaignRecord, draft: AdminCampaignDraft) => ({
-      ...original,
-      name: draft.name,
-      displayOrder: draft.displayOrder,
-    }),
-  );
+  updateCampaign = vi.fn(async (original: AdminCampaignRecord, draft: AdminCampaignDraft) => ({
+    ...original,
+    name: draft.name,
+    displayOrder: draft.displayOrder,
+  }));
   setCampaignStatus = vi.fn(
     async (
       original: AdminCampaignRecord,
