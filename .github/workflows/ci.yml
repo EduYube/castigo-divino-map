@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -34,87 +34,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Repair MAP-054 branch files
-        if: github.event_name == 'pull_request' && github.head_ref == 'agent/map-054-campaign-roster-admin'
-        env:
-          MAP054_HEAD_REF: ${{ github.head_ref }}
-        run: |
-          git fetch origin "$MAP054_HEAD_REF"
-          git checkout -B "$MAP054_HEAD_REF" "origin/$MAP054_HEAD_REF"
-          git fetch origin 403fd75fcc1258b838aa73a3e2f67e3a252e5c6d --depth=1
-          git show 403fd75fcc1258b838aa73a3e2f67e3a252e5c6d:src/app/adminCampaignRoster.ts > /tmp/adminCampaignRoster.ts
-          python - <<'PY'
-          from pathlib import Path
-
-          ui = Path('src/app/adminCampaignRoster.ts')
-          text = Path('/tmp/adminCampaignRoster.ts').read_text()
-          old = """  const shell = root.querySelector<HTMLElement>('.admin-auth__shell');
-          const summary = root.querySelector<HTMLElement>('.admin-auth__summary');
-          const logout = root.querySelector<HTMLElement>('.admin-auth__logout');
-          if (!shell || !summary || !logout) {
-            throw new Error('Missing administrative shell for MAP-054.');
-          }
-
-          summary.textContent =
-          """
-          new = """  const shellCandidate = root.querySelector<HTMLElement>('.admin-auth__shell');
-          const summary = root.querySelector<HTMLElement>('.admin-auth__summary');
-          const logout = root.querySelector<HTMLElement>('.admin-auth__logout');
-          if (!shellCandidate || !summary || !logout) {
-            throw new Error('Missing administrative shell for MAP-054.');
-          }
-          const shell: HTMLElement = shellCandidate;
-
-          summary.textContent =
-          """
-          if old not in text:
-              raise SystemExit('MAP-054 admin shell block not found')
-          ui.write_text(text.replace(old, new, 1))
-
-          sql = Path('supabase/tests/database/025_campaign_roster_admin.test.sql')
-          text = sql.read_text()
-          old = """select is(
-            (
-              with updated as (
-                update public.players
-                set display_name = 'Tampered'
-                where id = 'player-map054-b'
-                returning 1
-              )
-              select count(*) from updated
-            ),
-            0::bigint,
-            'authenticated non-admin cannot edit another campaign roster'
-          );
-          """
-          new = """update public.players
-          set display_name = 'Tampered'
-          where id = 'player-map054-b';
-
-          select is(
-            (
-              select count(*)
-              from public.players
-              where id = 'player-map054-b'
-                and display_name = 'Tampered'
-            ),
-            0::bigint,
-            'authenticated non-admin cannot edit another campaign roster'
-          );
-          """
-          if old not in text:
-              raise SystemExit('MAP-054 pgTAP update assertion block not found')
-          sql.write_text(text.replace(old, new, 1))
-          PY
-          npm run format
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/app/adminCampaignRoster.ts src/application/adminCampaignRosterController.test.ts supabase/tests/database/025_campaign_roster_admin.test.sql
-          if ! git diff --cached --quiet; then
-            git commit -m "fix(map-054): repair admin roster validation gates"
-            git push origin "HEAD:$MAP054_HEAD_REF"
-          fi
 
       - name: Check formatting
         run: npm run format:check
