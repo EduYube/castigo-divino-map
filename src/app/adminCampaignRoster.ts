@@ -73,6 +73,8 @@ export function mountAdminCampaignRoster(
     throw new Error('Missing administrative shell for MAP-054.');
   }
 
+  const adminShell: HTMLElement = shell;
+
   summary.textContent =
     'Modo administrativo activo. La campaña seleccionada delimita todas las ediciones dependientes del dominio.';
 
@@ -168,7 +170,7 @@ export function mountAdminCampaignRoster(
   newCampaignButton.type = 'button';
   newCampaignButton.textContent = 'Crear campaña';
   refreshButton.type = 'button';
-  refreshButton.textContent = 'Recargar campañas';
+  refreshButton.textContent = 'Recergar campañas';
   campaignToolbar.append(newCampaignButton, refreshButton);
 
   activeCampaignHeading.textContent = 'Campañas activas';
@@ -266,7 +268,7 @@ export function mountAdminCampaignRoster(
     label: 'Color hexadecimal',
   });
   playerColor.required = true;
-  playerColor.pattern = '#[0-9A-Fa-f]{6}';
+  playerColor.pattern = '#[0-9A-Fat-f]{6}';
   playerColor.maxLength = 7;
   playerColorRow.append(playerColorPicker, playerColor);
   playerForm.noValidate = true;
@@ -301,7 +303,7 @@ export function mountAdminCampaignRoster(
     campaignEditor,
     playerEditor,
   );
-  shell.insertBefore(section, logout);
+  adminShell.insertBefore(section, logout);
 
   function resetFormTracking(form: HTMLFormElement): void {
     formSnapshots.delete(form);
@@ -337,7 +339,7 @@ export function mountAdminCampaignRoster(
   }
 
   function hasDirtyAdminForm(): boolean {
-    return Array.from(shell.querySelectorAll<HTMLFormElement>('form')).some(
+    return Array.from(adminShell.querySelectorAll<HTMLFormElement>('form')).some(
       (form) => formIsVisible(form) && form.dataset.adminDirty === 'true',
     );
   }
@@ -448,8 +450,7 @@ export function mountAdminCampaignRoster(
     }
     metadata.textContent = `${campaign.slug} · orden ${campaign.displayOrder} · ${campaign.status === 'active' ? 'activa' : 'archivada'}`;
     selectButton.type = 'button';
-    selectButton.textContent =
-      campaign.id === state.selectedCampaignId ? 'Seleccionada' : 'Seleccionar';
+    selectButton.textContent = campaign.id === state.selectedCampaignId ? 'Seleccionada' : 'Seleccionar';
     selectButton.disabled = campaign.id === state.selectedCampaignId || state.phase === 'mutating';
     selectButton.addEventListener('click', () => {
       if (!confirmCampaignChange()) return;
@@ -489,7 +490,7 @@ export function mountAdminCampaignRoster(
     const metadata = createElement('p', 'admin-campaign-roster__metadata');
     const actions = createElement('div', 'admin-campaign-roster__toolbar');
     const editButton = createElement('button', 'admin-campaign-roster__button');
-    const archiveButton = createElement('button', 'admin-campaign-roster__button');
+  const archiveButton = createElement('button', 'admin-campaign-roster__button');
 
     swatch.style.setProperty('--player-accent', player.accentColor);
     swatch.setAttribute('aria-hidden', 'true');
@@ -527,7 +528,7 @@ export function mountAdminCampaignRoster(
     for (const campaign of state.campaigns) {
       const option = document.createElement('option');
       option.value = campaign.id;
-      option.textContent = `${campaign.name}${campaign.status === 'archived' ? ' — archivada' : ''}${isInitialCampaign(campaign) ? ' — inicial v1.0' : ''}`;
+      option.textContent = `${campaign.name}${campaign.status === 'archived' ? '— archivada' : ''}${isInitialCampaign(campaign) ? ' — inicial v1.0' : ''}`;
       campaignSelect.append(option);
     }
     campaignSelect.value = selected?.id ?? currentSelectValue;
@@ -545,159 +546,4 @@ export function mountAdminCampaignRoster(
     rosterSummary.textContent = selected
       ? `${selected.name}: ${state.players.filter(({ publicationStatus }) => publicationStatus !== 'archived').length} activos y ${state.players.filter(({ publicationStatus }) => publicationStatus === 'archived').length} archivados.`
       : 'Selecciona una campaña.';
-    playerList.replaceChildren(...state.players.map(createPlayerCard));
-    emptyPlayers.hidden = state.players.length !== 0 || state.phase === 'loading';
-    emptyPlayers.textContent = 'Esta campaña todavía no tiene personajes jugadores.';
-
-    const unavailable = !state.authorized || !state.backendConnected;
-    campaignSelect.disabled =
-      unavailable || state.phase === 'loading' || state.phase === 'mutating';
-    newCampaignButton.disabled = unavailable || state.phase !== 'ready';
-    refreshButton.disabled = unavailable || state.phase === 'loading' || state.phase === 'mutating';
-    newPlayerButton.disabled =
-      unavailable || state.phase !== 'ready' || !selected || selected.status === 'archived';
-    saveCampaignButton.disabled = state.phase === 'mutating';
-    savePlayerButton.disabled = state.phase === 'mutating';
-
-    if (!state.authorized) {
-      status.textContent =
-        'La administración de campañas permanece cerrada hasta autorizar la sesión.';
-    } else if (!state.backendConnected) {
-      status.textContent =
-        'Campañas y roster permanecen bloqueados mientras el backend no esté conectado.';
-    } else if (state.phase === 'loading') {
-      status.textContent = 'Cargando la campaña administrativa…';
-    } else if (state.phase === 'mutating') {
-      status.textContent = 'Guardando el cambio…';
-    } else if (state.issue) {
-      status.textContent = state.issue.message;
-    } else if (selected) {
-      status.textContent = `Contexto activo: ${selected.name}.`;
-    } else {
-      status.textContent = 'No hay campaña seleccionada.';
-    }
-  }
-
-  const handleCampaignSelect = (): void => {
-    const requested = campaignSelect.value;
-    if (requested === state.selectedCampaignId) return;
-    if (!confirmCampaignChange()) {
-      campaignSelect.value = state.selectedCampaignId;
-      campaignSelect.focus();
-      return;
-    }
-    closeCampaignEditor();
-    closePlayerEditor();
-    void controller.selectCampaign(requested);
-  };
-  const handleNewCampaign = (): void => openCampaignEditor(null, newCampaignButton);
-  const handleNewPlayer = (): void => openPlayerEditor(null, newPlayerButton);
-  const handleRefresh = (): void => void controller.reload();
-  const handleCampaignSubmit = (event: SubmitEvent): void => {
-    event.preventDefault();
-    if (!renderCampaignErrors()) {
-      campaignForm.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
-      return;
-    }
-    const request = editingCampaign
-      ? controller.updateCampaign(editingCampaign, campaignDraft())
-      : controller.createCampaign(campaignDraft());
-    void request.then((saved) => {
-      if (saved) closeCampaignEditor();
-    });
-  };
-  const handlePlayerSubmit = (event: SubmitEvent): void => {
-    event.preventDefault();
-    if (!renderPlayerErrors()) {
-      playerForm.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
-      return;
-    }
-    const request = editingPlayer
-      ? controller.updatePlayer(editingPlayer, playerDraft())
-      : controller.createPlayer(playerDraft());
-    void request.then((saved) => {
-      if (saved) closePlayerEditor();
-    });
-  };
-  const handleColorPicker = (): void => {
-    playerColor.value = playerColorPicker.value;
-    renderPlayerErrors();
-    updateDirtyState(playerForm);
-  };
-  const handleColorText = (): void => {
-    const normalized = normalizeAccentColor(playerColor.value);
-    if (/^#[0-9a-f]{6}$/.test(normalized)) playerColorPicker.value = normalized;
-    renderPlayerErrors();
-  };
-  const handleFocusIn = (event: FocusEvent): void => {
-    const target = event.target;
-    const form = target instanceof Element ? target.closest<HTMLFormElement>('form') : null;
-    if (form && shell.contains(form)) markFormSnapshot(form);
-  };
-  const handleFormChange = (event: Event): void => {
-    const target = event.target;
-    const form = target instanceof Element ? target.closest<HTMLFormElement>('form') : null;
-    if (form && shell.contains(form)) {
-      markFormSnapshot(form);
-      updateDirtyState(form);
-    }
-  };
-  const handlePublicDataStatus = (event: Event): void => {
-    if (!isPublicDataStatusEvent(event)) return;
-    const next = event.detail.backendState;
-    if (next === 'connected' || next === 'degraded' || next === 'offline') {
-      backendConnected = next === 'connected';
-      controller.setAccess(authController.getState().phase === 'authorized', backendConnected);
-    }
-  };
-
-  campaignSelect.addEventListener('change', handleCampaignSelect);
-  newCampaignButton.addEventListener('click', handleNewCampaign);
-  newPlayerButton.addEventListener('click', handleNewPlayer);
-  refreshButton.addEventListener('click', handleRefresh);
-  campaignForm.addEventListener('submit', handleCampaignSubmit);
-  playerForm.addEventListener('submit', handlePlayerSubmit);
-  cancelCampaignButton.addEventListener('click', closeCampaignEditor);
-  cancelPlayerButton.addEventListener('click', closePlayerEditor);
-  campaignForm.addEventListener('input', renderCampaignErrors);
-  playerForm.addEventListener('input', renderPlayerErrors);
-  playerColorPicker.addEventListener('input', handleColorPicker);
-  playerColor.addEventListener('input', handleColorText);
-  shell.addEventListener('focusin', handleFocusIn);
-  shell.addEventListener('input', handleFormChange);
-  shell.addEventListener('change', handleFormChange);
-  window.addEventListener('atlas:public-data-status', handlePublicDataStatus);
-
-  const unsubscribeRoster = controller.subscribe(render);
-  const unsubscribeAuth = authController.subscribe((authState) => {
-    controller.setAccess(authState.phase === 'authorized', backendConnected);
-    if (authState.phase !== 'authorized') {
-      closeCampaignEditor();
-      closePlayerEditor();
-    }
-  });
-
-  return {
-    destroy(): void {
-      unsubscribeRoster();
-      unsubscribeAuth();
-      campaignSelect.removeEventListener('change', handleCampaignSelect);
-      newCampaignButton.removeEventListener('click', handleNewCampaign);
-      newPlayerButton.removeEventListener('click', handleNewPlayer);
-      refreshButton.removeEventListener('click', handleRefresh);
-      campaignForm.removeEventListener('submit', handleCampaignSubmit);
-      playerForm.removeEventListener('submit', handlePlayerSubmit);
-      cancelCampaignButton.removeEventListener('click', closeCampaignEditor);
-      cancelPlayerButton.removeEventListener('click', closePlayerEditor);
-      campaignForm.removeEventListener('input', renderCampaignErrors);
-      playerForm.removeEventListener('input', renderPlayerErrors);
-      playerColorPicker.removeEventListener('input', handleColorPicker);
-      playerColor.removeEventListener('input', handleColorText);
-      shell.removeEventListener('focusin', handleFocusIn);
-      shell.removeEventListener('input', handleFormChange);
-      shell.removeEventListener('change', handleFormChange);
-      window.removeEventListener('atlas:public-data-status', handlePublicDataStatus);
-      section.remove();
-    },
-  };
-}
+    playerList.replaceChildren(
