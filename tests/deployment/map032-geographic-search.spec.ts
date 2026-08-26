@@ -8,16 +8,26 @@ const TEST_MAP = `
   </svg>
 `;
 
+function isPublishedPages(): boolean {
+  return Boolean(process.env.PAGES_URL);
+}
+
 test('publishes the MAP-021 Waterdeep geographic search contract', async ({ page }) => {
   await page.route(OFFICIAL_MAP_URL, async (route) => {
     await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: TEST_MAP });
   });
 
+  if (!isPublishedPages()) {
+    await page.route('**/rest/v1/**', async (route) => {
+      await route.abort('connectionrefused');
+    });
+  }
+
   const response = await page.goto('?q=Waterdeep');
   expect(response?.ok()).toBe(true);
 
   const backendStatus = page.locator('[data-backend-status]');
-  if (process.env.PAGES_URL) {
+  if (isPublishedPages()) {
     await expect(backendStatus).toHaveAttribute('data-backend-state', 'connected');
   } else {
     await expect
@@ -25,7 +35,9 @@ test('publishes the MAP-021 Waterdeep geographic search contract', async ({ page
         const state = await backendStatus.getAttribute('data-backend-state');
         const reason = await backendStatus.getAttribute('data-backend-reason');
         return (
-          state === 'connected' || (state === 'degraded' && reason === 'configuration-missing')
+          state === 'connected' ||
+          (state === 'degraded' &&
+            (reason === 'configuration-missing' || reason === 'network-unavailable'))
         );
       })
       .toBe(true);
