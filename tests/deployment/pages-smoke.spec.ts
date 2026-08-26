@@ -9,6 +9,18 @@ const NEUTRAL_TEST_MAP = `
 `;
 const VEYRA_ENTITY_ID = 'entity-request-07d26371bbff42d9b91e076d099891b0';
 
+function isPublishedPages(): boolean {
+  return Boolean(process.env.PAGES_URL);
+}
+
+async function isolateLocalPagesFromSupabase(page: Page): Promise<void> {
+  if (isPublishedPages()) return;
+
+  await page.route('**/rest/v1/**', async (route) => {
+    await route.abort('connectionrefused');
+  });
+}
+
 async function mockOfficialMap(page: Page, status = 200): Promise<void> {
   await page.route(OFFICIAL_MAP_URL, async (route) => {
     await route.fulfill(
@@ -38,6 +50,7 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
   });
 
   await mockOfficialMap(page);
+  await isolateLocalPagesFromSupabase(page);
   const response = await page.goto('?q=veyra&category=personaje&tag=category-veyra');
 
   expect(response?.ok()).toBe(true);
@@ -46,17 +59,18 @@ test('loads the v1.0 public experience from the repository subdirectory', async 
   await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
 
   const backendStatus = page.locator('[data-backend-status]');
-  if (process.env.PAGES_URL) {
+  if (isPublishedPages()) {
     await expect(backendStatus).toHaveAttribute('data-backend-state', 'connected');
   } else {
     await expect
       .poll(async () => {
         const state = await backendStatus.getAttribute('data-backend-state');
         const reason = await backendStatus.getAttribute('data-backend-reason');
-        if (state === 'connected') {
-          return 'accepted';
-        }
-        if (state === 'degraded' && reason === 'configuration-missing') {
+        if (state === 'connected') return 'accepted';
+        if (
+          state === 'degraded' &&
+          (reason === 'configuration-missing' || reason === 'network-unavailable')
+        ) {
           return 'accepted';
         }
         return `${state}:${reason}`;
