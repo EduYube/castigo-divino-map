@@ -33,6 +33,18 @@ function createValidContent() {
   };
 }
 
+function createValidMulticampaignContent() {
+  const legacy = createValidContent();
+  return {
+    schemaVersion: 3 as const,
+    geographicNames: legacy.geographicNames.map((name) => {
+      const globalName = { ...name };
+      Reflect.deleteProperty(globalName, 'entityId');
+      return globalName as Omit<typeof name, 'entityId'>;
+    }),
+  };
+}
+
 describe('MAP-039 geographic search coverage contract', () => {
   it('accepts the audited complete raster inventory', () => {
     expect(GEOGRAPHIC_COVERAGE_MANIFEST_COUNT).toBe(213);
@@ -48,6 +60,35 @@ describe('MAP-039 geographic search coverage contract', () => {
     ]) {
       expect(GEOGRAPHIC_COVERAGE_MANIFEST.some((entry) => entry.name === name)).toBe(true);
     }
+  });
+
+  it('accepts schema v3 global geography only when campaign entity pointers are absent', () => {
+    const content = createValidMulticampaignContent();
+
+    expect(() => assertGeographicSearchCoverage(content, 'multicampaign fixture')).not.toThrow();
+
+    const tuern = content.geographicNames.find(({ id }) => id === 'geo-tuern');
+    if (!tuern) throw new Error('Tuern fixture missing');
+    Object.assign(tuern, { entityId: null });
+
+    expect(() => assertGeographicSearchCoverage(content, 'invalid multicampaign pointer')).toThrow(
+      /geo-tuern must remain global without a campaign-specific entityId/i,
+    );
+  });
+
+  it('keeps the legacy projection strict about explicit search-only entityId null values', () => {
+    const content = createValidContent();
+    const tuern = content.geographicNames.find(({ id }) => id === 'geo-tuern');
+    if (!tuern) throw new Error('Tuern fixture missing');
+    const legacyRowWithoutEntityId = { ...tuern } as Partial<typeof tuern>;
+    delete legacyRowWithoutEntityId.entityId;
+    content.geographicNames = content.geographicNames.map((entry) =>
+      entry.id === tuern.id ? (legacyRowWithoutEntityId as typeof entry) : entry,
+    );
+
+    expect(() => assertGeographicSearchCoverage(content, 'invalid legacy pointer')).toThrow(
+      /geo-tuern must remain a search-only geographic identity/i,
+    );
   });
 
   it('rejects a required geographic identity even when the row count stays high', () => {
