@@ -5,7 +5,7 @@ export interface GeographicCoverageAlias {
   readonly value: string;
 }
 
-export interface GeographicCoverageEntry {
+export interface GeographicCoverageEntryBase {
   readonly id: string;
   readonly slug: string;
   readonly name: string;
@@ -16,12 +16,25 @@ export interface GeographicCoverageEntry {
     readonly y: number;
   };
   readonly recommendedZoom: number | null;
+}
+
+export interface GeographicCoverageEntry extends GeographicCoverageEntryBase {
   readonly entityId: string | null;
 }
 
-export interface GeographicCoverageContent {
-  readonly geographicNames?: readonly GeographicCoverageEntry[];
+export interface GeographicGlobalCoverageEntry extends GeographicCoverageEntryBase {
+  readonly entityId?: never;
 }
+
+export type GeographicCoverageContent =
+  | {
+      readonly schemaVersion?: 1 | 2;
+      readonly geographicNames?: readonly GeographicCoverageEntry[];
+    }
+  | {
+      readonly schemaVersion: 3;
+      readonly geographicNames?: readonly GeographicGlobalCoverageEntry[];
+    };
 
 export const MINIMUM_GEOGRAPHIC_NAME_COUNT: number;
 export const REQUIRED_GEOGRAPHIC_NAMES: readonly (readonly [string, string])[];
