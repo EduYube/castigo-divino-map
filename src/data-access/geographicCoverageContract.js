@@ -121,7 +121,7 @@ export function assertGeographicSearchCoverage(content, sourceLabel = 'public ca
     if (entry.slug !== expected.slug || entry.name !== expected.name || entry.language !== 'en') {
       fail(sourceLabel, `${expected.id} must keep its expected English public identity.`);
     }
-    if (entry.entityId !== null) {
+    if ((entry.entityId ?? null) !== null) {
       fail(sourceLabel, `${expected.id} must remain a search-only geographic identity.`);
     }
     if (
