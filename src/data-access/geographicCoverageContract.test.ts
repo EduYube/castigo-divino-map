@@ -50,6 +50,26 @@ describe('MAP-039 geographic search coverage contract', () => {
     }
   });
 
+  it('accepts the MAP-053 schema v3 global projection with entityId omitted', () => {
+    const content = createValidContent();
+    const geographicNames = content.geographicNames.map(({ entityId: _entityId, ...entry }) => entry);
+
+    expect(() =>
+      assertGeographicSearchCoverage({ geographicNames }, 'schema v3 global geography'),
+    ).not.toThrow();
+  });
+
+  it('still rejects a campaign-specific entity pointer in geographic search coverage', () => {
+    const content = createValidContent();
+    const tuern = content.geographicNames.find(({ id }) => id === 'geo-tuern');
+    if (!tuern) throw new Error('Tuern fixture missing');
+    Object.assign(tuern, { entityId: 'entity-should-not-leak' });
+
+    expect(() => assertGeographicSearchCoverage(content, 'campaign pointer leak')).toThrow(
+      /geo-tuern must remain a search-only geographic identity/i,
+    );
+  });
+
   it('rejects a required geographic identity even when the row count stays high', () => {
     const content = createValidContent();
     content.geographicNames = content.geographicNames.filter(
