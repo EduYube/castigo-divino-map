@@ -37,7 +37,11 @@ function createValidMulticampaignContent() {
   const legacy = createValidContent();
   return {
     schemaVersion: 3,
-    geographicNames: legacy.geographicNames.map(({ entityId: _entityId, ...name }) => name),
+    geographicNames: legacy.geographicNames.map((name) => {
+      const globalName = { ...name };
+      Reflect.deleteProperty(globalName, 'entityId');
+      return globalName as Omit<typeof name, 'entityId'>;
+    }),
   };
 }
 
