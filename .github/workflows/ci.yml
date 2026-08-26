@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -23,10 +23,8 @@ jobs:
     timeout-minutes: 35
 
     steps:
-      - name: Checkout repository branch
+      - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          ref: ${{ github.head_ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
@@ -37,18 +35,59 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Apply exact MAP-053 formatting once
-        run: |
-          npx prettier --write scripts/public-snapshot-lib.mjs scripts/verify-public-snapshot.mjs
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/public-snapshot-lib.mjs scripts/verify-public-snapshot.mjs
-          if git diff --cached --quiet; then
-            echo "No formatting changes remain."
-            exit 0
-          fi
-          git commit -m "style: apply current MAP-053 Prettier output"
-          git push origin HEAD:${GITHUB_HEAD_REF}
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Audit tracked files for privileged credentials
+        run: npm run verify:security
+
+      - name: Verify accessibility invariants
+        run: npm run verify:accessibility
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Build application for GitHub Pages
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
+        run: npm run build:pages
+
+      - name: Audit production artifact
+        run: npm run verify:build
+
+      - name: Report production build metrics
+        run: npm run report:build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e
+
+      - name: Upload MAP-033 mobile visual references
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: map-033-mobile-references-${{ github.run_id }}
+          path: test-results/**/*.png
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload MAP-037 mobile sheet references
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: map-037-mobile-sheet-references-${{ github.run_id }}
+          path: test-results/**/attachments/MAP-037-*.png
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Smoke test the Pages build locally
+        run: npm run test:e2e:pages
 
   database:
     name: Supabase migrations, lint and RLS tests
