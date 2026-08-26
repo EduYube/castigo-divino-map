@@ -95,17 +95,39 @@ create index players_campaign_roster_idx
 grant insert (display_order, accent_color) on table public.players to authenticated;
 grant update (display_order, accent_color) on table public.players to authenticated;
 
--- The live v1.0 data never had rows in public.players: the legitimate historic
--- identities are the published character entities. Assert that source before
--- materialising the roster. If an installation already created a matching
--- roster row, preserve its ID/slug/status and only configure MAP-054 metadata.
+-- A clean Supabase reset applies migrations before seed.sql and therefore has
+-- no historic campaign rows to migrate. Production/upgrades do. Zero source
+-- rows is the valid clean-install case; any partial historic source is rejected
+-- so a damaged/ambiguous upgrade cannot silently invent roster identities.
 do $$
 declare
   initial_campaign constant uuid := '00000000-0000-4000-8000-000000000053'::uuid;
+  historic_source_count integer;
   source_count integer;
   roster_count integer;
   player_spec record;
 begin
+  select pg_catalog.count(*)::integer
+  into historic_source_count
+  from public.map_entities entity
+  where entity.campaign_id = initial_campaign
+    and entity.entity_type = 'character'::public.entity_type
+    and pg_catalog.lower(entity.name) in ('skade', 'ura', 'veyra');
+
+  if historic_source_count = 0 then
+    raise notice 'MAP-054 clean install: historic Skade/Ura/Veyra roster migration deferred because no pre-migration campaign data exists';
+    return;
+  end if;
+
+  if historic_source_count <> 3 then
+    raise exception using
+      errcode = '23514',
+      message = pg_catalog.format(
+        'MAP-054 expected either zero clean-install sources or the complete three-character historic roster, found %s rows',
+        historic_source_count
+      );
+  end if;
+
   for player_spec in
     select * from (values
       ('skade'::text, 'Skade'::text, 'player-skade'::text, '#c2410c'::text, 0),
