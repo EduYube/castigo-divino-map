@@ -91,6 +91,7 @@ assertGeographicCoverageManifest();
 
 export function assertGeographicSearchCoverage(content, sourceLabel = 'public catalog') {
   const geographicNames = content?.geographicNames;
+  const usesGlobalGeography = content?.schemaVersion === 3;
 
   if (!Array.isArray(geographicNames)) {
     fail(sourceLabel, 'geographicNames must be an array.');
@@ -121,9 +122,19 @@ export function assertGeographicSearchCoverage(content, sourceLabel = 'public ca
     if (entry.slug !== expected.slug || entry.name !== expected.name || entry.language !== 'en') {
       fail(sourceLabel, `${expected.id} must keep its expected English public identity.`);
     }
-    if (entry.entityId !== null) {
+
+    const hasEntityId = Object.prototype.hasOwnProperty.call(entry, 'entityId');
+    if (usesGlobalGeography) {
+      if (hasEntityId) {
+        fail(
+          sourceLabel,
+          `${expected.id} must remain global without a campaign-specific entityId.`,
+        );
+      }
+    } else if (!hasEntityId || entry.entityId !== null) {
       fail(sourceLabel, `${expected.id} must remain a search-only geographic identity.`);
     }
+
     if (
       !entry.coordinates ||
       !isValidCoordinate(entry.coordinates.x, OFFICIAL_MAP_PIXEL_BOUNDS.width) ||
