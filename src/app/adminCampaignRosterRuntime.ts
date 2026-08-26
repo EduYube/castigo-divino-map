@@ -33,6 +33,7 @@ class UnavailableAdminCampaignRosterRepository implements AdminCampaignRosterRep
   }
 
   createCampaign(_draft: AdminCampaignDraft): Promise<AdminCampaignRecord> {
+    void _draft;
     return Promise.reject(this.#error);
   }
 
@@ -40,6 +41,8 @@ class UnavailableAdminCampaignRosterRepository implements AdminCampaignRosterRep
     _original: AdminCampaignRecord,
     _draft: AdminCampaignDraft,
   ): Promise<AdminCampaignRecord> {
+    void _original;
+    void _draft;
     return Promise.reject(this.#error);
   }
 
@@ -47,14 +50,19 @@ class UnavailableAdminCampaignRosterRepository implements AdminCampaignRosterRep
     _original: AdminCampaignRecord,
     _status: CampaignStatus,
   ): Promise<AdminCampaignRecord> {
+    void _original;
+    void _status;
     return Promise.reject(this.#error);
   }
 
   listPlayers(_campaignId: string): Promise<readonly AdminPlayerRecord[]> {
+    void _campaignId;
     return Promise.reject(this.#error);
   }
 
   createPlayer(_campaignId: string, _draft: AdminPlayerDraft): Promise<AdminPlayerRecord> {
+    void _campaignId;
+    void _draft;
     return Promise.reject(this.#error);
   }
 
@@ -63,6 +71,9 @@ class UnavailableAdminCampaignRosterRepository implements AdminCampaignRosterRep
     _original: AdminPlayerRecord,
     _draft: AdminPlayerDraft,
   ): Promise<AdminPlayerRecord> {
+    void _campaignId;
+    void _original;
+    void _draft;
     return Promise.reject(this.#error);
   }
 
@@ -71,6 +82,9 @@ class UnavailableAdminCampaignRosterRepository implements AdminCampaignRosterRep
     _original: AdminPlayerRecord,
     _archived: boolean,
   ): Promise<AdminPlayerRecord> {
+    void _campaignId;
+    void _original;
+    void _archived;
     return Promise.reject(this.#error);
   }
 }
@@ -101,6 +115,19 @@ function createRepository(): AdminCampaignRosterRepository {
   }
 }
 
+function discardOtherOpenEditors(root: ParentNode, ownSection: HTMLElement | null): void {
+  const shell = root.querySelector<HTMLElement>('.admin-auth__shell');
+  if (!shell) return;
+
+  for (const button of shell.querySelectorAll<HTMLButtonElement>('button')) {
+    if (ownSection?.contains(button) || button.disabled || button.textContent?.trim() !== 'Cancelar') {
+      continue;
+    }
+    const container = button.closest<HTMLElement>('section, dialog, form');
+    if (container && !container.closest('[hidden]')) button.click();
+  }
+}
+
 export function bootstrapAdminCampaignRosterRuntime(
   root: ParentNode,
   authController: AdminAuthController,
@@ -113,10 +140,12 @@ export function bootstrapAdminCampaignRosterRuntime(
     onAuthorizationRejected: rejectAuthorization,
   });
   const ui = mountAdminCampaignRoster(root, controller, authController);
+  const ownSection = root.querySelector<HTMLElement>('.admin-campaign-roster');
   let previousCampaignId = adminCampaignContext.getCampaignId();
   const unsubscribeContext = adminCampaignContext.subscribe((campaignId) => {
     if (campaignId === previousCampaignId) return;
     previousCampaignId = campaignId;
+    discardOtherOpenEditors(root, ownSection);
     window.dispatchEvent(
       new CustomEvent('atlas:admin-campaign-changed', { detail: { campaignId } }),
     );
