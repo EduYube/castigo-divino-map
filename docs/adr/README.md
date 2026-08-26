@@ -11,3 +11,5 @@ El ADR 0001 se creó antes de adoptar esta ruta y permanece en `docs/decisions/0
 | 0003 | Snapshot público versionado y degradación sin pantalla en blanco | Aceptada |
 | 0004 | Desarrollo local, producción aislada y migraciones versionadas | Aceptada |
 | 0005 | Ciclo editorial estable, archivado e identificadores no reutilizables | Aceptada |
+| 0006 | Dominio de entidades y relaciones normalizadas | Aceptada |
+| 0007 | Dominio multicampaña con geografía global compartida | Aceptada; checkpoint de seguridad pendiente |
