@@ -190,7 +190,9 @@ async function login(page: Page): Promise<void> {
   await page.getByLabel('Correo').fill('admin-map054@example.invalid');
   await page.getByLabel('Contraseña').fill('test-password');
   await page.getByRole('button', { name: 'Iniciar sesión' }).click();
-  await expect(page.getByRole('heading', { name: 'Campañas y personajes jugadores' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Campañas y personajes jugadores' }),
+  ).toBeVisible();
   await expect(page.getByLabel('Campaña administrativa')).toHaveValue(INITIAL_CAMPAIGN_ID);
   await expect(page.getByText('Skade', { exact: true })).toBeVisible();
 }
@@ -238,8 +240,12 @@ test('dirty roster edits cannot silently cross campaigns and focus is restored o
   await name.fill('   ');
   await page.getByLabel('Acento de color').fill('#ffffff');
   await page.getByRole('button', { name: 'Guardar jugador' }).click();
-  await expect(page.getByText('El nombre visible debe tener entre 1 y 120 caracteres.')).toBeVisible();
-  await expect(page.getByText('El acento necesita al menos contraste 3:1 sobre blanco.')).toBeVisible();
+  await expect(
+    page.getByText('El nombre visible debe tener entre 1 y 120 caracteres.'),
+  ).toBeVisible();
+  await expect(
+    page.getByText('El acento necesita al menos contraste 3:1 sobre blanco.'),
+  ).toBeVisible();
   await expect(name).toBeFocused();
 
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();

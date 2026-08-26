@@ -351,12 +351,7 @@ export class SupabaseAdminCampaignRosterRepository implements AdminCampaignRoste
       options.signal,
     );
     return original.publishedAt
-      ? this.#patchPlayer(
-          campaignId,
-          draft,
-          { publication_status: 'published' },
-          options.signal,
-        )
+      ? this.#patchPlayer(campaignId, draft, { publication_status: 'published' }, options.signal)
       : draft;
   }
 
@@ -379,9 +374,7 @@ export class SupabaseAdminCampaignRosterRepository implements AdminCampaignRoste
     url.searchParams.set('id', `eq.${original.id}`);
     url.searchParams.set('campaign_id', `eq.${campaignId}`);
     url.searchParams.set('updated_at', `eq.${original.updatedAt}`);
-    const player = mapPlayer(
-      await this.#mutateOne(url, 'PATCH', body, PLAYER_SELECT, signal),
-    );
+    const player = mapPlayer(await this.#mutateOne(url, 'PATCH', body, PLAYER_SELECT, signal));
     if (player.campaignId !== campaignId) {
       throw new AdminCampaignRosterRepositoryError(
         'invalid-response',
@@ -395,10 +388,7 @@ export class SupabaseAdminCampaignRosterRepository implements AdminCampaignRoste
     return new URL(`${this.#projectUrl}/rest/v1/${table}`);
   }
 
-  async #getRows(
-    url: URL,
-    signal: AbortSignal,
-  ): Promise<readonly Record<string, unknown>[]> {
+  async #getRows(url: URL, signal: AbortSignal): Promise<readonly Record<string, unknown>[]> {
     const response = await this.#request(
       url,
       {
@@ -452,11 +442,7 @@ export class SupabaseAdminCampaignRosterRepository implements AdminCampaignRoste
     return rows[0] as Record<string, unknown>;
   }
 
-  async #request(
-    url: URL,
-    init: RequestInit,
-    parentSignal: AbortSignal,
-  ): Promise<Response> {
+  async #request(url: URL, init: RequestInit, parentSignal: AbortSignal): Promise<Response> {
     const accessToken = this.#readAccessToken();
     const controller = new AbortController();
     const abort = (): void => controller.abort();

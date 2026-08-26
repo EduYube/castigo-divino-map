@@ -46,7 +46,10 @@ function serializeForm(form: HTMLFormElement): string {
         element instanceof HTMLSelectElement,
     )
     .map((element) => {
-      if (element instanceof HTMLInputElement && (element.type === 'checkbox' || element.type === 'radio')) {
+      if (
+        element instanceof HTMLInputElement &&
+        (element.type === 'checkbox' || element.type === 'radio')
+      ) {
         return `${element.name}:${element.checked ? '1' : '0'}`;
       }
       return `${element.name}:${element.value}`;
@@ -96,7 +99,10 @@ export function mountAdminCampaignRoster(
   const rosterSummary = createElement('p', 'admin-campaign-roster__roster-summary');
   const rosterToolbar = createElement('div', 'admin-campaign-roster__toolbar');
   const newPlayerButton = createElement('button', 'admin-campaign-roster__primary');
-  const playerList = createElement('ul', 'admin-campaign-roster__cards admin-campaign-roster__player-cards');
+  const playerList = createElement(
+    'ul',
+    'admin-campaign-roster__cards admin-campaign-roster__player-cards',
+  );
   const emptyPlayers = createElement('p', 'admin-campaign-roster__empty');
   const campaignEditor = createElement('section', 'admin-campaign-roster__editor');
   const campaignEditorHeading = createElement('h4', 'admin-campaign-roster__subheading');
@@ -442,7 +448,8 @@ export function mountAdminCampaignRoster(
     }
     metadata.textContent = `${campaign.slug} · orden ${campaign.displayOrder} · ${campaign.status === 'active' ? 'activa' : 'archivada'}`;
     selectButton.type = 'button';
-    selectButton.textContent = campaign.id === state.selectedCampaignId ? 'Seleccionada' : 'Seleccionar';
+    selectButton.textContent =
+      campaign.id === state.selectedCampaignId ? 'Seleccionada' : 'Seleccionar';
     selectButton.disabled = campaign.id === state.selectedCampaignId || state.phase === 'mutating';
     selectButton.addEventListener('click', () => {
       if (!confirmCampaignChange()) return;
@@ -458,7 +465,9 @@ export function mountAdminCampaignRoster(
     archiveButton.addEventListener('click', () => {
       if (
         campaign.status === 'active' &&
-        !window.confirm(`Archivar “${campaign.name}” ocultará su contenido público sin borrarlo. ¿Continuar?`)
+        !window.confirm(
+          `Archivar “${campaign.name}” ocultará su contenido público sin borrarlo. ¿Continuar?`,
+        )
       ) {
         return;
       }
@@ -470,7 +479,10 @@ export function mountAdminCampaignRoster(
   }
 
   function createPlayerCard(player: AdminPlayerRecord): HTMLLIElement {
-    const item = createElement('li', 'admin-campaign-roster__card admin-campaign-roster__player-card');
+    const item = createElement(
+      'li',
+      'admin-campaign-roster__card admin-campaign-roster__player-card',
+    );
     const title = createElement('div', 'admin-campaign-roster__card-title');
     const swatch = createElement('span', 'admin-campaign-roster__swatch');
     const name = createElement('strong', 'admin-campaign-roster__card-name');
@@ -494,7 +506,9 @@ export function mountAdminCampaignRoster(
     archiveButton.addEventListener('click', () => {
       if (
         player.publicationStatus !== 'archived' &&
-        !window.confirm(`Archivar “${player.displayName}” conservará disposiciones e historial. ¿Continuar?`)
+        !window.confirm(
+          `Archivar “${player.displayName}” conservará disposiciones e historial. ¿Continuar?`,
+        )
       ) {
         return;
       }
@@ -536,7 +550,8 @@ export function mountAdminCampaignRoster(
     emptyPlayers.textContent = 'Esta campaña todavía no tiene personajes jugadores.';
 
     const unavailable = !state.authorized || !state.backendConnected;
-    campaignSelect.disabled = unavailable || state.phase === 'loading' || state.phase === 'mutating';
+    campaignSelect.disabled =
+      unavailable || state.phase === 'loading' || state.phase === 'mutating';
     newCampaignButton.disabled = unavailable || state.phase !== 'ready';
     refreshButton.disabled = unavailable || state.phase === 'loading' || state.phase === 'mutating';
     newPlayerButton.disabled =
@@ -545,9 +560,11 @@ export function mountAdminCampaignRoster(
     savePlayerButton.disabled = state.phase === 'mutating';
 
     if (!state.authorized) {
-      status.textContent = 'La administración de campañas permanece cerrada hasta autorizar la sesión.';
+      status.textContent =
+        'La administración de campañas permanece cerrada hasta autorizar la sesión.';
     } else if (!state.backendConnected) {
-      status.textContent = 'Campañas y roster permanecen bloqueados mientras el backend no esté conectado.';
+      status.textContent =
+        'Campañas y roster permanecen bloqueados mientras el backend no esté conectado.';
     } else if (state.phase === 'loading') {
       status.textContent = 'Cargando la campaña administrativa…';
     } else if (state.phase === 'mutating') {

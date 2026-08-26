@@ -78,7 +78,10 @@ function playerRow(overrides: Record<string, unknown> = {}): Record<string, unkn
   };
 }
 
-function repository(fetchImplementation: typeof fetch, uuid = '12345678-1234-4000-8000-123456789abc') {
+function repository(
+  fetchImplementation: typeof fetch,
+  uuid = '12345678-1234-4000-8000-123456789abc',
+) {
   return new SupabaseAdminCampaignRosterRepository({
     projectUrl: PROJECT_URL,
     publishableKey: PUBLISHABLE_KEY,
@@ -202,10 +205,7 @@ describe('SupabaseAdminCampaignRosterRepository', () => {
           publication_status: status,
           published_at: archived.publishedAt,
           archived_at: status === 'archived' ? archived.archivedAt : null,
-          updated_at:
-            status === 'draft'
-              ? '2026-08-26T10:01:00.000Z'
-              : '2026-08-26T10:02:00.000Z',
+          updated_at: status === 'draft' ? '2026-08-26T10:01:00.000Z' : '2026-08-26T10:02:00.000Z',
         }),
       ]);
     });

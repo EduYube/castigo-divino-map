@@ -120,7 +120,11 @@ function discardOtherOpenEditors(root: ParentNode, ownSection: HTMLElement | nul
   if (!shell) return;
 
   for (const button of shell.querySelectorAll<HTMLButtonElement>('button')) {
-    if (ownSection?.contains(button) || button.disabled || button.textContent?.trim() !== 'Cancelar') {
+    if (
+      ownSection?.contains(button) ||
+      button.disabled ||
+      button.textContent?.trim() !== 'Cancelar'
+    ) {
       continue;
     }
     const container = button.closest<HTMLElement>('section, dialog, form');

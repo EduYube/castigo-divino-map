@@ -39,9 +39,7 @@ describe('MAP-054 administrative campaign scoping', () => {
   });
 
   it('rewrites the entity editor RPC and overwrites attacker p_campaign_id', () => {
-    const url = new URL(
-      'https://example.supabase.co/rest/v1/rpc/admin_get_map_entity_editor_v3',
-    );
+    const url = new URL('https://example.supabase.co/rest/v1/rpc/admin_get_map_entity_editor_v3');
     const scoped = scopeAdminRpcRequest(
       url,
       {

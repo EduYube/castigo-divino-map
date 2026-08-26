@@ -14,12 +14,7 @@ import {
   type AdminPlayerRecord,
 } from '../domain/adminCampaignRoster';
 
-export type AdminCampaignRosterPhase =
-  | 'blocked'
-  | 'loading'
-  | 'ready'
-  | 'mutating'
-  | 'error';
+export type AdminCampaignRosterPhase = 'blocked' | 'loading' | 'ready' | 'mutating' | 'error';
 
 export interface AdminCampaignRosterState {
   readonly campaigns: readonly AdminCampaignRecord[];
@@ -37,9 +32,7 @@ interface AdminCampaignRosterControllerOptions {
   readonly onAuthorizationRejected?: (status: 401 | 403) => void;
 }
 
-function sortCampaigns(
-  campaigns: readonly AdminCampaignRecord[],
-): readonly AdminCampaignRecord[] {
+function sortCampaigns(campaigns: readonly AdminCampaignRecord[]): readonly AdminCampaignRecord[] {
   return [...campaigns].sort((left, right) => {
     if (left.status !== right.status) return left.status === 'active' ? -1 : 1;
     return (
@@ -227,10 +220,7 @@ export class AdminCampaignRosterController {
     );
   }
 
-  updateCampaign(
-    original: AdminCampaignRecord,
-    draft: AdminCampaignDraft,
-  ): Promise<boolean> {
+  updateCampaign(original: AdminCampaignRecord, draft: AdminCampaignDraft): Promise<boolean> {
     const validation = validateCampaignDraft(draft);
     if (!validation.valid) {
       return Promise.resolve(this.#publishValidation(validation.fieldErrors));
@@ -275,8 +265,7 @@ export class AdminCampaignRosterController {
       );
     }
     return this.#mutate(
-      (signal) =>
-        this.#repository.createPlayer(this.#state.selectedCampaignId, draft, { signal }),
+      (signal) => this.#repository.createPlayer(this.#state.selectedCampaignId, draft, { signal }),
       (created) => ({ players: sortPlayers([...this.#state.players, created]) }),
     );
   }
