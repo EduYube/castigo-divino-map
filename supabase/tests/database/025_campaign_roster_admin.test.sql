@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(25);
+select plan(28);
 
 select has_column('public', 'players', 'display_order', 'players expose a persistent roster order');
 select has_column('public', 'players', 'accent_color', 'players expose a persistent accent color');
