@@ -49,7 +49,7 @@ describe('MAP-054 administrative campaign scoping', () => {
       SELECTED_CAMPAIGN,
     );
 
-    expect(scoped.url.pathname).toEndWith('/rpc/admin_get_map_entity_editor_v4');
+    expect(scoped.url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v4')).toBe(true);
     expect(jsonBody(scoped.init)).toEqual({
       p_entity_id: 'entity-test',
       p_campaign_id: SELECTED_CAMPAIGN,
@@ -62,7 +62,7 @@ describe('MAP-054 administrative campaign scoping', () => {
       { method: 'POST', body: JSON.stringify({ p_id: 'entity-test' }) },
       SELECTED_CAMPAIGN,
     );
-    expect(save.url.pathname).toEndWith('/rpc/admin_save_map_entity_v4');
+    expect(save.url.pathname.endsWith('/rpc/admin_save_map_entity_v4')).toBe(true);
     expect(jsonBody(save.init).p_campaign_id).toBe(SELECTED_CAMPAIGN);
 
     const moderation = scopeAdminRpcRequest(
@@ -70,13 +70,13 @@ describe('MAP-054 administrative campaign scoping', () => {
       { method: 'POST', body: JSON.stringify({ p_request_id: 'request-id' }) },
       SELECTED_CAMPAIGN,
     );
-    expect(moderation.url.pathname).toEndWith('/rpc/admin_moderate_public_request_v2');
+    expect(moderation.url.pathname.endsWith('/rpc/admin_moderate_public_request_v2')).toBe(true);
     expect(jsonBody(moderation.init).p_campaign_id).toBe(SELECTED_CAMPAIGN);
 
     const unrelatedUrl = new URL('https://example.supabase.co/rest/v1/rpc/current_user_is_admin');
     const unrelatedInit = { method: 'POST', body: '{}' } satisfies RequestInit;
     const unrelated = scopeAdminRpcRequest(unrelatedUrl, unrelatedInit, SELECTED_CAMPAIGN);
-    expect(unrelated.url.pathname).toEndWith('/rpc/current_user_is_admin');
+    expect(unrelated.url.pathname.endsWith('/rpc/current_user_is_admin')).toBe(true);
     expect(unrelated.init).toBe(unrelatedInit);
   });
 });
