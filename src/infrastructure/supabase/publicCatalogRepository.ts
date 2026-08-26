@@ -185,6 +185,10 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
       );
     } catch (error) {
       controller.abort();
+      if (error instanceof PublicCatalogReadError) {
+        throw toRepositoryError(error);
+      }
+
       throw error;
     } finally {
       options.signal.removeEventListener('abort', handleParentAbort);
