@@ -3,6 +3,7 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
+const INITIAL_CAMPAIGN_ID = '00000000-0000-4000-8000-000000000053';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -76,7 +77,7 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
       x: 1690,
       y: 1020,
       recommended_zoom: 0.75,
-      entity_id: 'entity-waterdeep',
+      entity_id: null,
     },
     {
       id: 'geo-sword-mountains',
@@ -96,7 +97,7 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
       x: 2040,
       y: 1380,
       recommended_zoom: 2,
-      entity_id: 'place-demo-harbor',
+      entity_id: null,
     },
   ],
   geographic_name_aliases: [
@@ -105,6 +106,18 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
       geographic_name_id: 'geo-waterdeep',
       language: 'en',
       value: 'City of Splendors',
+    },
+  ],
+  campaign_geographic_entity_links: [
+    {
+      campaign_id: INITIAL_CAMPAIGN_ID,
+      geographic_name_id: 'geo-waterdeep',
+      entity_id: 'entity-waterdeep',
+    },
+    {
+      campaign_id: INITIAL_CAMPAIGN_ID,
+      geographic_name_id: 'geo-harbor-district',
+      entity_id: 'place-demo-harbor',
     },
   ],
   character_location_events: [],
