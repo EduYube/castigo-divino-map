@@ -13,6 +13,7 @@ const QUERY: PublicCatalogTableQuery = {
   select: 'id,slug,name,description',
   order: 'id.asc',
   published: true,
+  campaignScoped: true,
 };
 
 function response(rows: readonly Record<string, unknown>[], contentRange: string): Response {

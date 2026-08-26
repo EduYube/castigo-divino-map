@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 
 import {
   fetchCompletePublicCatalogTable,
+  INITIAL_PUBLIC_CAMPAIGN_ID,
+  PUBLIC_CAMPAIGNS_QUERY,
   PUBLIC_CATALOG_TABLE_QUERIES,
   PublicCatalogReadError,
 } from '../src/data-access/publicCatalogQueryContract.js';
@@ -10,6 +12,15 @@ import {
 export const SNAPSHOT_PATH = 'public/data/public-catalog.snapshot.json';
 export const FIXTURE_PATH = 'scripts/fixtures/beta01-public-rows.json';
 export const DEFAULT_REMOTE_READ_TIMEOUT_MS = 15_000;
+export const INITIAL_PUBLIC_CAMPAIGN = Object.freeze({
+  id: INITIAL_PUBLIC_CAMPAIGN_ID,
+  slug: 'castigo-divino',
+  name: 'Castigo Divino',
+  status: 'active',
+  displayOrder: 0,
+});
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -33,6 +44,13 @@ export function checksum(value) {
 
 function rows(value, key) {
   if (!Array.isArray(value)) throw new Error(`${key} must be an array.`);
+  return value;
+}
+
+function record(value, key) {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error(`${key} must be an object.`);
+  }
   return value;
 }
 
@@ -109,8 +127,9 @@ export function buildPublicSnapshotContent(raw) {
   const categoryIds = new Set(categories.map(({ id }) => id));
   const tagIds = new Set(tags.map(({ id }) => id));
   const playerIds = new Set(players.map(({ id }) => id));
-  const publicEntityRows = publishedRows(raw.entities ?? [], 'entities').filter(({ category_id }) =>
-    categoryIds.has(category_id),
+  const publicEntityRows = publishedRows(raw.entities ?? [], 'entities').filter(
+    ({ category_id, audience }) =>
+      (audience === undefined || audience === 'public') && categoryIds.has(category_id),
   );
   const entityIds = new Set(publicEntityRows.map(({ id }) => id));
   const aliasRows = publishedRows(raw.entityAliases ?? [], 'entityAliases').filter(
@@ -193,7 +212,7 @@ export function buildPublicSnapshotContent(raw) {
     tagIds: (tagsByNote.get(id) ?? []).map(({ tag_id }) => tag_id),
   }));
   const publicGeographicRows = publishedRows(raw.geographicNames ?? [], 'geographicNames').filter(
-    ({ entity_id }) => entity_id === null || entityIds.has(entity_id),
+    ({ entity_id }) => entity_id === null || entity_id === undefined || entityIds.has(entity_id),
   );
   const geographicIds = new Set(publicGeographicRows.map(({ id }) => id));
   const geographicAliasRows = publishedRows(
@@ -220,7 +239,7 @@ export function buildPublicSnapshotContent(raw) {
     coordinates: { x: row.x, y: row.y },
     searchExtent: geographicSearchExtent(row),
     recommendedZoom: row.recommended_zoom,
-    entityId: row.entity_id,
+    entityId: row.entity_id ?? null,
   }));
   const locationEvents = publishedRows(raw.locationEvents ?? [], 'locationEvents')
     .filter(
@@ -303,17 +322,364 @@ export function buildPublicSnapshotContent(raw) {
   };
 }
 
+function campaignSnapshotRow(row, index) {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) {
+    throw new Error(`campaigns[${index}] must be an object.`);
+  }
+  if (typeof row.id !== 'string' || !UUID_PATTERN.test(row.id)) {
+    throw new Error(`campaigns[${index}].id must be a stable UUID.`);
+  }
+  if (typeof row.slug !== 'string' || row.slug.trim().length === 0) {
+    throw new Error(`campaigns[${index}].slug must be non-empty.`);
+  }
+  if (typeof row.name !== 'string' || row.name.trim().length === 0) {
+    throw new Error(`campaigns[${index}].name must be non-empty.`);
+  }
+  if (row.status !== 'active') {
+    throw new Error(`campaigns[${index}] is not publicly selectable.`);
+  }
+  if (!Number.isSafeInteger(row.display_order) || row.display_order < 0) {
+    throw new Error(`campaigns[${index}].display_order must be a non-negative integer.`);
+  }
+
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    status: 'active',
+    displayOrder: row.display_order,
+  };
+}
+
+function publicGlobalGeographicNames(globalRows) {
+  const content = buildPublicSnapshotContent({
+    geographicNames: globalRows.geographicNames ?? [],
+    geographicAliases: globalRows.geographicAliases ?? [],
+  });
+
+  return content.geographicNames.map(({ entityId, ...name }) => {
+    if (entityId !== null) {
+      throw new Error(
+        `Global geographic name ${name.id} retained a campaign entity pointer after MAP-053.`,
+      );
+    }
+    return name;
+  });
+}
+
+function buildCampaignGeographicLinks(rawLinks, campaignId, entities, geographicNames) {
+  const entityById = new Map(entities.map((entity) => [entity.id, entity]));
+  const geographicIds = new Set(geographicNames.map(({ id }) => id));
+  const links = rows(rawLinks ?? [], `campaignsById.${campaignId}.geographicEntityLinks`).map(
+    (link, index) => {
+      if (
+        link.campaign_id !== campaignId ||
+        typeof link.geographic_name_id !== 'string' ||
+        typeof link.entity_id !== 'string'
+      ) {
+        throw new Error(`campaign ${campaignId} geographic link ${index} has invalid scope.`);
+      }
+      if (!geographicIds.has(link.geographic_name_id)) {
+        throw new Error(`campaign ${campaignId} links an unknown global geographic name.`);
+      }
+      const entity = entityById.get(link.entity_id);
+      if (!entity || entity.entityType !== 'location') {
+        throw new Error(
+          `campaign ${campaignId} geographic link targets a non-public or non-location entity.`,
+        );
+      }
+      return {
+        campaignId,
+        geographicNameId: link.geographic_name_id,
+        entityId: link.entity_id,
+      };
+    },
+  );
+
+  requireUnique(
+    links.map(({ geographicNameId }) => geographicNameId),
+    `campaign ${campaignId} geographic links`,
+  );
+  return links;
+}
+
+export function buildPublicMulticampaignSnapshotContent(raw) {
+  const input = record(raw, 'multicampaign rows');
+  const campaigns = rows(input.campaigns ?? [], 'campaigns')
+    .map(campaignSnapshotRow)
+    .sort(
+      (left, right) => left.displayOrder - right.displayOrder || left.id.localeCompare(right.id),
+    );
+
+  if (campaigns.length === 0) {
+    throw new Error('At least one active public campaign is required.');
+  }
+  requireUnique(
+    campaigns.map(({ id }) => id),
+    'campaigns',
+  );
+  requireUnique(
+    campaigns.map(({ slug }) => slug),
+    'campaign slugs',
+  );
+
+  const globalRows = record(input.global ?? {}, 'global');
+  const campaignRowsById = record(input.campaignsById ?? {}, 'campaignsById');
+  const geographicNames = publicGlobalGeographicNames(globalRows);
+  const expectedGeographicJson = JSON.stringify(geographicNames);
+  const campaignCatalogs = campaigns.map((campaign) => {
+    const campaignRows = record(campaignRowsById[campaign.id], `campaignsById.${campaign.id}`);
+    const content = buildPublicSnapshotContent({
+      ...campaignRows,
+      geographicNames: globalRows.geographicNames ?? [],
+      geographicAliases: globalRows.geographicAliases ?? [],
+    });
+    const projectedGlobal = content.geographicNames.map(({ entityId, ...name }) => {
+      if (entityId !== null) {
+        throw new Error(
+          `campaign ${campaign.id} unexpectedly mutated the global geographic index.`,
+        );
+      }
+      return name;
+    });
+
+    if (JSON.stringify(projectedGlobal) !== expectedGeographicJson) {
+      throw new Error(
+        `campaign ${campaign.id} does not preserve the complete global geographic index.`,
+      );
+    }
+
+    return {
+      campaignId: campaign.id,
+      categories: content.categories,
+      tags: content.tags,
+      players: content.players,
+      entities: content.entities,
+      dispositions: content.dispositions,
+      characterLocationRelations: content.characterLocationRelations,
+      notes: content.notes,
+      characterLocationEvents: content.characterLocationEvents,
+      geographicEntityLinks: buildCampaignGeographicLinks(
+        campaignRows.geographicEntityLinks ?? [],
+        campaign.id,
+        content.entities,
+        geographicNames,
+      ),
+    };
+  });
+
+  const content = {
+    schemaVersion: 3,
+    campaigns,
+    campaignCatalogs,
+    geographicNames,
+  };
+  assertPublicMulticampaignSnapshotContent(content);
+  return content;
+}
+
+export function upgradeLegacySnapshotContentV2(content) {
+  const legacy = record(content, 'legacy snapshot content');
+  if (legacy.schemaVersion !== 2) {
+    throw new Error('Only schemaVersion 2 can be upgraded to the MAP-053 snapshot contract.');
+  }
+
+  const geographicNamesV2 = rows(legacy.geographicNames ?? [], 'geographicNames');
+  const entities = rows(legacy.entities ?? [], 'entities');
+  const entityById = new Map(entities.map((entity) => [entity.id, entity]));
+  const geographicEntityLinks = geographicNamesV2
+    .filter(({ entityId }) => entityId !== null && entityId !== undefined)
+    .map(({ id, entityId }) => {
+      const entity = entityById.get(entityId);
+      if (!entity || entity.entityType !== 'location') {
+        throw new Error(`Legacy geographic name ${id} points outside the public location catalog.`);
+      }
+      return {
+        campaignId: INITIAL_PUBLIC_CAMPAIGN_ID,
+        geographicNameId: id,
+        entityId,
+      };
+    });
+  const geographicNames = geographicNamesV2.map((name) => {
+    const geographicName = { ...name };
+    delete geographicName.entityId;
+    return geographicName;
+  });
+  const upgraded = {
+    schemaVersion: 3,
+    campaigns: [INITIAL_PUBLIC_CAMPAIGN],
+    campaignCatalogs: [
+      {
+        campaignId: INITIAL_PUBLIC_CAMPAIGN_ID,
+        categories: rows(legacy.categories ?? [], 'categories'),
+        tags: rows(legacy.tags ?? [], 'tags'),
+        players: rows(legacy.players ?? [], 'players'),
+        entities,
+        dispositions: rows(legacy.dispositions ?? [], 'dispositions'),
+        characterLocationRelations: rows(
+          legacy.characterLocationRelations ?? [],
+          'characterLocationRelations',
+        ),
+        notes: rows(legacy.notes ?? [], 'notes'),
+        characterLocationEvents: rows(
+          legacy.characterLocationEvents ?? [],
+          'characterLocationEvents',
+        ),
+        geographicEntityLinks,
+      },
+    ],
+    geographicNames,
+  };
+  assertPublicMulticampaignSnapshotContent(upgraded);
+  return upgraded;
+}
+
+function projectCampaignCatalogToV2(content, campaignId) {
+  const catalog = rows(content.campaignCatalogs ?? [], 'campaignCatalogs').find(
+    (candidate) => candidate.campaignId === campaignId,
+  );
+  if (!catalog) throw new Error(`Snapshot does not contain campaign ${campaignId}.`);
+
+  const links = rows(catalog.geographicEntityLinks ?? [], 'geographicEntityLinks');
+  const entityByGeographicName = new Map();
+  for (const link of links) {
+    if (link.campaignId !== campaignId) {
+      throw new Error(`Snapshot geographic link escapes campaign ${campaignId}.`);
+    }
+    if (entityByGeographicName.has(link.geographicNameId)) {
+      throw new Error(`Snapshot contains duplicate geographic link in campaign ${campaignId}.`);
+    }
+    entityByGeographicName.set(link.geographicNameId, link.entityId);
+  }
+
+  return {
+    schemaVersion: 2,
+    categories: rows(catalog.categories ?? [], 'categories'),
+    tags: rows(catalog.tags ?? [], 'tags'),
+    players: rows(catalog.players ?? [], 'players'),
+    entities: rows(catalog.entities ?? [], 'entities'),
+    dispositions: rows(catalog.dispositions ?? [], 'dispositions'),
+    characterLocationRelations: rows(
+      catalog.characterLocationRelations ?? [],
+      'characterLocationRelations',
+    ),
+    notes: rows(catalog.notes ?? [], 'notes'),
+    geographicNames: rows(content.geographicNames ?? [], 'geographicNames').map((name) => ({
+      ...name,
+      entityId: entityByGeographicName.get(name.id) ?? null,
+    })),
+    characterLocationEvents: rows(catalog.characterLocationEvents ?? [], 'characterLocationEvents'),
+  };
+}
+
+export function projectMulticampaignSnapshotContentToV2(
+  content,
+  campaignId = INITIAL_PUBLIC_CAMPAIGN_ID,
+) {
+  assertPublicMulticampaignSnapshotContent(content);
+  return projectCampaignCatalogToV2(content, campaignId);
+}
+
+export function assertPublicMulticampaignSnapshotContent(content) {
+  const snapshot = record(content, 'multicampaign snapshot content');
+  if (snapshot.schemaVersion !== 3)
+    throw new Error('Multicampaign snapshot must use schemaVersion 3.');
+
+  const campaigns = rows(snapshot.campaigns ?? [], 'campaigns');
+  const catalogs = rows(snapshot.campaignCatalogs ?? [], 'campaignCatalogs');
+  const geographicNames = rows(snapshot.geographicNames ?? [], 'geographicNames');
+  if (campaigns.length === 0 || catalogs.length !== campaigns.length) {
+    throw new Error('Every public campaign must have exactly one snapshot catalog.');
+  }
+  requireUnique(
+    campaigns.map(({ id }) => id),
+    'campaigns',
+  );
+  requireUnique(
+    campaigns.map(({ slug }) => slug),
+    'campaign slugs',
+  );
+  requireUnique(
+    catalogs.map(({ campaignId }) => campaignId),
+    'campaign catalogs',
+  );
+  requireUnique(
+    geographicNames.map(({ id }) => id),
+    'global geographic names',
+  );
+
+  const campaignIds = new Set(campaigns.map(({ id }) => id));
+  const geographicIds = new Set(geographicNames.map(({ id }) => id));
+  for (const [index, campaign] of campaigns.entries()) {
+    if (
+      typeof campaign.id !== 'string' ||
+      !UUID_PATTERN.test(campaign.id) ||
+      typeof campaign.slug !== 'string' ||
+      typeof campaign.name !== 'string' ||
+      campaign.status !== 'active' ||
+      !Number.isSafeInteger(campaign.displayOrder) ||
+      campaign.displayOrder < 0
+    ) {
+      throw new Error(`campaigns[${index}] is invalid.`);
+    }
+  }
+  for (const [index, name] of geographicNames.entries()) {
+    if (Object.prototype.hasOwnProperty.call(name, 'entityId')) {
+      throw new Error(`geographicNames[${index}] contains campaign-specific entityId.`);
+    }
+  }
+  for (const catalog of catalogs) {
+    if (!campaignIds.has(catalog.campaignId)) {
+      throw new Error(`Catalog ${catalog.campaignId} does not match a public campaign.`);
+    }
+    const entities = rows(catalog.entities ?? [], `catalog ${catalog.campaignId} entities`);
+    const entityById = new Map(entities.map((entity) => [entity.id, entity]));
+    const links = rows(
+      catalog.geographicEntityLinks ?? [],
+      `catalog ${catalog.campaignId} geographic links`,
+    );
+    requireUnique(
+      links.map(({ geographicNameId }) => geographicNameId),
+      `catalog ${catalog.campaignId} geographic links`,
+    );
+    for (const link of links) {
+      if (link.campaignId !== catalog.campaignId || !geographicIds.has(link.geographicNameId)) {
+        throw new Error(`Catalog ${catalog.campaignId} contains an invalid geographic link.`);
+      }
+      const entity = entityById.get(link.entityId);
+      if (!entity || entity.entityType !== 'location') {
+        throw new Error(`Catalog ${catalog.campaignId} links geography to a non-public location.`);
+      }
+    }
+    projectCampaignCatalogToV2(snapshot, catalog.campaignId);
+  }
+}
+
 function readRequiredEnv(name) {
   const value = process.env[name]?.trim();
   if (!value) throw new Error(`${name} is required.`);
   return value;
 }
 
-export async function loadRemotePublicRows(options = {}) {
-  const projectUrl = options.projectUrl ?? readRequiredEnv('VITE_SUPABASE_URL');
-  const publishableKey = options.publishableKey ?? readRequiredEnv('VITE_SUPABASE_PUBLISHABLE_KEY');
-  const fetchImplementation = options.fetchImplementation ?? globalThis.fetch.bind(globalThis);
-  const timeoutMs = options.timeoutMs ?? DEFAULT_REMOTE_READ_TIMEOUT_MS;
+function remoteOptions(options) {
+  return {
+    projectUrl: options.projectUrl ?? readRequiredEnv('VITE_SUPABASE_URL'),
+    publishableKey: options.publishableKey ?? readRequiredEnv('VITE_SUPABASE_PUBLISHABLE_KEY'),
+    fetchImplementation: options.fetchImplementation ?? globalThis.fetch.bind(globalThis),
+    timeoutMs: options.timeoutMs ?? DEFAULT_REMOTE_READ_TIMEOUT_MS,
+  };
+}
+
+function snapshotQuery(query) {
+  if (query.name !== 'map_entities') return query;
+  return {
+    ...query,
+    select: query.select.replace('visibility,', 'visibility,audience,'),
+  };
+}
+
+async function withRemoteController(options, operation) {
+  const resolved = remoteOptions(options);
   const controller = new AbortController();
   const handleParentAbort = () => controller.abort();
 
@@ -323,23 +689,10 @@ export async function loadRemotePublicRows(options = {}) {
     options.signal?.addEventListener('abort', handleParentAbort, { once: true });
   }
 
-  const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  const timeout = globalThis.setTimeout(() => controller.abort(), resolved.timeoutMs);
 
   try {
-    const entries = await Promise.all(
-      Object.entries(PUBLIC_CATALOG_TABLE_QUERIES).map(async ([key, query]) => [
-        key,
-        await fetchCompletePublicCatalogTable({
-          projectUrl,
-          publishableKey,
-          query,
-          fetchImplementation,
-          signal: controller.signal,
-        }),
-      ]),
-    );
-
-    return Object.fromEntries(entries);
+    return await operation({ ...resolved, signal: controller.signal });
   } catch (error) {
     controller.abort();
 
@@ -348,7 +701,7 @@ export async function loadRemotePublicRows(options = {}) {
       error.kind === 'request-aborted' &&
       !options.signal?.aborted
     ) {
-      throw new Error(`Remote public catalog read timed out after ${timeoutMs} ms.`, {
+      throw new Error(`Remote public catalog read timed out after ${resolved.timeoutMs} ms.`, {
         cause: error,
       });
     }
@@ -358,6 +711,60 @@ export async function loadRemotePublicRows(options = {}) {
     globalThis.clearTimeout(timeout);
     options.signal?.removeEventListener('abort', handleParentAbort);
   }
+}
+
+async function loadQuerySet(queries, resolved, campaignId) {
+  const entries = await Promise.all(
+    queries.map(async ([key, query]) => [
+      key,
+      await fetchCompletePublicCatalogTable({
+        projectUrl: resolved.projectUrl,
+        publishableKey: resolved.publishableKey,
+        query: snapshotQuery(query),
+        campaignId,
+        fetchImplementation: resolved.fetchImplementation,
+        signal: resolved.signal,
+      }),
+    ]),
+  );
+  return Object.fromEntries(entries);
+}
+
+export async function loadRemotePublicRows(options = {}) {
+  return await withRemoteController(options, async (resolved) =>
+    loadQuerySet(Object.entries(PUBLIC_CATALOG_TABLE_QUERIES), resolved, options.campaignId),
+  );
+}
+
+export async function loadRemotePublicMulticampaignRows(options = {}) {
+  return await withRemoteController(options, async (resolved) => {
+    const campaigns = await fetchCompletePublicCatalogTable({
+      projectUrl: resolved.projectUrl,
+      publishableKey: resolved.publishableKey,
+      query: PUBLIC_CAMPAIGNS_QUERY,
+      fetchImplementation: resolved.fetchImplementation,
+      signal: resolved.signal,
+    });
+    const globalQueries = Object.entries(PUBLIC_CATALOG_TABLE_QUERIES).filter(
+      ([, query]) => !query.campaignScoped,
+    );
+    const campaignQueries = Object.entries(PUBLIC_CATALOG_TABLE_QUERIES).filter(
+      ([, query]) => query.campaignScoped,
+    );
+    const global = await loadQuerySet(globalQueries, resolved);
+    const campaignsById = Object.fromEntries(
+      await Promise.all(
+        campaigns.map(async (campaign, index) => {
+          if (typeof campaign.id !== 'string' || !UUID_PATTERN.test(campaign.id)) {
+            throw new Error(`campaigns[${index}].id must be a stable UUID.`);
+          }
+          return [campaign.id, await loadQuerySet(campaignQueries, resolved, campaign.id)];
+        }),
+      ),
+    );
+
+    return { campaigns, global, campaignsById };
+  });
 }
 
 export async function loadFixtureRows(path = FIXTURE_PATH) {

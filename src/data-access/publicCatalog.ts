@@ -34,7 +34,7 @@ export type PublicCatalogPayload =
 
 export interface PublicCatalogMetadata {
   readonly contract: PublicCatalogContract;
-  readonly schemaVersion: 1 | 2;
+  readonly schemaVersion: 1 | 2 | 3;
   readonly generatedAt: string;
   readonly loadedAt: string;
   readonly sourceRevision: string;

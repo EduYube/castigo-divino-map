@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
+import { INITIAL_PUBLIC_CAMPAIGN_ID } from '../../data-access/publicCatalogQueryContract.js';
 import { SupabasePublicCatalogRepository } from './publicCatalogRepository';
 
 const PROJECT_URL = 'https://map016-test.supabase.co';
@@ -7,6 +8,8 @@ const LOCAL_PROJECT_URL = 'http://127.0.0.1:54321';
 const PUBLISHABLE_KEY = 'sb_publishable_map016_test_key';
 const LEGACY_ANON_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.signature';
 const LEGACY_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.signature';
+const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000054';
+const GLOBAL_TABLES = new Set(['geographic_names', 'geographic_name_aliases']);
 
 function jsonResponse(
   value: unknown,
@@ -38,8 +41,20 @@ function rangeStart(request: Request): number {
   return Number(match[1]);
 }
 
+function tableName(url: URL): string {
+  return url.pathname.split('/').at(-1) ?? '';
+}
+
+function expectCampaignScope(url: URL, campaignId = INITIAL_PUBLIC_CAMPAIGN_ID): void {
+  if (GLOBAL_TABLES.has(tableName(url))) {
+    expect(url.searchParams.has('campaign_id')).toBe(false);
+  } else {
+    expect(url.searchParams.get('campaign_id')).toBe(`eq.${campaignId}`);
+  }
+}
+
 describe('SupabasePublicCatalogRepository', () => {
-  test('loads the complete public projection using only the apikey header', async () => {
+  test('loads the complete initial-campaign projection using only the apikey header', async () => {
     const requests: Request[] = [];
     const repository = new SupabasePublicCatalogRepository({
       projectUrl: PROJECT_URL,
@@ -55,13 +70,14 @@ describe('SupabasePublicCatalogRepository', () => {
 
     expect(result.source).toBe('supabase');
     expect(result.data.contract).toBe('beta02');
-    expect(requests).toHaveLength(13);
+    expect(requests).toHaveLength(14);
     requests.forEach((request) => {
       expect(request.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
       expect(request.headers.get('prefer')).toBe('count=exact');
       expect(request.headers.get('range-unit')).toBe('items');
       expect(request.headers.get('range')).toBe('0-999');
       expect(request.headers.has('authorization')).toBe(false);
+      expectCampaignScope(new URL(request.url));
     });
     const relationRequest = requests.find((request) =>
       new URL(request.url).pathname.endsWith('/character_location_relations'),
@@ -71,7 +87,7 @@ describe('SupabasePublicCatalogRepository', () => {
     );
   });
 
-  test('uses explicit publication filters except where the minimal public grant delegates them to RLS', async () => {
+  test('uses explicit publication filters except where RLS owns the public predicate', async () => {
     const urls: URL[] = [];
     const repository = new SupabasePublicCatalogRepository({
       projectUrl: PROJECT_URL,
@@ -84,13 +100,127 @@ describe('SupabasePublicCatalogRepository', () => {
 
     await repository.load({ signal: new AbortController().signal });
 
-    const dispositionUrl = urls.find((url) => url.pathname.endsWith('/entity_player_dispositions'));
-    const relationUrl = urls.find((url) => url.pathname.endsWith('/character_location_relations'));
-    expect(dispositionUrl?.searchParams.has('publication_status')).toBe(false);
-    expect(relationUrl?.searchParams.has('publication_status')).toBe(false);
-    urls
-      .filter((url) => url !== dispositionUrl && url !== relationUrl)
-      .forEach((url) => expect(url.searchParams.get('publication_status')).toBe('eq.published'));
+    const rlsOnlyTables = new Set([
+      'entity_player_dispositions',
+      'character_location_relations',
+      'campaign_geographic_entity_links',
+    ]);
+    urls.forEach((url) => {
+      if (rlsOnlyTables.has(tableName(url))) {
+        expect(url.searchParams.has('publication_status')).toBe(false);
+      } else {
+        expect(url.searchParams.get('publication_status')).toBe('eq.published');
+      }
+    });
+  });
+
+  test('can target another campaign without scoping the global geographic index', async () => {
+    const urls: URL[] = [];
+    const repository = new SupabasePublicCatalogRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      campaignId: CAMPAIGN_B_ID,
+      fetchImplementation: async (input) => {
+        urls.push(new URL(String(input)));
+        return jsonResponse([]);
+      },
+    });
+
+    await repository.load({ signal: new AbortController().signal });
+
+    expect(urls).toHaveLength(14);
+    urls.forEach((url) => expectCampaignScope(url, CAMPAIGN_B_ID));
+  });
+
+  test('rehydrates the selected campaign geographic link over global geography', async () => {
+    const rowsByTable: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
+      categories: [{ id: 'category-places', slug: 'places', name: 'Places', description: '' }],
+      tags: [],
+      players: [],
+      map_entities: [
+        {
+          id: 'entity-location',
+          slug: 'location',
+          entity_type: 'location',
+          visibility: 'pin',
+          name: 'Location',
+          name_language: 'en',
+          summary: '',
+          description: '',
+          x: 30,
+          y: 40,
+          category_id: 'category-places',
+        },
+      ],
+      entity_aliases: [],
+      entity_tags: [],
+      entity_player_dispositions: [],
+      character_location_relations: [],
+      public_notes: [],
+      public_note_tags: [],
+      geographic_names: [
+        {
+          id: 'geo-location',
+          slug: 'location',
+          name: 'Location',
+          language: 'en',
+          x: 30,
+          y: 40,
+          recommended_zoom: 1,
+          entity_id: null,
+          search_min_x: null,
+          search_max_x: null,
+          search_min_y: null,
+          search_max_y: null,
+        },
+      ],
+      geographic_name_aliases: [],
+      character_location_events: [],
+      campaign_geographic_entity_links: [
+        {
+          campaign_id: INITIAL_PUBLIC_CAMPAIGN_ID,
+          geographic_name_id: 'geo-location',
+          entity_id: 'entity-location',
+        },
+      ],
+    };
+    const repository = new SupabasePublicCatalogRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      fetchImplementation: async (input) => {
+        const table = tableName(new URL(String(input)));
+        return jsonResponse(rowsByTable[table] ?? []);
+      },
+    });
+
+    const result = await repository.load({ signal: new AbortController().signal });
+    if (result.data.contract !== 'beta02') throw new Error('Expected Beta 0.2 projection.');
+
+    expect(result.data.catalog.geographicNames).toHaveLength(1);
+    expect(result.data.catalog.geographicNames[0]?.entityId).toBe('entity-location');
+  });
+
+  test('rejects a geographic association that does not belong to the selected campaign', async () => {
+    const repository = new SupabasePublicCatalogRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      fetchImplementation: async (input) => {
+        if (tableName(new URL(String(input))) === 'campaign_geographic_entity_links') {
+          return jsonResponse([
+            {
+              campaign_id: CAMPAIGN_B_ID,
+              geographic_name_id: 'geo-location',
+              entity_id: 'entity-location',
+            },
+          ]);
+        }
+        return jsonResponse([]);
+      },
+    });
+
+    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject({
+      code: 'invalid-response',
+    });
   });
 
   test('parses a safe character-location relation and validates both public endpoints', async () => {
@@ -144,18 +274,21 @@ describe('SupabasePublicCatalogRepository', () => {
       geographic_names: [],
       geographic_name_aliases: [],
       character_location_events: [],
+      campaign_geographic_entity_links: [],
     };
     const repository = new SupabasePublicCatalogRepository({
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input) => {
-        const table = new URL(String(input)).pathname.split('/').at(-1) ?? '';
+        const table = tableName(new URL(String(input)));
         return jsonResponse(rowsByTable[table] ?? []);
       },
     });
 
     const result = await repository.load({ signal: new AbortController().signal });
-    if (result.data.contract !== 'beta02') throw new Error('Expected Beta 0.2 projection.');
+    if (result.data.contract !== 'beta02') {
+      throw new Error('Expected Beta 0.2 projection.');
+    }
     expect(result.data.catalog.characterLocationRelations).toEqual([
       {
         characterId: 'entity-character',
@@ -218,6 +351,7 @@ describe('SupabasePublicCatalogRepository', () => {
       geographic_names: [],
       geographic_name_aliases: [],
       character_location_events: [],
+      campaign_geographic_entity_links: [],
     };
     const dispositionRequests: Request[] = [];
     const repository = new SupabasePublicCatalogRepository({
@@ -225,7 +359,7 @@ describe('SupabasePublicCatalogRepository', () => {
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input, init) => {
         const request = new Request(input, init);
-        const table = new URL(request.url).pathname.split('/').at(-1) ?? '';
+        const table = tableName(new URL(request.url));
         const allRows = rowsByTable[table] ?? [];
         const start = rangeStart(request);
         const pageRows = allRows.slice(start, start + 1000);
@@ -300,8 +434,8 @@ describe('SupabasePublicCatalogRepository', () => {
       code: 'http-error',
       status: 503,
     });
-    expect(pendingRequests).toBe(12);
-    expect(abortedRequests).toBe(12);
+    expect(pendingRequests).toBe(13);
+    expect(abortedRequests).toBe(13);
   });
 
   test('normalizes an HTTP failure without exposing the response body', async () => {
@@ -344,7 +478,16 @@ describe('SupabasePublicCatalogRepository', () => {
     });
   });
 
-  test('requires publishable keys for hosted projects but permits the local anon key', () => {
+  test('validates campaign ids and hosted/local publishable credentials', () => {
+    expect(
+      () =>
+        new SupabasePublicCatalogRepository({
+          projectUrl: PROJECT_URL,
+          publishableKey: PUBLISHABLE_KEY,
+          campaignId: 'not-a-campaign-id',
+        }),
+    ).toThrowError(expect.objectContaining({ code: 'configuration-invalid' }));
+
     expect(
       () =>
         new SupabasePublicCatalogRepository({
