@@ -40,7 +40,11 @@ describe('MAP-054 campaign roster domain', () => {
   });
 
   it('never relies on color alone because display name remains required', () => {
-    const result = validatePlayerDraft({ displayName: '   ', displayOrder: 0, accentColor: '#1e3a8a' });
+    const result = validatePlayerDraft({
+      displayName: '   ',
+      displayOrder: 0,
+      accentColor: '#1e3a8a',
+    });
     expect(result.valid).toBe(false);
     expect(result.fieldErrors.displayName).toBeTruthy();
   });
