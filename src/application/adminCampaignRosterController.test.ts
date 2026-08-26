@@ -68,13 +68,18 @@ class FakeRepository implements AdminCampaignRosterRepository {
     name: draft.name,
     displayOrder: draft.displayOrder,
   }));
-  updateCampaign = vi.fn(async (original: AdminCampaignRecord, draft: AdminCampaignDraft) => ({
-    ...original,
-    name: draft.name,
-    displayOrder: draft.displayOrder,
-  }));
+  updateCampaign = vi.fn(
+    async (original: AdminCampaignRecord, draft: AdminCampaignDraft) => ({
+      ...original,
+      name: draft.name,
+      displayOrder: draft.displayOrder,
+    }),
+  );
   setCampaignStatus = vi.fn(
-    async (original: AdminCampaignRecord, status: CampaignStatus): Promise<AdminCampaignRecord> => ({
+    async (
+      original: AdminCampaignRecord,
+      status: CampaignStatus,
+    ): Promise<AdminCampaignRecord> => ({
       ...original,
       status,
       archivedAt: status === 'archived' ? '2026-08-26T11:00:00.000Z' : null,
