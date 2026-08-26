@@ -20,8 +20,7 @@ export const INITIAL_PUBLIC_CAMPAIGN = Object.freeze({
   displayOrder: 0,
 });
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -409,8 +408,7 @@ export function buildPublicMulticampaignSnapshotContent(raw) {
   const campaigns = rows(input.campaigns ?? [], 'campaigns')
     .map(campaignSnapshotRow)
     .sort(
-      (left, right) =>
-        left.displayOrder - right.displayOrder || left.id.localeCompare(right.id),
+      (left, right) => left.displayOrder - right.displayOrder || left.id.localeCompare(right.id),
     );
 
   if (campaigns.length === 0) {
@@ -430,10 +428,7 @@ export function buildPublicMulticampaignSnapshotContent(raw) {
   const geographicNames = publicGlobalGeographicNames(globalRows);
   const expectedGeographicJson = JSON.stringify(geographicNames);
   const campaignCatalogs = campaigns.map((campaign) => {
-    const campaignRows = record(
-      campaignRowsById[campaign.id],
-      `campaignsById.${campaign.id}`,
-    );
+    const campaignRows = record(campaignRowsById[campaign.id], `campaignsById.${campaign.id}`);
     const content = buildPublicSnapshotContent({
       ...campaignRows,
       geographicNames: globalRows.geographicNames ?? [],
@@ -441,13 +436,17 @@ export function buildPublicMulticampaignSnapshotContent(raw) {
     });
     const projectedGlobal = content.geographicNames.map(({ entityId, ...name }) => {
       if (entityId !== null) {
-        throw new Error(`campaign ${campaign.id} unexpectedly mutated the global geographic index.`);
+        throw new Error(
+          `campaign ${campaign.id} unexpectedly mutated the global geographic index.`,
+        );
       }
       return name;
     });
 
     if (JSON.stringify(projectedGlobal) !== expectedGeographicJson) {
-      throw new Error(`campaign ${campaign.id} does not preserve the complete global geographic index.`);
+      throw new Error(
+        `campaign ${campaign.id} does not preserve the complete global geographic index.`,
+      );
     }
 
     return {
@@ -565,10 +564,7 @@ function projectCampaignCatalogToV2(content, campaignId) {
       ...name,
       entityId: entityByGeographicName.get(name.id) ?? null,
     })),
-    characterLocationEvents: rows(
-      catalog.characterLocationEvents ?? [],
-      'characterLocationEvents',
-    ),
+    characterLocationEvents: rows(catalog.characterLocationEvents ?? [], 'characterLocationEvents'),
   };
 }
 
@@ -582,7 +578,8 @@ export function projectMulticampaignSnapshotContentToV2(
 
 export function assertPublicMulticampaignSnapshotContent(content) {
   const snapshot = record(content, 'multicampaign snapshot content');
-  if (snapshot.schemaVersion !== 3) throw new Error('Multicampaign snapshot must use schemaVersion 3.');
+  if (snapshot.schemaVersion !== 3)
+    throw new Error('Multicampaign snapshot must use schemaVersion 3.');
 
   const campaigns = rows(snapshot.campaigns ?? [], 'campaigns');
   const catalogs = rows(snapshot.campaignCatalogs ?? [], 'campaignCatalogs');
@@ -663,8 +660,7 @@ function readRequiredEnv(name) {
 function remoteOptions(options) {
   return {
     projectUrl: options.projectUrl ?? readRequiredEnv('VITE_SUPABASE_URL'),
-    publishableKey:
-      options.publishableKey ?? readRequiredEnv('VITE_SUPABASE_PUBLISHABLE_KEY'),
+    publishableKey: options.publishableKey ?? readRequiredEnv('VITE_SUPABASE_PUBLISHABLE_KEY'),
     fetchImplementation: options.fetchImplementation ?? globalThis.fetch.bind(globalThis),
     timeoutMs: options.timeoutMs ?? DEFAULT_REMOTE_READ_TIMEOUT_MS,
   };

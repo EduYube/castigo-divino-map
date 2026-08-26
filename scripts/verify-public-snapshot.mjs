@@ -32,7 +32,10 @@ if (!Number.isFinite(Date.parse(snapshot.generatedAt))) {
 
 const committedNativeContent = snapshotContent(snapshot);
 const committedNativeChecksum = checksum(committedNativeContent);
-if (snapshot.checksum !== committedNativeChecksum || snapshot.sourceRevision !== committedNativeChecksum) {
+if (
+  snapshot.checksum !== committedNativeChecksum ||
+  snapshot.sourceRevision !== committedNativeChecksum
+) {
   throw new Error('The committed public snapshot checksum/sourceRevision is invalid.');
 }
 
@@ -190,7 +193,9 @@ contaminatedFixture.publicRequests = [
 
 const contaminatedContent = buildPublicSnapshotContent(contaminatedFixture);
 if (JSON.stringify(contaminatedContent) !== JSON.stringify(expectedFixtureContent)) {
-  throw new Error('Draft, archived, Master or administrative fixture data changed the public projection.');
+  throw new Error(
+    'Draft, archived, Master or administrative fixture data changed the public projection.',
+  );
 }
 
 const campaignA = '10000000-0000-4000-8000-000000000053';
