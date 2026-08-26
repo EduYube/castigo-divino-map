@@ -36,7 +36,7 @@ function createValidContent() {
 function createValidMulticampaignContent() {
   const legacy = createValidContent();
   return {
-    schemaVersion: 3,
+    schemaVersion: 3 as const,
     geographicNames: legacy.geographicNames.map((name) => {
       const globalName = { ...name };
       Reflect.deleteProperty(globalName, 'entityId');
