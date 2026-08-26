@@ -53,7 +53,15 @@ describe('MAP-039 geographic search coverage contract', () => {
   it('accepts the MAP-053 schema v3 global projection with entityId omitted', () => {
     const content = createValidContent();
     const geographicNames = content.geographicNames.map(
-      ({ entityId: _entityId, ...entry }) => entry,
+      ({ id, slug, name, language, aliases, coordinates, recommendedZoom }) => ({
+        id,
+        slug,
+        name,
+        language,
+        aliases,
+        coordinates,
+        recommendedZoom,
+      }),
     );
 
     expect(() =>
