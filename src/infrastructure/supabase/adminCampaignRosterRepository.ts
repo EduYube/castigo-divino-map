@@ -258,7 +258,10 @@ export class SupabaseAdminCampaignRosterRepository implements AdminCampaignRoste
     const url = this.#tableUrl('players');
     url.searchParams.set('select', PLAYER_SELECT);
     url.searchParams.set('campaign_id', `eq.${campaignId}`);
-    url.searchParams.set('order', 'publication_status.asc,display_order.asc,display_name.asc,id.asc');
+    url.searchParams.set(
+      'order',
+      'publication_status.asc,display_order.asc,display_name.asc,id.asc',
+    );
     const players = (await this.#getRows(url, options.signal)).map(mapPlayer);
     if (players.some((player) => player.campaignId !== campaignId)) {
       throw new AdminCampaignRosterRepositoryError(
@@ -392,7 +395,10 @@ export class SupabaseAdminCampaignRosterRepository implements AdminCampaignRoste
     return new URL(`${this.#projectUrl}/rest/v1/${table}`);
   }
 
-  async #getRows(url: URL, signal: AbortSignal): Promise<readonly Record<string, unknown>[]> {
+  async #getRows(
+    url: URL,
+    signal: AbortSignal,
+  ): Promise<readonly Record<string, unknown>[]> {
     const response = await this.#request(
       url,
       {
@@ -446,7 +452,11 @@ export class SupabaseAdminCampaignRosterRepository implements AdminCampaignRoste
     return rows[0] as Record<string, unknown>;
   }
 
-  async #request(url: URL, init: RequestInit, parentSignal: AbortSignal): Promise<Response> {
+  async #request(
+    url: URL,
+    init: RequestInit,
+    parentSignal: AbortSignal,
+  ): Promise<Response> {
     const accessToken = this.#readAccessToken();
     const controller = new AbortController();
     const abort = (): void => controller.abort();
