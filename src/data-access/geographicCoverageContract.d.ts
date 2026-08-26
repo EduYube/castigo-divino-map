@@ -16,7 +16,7 @@ export interface GeographicCoverageEntry {
     readonly y: number;
   };
   readonly recommendedZoom: number | null;
-  readonly entityId: string | null;
+  readonly entityId?: string | null;
 }
 
 export interface GeographicCoverageContent {
