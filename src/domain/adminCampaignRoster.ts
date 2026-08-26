@@ -72,7 +72,9 @@ export function accentContrastOnWhite(value: string): number {
   return 1.05 / (luminance + 0.05);
 }
 
-export function validateCampaignDraft(draft: AdminCampaignDraft): CampaignRosterValidation {
+export function validateCampaignDraft(
+  draft: AdminCampaignDraft,
+): CampaignRosterValidation {
   const errors: Record<string, string> = {};
   const name = draft.name.trim();
   const slug = draft.slug.trim();
@@ -99,7 +101,8 @@ export function validatePlayerDraft(draft: AdminPlayerDraft): CampaignRosterVali
     errors.displayName = 'El nombre visible debe tener entre 1 y 120 caracteres.';
   }
   if (!HEX_COLOR_PATTERN.test(color)) {
-    errors.accentColor = 'Introduce un color hexadecimal de seis dígitos, por ejemplo #1e3a8a.';
+    errors.accentColor =
+      'Introduce un color hexadecimal de seis dígitos, por ejemplo #1e3a8a.';
   } else if (accentContrastOnWhite(color) < 3) {
     errors.accentColor = 'El acento necesita al menos contraste 3:1 sobre blanco.';
   }
