@@ -229,10 +229,17 @@ select ok(
   $sql$),
   'authenticated non-admin cannot create roster members'
 );
-select ok(
-  pg_temp.statement_fails($sql$
-    update public.players set display_name = 'Tampered' where id = 'player-map054-b'
-  $sql$),
+select is(
+  (
+    with updated as (
+      update public.players
+      set display_name = 'Tampered'
+      where id = 'player-map054-b'
+      returning 1
+    )
+    select count(*) from updated
+  ),
+  0::bigint,
   'authenticated non-admin cannot edit another campaign roster'
 );
 select ok(
