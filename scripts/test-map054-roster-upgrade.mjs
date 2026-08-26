@@ -123,6 +123,7 @@ runPsql(
      '2026-06-01T00:00:00Z', '2026-07-01T00:00:00Z'
    );
 
+   alter table public.entity_player_dispositions disable trigger "90_entity_player_disposition_updated_at";
    update public.entity_player_dispositions
    set disposition = case entity_id
        when 'entity-ura' then 'ally'::public.player_disposition
@@ -130,7 +131,8 @@ runPsql(
        else 'neutral'::public.player_disposition
      end,
      updated_at = '2026-07-02T00:00:00Z'
-   where player_id = 'player-skade-existing';`,
+   where player_id = 'player-skade-existing';
+   alter table public.entity_player_dispositions enable trigger "90_entity_player_disposition_updated_at";`,
 );
 
 runCommand(
