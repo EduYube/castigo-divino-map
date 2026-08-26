@@ -14,7 +14,12 @@ import {
   type AdminPlayerRecord,
 } from '../domain/adminCampaignRoster';
 
-export type AdminCampaignRosterPhase = 'blocked' | 'loading' | 'ready' | 'mutating' | 'error';
+export type AdminCampaignRosterPhase =
+  | 'blocked'
+  | 'loading'
+  | 'ready'
+  | 'mutating'
+  | 'error';
 
 export interface AdminCampaignRosterState {
   readonly campaigns: readonly AdminCampaignRecord[];
@@ -32,7 +37,9 @@ interface AdminCampaignRosterControllerOptions {
   readonly onAuthorizationRejected?: (status: 401 | 403) => void;
 }
 
-function sortCampaigns(campaigns: readonly AdminCampaignRecord[]): readonly AdminCampaignRecord[] {
+function sortCampaigns(
+  campaigns: readonly AdminCampaignRecord[],
+): readonly AdminCampaignRecord[] {
   return [...campaigns].sort((left, right) => {
     if (left.status !== right.status) return left.status === 'active' ? -1 : 1;
     return (
@@ -51,7 +58,10 @@ function sortPlayers(players: readonly AdminPlayerRecord[]): readonly AdminPlaye
     }
     return (
       left.displayOrder - right.displayOrder ||
-      left.displayName.localeCompare(right.displayName, 'es', { sensitivity: 'base', numeric: true }) ||
+      left.displayName.localeCompare(right.displayName, 'es', {
+        sensitivity: 'base',
+        numeric: true,
+      }) ||
       left.id.localeCompare(right.id)
     );
   });
@@ -208,16 +218,23 @@ export class AdminCampaignRosterController {
 
   createCampaign(draft: AdminCampaignDraft): Promise<boolean> {
     const validation = validateCampaignDraft(draft);
-    if (!validation.valid) return Promise.resolve(this.#publishValidation(validation.fieldErrors));
+    if (!validation.valid) {
+      return Promise.resolve(this.#publishValidation(validation.fieldErrors));
+    }
     return this.#mutate(
       (signal) => this.#repository.createCampaign(draft, { signal }),
       (created) => ({ campaigns: sortCampaigns([...this.#state.campaigns, created]) }),
     );
   }
 
-  updateCampaign(original: AdminCampaignRecord, draft: AdminCampaignDraft): Promise<boolean> {
+  updateCampaign(
+    original: AdminCampaignRecord,
+    draft: AdminCampaignDraft,
+  ): Promise<boolean> {
     const validation = validateCampaignDraft(draft);
-    if (!validation.valid) return Promise.resolve(this.#publishValidation(validation.fieldErrors));
+    if (!validation.valid) {
+      return Promise.resolve(this.#publishValidation(validation.fieldErrors));
+    }
     return this.#mutate(
       (signal) => this.#repository.updateCampaign(original, draft, { signal }),
       (updated) => ({
@@ -233,7 +250,9 @@ export class AdminCampaignRosterController {
   setCampaignArchived(original: AdminCampaignRecord, archived: boolean): Promise<boolean> {
     return this.#mutate(
       (signal) =>
-        this.#repository.setCampaignStatus(original, archived ? 'archived' : 'active', { signal }),
+        this.#repository.setCampaignStatus(original, archived ? 'archived' : 'active', {
+          signal,
+        }),
       (updated) => ({
         campaigns: sortCampaigns(
           this.#state.campaigns.map((candidate) =>
@@ -246,7 +265,9 @@ export class AdminCampaignRosterController {
 
   createPlayer(draft: AdminPlayerDraft): Promise<boolean> {
     const validation = validatePlayerDraft(draft);
-    if (!validation.valid) return Promise.resolve(this.#publishValidation(validation.fieldErrors));
+    if (!validation.valid) {
+      return Promise.resolve(this.#publishValidation(validation.fieldErrors));
+    }
     const campaign = this.#selectedCampaign();
     if (!campaign || campaign.status !== 'active') {
       return Promise.resolve(
@@ -262,7 +283,9 @@ export class AdminCampaignRosterController {
 
   updatePlayer(original: AdminPlayerRecord, draft: AdminPlayerDraft): Promise<boolean> {
     const validation = validatePlayerDraft(draft);
-    if (!validation.valid) return Promise.resolve(this.#publishValidation(validation.fieldErrors));
+    if (!validation.valid) {
+      return Promise.resolve(this.#publishValidation(validation.fieldErrors));
+    }
     if (original.campaignId !== this.#state.selectedCampaignId) {
       return Promise.resolve(this.#publishIssue('El jugador pertenece a otra campaña.'));
     }
