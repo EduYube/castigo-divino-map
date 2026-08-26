@@ -500,7 +500,11 @@ export function upgradeLegacySnapshotContentV2(content) {
         entityId,
       };
     });
-  const geographicNames = geographicNamesV2.map(({ entityId: _entityId, ...name }) => name);
+  const geographicNames = geographicNamesV2.map((name) => {
+    const geographicName = { ...name };
+    delete geographicName.entityId;
+    return geographicName;
+  });
   const upgraded = {
     schemaVersion: 3,
     campaigns: [INITIAL_PUBLIC_CAMPAIGN],
