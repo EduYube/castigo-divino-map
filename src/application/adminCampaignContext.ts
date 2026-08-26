@@ -26,3 +26,5 @@ export class AdminCampaignContext {
     return () => this.#listeners.delete(listener);
   }
 }
+
+export const adminCampaignContext = new AdminCampaignContext();
