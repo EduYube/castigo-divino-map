@@ -108,6 +108,11 @@ describe('public catalog snapshot', () => {
     expect(loaded.metadata.schemaVersion).toBe(3);
     expect(loaded.source).toBe('bundled-snapshot');
     expect(loaded.data.contract).toBe('beta02');
+
+    if (loaded.data.contract !== 'beta02') {
+      throw new Error('The v3 degraded-mode projection must preserve the Beta 0.2 frontend contract.');
+    }
+
     expect(loaded.data.catalog.entities).toEqual(legacySnapshot.entities);
     expect(loaded.data.catalog.geographicNames).toEqual(legacySnapshot.geographicNames);
   });
