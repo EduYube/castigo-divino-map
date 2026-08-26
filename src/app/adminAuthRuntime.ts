@@ -54,13 +54,14 @@ import { SupabaseAdminCatalogRepository } from '../infrastructure/supabase/admin
 import { SupabaseAdminCharacterLocationRelationRepository } from '../infrastructure/supabase/adminCharacterLocationRelationRepository';
 import { SupabaseAdminMapEntityRepository } from '../infrastructure/supabase/adminMapEntityRepository';
 import { SupabaseAdminPublicRequestRepository } from '../infrastructure/supabase/adminPublicRequestRepository';
+import { mountAdminAuth } from './adminAuth';
 import { mountAdminCatalog } from './adminCatalog';
+import { bootstrapAdminCampaignRosterRuntime } from './adminCampaignRosterRuntime';
 import { dispatchAdminEntityAudienceChanged } from './adminEntityAudienceEvents';
 import { mountAdminCharacterLocationRelations } from './adminCharacterLocationRelations';
 import { mountAdminMapEntities } from './adminMapEntities';
 import { mountAdminMapEntityAudience } from './adminMapEntityAudience';
 import { mountAdminPublicRequests } from './adminPublicRequests';
-import { mountAdminAuth } from './adminAuth';
 import '../styles/admin-catalog.css';
 
 interface AdminAuthTestConfig {
@@ -471,12 +472,21 @@ export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
       await mapEntityController.openEditor(entityId);
     },
   });
+  const campaignRosterRuntime = bootstrapAdminCampaignRosterRuntime(root, authController, {
+    onCampaignChanged(): void {
+      void catalogController.reload();
+      void mapEntityController.reload();
+      void relationController.reload();
+      void requestController.reload();
+    },
+  });
   void authController.start();
 
   return {
     authController,
     mapEntityController,
     destroy(): void {
+      campaignRosterRuntime.destroy();
       requestUi.destroy();
       requestController.destroy();
       relationUi.destroy();
