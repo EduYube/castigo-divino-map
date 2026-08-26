@@ -229,15 +229,17 @@ select ok(
   $sql$),
   'authenticated non-admin cannot create roster members'
 );
+
+update public.players
+set display_name = 'Tampered'
+where id = 'player-map054-b';
+
 select is(
   (
-    with updated as (
-      update public.players
-      set display_name = 'Tampered'
-      where id = 'player-map054-b'
-      returning 1
-    )
-    select count(*) from updated
+    select count(*)
+    from public.players
+    where id = 'player-map054-b'
+      and display_name = 'Tampered'
   ),
   0::bigint,
   'authenticated non-admin cannot edit another campaign roster'
