@@ -68,7 +68,7 @@ function parseJsonObject(body: BodyInit | null | undefined): Record<string, unkn
   }
 }
 
-function scopeTableRequest(
+export function scopeAdminTableRequest(
   url: URL,
   init: RequestInit | undefined,
   campaignId: string,
@@ -79,15 +79,13 @@ function scopeTableRequest(
 
   const method = (init?.method ?? 'GET').toUpperCase();
   if (method === 'GET' || method === 'PATCH' || method === 'DELETE') {
-    if (!url.searchParams.has('campaign_id')) {
-      url.searchParams.set('campaign_id', `eq.${campaignId}`);
-    }
+    url.searchParams.set('campaign_id', `eq.${campaignId}`);
     return { url, init };
   }
 
   if (method === 'POST') {
     const body = parseJsonObject(init?.body);
-    if (body && body.campaign_id === undefined) {
+    if (body) {
       return {
         url,
         init: { ...init, body: JSON.stringify({ ...body, campaign_id: campaignId }) },
@@ -98,7 +96,7 @@ function scopeTableRequest(
   return { url, init };
 }
 
-function scopeRpcRequest(
+export function scopeAdminRpcRequest(
   url: URL,
   init: RequestInit | undefined,
   campaignId: string,
@@ -113,7 +111,7 @@ function scopeRpcRequest(
     );
     return {
       url,
-      init: { ...init, body: JSON.stringify({ p_campaign_id: campaignId, ...body }) },
+      init: { ...init, body: JSON.stringify({ ...body, p_campaign_id: campaignId }) },
     };
   }
 
@@ -121,7 +119,7 @@ function scopeRpcRequest(
     url.pathname = url.pathname.replace('/admin_save_map_entity_v3', '/admin_save_map_entity_v4');
     return {
       url,
-      init: { ...init, body: JSON.stringify({ p_campaign_id: campaignId, ...body }) },
+      init: { ...init, body: JSON.stringify({ ...body, p_campaign_id: campaignId }) },
     };
   }
 
@@ -132,7 +130,7 @@ function scopeRpcRequest(
     );
     return {
       url,
-      init: { ...init, body: JSON.stringify({ p_campaign_id: campaignId, ...body }) },
+      init: { ...init, body: JSON.stringify({ ...body, p_campaign_id: campaignId }) },
     };
   }
 
@@ -148,8 +146,8 @@ async function campaignScopedFetch(
   const url = toUrl(input);
   if (!url) return originalFetch(input, init);
   const campaignId = adminCampaignContext.getCampaignId();
-  const tableScoped = scopeTableRequest(url, init, campaignId);
-  const rpcScoped = scopeRpcRequest(tableScoped.url, tableScoped.init, campaignId);
+  const tableScoped = scopeAdminTableRequest(url, init, campaignId);
+  const rpcScoped = scopeAdminRpcRequest(tableScoped.url, tableScoped.init, campaignId);
   return originalFetch(rpcScoped.url, rpcScoped.init);
 }
 
