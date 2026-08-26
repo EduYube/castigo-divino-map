@@ -19,6 +19,7 @@ export interface AdminPlayerRecord {
   readonly slug: string;
   readonly displayName: string;
   readonly publicationStatus: PlayerPublicationStatus;
+  readonly publishedAt: string | null;
   readonly displayOrder: number;
   readonly accentColor: string;
   readonly archivedAt: string | null;
