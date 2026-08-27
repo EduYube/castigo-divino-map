@@ -17,6 +17,8 @@ const HOSTED_PROJECT_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
 const LOCAL_PROJECT_URL_PATTERN = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?\/?$/i;
 const PUBLISHABLE_KEY_PATTERN = /^sb_publishable_[A-Za-z0-9_-]{10,}$/;
 const LEGACY_ANON_KEY_PATTERN = /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const CAMPAIGN_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DEFAULT_TIMEOUT_MS = 8_000;
 
 interface MasterCatalogRepositoryOptions {
@@ -125,8 +127,9 @@ function mapPlayer(row: Record<string, unknown>): MasterCatalogPlayer {
 
 function mapDisposition(row: Record<string, unknown>): MasterCatalogDisposition {
   const disposition = row.disposition;
-  if (disposition !== 'ally' && disposition !== 'enemy' && disposition !== 'neutral')
+  if (disposition !== 'ally' && disposition !== 'enemy' && disposition !== 'neutral') {
     throwInvalid();
+  }
   return {
     entityId: stringField(row, 'entity_id'),
     playerId: stringField(row, 'player_id'),
@@ -213,7 +216,17 @@ export class SupabaseMasterCatalogRepository implements MasterCatalogRepository 
     this.#storage.assertAvailable();
   }
 
-  async load(options: { readonly signal: AbortSignal }): Promise<AuthorizedMasterCatalog> {
+  async load(options: {
+    readonly signal: AbortSignal;
+    readonly campaignId: string;
+  }): Promise<AuthorizedMasterCatalog> {
+    if (!CAMPAIGN_ID_PATTERN.test(options.campaignId)) {
+      throw new MasterCatalogRepositoryError(
+        'unexpected',
+        'La campaña seleccionada no tiene una identidad válida para Modo Máster.',
+      );
+    }
+
     const accessToken = this.#readAccessToken();
     const controller = new AbortController();
     const abort = (): void => controller.abort();
@@ -225,7 +238,7 @@ export class SupabaseMasterCatalogRepository implements MasterCatalogRepository 
       let response: Response;
       try {
         response = await this.#fetchImplementation(
-          new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_master_catalog_v2`),
+          new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_master_catalog_v3`),
           {
             method: 'POST',
             headers: {
@@ -234,7 +247,7 @@ export class SupabaseMasterCatalogRepository implements MasterCatalogRepository 
               Authorization: `Bearer ${accessToken}`,
               'Content-Type': 'application/json',
             },
-            body: '{}',
+            body: JSON.stringify({ p_campaign_id: options.campaignId }),
             cache: 'no-store',
             signal: controller.signal,
           },
