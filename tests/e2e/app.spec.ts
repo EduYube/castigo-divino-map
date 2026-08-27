@@ -262,7 +262,10 @@ test('opens compact public details and closes back to its marker', async ({ page
     name: 'Abrir ficha completa de Puerto de demostración en una pestaña nueva',
   });
   await expect(fullAction).toBeVisible();
-  await expect(fullAction).toHaveAttribute('href', /\?entity=puerto-de-demostracion$/);
+  await expect(fullAction).toHaveAttribute(
+    'href',
+    /\?entity=puerto-de-demostracion&campaign=castigo-divino$/,
+  );
   await expect(marker).toHaveAttribute('aria-pressed', 'true');
   await expect(marker).toHaveClass(/campaign-marker-icon--active/);
 

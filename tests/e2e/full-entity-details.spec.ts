@@ -3,6 +3,7 @@ import { expect, test, type BrowserContext, type Page, type Route } from '@playw
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
+const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -186,7 +187,18 @@ async function configureRuntime(
 
     const match = /\/rest\/v1\/([^?]+)/.exec(route.request().url());
     const table = match?.[1] ?? '';
-    const rows = rowsByTable[table] ?? [];
+    const rows =
+      table === 'campaigns'
+        ? [
+            {
+              id: CAMPAIGN_A_ID,
+              slug: 'castigo-divino',
+              name: 'Castigo Divino',
+              status: 'active',
+              display_order: 0,
+            },
+          ]
+        : (rowsByTable[table] ?? []);
     const contentRange = rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
 
     await route.fulfill({
@@ -223,7 +235,7 @@ async function expectLocationDetails(page: Page): Promise<void> {
   ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Harbor Guard' })).toHaveAttribute(
     'href',
-    /\?entity=harbor-guard$/,
+    /\?entity=harbor-guard&campaign=castigo-divino$/,
   );
   await expect(page.getByText('Visto por última vez')).toBeVisible();
   await expect(
@@ -254,7 +266,7 @@ test('opens full details in a new tab without changing the map tab', async ({ co
   const detailsPage = await popupPromise;
 
   await expectLocationDetails(detailsPage);
-  expect(detailsPage.url()).toMatch(/\?entity=puerto-de-demostracion$/);
+  expect(detailsPage.url()).toMatch(/\?entity=puerto-de-demostracion&campaign=castigo-divino$/);
   expect(page.url()).toBe(originalUrl);
   await expect(panel).toHaveAttribute('data-entity-id', 'place-demo-harbor');
   expect(new URL(page.url()).searchParams.get('place')).toBe('puerto-de-demostracion');
@@ -270,14 +282,14 @@ test('loads, canonicalizes and reloads a character direct URL with inverse relat
   const title = page.getByRole('heading', { level: 1, name: 'Harbor Guard' });
   await expect(title).toBeVisible();
   await expect(title).toBeFocused();
-  expect(page.url()).toMatch(/\?entity=harbor-guard$/);
+  expect(page.url()).toMatch(/\?entity=harbor-guard&campaign=castigo-divino$/);
   await expect(page.locator('[data-full-entity-type]')).toContainText('Personaje');
   await expect(
     page.getByRole('heading', { level: 2, name: 'Ubicaciones relacionadas' }),
   ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Demonstration Harbor' }).first()).toHaveAttribute(
     'href',
-    /\?entity=puerto-de-demostracion$/,
+    /\?entity=puerto-de-demostracion&campaign=castigo-divino$/,
   );
   await expect(
     page.getByRole('heading', { level: 2, name: 'Historial público de localización' }),
@@ -289,7 +301,7 @@ test('loads, canonicalizes and reloads a character direct URL with inverse relat
 
   await page.reload();
   await expect(page.getByRole('heading', { level: 1, name: 'Harbor Guard' })).toBeVisible();
-  expect(page.url()).toMatch(/\?entity=harbor-guard$/);
+  expect(page.url()).toMatch(/\?entity=harbor-guard&campaign=castigo-divino$/);
 });
 
 test('uses one generic unavailable state for invalid, missing and non-public identities', async ({
