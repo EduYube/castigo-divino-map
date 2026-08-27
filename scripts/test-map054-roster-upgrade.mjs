@@ -37,7 +37,9 @@ function runCommandExpectFailure(command, argumentsList, description, expectedTe
   if (result.status === 0) fail(`${description} unexpectedly succeeded`);
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
   if (!output.includes(expectedText)) {
-    fail(`${description} failed for an unexpected reason; expected output containing ${expectedText}`);
+    fail(
+      `${description} failed for an unexpected reason; expected output containing ${expectedText}`,
+    );
   }
 }
 
@@ -133,7 +135,8 @@ function runDamagedUpgradeScenario(description, setupSql, expectedText) {
   );
 }
 
-const incompleteMessage = 'MAP-054 historic campaign content requires the complete three-character Skade/Ura/Veyra source';
+const incompleteMessage =
+  'MAP-054 historic campaign content requires the complete three-character Skade/Ura/Veyra source';
 
 runDamagedUpgradeScenario(
   'rejecting a non-empty historic campaign with zero expected roster names',
@@ -332,4 +335,6 @@ runPsql(
    $$;`,
 );
 
-console.log('MAP-054 roster upgrade rehearsal passed, including damaged-upgrade fail-closed scenarios.');
+console.log(
+  'MAP-054 roster upgrade rehearsal passed, including damaged-upgrade fail-closed scenarios.',
+);
