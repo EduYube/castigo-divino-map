@@ -7,6 +7,9 @@ import type {
   PublicCatalogSnapshotV3,
 } from '../../src/data/beta03-model';
 
+type CampaignEntityId = PublicCampaignCatalogV3['entities'][number]['id'];
+type CampaignCategoryId = PublicCampaignCatalogV3['categories'][number]['id'];
+
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
@@ -111,8 +114,8 @@ function rowsFor(table: string, campaignId: string): readonly Record<string, unk
 
 function snapshotCatalog(campaignId: string): PublicCampaignCatalogV3 {
   const suffix = campaignId === CAMPAIGN_B_ID ? 'b' : 'a';
-  const entityId = `place-campaign-${suffix}` as PublicCampaignCatalogV3['entities'][number]['id'];
-  const categoryId = `category-campaign-${suffix}` as PublicCampaignCatalogV3['categories'][number]['id'];
+  const entityId = `place-campaign-${suffix}` as CampaignEntityId;
+  const categoryId = `category-campaign-${suffix}` as CampaignCategoryId;
   return {
     campaignId,
     categories: [
