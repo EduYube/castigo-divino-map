@@ -1,0 +1,76 @@
+name: MAP-055 build fix
+
+on:
+  push:
+    branches:
+      - agent/map-055-public-campaign-runtime
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-055-public-campaign-runtime
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Fix TypeScript build contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/app/publicDataRuntime.ts')
+          text = path.read_text()
+          replacements = {
+              "  const handleOffline = (): void => service.markOffline();\n": "  const handleOffline = (): void => {\n    service.markOffline();\n  };\n",
+              "      return (): void => catalogListeners.delete(listener);\n": "      return (): void => {\n        catalogListeners.delete(listener);\n      };\n",
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'publicDataRuntime target not found: {old!r}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+
+          path = Path('src/application/masterModeController.test.ts')
+          text = path.read_text()
+          old = "    let resolveCampaignB: ((catalog: AuthorizedMasterCatalog) => void) | null = null;\n"
+          new = """    let resolveCampaignB: (catalog: AuthorizedMasterCatalog) => void = () => {\n      throw new Error('Campaign B resolver was not initialized.');\n    };\n"""
+          if old not in text:
+              raise SystemExit('master resolver declaration target not found')
+          text = text.replace(old, new, 1)
+          old = "    resolveCampaignB?.(campaignBCatalog);\n"
+          new = "    resolveCampaignB(campaignBCatalog);\n"
+          if old not in text:
+              raise SystemExit('master resolver invocation target not found')
+          path.write_text(text.replace(old, new, 1))
+
+          path = Path('src/main.ts')
+          text = path.read_text()
+          old = """    beta02: null,\n    compatibility: catalog,\n  };\n"""
+          new = """    beta02: null,\n    compatibility: catalog,\n    campaigns: [],\n    selectedCampaign: null,\n  };\n"""
+          if old not in text:
+              raise SystemExit('main unavailable state target not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Format changed files
+        run: npx prettier --write src/app/publicDataRuntime.ts src/application/masterModeController.test.ts src/main.ts
+      - name: Validate build
+        env:
+          VITE_SUPABASE_URL: https://ehpouvbzmvwbkkoypgfa.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0
+        run: npm run build:pages
+      - name: Commit validated build fixes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/app/publicDataRuntime.ts src/application/masterModeController.test.ts src/main.ts
+          git commit -m "MAP-055 fix TypeScript build contract"
+          git push origin HEAD:agent/map-055-public-campaign-runtime
