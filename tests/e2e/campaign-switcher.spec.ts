@@ -332,7 +332,10 @@ test('degraded schema v3 keeps B selected and backend recovery does not reset it
   await page.goto('/?campaign=campaign-b');
 
   await expectCampaignB(page);
-  await expect(page.locator('[data-backend-status]')).toContainText(/degrad|cach|local/i);
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'degraded',
+  );
 
   backend.setRemoteAvailable(true);
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
