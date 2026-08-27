@@ -146,6 +146,25 @@ runPsql(
        'master', null, 'en', 'MAP053 Upgrade Master Location', 'Master-only v1.0 fixture location',
        'Must remain master-only after MAP-053.', 1300, 900, 'category-map053-upgrade', 'published',
        '2026-06-01T00:04:00Z', '2026-07-02T00:04:00Z'
+     ),
+     (
+       'entity-skade', 'skade', 'character', 'pin', 'public', null, 'en',
+       'Skade', 'Historic Skade', 'Historic Skade', 800, 700,
+       'category-map053-upgrade', 'published',
+       '2026-06-01T00:14:00Z', '2026-07-02T00:14:00Z'
+     ),
+     (
+       'entity-ura', 'ura', 'character', 'pin', 'public', null, 'en',
+       'Ura', 'Historic Ura', 'Historic Ura', 900, 700,
+       'category-map053-upgrade', 'published',
+       '2026-06-01T00:15:00Z', '2026-07-02T00:15:00Z'
+     ),
+     (
+       'entity-request-07d26371bbff42d9b91e076d099891b0',
+       'request-07d26371bbff42d9b91e076d099891b0', 'character', 'pin', 'public', null, 'en',
+       'Veyra', 'Historic Veyra', 'Historic Veyra', 1000, 700,
+       'category-map053-upgrade', 'published',
+       '2026-06-01T00:16:00Z', '2026-07-02T00:16:00Z'
      );
 
    update public.entity_player_dispositions

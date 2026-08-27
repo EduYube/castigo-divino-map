@@ -319,7 +319,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v3')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v4')) {
       const body = request.postDataJSON() as { p_entity_id?: string };
       await route.fulfill({
         status: 200,
@@ -329,7 +329,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v3')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v4')) {
       if (mode === 'network') {
         mode = 'normal';
         await route.abort('failed');

@@ -95,7 +95,7 @@ async function configureAdminBackend(page: Page): Promise<void> {
       return;
     }
 
-    if (authenticated && url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v3')) {
+    if (authenticated && url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v4')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

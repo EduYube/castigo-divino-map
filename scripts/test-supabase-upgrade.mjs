@@ -158,6 +158,42 @@ runPsql(
        900,
        'category-upgrade-legacy',
        'published'
+     ),
+     (
+       'entity-skade',
+       'skade',
+       'character',
+       'unknown',
+       'Skade',
+       'skade',
+       800,
+       700,
+       'category-upgrade-legacy',
+       'published'
+     ),
+     (
+       'entity-ura',
+       'ura',
+       'character',
+       'unknown',
+       'Ura',
+       'ura',
+       900,
+       700,
+       'category-upgrade-legacy',
+       'published'
+     ),
+     (
+       'entity-request-07d26371bbff42d9b91e076d099891b0',
+       'request-07d26371bbff42d9b91e076d099891b0',
+       'character',
+       'unknown',
+       'Veyra',
+       'veyra',
+       1000,
+       700,
+       'category-upgrade-legacy',
+       'published'
      );
 
    insert into public.geographic_names (
