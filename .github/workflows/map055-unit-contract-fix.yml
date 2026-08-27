@@ -33,15 +33,17 @@ jobs:
           if old not in text:
               raise SystemExit('global geography test target not found')
           text = text.replace(old, new, 1)
+
           old = """    const projected = await projectPublicCatalogSnapshotV3ToV2(\n      loaded.data.catalog,\n      INITIAL_PUBLIC_CAMPAIGN_ID,\n      () => generatedAt,\n    );\n    expect(projected.entities).toEqual(legacySnapshot.entities);\n    expect(projected.geographicNames).toEqual(legacySnapshot.geographicNames);\n"""
           new = """    const projected = projectPublicCatalogSnapshotV3ToV2(\n      loaded.data.catalog,\n      INITIAL_PUBLIC_CAMPAIGN_ID,\n    );\n    expect(projected?.entities).toEqual(legacySnapshot.entities);\n    expect(projected?.geographicNames).toEqual(legacySnapshot.geographicNames);\n"""
           if old not in text:
               raise SystemExit('projection call target not found')
           text = text.replace(old, new, 1)
-          old = """      schemaVersion: 1,\n      generatedAt: snapshot.generatedAt,\n"""
-          new = """      schemaVersion: 1,\n      contract: 'beta01',\n      generatedAt: snapshot.generatedAt,\n"""
+
+          old = """    const checksum = await createSha256Checksum(catalog);\n    const parsed = await parsePublicCatalogSnapshotV1({\n      schemaVersion: 1,\n      generatedAt: snapshot.generatedAt,\n      sourceRevision: checksum,\n      checksum,\n      catalog,\n    });\n"""
+          new = """    const sourceRevision = 'rollback-test-revision';\n    const checksum = await createSha256Checksum({\n      schemaVersion: 1,\n      contract: 'beta01',\n      generatedAt: snapshot.generatedAt,\n      sourceRevision,\n      catalog,\n    });\n    const parsed = await parsePublicCatalogSnapshotV1({\n      schemaVersion: 1,\n      contract: 'beta01',\n      generatedAt: snapshot.generatedAt,\n      sourceRevision,\n      checksum,\n      catalog,\n    });\n"""
           if old not in text:
-              raise SystemExit('beta01 contract target not found')
+              raise SystemExit('beta01 checksum target not found')
           path.write_text(text.replace(old, new, 1))
 
           path = Path('src/infrastructure/supabase/publicCatalogRepository.test.ts')
