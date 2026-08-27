@@ -2,7 +2,10 @@ import { readFileSync } from 'node:fs';
 
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 
-import { PUBLIC_CATALOG_TABLE_QUERIES } from '../../src/data-access/publicCatalogQueryContract.js';
+import {
+  INITIAL_PUBLIC_CAMPAIGN_ID,
+  PUBLIC_CATALOG_TABLE_QUERIES,
+} from '../../src/data-access/publicCatalogQueryContract.js';
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
@@ -147,6 +150,25 @@ async function configureBackend(
     }
 
     const table = resource.split('?')[0] ?? '';
+    if (table === 'campaigns') {
+      const rows = [
+        {
+          id: INITIAL_PUBLIC_CAMPAIGN_ID,
+          slug: 'castigo-divino',
+          name: 'Castigo Divino',
+          status: 'active',
+          display_order: 0,
+        },
+      ];
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'Content-Range': contentRange(rows) },
+        body: JSON.stringify(rows),
+      });
+      return;
+    }
+
     const query = Object.values(PUBLIC_CATALOG_TABLE_QUERIES).find(({ name }) => name === table);
     const fixtureKey = FIXTURE_KEYS_BY_TABLE[table];
     const raw =
