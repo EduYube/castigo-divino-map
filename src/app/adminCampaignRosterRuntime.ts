@@ -145,11 +145,19 @@ export function bootstrapAdminCampaignRosterRuntime(
   });
   const ui = mountAdminCampaignRoster(root, controller, authController);
   const ownSection = root.querySelector<HTMLElement>('.admin-campaign-roster');
+  const unsubscribeTransition = adminCampaignContext.subscribeTransition((transition) => {
+    if (!transition) return;
+    discardOtherOpenEditors(root, ownSection);
+    window.dispatchEvent(
+      new CustomEvent('atlas:admin-campaign-transition-started', {
+        detail: { campaignId: transition.targetCampaignId },
+      }),
+    );
+  });
   let previousCampaignId = adminCampaignContext.getCampaignId();
   const unsubscribeContext = adminCampaignContext.subscribe((campaignId) => {
     if (campaignId === previousCampaignId) return;
     previousCampaignId = campaignId;
-    discardOtherOpenEditors(root, ownSection);
     window.dispatchEvent(
       new CustomEvent('atlas:admin-campaign-changed', { detail: { campaignId } }),
     );
@@ -159,6 +167,7 @@ export function bootstrapAdminCampaignRosterRuntime(
   return {
     controller,
     destroy(): void {
+      unsubscribeTransition();
       unsubscribeContext();
       ui.destroy();
       controller.destroy();
