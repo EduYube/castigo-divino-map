@@ -96,13 +96,14 @@ grant insert (display_order, accent_color) on table public.players to authentica
 grant update (display_order, accent_color) on table public.players to authenticated;
 
 -- A clean Supabase reset applies migrations before seed.sql and therefore has
--- no historic campaign rows to migrate. Production/upgrades do. Zero source
--- rows is the valid clean-install case; any partial historic source is rejected
--- so a damaged/ambiguous upgrade cannot silently invent roster identities.
+-- no campaign content to migrate. Do not infer "clean" merely from the absence
+-- of the three expected names: an upgrade with other historic content but a
+-- missing/renamed roster source must stop rather than invent identities.
 do $$
 declare
   initial_campaign constant uuid := '00000000-0000-4000-8000-000000000053'::uuid;
   historic_source_count integer;
+  historic_campaign_has_content boolean;
   source_count integer;
   roster_count integer;
   player_spec record;
@@ -114,8 +115,23 @@ begin
     and entity.entity_type = 'character'::public.entity_type
     and pg_catalog.lower(entity.name) in ('skade', 'ura', 'veyra');
 
-  if historic_source_count = 0 then
-    raise notice 'MAP-054 clean install: historic Skade/Ura/Veyra roster migration deferred because no pre-migration campaign data exists';
+  select
+    exists (
+      select 1 from public.map_entities entity
+      where entity.campaign_id = initial_campaign
+    )
+    or exists (
+      select 1 from public.players player
+      where player.campaign_id = initial_campaign
+    )
+    or exists (
+      select 1 from public.public_requests request
+      where request.campaign_id = initial_campaign
+    )
+  into historic_campaign_has_content;
+
+  if historic_source_count = 0 and not historic_campaign_has_content then
+    raise notice 'MAP-054 clean install: no pre-migration campaign content exists, historic roster migration deferred until seed data';
     return;
   end if;
 
@@ -123,7 +139,7 @@ begin
     raise exception using
       errcode = '23514',
       message = pg_catalog.format(
-        'MAP-054 expected either zero clean-install sources or the complete three-character historic roster, found %s rows',
+        'MAP-054 historic campaign content requires the complete three-character Skade/Ura/Veyra source, found %s rows',
         historic_source_count
       );
   end if;
