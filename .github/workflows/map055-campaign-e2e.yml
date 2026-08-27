@@ -21,27 +21,15 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Align campaign E2E with runtime marker semantics
+      - name: Align campaign E2E with runtime semantics
         run: |
           python - <<'PY'
           from pathlib import Path
 
           path = Path('tests/e2e/campaign-switcher.spec.ts')
           text = path.read_text()
-          text = text.replace(
-              "page.getByLabel('Campaña')",
-              "page.getByLabel('Campaña', { exact: true })",
-          )
-          text = text.replace(
-              '[data-testid="place-marker"][data-place-id="place-campaign-a"]',
-              '[data-testid="entity-pin"][data-entity-id="place-campaign-a"]',
-          )
-          text = text.replace(
-              '[data-testid="place-marker"][data-place-id="place-campaign-b"]',
-              '[data-testid="entity-pin"][data-entity-id="place-campaign-b"]',
-          )
-          old = "page.locator('[data-public-pin-request-status]')"
-          new = "page.getByText('Solicitud enviada para revisión. No se publicará automáticamente en el mapa.')"
+          old = "await expect(page.locator('[data-backend-status]')).toContainText(/degrad|cach|local/i);"
+          new = "await expect(page.locator('[data-backend-status]')).toHaveAttribute('data-backend-state', 'degraded');"
           if old in text:
               text = text.replace(old, new, 1)
           path.write_text(text)
@@ -57,7 +45,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No prepared changes to commit."
           else
-            git commit -m "MAP-055 align A-B campaign E2E coverage"
+            git commit -m "MAP-055 harden degraded campaign E2E assertion"
             git push origin HEAD:agent/map-055-public-campaign-runtime
           fi
       - name: Install Chromium
