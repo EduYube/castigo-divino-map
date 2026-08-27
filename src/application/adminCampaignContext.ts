@@ -7,9 +7,7 @@ export interface AdminCampaignTransition {
   readonly targetCampaignId: string;
 }
 
-export type AdminCampaignTransitionListener = (
-  transition: AdminCampaignTransition | null,
-) => void;
+export type AdminCampaignTransitionListener = (transition: AdminCampaignTransition | null) => void;
 
 export class AdminCampaignContext {
   readonly #listeners = new Set<AdminCampaignContextListener>();
