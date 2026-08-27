@@ -1,8 +1,10 @@
 import type { PublicCatalogEnvelope } from '../../data-access/publicCatalog';
 import { PublicDataRepositoryError } from '../../data-access/publicCatalog';
+import { parsePublicCatalogSnapshotV3 } from './multicampaignSnapshotCodec';
 import { parsePublicCatalogSnapshotV2 } from '../supabase/publicCatalogRepository';
 
-const SESSION_CACHE_KEY = 'castigo-divino-map:public-catalog:v2';
+const SESSION_CACHE_KEY_V3 = 'castigo-divino-map:public-catalog:v3';
+const SESSION_CACHE_KEY_V2 = 'castigo-divino-map:public-catalog:v2';
 
 export interface PublicCatalogSessionCache {
   read(): Promise<PublicCatalogEnvelope | null>;
@@ -20,10 +22,11 @@ export class BrowserPublicCatalogSessionCache implements PublicCatalogSessionCac
   }
 
   async read(): Promise<PublicCatalogEnvelope | null> {
-    let serialized: string | null;
-
+    let serializedV3: string | null;
+    let serializedV2: string | null;
     try {
-      serialized = this.#storage.getItem(SESSION_CACHE_KEY);
+      serializedV3 = this.#storage.getItem(SESSION_CACHE_KEY_V3);
+      serializedV2 = this.#storage.getItem(SESSION_CACHE_KEY_V2);
     } catch (error) {
       throw new PublicDataRepositoryError(
         'cache-unavailable',
@@ -31,18 +34,13 @@ export class BrowserPublicCatalogSessionCache implements PublicCatalogSessionCac
         { source: 'cache', cause: error },
       );
     }
-
-    if (!serialized) {
-      return null;
-    }
+    if (!serializedV3 && !serializedV2) return null;
 
     try {
-      const parsed = await parsePublicCatalogSnapshotV2(JSON.parse(serialized), this.#now);
-
-      return {
-        ...parsed,
-        source: 'session-cache',
-      };
+      const parsed = serializedV3
+        ? await parsePublicCatalogSnapshotV3(JSON.parse(serializedV3), this.#now)
+        : await parsePublicCatalogSnapshotV2(JSON.parse(serializedV2!), this.#now);
+      return { ...parsed, source: 'session-cache' };
     } catch (error) {
       this.clear();
       throw error;
@@ -50,12 +48,11 @@ export class BrowserPublicCatalogSessionCache implements PublicCatalogSessionCac
   }
 
   async write(envelope: PublicCatalogEnvelope): Promise<void> {
-    if (envelope.data.contract !== 'beta02') {
-      return;
-    }
-
+    if (envelope.data.contract !== 'beta02' && envelope.data.contract !== 'beta03') return;
+    const key = envelope.data.contract === 'beta03' ? SESSION_CACHE_KEY_V3 : SESSION_CACHE_KEY_V2;
     try {
-      this.#storage.setItem(SESSION_CACHE_KEY, JSON.stringify(envelope.data.catalog));
+      this.#storage.setItem(key, JSON.stringify(envelope.data.catalog));
+      if (envelope.data.contract === 'beta03') this.#storage.removeItem(SESSION_CACHE_KEY_V2);
     } catch (error) {
       throw new PublicDataRepositoryError(
         'cache-unavailable',
@@ -67,7 +64,8 @@ export class BrowserPublicCatalogSessionCache implements PublicCatalogSessionCac
 
   clear(): void {
     try {
-      this.#storage.removeItem(SESSION_CACHE_KEY);
+      this.#storage.removeItem(SESSION_CACHE_KEY_V3);
+      this.#storage.removeItem(SESSION_CACHE_KEY_V2);
     } catch {
       // La caché es best-effort; el contenido validado en memoria permanece disponible.
     }
