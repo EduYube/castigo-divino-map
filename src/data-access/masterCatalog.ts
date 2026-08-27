@@ -103,5 +103,5 @@ export class MasterCatalogRepositoryError extends Error {
 }
 
 export interface MasterCatalogRepository {
-  load(options: { readonly signal: AbortSignal }): Promise<AuthorizedMasterCatalog>;
+  load(options: { readonly signal: AbortSignal; readonly campaignId: string }): Promise<AuthorizedMasterCatalog>;
 }
