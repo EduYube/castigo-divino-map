@@ -1,5 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
+import { INITIAL_PUBLIC_CAMPAIGN_ID } from '../../src/data-access/publicCatalogQueryContract.js';
+
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
@@ -10,6 +12,15 @@ const TEST_MAP = `
 `;
 
 const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
+  campaigns: [
+    {
+      id: INITIAL_PUBLIC_CAMPAIGN_ID,
+      slug: 'castigo-divino',
+      name: 'Castigo Divino',
+      status: 'active',
+      display_order: 0,
+    },
+  ],
   categories: [],
   tags: [],
   players: [],
