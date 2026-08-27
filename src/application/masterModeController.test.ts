@@ -147,7 +147,9 @@ describe('MasterModeController', () => {
   });
 
   test('purges campaign A synchronously before loading campaign B and keeps Master intent ON', async () => {
-    let resolveCampaignB: ((catalog: AuthorizedMasterCatalog) => void) | null = null;
+    let resolveCampaignB: (catalog: AuthorizedMasterCatalog) => void = () => {
+      throw new Error('Campaign B resolver was not initialized.');
+    };
     const campaignBCatalog: AuthorizedMasterCatalog = { ...EMPTY_CATALOG, entities: [] };
     const repository: MasterCatalogRepository = {
       load: vi.fn(({ campaignId }) => {
@@ -174,7 +176,7 @@ describe('MasterModeController', () => {
       campaignId: CAMPAIGN_B,
     });
 
-    resolveCampaignB?.(campaignBCatalog);
+    resolveCampaignB(campaignBCatalog);
     await vi.waitFor(() => expect(controller.getState().phase).toBe('on'));
     expect(controller.getState().catalog).toBe(campaignBCatalog);
   });

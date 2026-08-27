@@ -424,7 +424,9 @@ export async function bootstrapPublicDataRuntime(
 
   status.setRetryHandler(() => void refresh(true));
   const handleOnline = (): void => void refresh(true);
-  const handleOffline = (): void => service.markOffline();
+  const handleOffline = (): void => {
+    service.markOffline();
+  };
   const handleVisibilityChange = (): void => {
     if (
       document.visibilityState === 'visible' &&
@@ -461,7 +463,9 @@ export async function bootstrapPublicDataRuntime(
     },
     subscribeCatalogState(listener: PublicCatalogStateListener): () => void {
       catalogListeners.add(listener);
-      return (): void => catalogListeners.delete(listener);
+      return (): void => {
+        catalogListeners.delete(listener);
+      };
     },
     selectCampaign(slug: string): boolean {
       const target = catalogState.campaigns.find((campaign) => campaign.slug === slug);

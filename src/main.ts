@@ -886,6 +886,8 @@ function unavailableCatalogState(catalog: CampaignCatalog): PublicCatalogState {
     checksum: null,
     beta02: null,
     compatibility: catalog,
+    campaigns: [],
+    selectedCampaign: null,
   };
 }
 
