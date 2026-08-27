@@ -1,0 +1,57 @@
+name: MAP-055 branch patch
+
+on:
+  push:
+    branches:
+      - agent/map-055-public-campaign-runtime
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-055-public-campaign-runtime
+      - name: Apply MAP-055 deterministic follow-up patches
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/app/publicDataRuntime.ts')
+          text = path.read_text()
+          old = """    if (!requested || catalogState.campaigns.some(({ slug }) => slug === requested)) {\n      setCampaignInUrl(catalogState.selectedCampaign.slug, 'replace');\n    }\n"""
+          new = """    if (requested !== catalogState.selectedCampaign.slug) {\n      setCampaignInUrl(catalogState.selectedCampaign.slug, 'replace');\n    }\n"""
+          if old not in text:
+              raise SystemExit('public campaign canonicalization target not found')
+          path.write_text(text.replace(old, new, 1))
+
+          path = Path('supabase/tests/database/026_master_catalog_campaign_scope.test.sql')
+          text = path.read_text()
+          if 'select plan(10);' not in text:
+              raise SystemExit('pgTAP plan target not found')
+          path.write_text(text.replace('select plan(10);', 'select plan(11);', 1))
+
+          path = Path('tests/e2e/master-mode.spec.ts')
+          text = path.read_text()
+          old = "resource === 'rpc/admin_get_master_catalog_v2'"
+          if old not in text:
+              raise SystemExit('Master catalog E2E route target not found')
+          text = text.replace(old, "resource === 'rpc/admin_get_master_catalog_v3'", 1)
+          old = """    const table = resource.split('?')[0] ?? '';\n    const rows = projectRows(table, audience);\n"""
+          new = """    const table = resource.split('?')[0] ?? '';\n    const rows =\n      table === 'campaigns'\n        ? [\n            {\n              id: '00000000-0000-4000-8000-000000000053',\n              slug: 'castigo-divino',\n              name: 'Castigo Divino',\n              status: 'active',\n              display_order: 0,\n            },\n          ]\n        : projectRows(table, audience);\n"""
+          if old not in text:
+              raise SystemExit('public campaign E2E route target not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit deterministic patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/app/publicDataRuntime.ts supabase/tests/database/026_master_catalog_campaign_scope.test.sql tests/e2e/master-mode.spec.ts
+          git commit -m "MAP-055 harden campaign canonicalization and fixtures"
+          git push origin HEAD:agent/map-055-public-campaign-runtime
