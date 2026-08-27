@@ -346,7 +346,7 @@ test('degraded schema v3 keeps B selected and backend recovery does not reset it
   await expect(page).toHaveURL(/campaign=campaign-b/);
 });
 
-for (const width of [320, 430]) {
+for (const width of [320, 390, 430, 768, 1280]) {
   test(`campaign selector remains keyboard-visible at ${width}px and forced colors`, async ({
     page,
   }) => {
@@ -362,5 +362,10 @@ for (const width of [320, 430]) {
     await selector.selectOption('campaign-b');
     await expectCampaignB(page);
     await expect(page.locator('[data-campaign-status]')).toContainText('Campaña B');
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      ),
+    ).toBe(false);
   });
 }

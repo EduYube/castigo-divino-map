@@ -187,7 +187,9 @@ test('campaign switch removes invalid category/tag selections and never mixes sa
   const selector = page.getByLabel('Campaña', { exact: true });
   const onlyA = category(page, 'category-only-a');
   const tagOnlyA = tag(page, 'tag-only-a');
-  await expect(category(page, 'category-shared-a').locator('xpath=..')).toContainText('1 resultado');
+  await expect(category(page, 'category-shared-a').locator('xpath=..')).toContainText(
+    '1 resultado',
+  );
   await expect(tag(page, 'tag-shared-a').locator('xpath=..')).toContainText('1 resultado');
   await onlyA.check();
   await tagOnlyA.check();
@@ -204,7 +206,9 @@ test('campaign switch removes invalid category/tag selections and never mixes sa
   await expect(tag(page, 'tag-only-a')).toHaveCount(0);
   await expect(category(page, 'category-shared-a')).toHaveCount(0);
   await expect(tag(page, 'tag-shared-a')).toHaveCount(0);
-  await expect(category(page, 'category-shared-b').locator('xpath=..')).toContainText('1 resultado');
+  await expect(category(page, 'category-shared-b').locator('xpath=..')).toContainText(
+    '1 resultado',
+  );
   await expect(tag(page, 'tag-shared-b').locator('xpath=..')).toContainText('1 resultado');
   await expect.poll(() => new URL(page.url()).searchParams.get('category')).toBeNull();
   await expect.poll(() => new URL(page.url()).searchParams.get('tag')).toBeNull();
@@ -233,7 +237,9 @@ test('global geographic names and aliases remain searchable across A and B', asy
   await searchbox.fill('Geografía Compartida MAP055');
   await searchbox.press('Escape');
   const results = page.getByRole('list', { name: 'Resultados de búsqueda de lugares' });
-  await expect(results.getByRole('button', { name: /Costa Global MAP055.*Lugar geográfico/i })).toBeVisible();
+  await expect(
+    results.getByRole('button', { name: /Costa Global MAP055.*Lugar geográfico/i }),
+  ).toBeVisible();
 
   await selector.selectOption('campaign-b');
 
