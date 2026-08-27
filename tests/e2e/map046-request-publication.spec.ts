@@ -1,5 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
+import { INITIAL_PUBLIC_CAMPAIGN_ID } from '../../src/data-access/publicCatalogQueryContract.js';
+
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const PROJECT_URL = 'http://127.0.0.1:4173';
@@ -245,37 +247,47 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         (entity) => entity.publication_status === 'published' && entity.audience === 'public',
       );
       const rows: Record<string, unknown>[] =
-        table === 'categories'
-          ? categories
-              .filter(({ publication_status }) => publication_status === 'published')
-              .map(({ id, slug, name, description }) => ({ id, slug, name, description }))
-          : table === 'tags'
-            ? tags
+        table === 'campaigns'
+          ? [
+              {
+                id: INITIAL_PUBLIC_CAMPAIGN_ID,
+                slug: 'castigo-divino',
+                name: 'Castigo Divino',
+                status: 'active',
+                display_order: 0,
+              },
+            ]
+          : table === 'categories'
+            ? categories
                 .filter(({ publication_status }) => publication_status === 'published')
-                .map(({ id, name, description }) => ({ id, name, description }))
-            : table === 'map_entities'
-              ? publishedEntities.map((entity) => ({
-                  id: entity.id,
-                  slug: entity.slug,
-                  entity_type: entity.entity_type,
-                  visibility: entity.visibility,
-                  name: entity.name,
-                  name_language: 'en',
-                  summary: entity.summary,
-                  description: entity.description,
-                  portrait_path: entity.portrait_path,
-                  x: entity.x,
-                  y: entity.y,
-                  category_id: entity.category_id,
-                }))
-              : table === 'entity_tags'
-                ? publishedEntities.flatMap((entity) =>
-                    (entityTags.get(entity.id) ?? []).map((tagId) => ({
-                      entity_id: entity.id,
-                      tag_id: tagId,
-                    })),
-                  )
-                : [];
+                .map(({ id, slug, name, description }) => ({ id, slug, name, description }))
+            : table === 'tags'
+              ? tags
+                  .filter(({ publication_status }) => publication_status === 'published')
+                  .map(({ id, name, description }) => ({ id, name, description }))
+              : table === 'map_entities'
+                ? publishedEntities.map((entity) => ({
+                    id: entity.id,
+                    slug: entity.slug,
+                    entity_type: entity.entity_type,
+                    visibility: entity.visibility,
+                    name: entity.name,
+                    name_language: 'en',
+                    summary: entity.summary,
+                    description: entity.description,
+                    portrait_path: entity.portrait_path,
+                    x: entity.x,
+                    y: entity.y,
+                    category_id: entity.category_id,
+                  }))
+                : table === 'entity_tags'
+                  ? publishedEntities.flatMap((entity) =>
+                      (entityTags.get(entity.id) ?? []).map((tagId) => ({
+                        entity_id: entity.id,
+                        tag_id: tagId,
+                      })),
+                    )
+                  : [];
       const select = (url.searchParams.get('select') ?? '').split(',').filter(Boolean);
       const projected = select.length
         ? rows.map((row) => Object.fromEntries(select.map((field) => [field, row[field]])))
@@ -418,15 +430,25 @@ async function configureBackend(page: Page): Promise<BackendControl> {
 
     if (requestInfo.method() === 'GET') {
       const rows: Record<string, unknown>[] =
-        table === 'categories'
-          ? categories
-          : table === 'tags'
-            ? tags
-            : table === 'map_entities'
-              ? entities
-              : table === 'public_requests'
-                ? [request]
-                : [];
+        table === 'campaigns'
+          ? [
+              {
+                id: INITIAL_PUBLIC_CAMPAIGN_ID,
+                slug: 'castigo-divino',
+                name: 'Castigo Divino',
+                status: 'active',
+                display_order: 0,
+              },
+            ]
+          : table === 'categories'
+            ? categories
+            : table === 'tags'
+              ? tags
+              : table === 'map_entities'
+                ? entities
+                : table === 'public_requests'
+                  ? [request]
+                  : [];
       const range = rangeResponse(rows);
       await route.fulfill({ status: 200, headers: range.headers, body: range.body });
       return;
