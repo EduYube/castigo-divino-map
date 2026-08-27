@@ -170,6 +170,13 @@ async function configureBackend(page: Page): Promise<void> {
   });
 }
 
+async function expectBackendConnected(page: Page): Promise<void> {
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'connected',
+  );
+}
+
 function category(page: Page, id: string) {
   return page.locator(`input[data-place-filter-kind="category"][data-place-filter-id="${id}"]`);
 }
@@ -183,6 +190,7 @@ test('campaign switch removes invalid category/tag selections and never mixes sa
 }) => {
   await configureBackend(page);
   await page.goto('/');
+  await expectBackendConnected(page);
 
   const selector = page.getByLabel('Campaña', { exact: true });
   const onlyA = category(page, 'category-only-a');
@@ -231,6 +239,7 @@ test('campaign switch removes invalid category/tag selections and never mixes sa
 test('global geographic names and aliases remain searchable across A and B', async ({ page }) => {
   await configureBackend(page);
   await page.goto('/');
+  await expectBackendConnected(page);
 
   const selector = page.getByLabel('Campaña', { exact: true });
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
