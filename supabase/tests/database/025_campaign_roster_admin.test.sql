@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(28);
+select plan(35);
 
 select has_column('public', 'players', 'display_order', 'players expose a persistent roster order');
 select has_column('public', 'players', 'accent_color', 'players expose a persistent accent color');
@@ -40,14 +40,47 @@ select lives_ok(
 );
 
 insert into public.categories (campaign_id, id, slug, name, description, publication_status)
-values (
-  '00000000-0000-4000-8000-000000000540',
-  'category-map054-b',
-  'map054-b',
-  'MAP054 B category',
-  'Campaign B only',
-  'published'
-);
+values
+  (
+    '00000000-0000-4000-8000-000000000053',
+    'category-map054-a',
+    'map054-a',
+    'MAP054 A category',
+    'Campaign A only',
+    'published'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000540',
+    'category-map054-b',
+    'map054-b',
+    'MAP054 B category',
+    'Campaign B only',
+    'published'
+  );
+
+insert into public.tags (campaign_id, id, name, description, publication_status)
+values
+  (
+    '00000000-0000-4000-8000-000000000053',
+    'tag-map054-a',
+    'MAP054 A tag',
+    'Campaign A only',
+    'published'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000540',
+    'tag-map054-b',
+    'MAP054 B tag',
+    'Campaign B only',
+    'published'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000540',
+    'tag-map054-b-2',
+    'MAP054 B tag two',
+    'Campaign B only',
+    'published'
+  );
 
 select lives_ok(
   $$insert into public.players (
@@ -109,6 +142,106 @@ select is(
     where entity_id = 'entity-map054-b' and player_id = 'player-map054-a'),
   0::bigint,
   'campaign A roster is never mixed into campaign B disposition selects'
+);
+
+select lives_ok(
+  $sql$
+    select public.admin_save_map_entity_v4(
+      '00000000-0000-4000-8000-000000000540',
+      'entity-map054-b',
+      (select updated_at from public.map_entities where id = 'entity-map054-b'),
+      (public.admin_get_map_entity_editor_v4(
+        '00000000-0000-4000-8000-000000000540', 'entity-map054-b'
+      ) ->> 'relations_revision'),
+      'map054-b-entity', 'location', 'pin', 'public', null,
+      'MAP054 Campaign B entity', '', '', 640, 640,
+      'category-map054-b', 'published', array['tag-map054-b'],
+      '[{"playerId":"player-map054-b","disposition":"neutral"}]'::jsonb
+    )
+  $sql$,
+  'v4 can add a campaign B tag to an existing campaign B entity'
+);
+select is(
+  (select count(*) from public.entity_tags
+    where entity_id = 'entity-map054-b'
+      and tag_id = 'tag-map054-b'
+      and campaign_id = '00000000-0000-4000-8000-000000000540'),
+  1::bigint,
+  'existing entity tag link is stored in campaign B rather than the initial default'
+);
+
+select lives_ok(
+  $sql$
+    select public.admin_save_map_entity_v4(
+      '00000000-0000-4000-8000-000000000540',
+      'entity-map054-b-new', null, null,
+      'map054-b-new', 'location', 'pin', 'public', null,
+      'MAP054 Campaign B new entity', '', '', 650, 650,
+      'category-map054-b', 'published', array['tag-map054-b-2'],
+      '[{"playerId":"player-map054-b","disposition":"neutral"}]'::jsonb
+    )
+  $sql$,
+  'v4 can create a campaign B entity with a campaign B tag'
+);
+select is(
+  (select count(*) from public.entity_tags
+    where entity_id = 'entity-map054-b-new'
+      and tag_id = 'tag-map054-b-2'
+      and campaign_id = '00000000-0000-4000-8000-000000000540'),
+  1::bigint,
+  'new entity tag link is stored explicitly in campaign B'
+);
+
+select ok(
+  pg_temp.statement_fails($sql$
+    select public.admin_save_map_entity_v4(
+      '00000000-0000-4000-8000-000000000540',
+      'entity-map054-b',
+      (select updated_at from public.map_entities where id = 'entity-map054-b'),
+      (public.admin_get_map_entity_editor_v4(
+        '00000000-0000-4000-8000-000000000540', 'entity-map054-b'
+      ) ->> 'relations_revision'),
+      'map054-b-entity', 'location', 'pin', 'public', null,
+      'MAP054 Campaign B entity', '', '', 640, 640,
+      'category-map054-a', 'published', array['tag-map054-b'],
+      '[{"playerId":"player-map054-b","disposition":"neutral"}]'::jsonb
+    )
+  $sql$),
+  'v4 rejects a category from campaign A while editing campaign B'
+);
+select ok(
+  pg_temp.statement_fails($sql$
+    select public.admin_save_map_entity_v4(
+      '00000000-0000-4000-8000-000000000540',
+      'entity-map054-b',
+      (select updated_at from public.map_entities where id = 'entity-map054-b'),
+      (public.admin_get_map_entity_editor_v4(
+        '00000000-0000-4000-8000-000000000540', 'entity-map054-b'
+      ) ->> 'relations_revision'),
+      'map054-b-entity', 'location', 'pin', 'public', null,
+      'MAP054 Campaign B entity', '', '', 640, 640,
+      'category-map054-b', 'published', array['tag-map054-a'],
+      '[{"playerId":"player-map054-b","disposition":"neutral"}]'::jsonb
+    )
+  $sql$),
+  'v4 rejects a tag from campaign A while editing campaign B'
+);
+select ok(
+  pg_temp.statement_fails($sql$
+    select public.admin_save_map_entity_v4(
+      '00000000-0000-4000-8000-000000000540',
+      'entity-map054-b',
+      (select updated_at from public.map_entities where id = 'entity-map054-b'),
+      (public.admin_get_map_entity_editor_v4(
+        '00000000-0000-4000-8000-000000000540', 'entity-map054-b'
+      ) ->> 'relations_revision'),
+      'map054-b-entity', 'location', 'pin', 'public', null,
+      'MAP054 Campaign B entity', '', '', 640, 640,
+      'category-map054-b', 'published', array['tag-map054-b'],
+      '[{"playerId":"player-map054-a","disposition":"neutral"}]'::jsonb
+    )
+  $sql$),
+  'v4 rejects a player from campaign A while editing campaign B'
 );
 
 select ok(
