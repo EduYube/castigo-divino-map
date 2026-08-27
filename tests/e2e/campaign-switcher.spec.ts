@@ -111,8 +111,8 @@ function rowsFor(table: string, campaignId: string): readonly Record<string, unk
 
 function snapshotCatalog(campaignId: string): PublicCampaignCatalogV3 {
   const suffix = campaignId === CAMPAIGN_B_ID ? 'b' : 'a';
-  const entityId = `place-campaign-${suffix}`;
-  const categoryId = `category-campaign-${suffix}`;
+  const entityId = `place-campaign-${suffix}` as PublicCampaignCatalogV3['entities'][number]['id'];
+  const categoryId = `category-campaign-${suffix}` as PublicCampaignCatalogV3['categories'][number]['id'];
   return {
     campaignId,
     categories: [
