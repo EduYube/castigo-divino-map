@@ -28,32 +28,45 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Patch legacy v2 snapshot with MAP-054 roster
+      - name: Rebuild legacy v2 snapshot from production projection
+        env:
+          VITE_SUPABASE_URL: https://ehpouvbzmvwbkkoypgfa.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0
         run: |
           node --input-type=module <<'NODE'
-          import { readFile, writeFile } from 'node:fs/promises';
-          import { checksum, SNAPSHOT_PATH, snapshotContent } from './scripts/public-snapshot-lib.mjs';
+          import { writeFile } from 'node:fs/promises';
+          import {
+            buildPublicMulticampaignSnapshotContent,
+            checksum,
+            INITIAL_PUBLIC_CAMPAIGN,
+            loadRemotePublicMulticampaignRows,
+            projectMulticampaignSnapshotContentToV2,
+            SNAPSHOT_PATH,
+          } from './scripts/public-snapshot-lib.mjs';
 
-          const snapshot = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'));
-          if (snapshot.schemaVersion !== 2) {
-            throw new Error(`Expected legacy schema v2 snapshot, got v${snapshot.schemaVersion}.`);
+          const multicampaignContent = buildPublicMulticampaignSnapshotContent(
+            await loadRemotePublicMulticampaignRows(),
+          );
+          if (
+            multicampaignContent.campaigns.length !== 1 ||
+            multicampaignContent.campaigns[0]?.id !== INITIAL_PUBLIC_CAMPAIGN.id
+          ) {
+            throw new Error('Legacy schema v2 repair is only valid while the initial campaign is the sole active campaign.');
           }
-          if (!Array.isArray(snapshot.players) || snapshot.players.length !== 0) {
-            throw new Error('Expected the pre-MAP-054 snapshot to have an empty players array.');
-          }
 
-          snapshot.players = [
-            { id: 'player-skade', slug: 'skade', displayName: 'Skade', nameLanguage: 'en' },
-            { id: 'player-ura', slug: 'ura', displayName: 'Ura', nameLanguage: 'en' },
-            { id: 'player-veyra', slug: 'veyra', displayName: 'Veyra', nameLanguage: 'en' },
-          ];
-          snapshot.generatedAt = new Date().toISOString();
-          const nextChecksum = checksum(snapshotContent(snapshot));
-          snapshot.checksum = nextChecksum;
-          snapshot.sourceRevision = nextChecksum;
-
+          const content = projectMulticampaignSnapshotContentToV2(
+            multicampaignContent,
+            INITIAL_PUBLIC_CAMPAIGN.id,
+          );
+          const nextChecksum = checksum(content);
+          const snapshot = {
+            ...content,
+            generatedAt: new Date().toISOString(),
+            checksum: nextChecksum,
+            sourceRevision: nextChecksum,
+          };
           await writeFile(SNAPSHOT_PATH, `${JSON.stringify(snapshot, null, 2)}\n`);
-          console.log(`Updated legacy public snapshot to ${nextChecksum}.`);
+          console.log(`Rebuilt legacy public snapshot from production: ${nextChecksum}.`);
           NODE
 
       - name: Verify snapshot locally
@@ -71,5 +84,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add public/data/public-catalog.snapshot.json
           git diff --cached --exit-code && exit 0
-          git commit -m 'fix: align public snapshot with MAP-054 roster'
+          git commit -m 'fix: align public snapshot with MAP-054 production data'
           git push origin HEAD:hotfix/map-054-public-snapshot
