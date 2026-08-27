@@ -144,6 +144,9 @@ export function bootstrapAdminCampaignRosterRuntime(
     onAuthorizationRejected: rejectAuthorization,
   });
   const ui = mountAdminCampaignRoster(root, controller, authController);
+  root
+    .querySelector<HTMLInputElement>('#admin-campaign-name')
+    ?.setAttribute('aria-label', 'Nombre de campaña');
   const ownSection = root.querySelector<HTMLElement>('.admin-campaign-roster');
   const unsubscribeTransition = adminCampaignContext.subscribeTransition((transition) => {
     if (!transition) return;
