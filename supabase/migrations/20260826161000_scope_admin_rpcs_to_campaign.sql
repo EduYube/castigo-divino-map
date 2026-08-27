@@ -133,6 +133,10 @@ begin
       raise exception using errcode = '40001', message = 'entity identity already exists';
     end if;
 
+    -- Keep creation inside the established SECURITY INVOKER column-privilege
+    -- boundary. MAP-045 intentionally grants portrait_path only for UPDATE, so the
+    -- stub row leaves it NULL and v3 applies p_portrait_path later in this same
+    -- transaction through its authorized UPDATE path.
     insert into public.map_entities (
       campaign_id,
       id,
@@ -140,7 +144,6 @@ begin
       entity_type,
       visibility,
       audience,
-      portrait_path,
       name,
       name_language,
       summary,
@@ -156,7 +159,6 @@ begin
       p_entity_type,
       p_visibility,
       p_audience,
-      p_portrait_path,
       p_name,
       'en',
       p_summary,
