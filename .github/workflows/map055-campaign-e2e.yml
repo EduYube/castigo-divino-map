@@ -21,7 +21,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Align campaign E2E with runtime semantics
+      - name: Align campaign E2E with acceptance matrix
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -32,6 +32,16 @@ jobs:
           new = "await expect(page.locator('[data-backend-status]')).toHaveAttribute('data-backend-state', 'degraded');"
           if old in text:
               text = text.replace(old, new, 1)
+          text = text.replace('for (const width of [320, 430]) {', 'for (const width of [320, 390, 430, 768, 1280]) {')
+          overflow_anchor = "    await expect(page.locator('[data-campaign-status]')).toContainText('Campaña B');"
+          overflow_assertion = """    await expect(page.locator('[data-campaign-status]')).toContainText('Campaña B');
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      ),
+    ).toBe(false);"""
+          if overflow_anchor in text and 'document.documentElement.scrollWidth > document.documentElement.clientWidth' not in text:
+              text = text.replace(overflow_anchor, overflow_assertion, 1)
           path.write_text(text)
           PY
       - name: Format MAP-055 tracked artifacts
@@ -39,17 +49,18 @@ jobs:
           npx prettier --write
           tests/e2e/campaign-switcher.spec.ts
           tests/e2e/campaign-master-mode.spec.ts
+          tests/e2e/campaign-scope.spec.ts
           public/data/public-catalog.snapshot.json
       - name: Commit prepared MAP-055 coverage
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tests/e2e/campaign-switcher.spec.ts tests/e2e/campaign-master-mode.spec.ts public/data/public-catalog.snapshot.json
+          git add tests/e2e/campaign-switcher.spec.ts tests/e2e/campaign-master-mode.spec.ts tests/e2e/campaign-scope.spec.ts public/data/public-catalog.snapshot.json
           if git diff --cached --quiet; then
             echo "No prepared changes to commit."
           else
-            git commit -m "MAP-055 prepare public and master A-B E2E coverage"
+            git commit -m "MAP-055 complete campaign acceptance E2E matrix"
             git push origin HEAD:agent/map-055-public-campaign-runtime
           fi
       - name: Install Chromium
@@ -61,4 +72,5 @@ jobs:
           npx playwright test
           tests/e2e/campaign-switcher.spec.ts
           tests/e2e/campaign-master-mode.spec.ts
+          tests/e2e/campaign-scope.spec.ts
           --project=chromium --reporter=line
