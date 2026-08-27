@@ -45,9 +45,16 @@ async function upgradeCommittedSnapshotToV3(
           },
         ],
   );
-  const geographicNames = catalog.geographicNames.map(
-    ({ entityId: _entityId, ...geographicName }) => geographicName,
-  );
+  const geographicNames = catalog.geographicNames.map((geographicName) => ({
+    id: geographicName.id,
+    slug: geographicName.slug,
+    name: geographicName.name,
+    language: geographicName.language,
+    aliases: geographicName.aliases,
+    coordinates: geographicName.coordinates,
+    searchExtent: geographicName.searchExtent,
+    recommendedZoom: geographicName.recommendedZoom,
+  }));
   const content = {
     schemaVersion: 3 as const,
     campaigns: [campaign],
@@ -116,13 +123,12 @@ describe('public catalog snapshot', () => {
     }
 
     expect(loaded.data.catalog.campaigns).toEqual(snapshotV3.campaigns);
-    const projected = await projectPublicCatalogSnapshotV3ToV2(
+    const projected = projectPublicCatalogSnapshotV3ToV2(
       loaded.data.catalog,
       INITIAL_PUBLIC_CAMPAIGN_ID,
-      () => generatedAt,
     );
-    expect(projected.entities).toEqual(legacySnapshot.entities);
-    expect(projected.geographicNames).toEqual(legacySnapshot.geographicNames);
+    expect(projected?.entities).toEqual(legacySnapshot.entities);
+    expect(projected?.geographicNames).toEqual(legacySnapshot.geographicNames);
   });
 
   test('rejects a Beta 0.2 snapshot whose public content no longer matches its checksum', async () => {
@@ -163,11 +169,19 @@ describe('public catalog snapshot', () => {
       places: [],
       notes: [],
     };
-    const checksum = await createSha256Checksum(catalog);
+    const sourceRevision = 'rollback-test-revision';
+    const checksum = await createSha256Checksum({
+      schemaVersion: 1,
+      contract: 'beta01',
+      generatedAt: snapshot.generatedAt,
+      sourceRevision,
+      catalog,
+    });
     const parsed = await parsePublicCatalogSnapshotV1({
       schemaVersion: 1,
+      contract: 'beta01',
       generatedAt: snapshot.generatedAt,
-      sourceRevision: checksum,
+      sourceRevision,
       checksum,
       catalog,
     });

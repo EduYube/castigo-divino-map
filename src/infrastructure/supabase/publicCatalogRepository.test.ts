@@ -70,7 +70,9 @@ function rowsForEmptyInitialCampaign(url: URL): readonly Record<string, unknown>
   return tableName(url) === 'campaigns' ? [INITIAL_CAMPAIGN_ROW] : [];
 }
 
-function initialCampaignCatalog(result: Awaited<ReturnType<SupabasePublicCatalogRepository['load']>>) {
+function initialCampaignCatalog(
+  result: Awaited<ReturnType<SupabasePublicCatalogRepository['load']>>,
+) {
   expect(result.data.contract).toBe('beta03');
   if (result.data.contract !== 'beta03') throw new Error('Expected Beta 0.3 catalog.');
   const catalog = result.data.catalog.campaignCatalogs.find(
@@ -131,7 +133,7 @@ describe('SupabasePublicCatalogRepository', () => {
     await repository.load({ signal: new AbortController().signal });
 
     const campaignUrl = urls.find((url) => tableName(url) === 'campaigns');
-    expect(campaignUrl?.searchParams.get('status')).toBe('eq.active');
+    expect(campaignUrl?.searchParams.has('status')).toBe(false);
     expect(campaignUrl?.searchParams.has('publication_status')).toBe(false);
 
     const rlsOnlyTables = new Set([
@@ -176,8 +178,14 @@ describe('SupabasePublicCatalogRepository', () => {
     expect(urls).toHaveLength(29);
 
     const scopedUrls = urls.filter((url) => !GLOBAL_TABLES.has(tableName(url)));
-    expect(scopedUrls.some((url) => url.searchParams.get('campaign_id') === `eq.${INITIAL_PUBLIC_CAMPAIGN_ID}`)).toBe(true);
-    expect(scopedUrls.some((url) => url.searchParams.get('campaign_id') === `eq.${CAMPAIGN_B_ID}`)).toBe(true);
+    expect(
+      scopedUrls.some(
+        (url) => url.searchParams.get('campaign_id') === `eq.${INITIAL_PUBLIC_CAMPAIGN_ID}`,
+      ),
+    ).toBe(true);
+    expect(
+      scopedUrls.some((url) => url.searchParams.get('campaign_id') === `eq.${CAMPAIGN_B_ID}`),
+    ).toBe(true);
     urls
       .filter((url) => GLOBAL_TABLES.has(tableName(url)))
       .forEach((url) => expect(url.searchParams.has('campaign_id')).toBe(false));
@@ -241,7 +249,9 @@ describe('SupabasePublicCatalogRepository', () => {
       fetchImplementation: async (input) => {
         const url = new URL(String(input));
         return jsonResponse(
-          tableName(url) === 'campaigns' ? [INITIAL_CAMPAIGN_ROW] : (rowsByTable[tableName(url)] ?? []),
+          tableName(url) === 'campaigns'
+            ? [INITIAL_CAMPAIGN_ROW]
+            : (rowsByTable[tableName(url)] ?? []),
         );
       },
     });
@@ -346,7 +356,9 @@ describe('SupabasePublicCatalogRepository', () => {
       fetchImplementation: async (input) => {
         const url = new URL(String(input));
         return jsonResponse(
-          tableName(url) === 'campaigns' ? [INITIAL_CAMPAIGN_ROW] : (rowsByTable[tableName(url)] ?? []),
+          tableName(url) === 'campaigns'
+            ? [INITIAL_CAMPAIGN_ROW]
+            : (rowsByTable[tableName(url)] ?? []),
         );
       },
     });
@@ -503,7 +515,8 @@ describe('SupabasePublicCatalogRepository', () => {
     const malformedCampaignRepository = new SupabasePublicCatalogRepository({
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
-      fetchImplementation: async () => jsonResponse([{ ...INITIAL_CAMPAIGN_ROW, id: 'not-a-uuid' }]),
+      fetchImplementation: async () =>
+        jsonResponse([{ ...INITIAL_CAMPAIGN_ROW, id: 'not-a-uuid' }]),
     });
     await expect(
       malformedCampaignRepository.load({ signal: new AbortController().signal }),
