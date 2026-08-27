@@ -1,7 +1,4 @@
-import {
-  AdminCampaignContext,
-  type AdminCampaignTransition,
-} from './adminCampaignContext';
+import { AdminCampaignContext, type AdminCampaignTransition } from './adminCampaignContext';
 import {
   toAdminCampaignRosterIssue,
   type AdminCampaignRosterIssue,
