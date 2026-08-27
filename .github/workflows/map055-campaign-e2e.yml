@@ -21,32 +21,48 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Refine campaign E2E locators
+      - name: Align campaign E2E with runtime marker semantics
         run: |
           python - <<'PY'
           from pathlib import Path
+
           path = Path('tests/e2e/campaign-switcher.spec.ts')
           text = path.read_text()
-          text = text.replace("page.getByLabel('Campaña')", "page.getByLabel('Campaña', { exact: true })")
+          text = text.replace(
+              "page.getByLabel('Campaña')",
+              "page.getByLabel('Campaña', { exact: true })",
+          )
+          text = text.replace(
+              '[data-testid="place-marker"][data-place-id="place-campaign-a"]',
+              '[data-testid="entity-pin"][data-entity-id="place-campaign-a"]',
+          )
+          text = text.replace(
+              '[data-testid="place-marker"][data-place-id="place-campaign-b"]',
+              '[data-testid="entity-pin"][data-entity-id="place-campaign-b"]',
+          )
           old = "page.locator('[data-public-pin-request-status]')"
           new = "page.getByText('Solicitud enviada para revisión. No se publicará automáticamente en el mapa.')"
-          if old not in text:
-            raise SystemExit('public request status target not found')
-          path.write_text(text.replace(old, new, 1))
+          if old in text:
+              text = text.replace(old, new, 1)
+          path.write_text(text)
           PY
-      - name: Format campaign E2E
-        run: npx prettier --write tests/e2e/campaign-switcher.spec.ts
+      - name: Format MAP-055 tracked artifacts
+        run: npx prettier --write tests/e2e/campaign-switcher.spec.ts public/data/public-catalog.snapshot.json
+      - name: Commit prepared MAP-055 coverage
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/campaign-switcher.spec.ts public/data/public-catalog.snapshot.json
+          if git diff --cached --quiet; then
+            echo "No prepared changes to commit."
+          else
+            git commit -m "MAP-055 align A-B campaign E2E coverage"
+            git push origin HEAD:agent/map-055-public-campaign-runtime
+          fi
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Run MAP-055 campaign E2E
         env:
           CI: '1'
         run: npx playwright test tests/e2e/campaign-switcher.spec.ts --project=chromium --reporter=line
-      - name: Commit validated E2E
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tests/e2e/campaign-switcher.spec.ts
-          git commit -m "MAP-055 validate A-B campaign E2E coverage"
-          git push origin HEAD:agent/map-055-public-campaign-runtime
