@@ -401,7 +401,7 @@ export async function bootstrapPublicDataRuntime(
       slug: catalogState.selectedCampaign.slug,
     });
     const requested = new URL(window.location.href).searchParams.get('campaign')?.trim();
-    if (!requested || catalogState.campaigns.some(({ slug }) => slug === requested)) {
+    if (requested !== catalogState.selectedCampaign.slug) {
       setCampaignInUrl(catalogState.selectedCampaign.slug, 'replace');
     }
   }
