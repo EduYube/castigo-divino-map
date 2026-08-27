@@ -63,7 +63,26 @@
       "description": "Lugar relacionado públicamente con una ruta de intercambio o viaje."
     }
   ],
-  "players": [],
+  "players": [
+    {
+      "id": "player-skade",
+      "slug": "skade",
+      "displayName": "Skade",
+      "nameLanguage": "en"
+    },
+    {
+      "id": "player-ura",
+      "slug": "ura",
+      "displayName": "Ura",
+      "nameLanguage": "en"
+    },
+    {
+      "id": "player-veyra",
+      "slug": "veyra",
+      "displayName": "Veyra",
+      "nameLanguage": "en"
+    }
+  ],
   "entities": [
     {
       "id": "entity-agamen",
@@ -80,7 +99,9 @@
         "y": 814.17
       },
       "categoryId": "category-npc",
-      "tagIds": ["category-skade"]
+      "tagIds": [
+        "category-skade"
+      ]
     },
     {
       "id": "entity-asentamiento-thar",
@@ -97,7 +118,9 @@
         "y": 804.09
       },
       "categoryId": "category-settlement",
-      "tagIds": ["category-skade"]
+      "tagIds": [
+        "category-skade"
+      ]
     },
     {
       "id": "entity-bring",
@@ -115,7 +138,9 @@
         "y": 1921.5
       },
       "categoryId": "category-npc",
-      "tagIds": ["category-skade"]
+      "tagIds": [
+        "category-skade"
+      ]
     },
     {
       "id": "entity-captitan",
@@ -151,7 +176,9 @@
         "y": 292.28
       },
       "categoryId": "category-npc",
-      "tagIds": ["category-ura"]
+      "tagIds": [
+        "category-ura"
+      ]
     },
     {
       "id": "entity-masred",
@@ -169,7 +196,9 @@
         "y": 1722.1
       },
       "categoryId": "category-npc",
-      "tagIds": ["category-skade"]
+      "tagIds": [
+        "category-skade"
+      ]
     },
     {
       "id": "entity-memnon",
@@ -186,7 +215,10 @@
         "y": 402.69
       },
       "categoryId": "category-settlement",
-      "tagIds": ["category-ura", "coastal"]
+      "tagIds": [
+        "category-ura",
+        "coastal"
+      ]
     },
     {
       "id": "entity-myrath",
@@ -203,7 +235,10 @@
         "y": 428.21
       },
       "categoryId": "category-settlement",
-      "tagIds": ["category-skade", "coastal"]
+      "tagIds": [
+        "category-skade",
+        "coastal"
+      ]
     },
     {
       "id": "entity-ojos-tempestad",
@@ -221,7 +256,9 @@
         "y": 1156.98
       },
       "categoryId": "category-npc",
-      "tagIds": ["category-ura"]
+      "tagIds": [
+        "category-ura"
+      ]
     },
     {
       "id": "entity-request-07d26371bbff42d9b91e076d099891b0",
@@ -239,7 +276,9 @@
         "y": 1855.21
       },
       "categoryId": "category-pj",
-      "tagIds": ["category-veyra"]
+      "tagIds": [
+        "category-veyra"
+      ]
     },
     {
       "id": "entity-skade",
@@ -257,7 +296,9 @@
         "y": 1282.32
       },
       "categoryId": "category-pj",
-      "tagIds": ["category-skade"]
+      "tagIds": [
+        "category-skade"
+      ]
     },
     {
       "id": "entity-thalasis",
@@ -275,7 +316,9 @@
         "y": 1188.15
       },
       "categoryId": "category-npc",
-      "tagIds": ["category-skade"]
+      "tagIds": [
+        "category-skade"
+      ]
     },
     {
       "id": "entity-thar",
@@ -292,7 +335,9 @@
         "y": 1366.13
       },
       "categoryId": "category-landmark",
-      "tagIds": ["category-skade"]
+      "tagIds": [
+        "category-skade"
+      ]
     },
     {
       "id": "entity-tulu",
@@ -310,7 +355,9 @@
         "y": 1074.78
       },
       "categoryId": "category-npc",
-      "tagIds": ["category-ura"]
+      "tagIds": [
+        "category-ura"
+      ]
     },
     {
       "id": "entity-ura",
@@ -328,10 +375,238 @@
         "y": 1287.91
       },
       "categoryId": "category-pj",
-      "tagIds": ["category-ura"]
+      "tagIds": [
+        "category-ura"
+      ]
     }
   ],
-  "dispositions": [],
+  "dispositions": [
+    {
+      "entityId": "entity-agamen",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-agamen",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-agamen",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-asentamiento-thar",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-asentamiento-thar",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-asentamiento-thar",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-bring",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-bring",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-bring",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-captitan",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-captitan",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-captitan",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-jhonny",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-jhonny",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-jhonny",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-masred",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-masred",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-masred",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-memnon",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-memnon",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-memnon",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-myrath",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-myrath",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-myrath",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-ojos-tempestad",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-ojos-tempestad",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-ojos-tempestad",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-request-07d26371bbff42d9b91e076d099891b0",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-request-07d26371bbff42d9b91e076d099891b0",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-request-07d26371bbff42d9b91e076d099891b0",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-skade",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-skade",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-skade",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-thalasis",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-thalasis",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-thalasis",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-thar",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-thar",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-thar",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-tulu",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-tulu",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-tulu",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-ura",
+      "playerId": "player-skade",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-ura",
+      "playerId": "player-ura",
+      "disposition": "neutral"
+    },
+    {
+      "entityId": "entity-ura",
+      "playerId": "player-veyra",
+      "disposition": "neutral"
+    }
+  ],
   "characterLocationRelations": [
     {
       "characterId": "entity-agamen",
@@ -3487,7 +3762,7 @@
     }
   ],
   "characterLocationEvents": [],
-  "generatedAt": "2026-08-25T12:19:10.584Z",
-  "sourceRevision": "sha256:c4273d1cfc796da94fa68ff2d250291531211eededdd63f519ff242031cb41ae",
-  "checksum": "sha256:c4273d1cfc796da94fa68ff2d250291531211eededdd63f519ff242031cb41ae"
+  "generatedAt": "2026-08-27T13:17:50.708Z",
+  "checksum": "sha256:a3225894bbc5a15102debbfe38eb19cd75b8af9fba9681055f0c993ad7763ce6",
+  "sourceRevision": "sha256:a3225894bbc5a15102debbfe38eb19cd75b8af9fba9681055f0c993ad7763ce6"
 }
