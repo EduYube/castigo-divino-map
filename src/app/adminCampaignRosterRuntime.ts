@@ -146,7 +146,9 @@ export function bootstrapAdminCampaignRosterRuntime(
   const ui = mountAdminCampaignRoster(root, controller, authController);
   const campaignName = root.querySelector<HTMLInputElement>('#admin-campaign-name');
   campaignName?.setAttribute('aria-label', 'Nombre de campaña');
-  const campaignNameLabel = root.querySelector<HTMLLabelElement>('label[for="admin-campaign-name"]');
+  const campaignNameLabel = root.querySelector<HTMLLabelElement>(
+    'label[for="admin-campaign-name"]',
+  );
   if (campaignNameLabel) campaignNameLabel.textContent = 'Nombre de campaña';
   const ownSection = root.querySelector<HTMLElement>('.admin-campaign-roster');
   const unsubscribeTransition = adminCampaignContext.subscribeTransition((transition) => {
