@@ -8,6 +8,10 @@ const REFRESH_TOKEN = 'map054_e2e_refresh_token';
 const PUBLISHABLE_KEY = 'sb_publishable_map054_e2e_key';
 const INITIAL_CAMPAIGN_ID = '00000000-0000-4000-8000-000000000053';
 const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000540';
+const PORTRAIT_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -120,6 +124,10 @@ async function configureBackend(page: Page, options: BackendOptions = {}): Promi
 
   await page.route(OFFICIAL_MAP_URL, async (route) => {
     await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: TEST_MAP });
+  });
+
+  await page.route('**/storage/v1/**', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'image/png', body: PORTRAIT_PNG });
   });
 
   await page.route('**/auth/v1/**', async (route: Route) => {
