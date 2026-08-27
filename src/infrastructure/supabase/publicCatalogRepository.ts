@@ -142,7 +142,16 @@ function toCampaignCatalogV3(
 function toGlobalGeographicNames(
   catalog: Extract<PublicCatalogEnvelope['data'], { contract: 'beta02' }>['catalog'],
 ): readonly PublicGlobalGeographicNameV3[] {
-  return catalog.geographicNames.map(({ entityId: _entityId, ...name }) => name);
+  return catalog.geographicNames.map((name) => ({
+    id: name.id,
+    slug: name.slug,
+    name: name.name,
+    language: name.language,
+    aliases: name.aliases,
+    coordinates: name.coordinates,
+    searchExtent: name.searchExtent,
+    recommendedZoom: name.recommendedZoom,
+  }));
 }
 
 export class SupabasePublicCatalogRepository implements PublicCatalogRepository {
