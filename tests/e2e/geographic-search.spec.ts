@@ -138,7 +138,18 @@ async function configureGeographicSearch(page: Page): Promise<void> {
   await page.route('**/rest/v1/**', async (route: Route) => {
     const match = /\/rest\/v1\/([^?]+)/.exec(route.request().url());
     const table = match?.[1] ?? '';
-    const rows = PUBLIC_ROWS[table] ?? [];
+    const rows =
+      table === 'campaigns'
+        ? [
+            {
+              id: INITIAL_CAMPAIGN_ID,
+              slug: 'castigo-divino',
+              name: 'Castigo Divino',
+              status: 'active',
+              display_order: 0,
+            },
+          ]
+        : (PUBLIC_ROWS[table] ?? []);
     const contentRange = rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
 
     await route.fulfill({
