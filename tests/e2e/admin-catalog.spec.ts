@@ -310,13 +310,13 @@ test('authorized admin can list, search, sort, create, edit, archive and delete 
   await expect(page.getByText(/Usa un ID category/)).toBeVisible();
   await page.getByLabel('ID estable').fill('category-hamlets');
   await page.getByRole('textbox', { name: 'Slug', exact: true }).fill('hamlets');
-  await page.getByLabel('Nombre').fill('Hamlets');
+  await page.getByLabel('Nombre', { exact: true }).fill('Hamlets');
   await expect(page.getByText(/Hamlets · category-hamlets · draft/)).toBeVisible();
   await page.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByText('Hamlets', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Editar Hamlets' }).click();
-  await page.getByLabel('Nombre').fill('Small Hamlets');
+  await page.getByLabel('Nombre', { exact: true }).fill('Small Hamlets');
   await page.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByText('Small Hamlets', { exact: true })).toBeVisible();
 
@@ -354,7 +354,7 @@ test('names reuse existing concepts and conflicts stay safe for the UI', async (
   await page.getByRole('button', { name: 'Crear', exact: true }).click();
   await page.getByLabel('ID estable').fill('category-conflict');
   await page.getByRole('textbox', { name: 'Slug', exact: true }).fill('conflict');
-  await page.getByLabel('Nombre').fill('Conflict');
+  await page.getByLabel('Nombre', { exact: true }).fill('Conflict');
   await page.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByRole('alert')).toContainText('entra en conflicto');
   await expect(page.getByRole('alert')).not.toContainText('secret_internal_constraint');
@@ -370,7 +370,7 @@ test('network failure and session expiry fail safely without breaking the public
   await page.getByRole('button', { name: 'Crear', exact: true }).click();
   await page.getByLabel('ID estable').fill('category-network');
   await page.getByRole('textbox', { name: 'Slug', exact: true }).fill('network');
-  await page.getByLabel('Nombre').fill('Network');
+  await page.getByLabel('Nombre', { exact: true }).fill('Network');
   backend.failNextMutation();
   await page.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByRole('alert')).toContainText('No se pudo contactar');
@@ -378,7 +378,7 @@ test('network failure and session expiry fail safely without breaking the public
   await page.getByRole('button', { name: 'Cancelar' }).click();
 
   await page.getByRole('button', { name: 'Editar Cities' }).click();
-  await page.getByLabel('Nombre').fill('Cities updated');
+  await page.getByLabel('Nombre', { exact: true }).fill('Cities updated');
   backend.expireNextMutation();
   await page.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible();
