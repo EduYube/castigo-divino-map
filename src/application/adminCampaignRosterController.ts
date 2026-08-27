@@ -1,4 +1,7 @@
-import { AdminCampaignContext } from './adminCampaignContext';
+import {
+  AdminCampaignContext,
+  type AdminCampaignTransition,
+} from './adminCampaignContext';
 import {
   toAdminCampaignRosterIssue,
   type AdminCampaignRosterIssue,
@@ -68,6 +71,7 @@ export class AdminCampaignRosterController {
   #state: AdminCampaignRosterState;
   #generation = 0;
   #activeController: AbortController | null = null;
+  #activeTransition: AdminCampaignTransition | null = null;
   #destroyed = false;
 
   constructor(
@@ -188,13 +192,19 @@ export class AdminCampaignRosterController {
       return false;
     }
     const operation = this.#beginOperation();
+    const transition = this.#context.beginTransition(campaignId);
+    this.#activeTransition = transition;
     this.#publish({ ...this.#state, phase: 'loading', issue: null });
     try {
       const players = sortPlayers(
         await this.#repository.listPlayers(campaignId, { signal: operation.signal }),
       );
-      if (!this.#isCurrent(operation.generation)) return false;
-      this.#context.setCampaignId(campaignId);
+      if (!this.#isCurrent(operation.generation)) {
+        this.#cancelTransition(transition);
+        return false;
+      }
+      if (!this.#context.commitTransition(transition)) return false;
+      this.#activeTransition = null;
       this.#publish({
         ...this.#state,
         selectedCampaignId: campaignId,
@@ -204,6 +214,7 @@ export class AdminCampaignRosterController {
       });
       return true;
     } catch (error) {
+      this.#cancelTransition(transition);
       this.#handleFailure(error, operation.generation);
       return false;
     }
@@ -392,7 +403,13 @@ export class AdminCampaignRosterController {
   #cancelActive(): void {
     this.#activeController?.abort();
     this.#activeController = null;
+    if (this.#activeTransition) this.#cancelTransition(this.#activeTransition);
     this.#generation += 1;
+  }
+
+  #cancelTransition(transition: AdminCampaignTransition): void {
+    this.#context.cancelTransition(transition);
+    if (this.#activeTransition?.token === transition.token) this.#activeTransition = null;
   }
 
   #isCurrent(generation: number): boolean {
