@@ -11,6 +11,7 @@ const PROJECT_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
 const LOCAL_PROJECT_URL_PATTERN = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?\/?$/i;
 const PUBLISHABLE_KEY_PATTERN = /^sb_publishable_[A-Za-z0-9_-]{10,}$/;
 const LEGACY_ANON_KEY_PATTERN = /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const CAMPAIGN_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export interface SupabasePublicPinRequestRepositoryOptions {
   readonly projectUrl: string;
@@ -78,12 +79,23 @@ export class SupabasePublicPinRequestRepository implements PublicPinRequestRepos
     this.#fetchImplementation = options.fetchImplementation ?? globalThis.fetch.bind(globalThis);
   }
 
-  async submit(request: ValidatedPublicPinRequest, signal: AbortSignal): Promise<void> {
+  async submit(
+    request: ValidatedPublicPinRequest,
+    campaignId: string,
+    signal: AbortSignal,
+  ): Promise<void> {
+    if (!CAMPAIGN_ID_PATTERN.test(campaignId)) {
+      throw new PublicPinRequestRepositoryError(
+        'configuration',
+        'La campaña seleccionada no es válida para enviar solicitudes.',
+      );
+    }
+
     let response: Response;
 
     try {
       response = await this.#fetchImplementation(
-        `${this.#projectUrl}/rest/v1/rpc/submit_public_request`,
+        `${this.#projectUrl}/rest/v1/rpc/submit_public_request_v2`,
         {
           method: 'POST',
           headers: {
@@ -91,7 +103,10 @@ export class SupabasePublicPinRequestRepository implements PublicPinRequestRepos
             apikey: this.#publishableKey,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(buildPublicPinRequestRpcPayload(request)),
+          body: JSON.stringify({
+            p_campaign_id: campaignId,
+            ...buildPublicPinRequestRpcPayload(request),
+          }),
           cache: 'no-store',
           signal,
         },
