@@ -3,6 +3,7 @@ import type { Request as PlaywrightRequest } from '@playwright/test';
 
 const PROJECT_URL = 'http://127.0.0.1:4173';
 const ACCESS_TOKEN = 'map020_e2e_access_token';
+const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 
@@ -130,7 +131,18 @@ async function configureBackend(page: Page): Promise<{
       if (table === 'character_location_relations') {
         publicRelationRequests.push(request);
       }
-      const rows: Record<string, unknown>[] = [];
+      const rows: Record<string, unknown>[] =
+        table === 'campaigns'
+          ? [
+              {
+                id: CAMPAIGN_A_ID,
+                slug: 'castigo-divino',
+                name: 'Castigo Divino',
+                status: 'active',
+                display_order: 0,
+              },
+            ]
+          : [];
       const response = rangeResponse(rows);
       await route.fulfill({ status: 200, headers: response.headers, body: response.body });
       return;
