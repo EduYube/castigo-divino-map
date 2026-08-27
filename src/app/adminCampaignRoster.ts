@@ -72,6 +72,7 @@ export function mountAdminCampaignRoster(
   if (!shell || !summary || !logout) {
     throw new Error('Missing administrative shell for MAP-054.');
   }
+  const adminShell: HTMLElement = shell;
 
   summary.textContent =
     'Modo administrativo activo. La campaña seleccionada delimita todas las ediciones dependientes del dominio.';
@@ -301,7 +302,7 @@ export function mountAdminCampaignRoster(
     campaignEditor,
     playerEditor,
   );
-  shell.insertBefore(section, logout);
+  adminShell.insertBefore(section, logout);
 
   function resetFormTracking(form: HTMLFormElement): void {
     formSnapshots.delete(form);
@@ -337,7 +338,7 @@ export function mountAdminCampaignRoster(
   }
 
   function hasDirtyAdminForm(): boolean {
-    return Array.from(shell.querySelectorAll<HTMLFormElement>('form')).some(
+    return Array.from(adminShell.querySelectorAll<HTMLFormElement>('form')).some(
       (form) => formIsVisible(form) && form.dataset.adminDirty === 'true',
     );
   }
@@ -632,12 +633,12 @@ export function mountAdminCampaignRoster(
   const handleFocusIn = (event: FocusEvent): void => {
     const target = event.target;
     const form = target instanceof Element ? target.closest<HTMLFormElement>('form') : null;
-    if (form && shell.contains(form)) markFormSnapshot(form);
+    if (form && adminShell.contains(form)) markFormSnapshot(form);
   };
   const handleFormChange = (event: Event): void => {
     const target = event.target;
     const form = target instanceof Element ? target.closest<HTMLFormElement>('form') : null;
-    if (form && shell.contains(form)) {
+    if (form && adminShell.contains(form)) {
       markFormSnapshot(form);
       updateDirtyState(form);
     }
@@ -663,9 +664,9 @@ export function mountAdminCampaignRoster(
   playerForm.addEventListener('input', renderPlayerErrors);
   playerColorPicker.addEventListener('input', handleColorPicker);
   playerColor.addEventListener('input', handleColorText);
-  shell.addEventListener('focusin', handleFocusIn);
-  shell.addEventListener('input', handleFormChange);
-  shell.addEventListener('change', handleFormChange);
+  adminShell.addEventListener('focusin', handleFocusIn);
+  adminShell.addEventListener('input', handleFormChange);
+  adminShell.addEventListener('change', handleFormChange);
   window.addEventListener('atlas:public-data-status', handlePublicDataStatus);
 
   const unsubscribeRoster = controller.subscribe(render);
@@ -693,9 +694,9 @@ export function mountAdminCampaignRoster(
       playerForm.removeEventListener('input', renderPlayerErrors);
       playerColorPicker.removeEventListener('input', handleColorPicker);
       playerColor.removeEventListener('input', handleColorText);
-      shell.removeEventListener('focusin', handleFocusIn);
-      shell.removeEventListener('input', handleFormChange);
-      shell.removeEventListener('change', handleFormChange);
+      adminShell.removeEventListener('focusin', handleFocusIn);
+      adminShell.removeEventListener('input', handleFormChange);
+      adminShell.removeEventListener('change', handleFormChange);
       window.removeEventListener('atlas:public-data-status', handlePublicDataStatus);
       section.remove();
     },
