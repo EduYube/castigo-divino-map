@@ -21,10 +21,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Finish v3 snapshot unit adaptation
+      - name: Finish v3 unit adaptation
         run: |
           python - <<'PY'
           from pathlib import Path
+
           path = Path('src/infrastructure/snapshot/publicCatalogSnapshot.test.ts')
           text = path.read_text()
           old = """  const geographicNames = catalog.geographicNames.map(\n    ({ entityId: _entityId, ...geographicName }) => geographicName,\n  );\n"""
@@ -36,6 +37,19 @@ jobs:
           new = """    const projected = projectPublicCatalogSnapshotV3ToV2(\n      loaded.data.catalog,\n      INITIAL_PUBLIC_CAMPAIGN_ID,\n    );\n    expect(projected?.entities).toEqual(legacySnapshot.entities);\n    expect(projected?.geographicNames).toEqual(legacySnapshot.geographicNames);\n"""
           if old not in text:
               raise SystemExit('projection call target not found')
+          text = text.replace(old, new, 1)
+          old = """      schemaVersion: 1,\n      generatedAt: snapshot.generatedAt,\n"""
+          new = """      schemaVersion: 1,\n      contract: 'beta01',\n      generatedAt: snapshot.generatedAt,\n"""
+          if old not in text:
+              raise SystemExit('beta01 contract target not found')
+          path.write_text(text.replace(old, new, 1))
+
+          path = Path('src/infrastructure/supabase/publicCatalogRepository.test.ts')
+          text = path.read_text()
+          old = "expect(campaignUrl?.searchParams.get('status')).toBe('eq.active');"
+          new = "expect(campaignUrl?.searchParams.has('status')).toBe(false);"
+          if old not in text:
+              raise SystemExit('campaign RLS expectation target not found')
           path.write_text(text.replace(old, new, 1))
           PY
       - name: Format changed tests
