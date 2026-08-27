@@ -1,12 +1,7 @@
 import type { ValidatedPublicPinRequest } from '../domain/publicPinRequest';
 
 export type PublicPinRequestRepositoryErrorKind =
-  | 'configuration'
-  | 'network'
-  | 'rate-limited'
-  | 'rejected'
-  | 'server'
-  | 'invalid-response';
+  'configuration' | 'network' | 'rate-limited' | 'rejected' | 'server' | 'invalid-response';
 
 export class PublicPinRequestRepositoryError extends Error {
   readonly kind: PublicPinRequestRepositoryErrorKind;

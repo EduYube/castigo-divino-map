@@ -9,6 +9,7 @@ const LOCAL_PROJECT_URL = 'http://127.0.0.1:54321';
 const PUBLISHABLE_KEY = 'sb_publishable_map026_test_key';
 const LEGACY_ANON_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.signature';
 const LEGACY_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.signature';
+const CAMPAIGN_ID = '00000000-0000-4000-8000-000000000054';
 
 const REQUEST: ValidatedPublicPinRequest = {
   senderName: 'Edu',
@@ -36,17 +37,18 @@ describe('SupabasePublicPinRequestRepository', () => {
       },
     });
 
-    await repository.submit(REQUEST, new AbortController().signal);
+    await repository.submit(REQUEST, CAMPAIGN_ID, new AbortController().signal);
 
     expect(capturedRequests).toHaveLength(1);
     const capturedRequest = capturedRequests[0];
     expect(capturedRequest).toBeDefined();
     if (!capturedRequest) return;
     expect(capturedRequest.method).toBe('POST');
-    expect(new URL(capturedRequest.url).pathname).toBe('/rest/v1/rpc/submit_public_request');
+    expect(new URL(capturedRequest.url).pathname).toBe('/rest/v1/rpc/submit_public_request_v2');
     expect(capturedRequest.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
     expect(capturedRequest.headers.has('authorization')).toBe(false);
     expect(await capturedRequest.json()).toEqual({
+      p_campaign_id: CAMPAIGN_ID,
       p_sender_name: 'Edu',
       p_proposed_name: 'Torre del Alba',
       p_entity_type: 'location',
@@ -58,6 +60,23 @@ describe('SupabasePublicPinRequestRepository', () => {
     });
   });
 
+  test('rejects a malformed campaign id before making a network request', async () => {
+    let requests = 0;
+    const repository = new SupabasePublicPinRequestRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      fetchImplementation: async () => {
+        requests += 1;
+        return new Response('true');
+      },
+    });
+
+    await expect(
+      repository.submit(REQUEST, 'not-a-campaign', new AbortController().signal),
+    ).rejects.toMatchObject({ kind: 'configuration' });
+    expect(requests).toBe(0);
+  });
+
   test('accepts the legacy anon key only for the local stack', async () => {
     const repository = new SupabasePublicPinRequestRepository({
       projectUrl: LOCAL_PROJECT_URL,
@@ -66,7 +85,9 @@ describe('SupabasePublicPinRequestRepository', () => {
       fetchImplementation: async () => new Response('true'),
     });
 
-    await expect(repository.submit(REQUEST, new AbortController().signal)).resolves.toBeUndefined();
+    await expect(
+      repository.submit(REQUEST, CAMPAIGN_ID, new AbortController().signal),
+    ).resolves.toBeUndefined();
   });
 
   test.each([
@@ -102,7 +123,9 @@ describe('SupabasePublicPinRequestRepository', () => {
       fetchImplementation: async () => new Response('{}', { status }),
     });
 
-    await expect(repository.submit(REQUEST, new AbortController().signal)).rejects.toMatchObject({
+    await expect(
+      repository.submit(REQUEST, CAMPAIGN_ID, new AbortController().signal),
+    ).rejects.toMatchObject({
       kind,
       status,
     });
@@ -117,7 +140,9 @@ describe('SupabasePublicPinRequestRepository', () => {
       },
     });
 
-    await expect(repository.submit(REQUEST, new AbortController().signal)).rejects.toMatchObject({
+    await expect(
+      repository.submit(REQUEST, CAMPAIGN_ID, new AbortController().signal),
+    ).rejects.toMatchObject({
       kind: 'network',
       status: null,
     });
@@ -130,7 +155,9 @@ describe('SupabasePublicPinRequestRepository', () => {
       fetchImplementation: async () => new Response('{"id":"must-not-be-returned"}'),
     });
 
-    await expect(repository.submit(REQUEST, new AbortController().signal)).rejects.toMatchObject({
+    await expect(
+      repository.submit(REQUEST, CAMPAIGN_ID, new AbortController().signal),
+    ).rejects.toMatchObject({
       kind: 'invalid-response',
     });
   });
