@@ -182,7 +182,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_moderate_public_request')) {
+    if (url.pathname.endsWith('/rpc/admin_moderate_public_request_v2')) {
       moderationCount += 1;
       if (mode === 'network') {
         mode = 'normal';
@@ -260,7 +260,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v3')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v4')) {
       const body = request.postDataJSON() as { p_entity_id?: string };
       const entity = entities.find((candidate) => candidate.id === body.p_entity_id);
       await route.fulfill({
