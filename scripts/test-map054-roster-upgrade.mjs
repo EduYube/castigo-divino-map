@@ -9,25 +9,40 @@ function fail(message) {
   throw new Error(`MAP-054 roster upgrade rehearsal failed: ${message}`);
 }
 
-function runCommand(command, argumentsList, description) {
-  const result = spawnSync(command, argumentsList, {
+function spawnCommand(command, argumentsList) {
+  return spawnSync(command, argumentsList, {
     encoding: 'utf8',
     windowsHide: true,
   });
+}
 
+function printCommandOutput(result) {
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
+}
+
+function runCommand(command, argumentsList, description) {
+  const result = spawnCommand(command, argumentsList);
+  printCommandOutput(result);
   if (result.error) fail(`${description}: ${result.error.message}`);
   if (result.status !== 0) {
     fail(`${description} exited with status ${result.status ?? 'unknown'}`);
   }
 }
 
+function runCommandExpectFailure(command, argumentsList, description, expectedText) {
+  const result = spawnCommand(command, argumentsList);
+  printCommandOutput(result);
+  if (result.error) fail(`${description}: ${result.error.message}`);
+  if (result.status === 0) fail(`${description} unexpectedly succeeded`);
+  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+  if (!output.includes(expectedText)) {
+    fail(`${description} failed for an unexpected reason; expected output containing ${expectedText}`);
+  }
+}
+
 function findDatabaseContainer() {
-  const result = spawnSync('docker', ['ps', '--format', '{{.Names}}'], {
-    encoding: 'utf8',
-    windowsHide: true,
-  });
+  const result = spawnCommand('docker', ['ps', '--format', '{{.Names}}']);
   if (result.error) fail(`Docker could not be executed: ${result.error.message}`);
   if (result.status !== 0) fail(result.stderr.trim() || 'docker ps failed');
   const running = result.stdout.split(/\r?\n/u).filter(Boolean);
@@ -61,38 +76,124 @@ function runPsql(containerName, sql) {
     { encoding: 'utf8', windowsHide: true },
   );
 
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
+  printCommandOutput(result);
   if (result.error) fail(`Unable to run psql: ${result.error.message}`);
   if (result.status !== 0) fail(result.stderr.trim() || 'psql failed');
   return result.stdout.trim();
 }
 
-runCommand(
-  NPX_COMMAND,
-  [
-    '--no-install',
-    'supabase',
-    'db',
-    'reset',
-    '--local',
-    '--version',
-    MAP053_BASELINE_VERSION,
-    '--no-seed',
-  ],
-  'resetting to the MAP-053 baseline',
+function resetToMap053() {
+  runCommand(
+    NPX_COMMAND,
+    [
+      '--no-install',
+      'supabase',
+      'db',
+      'reset',
+      '--local',
+      '--version',
+      MAP053_BASELINE_VERSION,
+      '--no-seed',
+    ],
+    'resetting to the MAP-053 baseline',
+  );
+  return findDatabaseContainer();
+}
+
+function historicCategorySql() {
+  return `insert into public.categories (
+    campaign_id, id, slug, name, description, publication_status
+  ) values (
+    '${INITIAL_CAMPAIGN_ID}', 'category-map054-upgrade', 'map054-upgrade',
+    'MAP054 Upgrade', 'Historic roster upgrade fixture', 'published'
+  );`;
+}
+
+function historicCharacterValues(names) {
+  return names
+    .map((name, index) => {
+      const slug = `${name.toLowerCase()}-${index + 1}`;
+      return `(
+        '${INITIAL_CAMPAIGN_ID}', 'entity-${slug}', '${slug}', 'character', 'pin', 'public',
+        '${name}', 'en', 'Historic ${name}', 'Historic ${name}', ${800 + index * 100}, 700,
+        'category-map054-upgrade', 'published'
+      )`;
+    })
+    .join(',\n');
+}
+
+function runDamagedUpgradeScenario(description, setupSql, expectedText) {
+  const containerName = resetToMap053();
+  runPsql(containerName, setupSql);
+  runCommandExpectFailure(
+    NPX_COMMAND,
+    ['--no-install', 'supabase', 'migration', 'up', '--local'],
+    description,
+    expectedText,
+  );
+}
+
+const incompleteMessage = 'MAP-054 historic campaign content requires the complete three-character Skade/Ura/Veyra source';
+
+runDamagedUpgradeScenario(
+  'rejecting a non-empty historic campaign with zero expected roster names',
+  `${historicCategorySql()}
+   insert into public.map_entities (
+     campaign_id, id, slug, entity_type, visibility, audience, name, name_language,
+     summary, description, x, y, category_id, publication_status
+   ) values (
+     '${INITIAL_CAMPAIGN_ID}', 'entity-other-hero', 'other-hero', 'character', 'pin', 'public',
+     'Other Hero', 'en', 'Historic other hero', 'Historic other hero', 750, 700,
+     'category-map054-upgrade', 'published'
+   );`,
+  incompleteMessage,
 );
 
-const containerName = findDatabaseContainer();
+for (const names of [['Skade'], ['Skade', 'Ura']]) {
+  runDamagedUpgradeScenario(
+    `rejecting an incomplete ${names.length}/3 historic roster`,
+    `${historicCategorySql()}
+     insert into public.map_entities (
+       campaign_id, id, slug, entity_type, visibility, audience, name, name_language,
+       summary, description, x, y, category_id, publication_status
+     ) values
+       ${historicCharacterValues(names)};`,
+    incompleteMessage,
+  );
+}
+
+runDamagedUpgradeScenario(
+  'rejecting duplicate historic roster sources',
+  `${historicCategorySql()}
+   insert into public.map_entities (
+     campaign_id, id, slug, entity_type, visibility, audience, name, name_language,
+     summary, description, x, y, category_id, publication_status
+   ) values
+     ${historicCharacterValues(['Skade', 'Skade', 'Ura', 'Veyra'])};`,
+  incompleteMessage,
+);
+
+runDamagedUpgradeScenario(
+  'rejecting ambiguous existing roster associations',
+  `${historicCategorySql()}
+   insert into public.map_entities (
+     campaign_id, id, slug, entity_type, visibility, audience, name, name_language,
+     summary, description, x, y, category_id, publication_status
+   ) values
+     ${historicCharacterValues(['Skade', 'Ura', 'Veyra'])};
+   insert into public.players (
+     campaign_id, id, slug, display_name, name_language, publication_status
+   ) values
+     ('${INITIAL_CAMPAIGN_ID}', 'player-skade-by-name', 'other-skade', 'Skade', 'en', 'published'),
+     ('${INITIAL_CAMPAIGN_ID}', 'player-skade-by-slug', 'skade', 'Another Hero', 'en', 'published');`,
+  'MAP-054 found ambiguous existing roster rows for Skade',
+);
+
+const containerName = resetToMap053();
 
 runPsql(
   containerName,
-  `insert into public.categories (
-     campaign_id, id, slug, name, description, publication_status
-   ) values (
-     '${INITIAL_CAMPAIGN_ID}', 'category-map054-upgrade', 'map054-upgrade',
-     'MAP054 Upgrade', 'Historic roster upgrade fixture', 'published'
-   );
+  `${historicCategorySql()}
 
    insert into public.map_entities (
      campaign_id, id, slug, entity_type, visibility, audience, name, name_language,
@@ -138,7 +239,7 @@ runPsql(
 runCommand(
   NPX_COMMAND,
   ['--no-install', 'supabase', 'migration', 'up', '--local'],
-  'applying MAP-054 migrations',
+  'applying MAP-054 migrations to the complete historic fixture',
 );
 
 runPsql(
@@ -231,4 +332,4 @@ runPsql(
    $$;`,
 );
 
-console.log('MAP-054 roster upgrade rehearsal passed.');
+console.log('MAP-054 roster upgrade rehearsal passed, including damaged-upgrade fail-closed scenarios.');
