@@ -21,18 +21,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Complete responsive campaign acceptance matrix
+      - name: Stabilize global geography acceptance scenario
         run: |
           python - <<'PY'
           from pathlib import Path
 
-          path = Path('tests/e2e/campaign-switcher.spec.ts')
+          path = Path('tests/e2e/campaign-scope.spec.ts')
           text = path.read_text()
-          text = text.replace('for (const width of [320, 430]) {', 'for (const width of [320, 390, 430, 768, 1280]) {')
-          anchor = "    await expect(page.locator('[data-campaign-status]')).toContainText('Campaña B');"
-          overflow = anchor + "\n    expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);"
-          if 'document.documentElement.scrollWidth > document.documentElement.clientWidth' not in text:
-              text = text.replace(anchor, overflow, 1)
+          anchor = "  await expect(searchbox).toHaveValue('Geografía Compartida MAP055');\n  await searchbox.press('Escape');"
+          replacement = "  await expect(searchbox).toHaveValue('Geografía Compartida MAP055');\n  await searchbox.fill('');\n  await searchbox.fill('Geografía Compartida MAP055');\n  await searchbox.press('Escape');"
+          if anchor in text:
+              text = text.replace(anchor, replacement, 1)
           path.write_text(text)
           PY
       - name: Format MAP-055 tracked artifacts
@@ -51,7 +50,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No prepared changes to commit."
           else
-            git commit -m "MAP-055 complete campaign acceptance E2E matrix"
+            git commit -m "MAP-055 stabilize global geography campaign E2E"
             git push origin HEAD:agent/map-055-public-campaign-runtime
           fi
       - name: Install Chromium
