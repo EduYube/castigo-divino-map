@@ -172,7 +172,26 @@ runDamagedUpgradeScenario(
      campaign_id, id, slug, entity_type, visibility, audience, name, name_language,
      summary, description, x, y, category_id, publication_status
    ) values
-     ${historicCharacterValues(['Skade', 'Skade', 'Ura', 'Veyra'])};`,
+     (
+       '${INITIAL_CAMPAIGN_ID}', 'entity-skade-published', 'skade-published', 'character', 'pin',
+       'public', 'Skade', 'en', 'Historic Skade', 'Historic Skade', 800, 700,
+       'category-map054-upgrade', 'published'
+     ),
+     (
+       '${INITIAL_CAMPAIGN_ID}', 'entity-skade-draft', 'skade-draft', 'character', 'pin',
+       'public', 'Skade', 'en', 'Historic duplicate Skade', 'Historic duplicate Skade', 850, 700,
+       'category-map054-upgrade', 'draft'
+     ),
+     (
+       '${INITIAL_CAMPAIGN_ID}', 'entity-ura-duplicate-case', 'ura-duplicate-case', 'character', 'pin',
+       'public', 'Ura', 'en', 'Historic Ura', 'Historic Ura', 900, 700,
+       'category-map054-upgrade', 'published'
+     ),
+     (
+       '${INITIAL_CAMPAIGN_ID}', 'entity-veyra-duplicate-case', 'veyra-duplicate-case', 'character',
+       'pin', 'public', 'Veyra', 'en', 'Historic Veyra', 'Historic Veyra', 1000, 700,
+       'category-map054-upgrade', 'published'
+     );`,
   incompleteMessage,
 );
 
