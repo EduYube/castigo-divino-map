@@ -44,6 +44,7 @@ const rosters = new Map<string, readonly Record<string, unknown>[]>([
         campaign_id: INITIAL_CAMPAIGN_ID,
         slug: 'skade',
         display_name: 'Skade',
+        name_language: 'en',
         publication_status: 'published',
         published_at: '2026-08-26T10:00:00.000Z',
         display_order: 0,
@@ -61,6 +62,7 @@ const rosters = new Map<string, readonly Record<string, unknown>[]>([
         campaign_id: CAMPAIGN_B_ID,
         slug: 'jugadora-b',
         display_name: 'Jugadora B',
+        name_language: 'en',
         publication_status: 'published',
         published_at: '2026-08-26T10:01:00.000Z',
         display_order: 0,
@@ -75,6 +77,10 @@ const rosters = new Map<string, readonly Record<string, unknown>[]>([
 interface RuntimeErrors {
   readonly pageErrors: Error[];
   readonly consoleErrors: string[];
+}
+
+interface BackendOptions {
+  readonly campaignBPlayerDelayMs?: number;
 }
 
 function collectRuntimeErrors(page: Page): RuntimeErrors {
@@ -94,7 +100,7 @@ function collectionHeaders(count: number): Record<string, string> {
   };
 }
 
-async function configureBackend(page: Page): Promise<void> {
+async function configureBackend(page: Page, options: BackendOptions = {}): Promise<void> {
   await page.addInitScript(
     ({ projectUrl, publishableKey }) => {
       window.__MAP017_AUTH_TEST_CONFIG__ = {
@@ -167,6 +173,9 @@ async function configureBackend(page: Page): Promise<void> {
     if (table === 'players') {
       const filter = url.searchParams.get('campaign_id') ?? '';
       const campaignId = filter.startsWith('eq.') ? filter.slice(3) : '';
+      if (campaignId === CAMPAIGN_B_ID && options.campaignBPlayerDelayMs) {
+        await new Promise((resolve) => setTimeout(resolve, options.campaignBPlayerDelayMs));
+      }
       const players = rosters.get(campaignId) ?? [];
       await route.fulfill({
         status: 200,
@@ -250,6 +259,44 @@ test('dirty roster edits cannot silently cross campaigns and focus is restored o
 
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
   await expect(newPlayer).toBeFocused();
+  expectNoRuntimeErrors(errors);
+});
+
+test('campaign transition discards old editors and blocks writes while the target roster is slow', async ({
+  page,
+}) => {
+  const errors = collectRuntimeErrors(page);
+  await configureBackend(page, { campaignBPlayerDelayMs: 750 });
+  await page.goto('/');
+  await login(page);
+
+  await page.getByRole('button', { name: 'Crear', exact: true }).click();
+  const catalogEditor = page.getByRole('heading', { name: 'Crear registro' });
+  await expect(catalogEditor).toBeVisible();
+  await page.getByLabel('ID estable').fill('category-stale-editor');
+
+  page.once('dialog', async (dialog) => {
+    expect(dialog.message()).toContain('cambios administrativos sin guardar');
+    await dialog.accept();
+  });
+  await page.getByLabel('Campaña administrativa').selectOption(CAMPAIGN_B_ID);
+
+  await expect(catalogEditor).toBeHidden();
+  const mutationStatus = await page.evaluate(async ({ accessToken, projectUrl }) => {
+    const response = await fetch(`${projectUrl}/rest/v1/categories?id=eq.category-stale-editor`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: 'Must not be written' }),
+    });
+    return response.status;
+  }, { accessToken: ACCESS_TOKEN, projectUrl: PROJECT_URL });
+  expect(mutationStatus).toBe(409);
+
+  await expect(page.getByLabel('Campaña administrativa')).toHaveValue(CAMPAIGN_B_ID);
+  await expect(page.getByText('Jugadora B', { exact: true })).toBeVisible();
   expectNoRuntimeErrors(errors);
 });
 
