@@ -1,590 +1,636 @@
 {
-  "schemaVersion": 2,
-  "categories": [
+  "schemaVersion": 3,
+  "campaigns": [
     {
-      "id": "category-landmark",
-      "slug": "lugares-destacados",
-      "name": "Lugar destacado",
-      "description": "Accidentes geográficos y puntos de referencia públicos del mapa."
-    },
-    {
-      "id": "category-npc",
-      "slug": "npc",
-      "name": "NPC",
-      "description": ""
-    },
-    {
-      "id": "category-pj",
-      "slug": "personaje",
-      "name": "Personaje",
-      "description": "Personaje"
-    },
-    {
-      "id": "category-settlement",
-      "slug": "asentamientos",
-      "name": "Asentamiento",
-      "description": "Ciudades, villas y otros núcleos habitados conocidos públicamente."
+      "id": "00000000-0000-4000-8000-000000000053",
+      "slug": "castigo-divino",
+      "name": "Castigo Divino",
+      "status": "active",
+      "displayOrder": 0
     }
   ],
-  "tags": [
+  "campaignCatalogs": [
     {
-      "id": "category-skade",
-      "name": "Skade",
-      "description": "Entidades relacionadas con Skade"
-    },
-    {
-      "id": "category-ura",
-      "name": "Ura",
-      "description": "Entidades relacionadas con Ura"
-    },
-    {
-      "id": "category-veyra",
-      "name": "Veyra",
-      "description": "Relacionado o perteneciente a Veyra"
-    },
-    {
-      "id": "coastal",
-      "name": "Costero",
-      "description": "Lugar situado junto a la costa o relacionado con navegación marítima."
-    },
-    {
-      "id": "demo-data",
-      "name": "Dato de demostración",
-      "description": "Contenido neutro creado únicamente para demostrar el modelo de datos."
-    },
-    {
-      "id": "mountain-pass",
-      "name": "Paso de montaña",
-      "description": "Ruta pública que atraviesa una zona montañosa."
-    },
-    {
-      "id": "trade-route",
-      "name": "Ruta comercial",
-      "description": "Lugar relacionado públicamente con una ruta de intercambio o viaje."
+      "campaignId": "00000000-0000-4000-8000-000000000053",
+      "categories": [
+        {
+          "id": "category-landmark",
+          "slug": "lugares-destacados",
+          "name": "Lugar destacado",
+          "description": "Accidentes geográficos y puntos de referencia públicos del mapa."
+        },
+        {
+          "id": "category-npc",
+          "slug": "npc",
+          "name": "NPC",
+          "description": ""
+        },
+        {
+          "id": "category-pj",
+          "slug": "personaje",
+          "name": "Personaje",
+          "description": "Personaje"
+        },
+        {
+          "id": "category-settlement",
+          "slug": "asentamientos",
+          "name": "Asentamiento",
+          "description": "Ciudades, villas y otros núcleos habitados conocidos públicamente."
+        }
+      ],
+      "tags": [
+        {
+          "id": "category-skade",
+          "name": "Skade",
+          "description": "Entidades relacionadas con Skade"
+        },
+        {
+          "id": "category-ura",
+          "name": "Ura",
+          "description": "Entidades relacionadas con Ura"
+        },
+        {
+          "id": "category-veyra",
+          "name": "Veyra",
+          "description": "Relacionado o perteneciente a Veyra"
+        },
+        {
+          "id": "coastal",
+          "name": "Costero",
+          "description": "Lugar situado junto a la costa o relacionado con navegación marítima."
+        },
+        {
+          "id": "demo-data",
+          "name": "Dato de demostración",
+          "description": "Contenido neutro creado únicamente para demostrar el modelo de datos."
+        },
+        {
+          "id": "mountain-pass",
+          "name": "Paso de montaña",
+          "description": "Ruta pública que atraviesa una zona montañosa."
+        },
+        {
+          "id": "trade-route",
+          "name": "Ruta comercial",
+          "description": "Lugar relacionado públicamente con una ruta de intercambio o viaje."
+        }
+      ],
+      "players": [
+        {
+          "id": "player-skade",
+          "slug": "skade",
+          "displayName": "Skade",
+          "nameLanguage": "en"
+        },
+        {
+          "id": "player-ura",
+          "slug": "ura",
+          "displayName": "Ura",
+          "nameLanguage": "en"
+        },
+        {
+          "id": "player-veyra",
+          "slug": "veyra",
+          "displayName": "Veyra",
+          "nameLanguage": "en"
+        }
+      ],
+      "entities": [
+        {
+          "id": "entity-agamen",
+          "slug": "agamen",
+          "entityType": "character",
+          "visibility": "pin",
+          "name": "Agamen",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Primer clerigo de la Fe de Skade",
+          "description": "",
+          "coordinates": {
+            "x": 2904.26,
+            "y": 814.17
+          },
+          "categoryId": "category-npc",
+          "tagIds": [
+            "category-skade"
+          ]
+        },
+        {
+          "id": "entity-asentamiento-thar",
+          "slug": "asentamiento-thar",
+          "entityType": "location",
+          "visibility": "pin",
+          "name": "Primer Asentamiento de Skade",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Primer asentamiento de seguidores de la Fe de Skade",
+          "description": "Ahora se encuentran en la region de Cromryn, tambien seguidora de Skade, despues de huir de un ataque todavia por catalogar",
+          "coordinates": {
+            "x": 2912.91,
+            "y": 804.09
+          },
+          "categoryId": "category-settlement",
+          "tagIds": [
+            "category-skade"
+          ]
+        },
+        {
+          "id": "entity-bring",
+          "slug": "bring",
+          "entityType": "character",
+          "visibility": "pin",
+          "name": "Bring",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Druida Eladrin seguidor de Skade. Ultima vez avistado en forma de fuego",
+          "description": "",
+          "portraitPath": "portraits/afebb91a-5ab8-4a08-a136-ad96ddf6cf1f.png",
+          "coordinates": {
+            "x": 2834.68,
+            "y": 1921.5
+          },
+          "categoryId": "category-npc",
+          "tagIds": [
+            "category-skade"
+          ]
+        },
+        {
+          "id": "entity-captitan",
+          "slug": "captitan",
+          "entityType": "character",
+          "visibility": "pin",
+          "name": "Captitan",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Capitan de un navio mercante de los mares del sur de los reinos olvidados. A quien el siga, su barco lo sigue. Seguidor de Skade tras aparicion",
+          "description": "",
+          "portraitPath": "portraits/bf7c5e3e-1ad3-4513-9587-9cdef099d871.png",
+          "coordinates": {
+            "x": 1382.01,
+            "y": 305.5
+          },
+          "categoryId": "category-npc",
+          "tagIds": []
+        },
+        {
+          "id": "entity-jhonny",
+          "slug": "jhonny",
+          "entityType": "character",
+          "visibility": "pin",
+          "name": "Jhonny Labios Sellados",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Marinero de la tripulacion del Captitan. Hibrido de Gnoll, lizzard, drow. Seguidor de Ura",
+          "description": "",
+          "portraitPath": "portraits/b1573807-7832-4691-8283-2d2d24df440b.png",
+          "coordinates": {
+            "x": 1450.96,
+            "y": 292.28
+          },
+          "categoryId": "category-npc",
+          "tagIds": [
+            "category-ura"
+          ]
+        },
+        {
+          "id": "entity-masred",
+          "slug": "masred",
+          "entityType": "character",
+          "visibility": "pin",
+          "name": "Masred",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Paladin de guerra enano. Antiguo seguidor de Moradin. Actual seguidor de Skade. Expulsado del consejo de paladines y atacado por la Sombra de Moradin",
+          "description": "",
+          "portraitPath": "portraits/40d5b702-8dc4-42a4-bd65-5eb71b594eff.jpg",
+          "coordinates": {
+            "x": 2000.3,
+            "y": 1722.1
+          },
+          "categoryId": "category-npc",
+          "tagIds": [
+            "category-skade"
+          ]
+        },
+        {
+          "id": "entity-memnon",
+          "slug": "memnon",
+          "entityType": "location",
+          "visibility": "pin",
+          "name": "Memnon",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Ciudad seguidora de la fe de Ura tras la defensa contra la Sombra de Moradin",
+          "description": "Ciudad costera gemela de Myrtah con transito fluvial y comercio activo",
+          "coordinates": {
+            "x": 1912.82,
+            "y": 402.69
+          },
+          "categoryId": "category-settlement",
+          "tagIds": [
+            "category-ura",
+            "coastal"
+          ]
+        },
+        {
+          "id": "entity-myrath",
+          "slug": "myrath",
+          "entityType": "location",
+          "visibility": "pin",
+          "name": "Myrath",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Ciudad gemela de Memnon. Entregada a la fe de Skade tras la defensa contra la sombra",
+          "description": "Ciudad costera con trnasito fluvial y comercio activo",
+          "coordinates": {
+            "x": 1901.27,
+            "y": 428.21
+          },
+          "categoryId": "category-settlement",
+          "tagIds": [
+            "category-skade",
+            "coastal"
+          ]
+        },
+        {
+          "id": "entity-ojos-tempestad",
+          "slug": "ojos-tempestad",
+          "entityType": "character",
+          "visibility": "pin",
+          "name": "Ojos de la Tempestad",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Seguidor aferrimo de Ura. Hibrido de Kenku, elfo de la noche e indeterminado",
+          "description": "",
+          "portraitPath": "portraits/33f9ba70-198f-4142-b474-ffce8a744966.png",
+          "coordinates": {
+            "x": 2796.59,
+            "y": 1156.98
+          },
+          "categoryId": "category-npc",
+          "tagIds": [
+            "category-ura"
+          ]
+        },
+        {
+          "id": "entity-request-07d26371bbff42d9b91e076d099891b0",
+          "slug": "request-07d26371bbff42d9b91e076d099891b0",
+          "entityType": "character",
+          "visibility": "pin",
+          "name": "Veyra",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "",
+          "description": "Posición inicial Veyra (dudo entre neverwinter y lidian)",
+          "portraitPath": "portraits/9d3dcfeb-0320-4bca-9f5d-941d68aa6410.jpg",
+          "coordinates": {
+            "x": 1425.88,
+            "y": 1855.21
+          },
+          "categoryId": "category-pj",
+          "tagIds": [
+            "category-veyra"
+          ]
+        },
+        {
+          "id": "entity-skade",
+          "slug": "skade",
+          "entityType": "character",
+          "visibility": "pin",
+          "name": "Skade",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Antigua paladina de Tyr. Nuevo deida de la justicia y la tormenta",
+          "description": "personaje jugable por Jesus",
+          "portraitPath": "portraits/ec8a33ec-3607-4347-805a-4808227e00f9.jpg",
+          "coordinates": {
+            "x": 2816.05,
+            "y": 1282.32
+          },
+          "categoryId": "category-pj",
+          "tagIds": [
+            "category-skade"
+          ]
+        },
+        {
+          "id": "entity-thalasis",
+          "slug": "thalasis",
+          "entityType": "character",
+          "visibility": "pin",
+          "name": "Thalasis",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Paladin Aaracrocka. Anteriormente seguidora de Akadi. Actual seguidora de SSkade. Todavia forma parte del consejo de paladines, no ha sido descubierta",
+          "description": "",
+          "portraitPath": "portraits/9d504070-26c0-40dd-ba04-5587bd1cd545.jpg",
+          "coordinates": {
+            "x": 1941.97,
+            "y": 1188.15
+          },
+          "categoryId": "category-npc",
+          "tagIds": [
+            "category-skade"
+          ]
+        },
+        {
+          "id": "entity-thar",
+          "slug": "thar",
+          "entityType": "location",
+          "visibility": "pin",
+          "name": "Thar",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Region inicialmente protegida y fervorosa de Skade ahora en ruinas y deshabitada",
+          "description": "Zona pantanosa sin lores ni dueños. Recientemente ha habido un enfrentamiento que ha derruido distintas edificaciones aunque no se han reportado muertos",
+          "coordinates": {
+            "x": 3475.44,
+            "y": 1366.13
+          },
+          "categoryId": "category-landmark",
+          "tagIds": [
+            "category-skade"
+          ]
+        },
+        {
+          "id": "entity-tulu",
+          "slug": "tulu",
+          "entityType": "character",
+          "visibility": "pin",
+          "name": "Cutu",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Ser liberado por Ura y Skade, seguidor de la fe de Ura y protector de las islas del mar de Moonshae",
+          "description": "",
+          "portraitPath": "portraits/2bbc52d6-24dc-43ec-9f07-193229a0e14a.png",
+          "coordinates": {
+            "x": 1260.76,
+            "y": 1074.78
+          },
+          "categoryId": "category-npc",
+          "tagIds": [
+            "category-ura"
+          ]
+        },
+        {
+          "id": "entity-ura",
+          "slug": "ura",
+          "entityType": "character",
+          "visibility": "pin",
+          "name": "Ura",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "Antiguo clerigo de Umberlee. Nuevo Dios de la tempestad y el Agua. Afin a seres hibridos",
+          "description": "Personaje jugable por Aitor",
+          "portraitPath": "portraits/33647250-df27-4954-8449-620c0431e47b.jpg",
+          "coordinates": {
+            "x": 2813.51,
+            "y": 1287.91
+          },
+          "categoryId": "category-pj",
+          "tagIds": [
+            "category-ura"
+          ]
+        }
+      ],
+      "dispositions": [
+        {
+          "entityId": "entity-agamen",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-agamen",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-agamen",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-asentamiento-thar",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-asentamiento-thar",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-asentamiento-thar",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-bring",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-bring",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-bring",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-captitan",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-captitan",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-captitan",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-jhonny",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-jhonny",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-jhonny",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-masred",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-masred",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-masred",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-memnon",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-memnon",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-memnon",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-myrath",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-myrath",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-myrath",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-ojos-tempestad",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-ojos-tempestad",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-ojos-tempestad",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-request-07d26371bbff42d9b91e076d099891b0",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-request-07d26371bbff42d9b91e076d099891b0",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-request-07d26371bbff42d9b91e076d099891b0",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-skade",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-skade",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-skade",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-thalasis",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-thalasis",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-thalasis",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-thar",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-thar",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-thar",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-tulu",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-tulu",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-tulu",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-ura",
+          "playerId": "player-skade",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-ura",
+          "playerId": "player-ura",
+          "disposition": "neutral"
+        },
+        {
+          "entityId": "entity-ura",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        }
+      ],
+      "characterLocationRelations": [
+        {
+          "characterId": "entity-agamen",
+          "locationId": "entity-asentamiento-thar",
+          "relationStatus": "associated"
+        }
+      ],
+      "notes": [],
+      "characterLocationEvents": [],
+      "geographicEntityLinks": []
     }
   ],
-  "players": [
-    {
-      "id": "player-skade",
-      "slug": "skade",
-      "displayName": "Skade",
-      "nameLanguage": "en"
-    },
-    {
-      "id": "player-ura",
-      "slug": "ura",
-      "displayName": "Ura",
-      "nameLanguage": "en"
-    },
-    {
-      "id": "player-veyra",
-      "slug": "veyra",
-      "displayName": "Veyra",
-      "nameLanguage": "en"
-    }
-  ],
-  "entities": [
-    {
-      "id": "entity-agamen",
-      "slug": "agamen",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Agamen",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Primer clerigo de la Fe de Skade",
-      "description": "",
-      "coordinates": {
-        "x": 2904.26,
-        "y": 814.17
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-asentamiento-thar",
-      "slug": "asentamiento-thar",
-      "entityType": "location",
-      "visibility": "pin",
-      "name": "Primer Asentamiento de Skade",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Primer asentamiento de seguidores de la Fe de Skade",
-      "description": "Ahora se encuentran en la region de Cromryn, tambien seguidora de Skade, despues de huir de un ataque todavia por catalogar",
-      "coordinates": {
-        "x": 2912.91,
-        "y": 804.09
-      },
-      "categoryId": "category-settlement",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-bring",
-      "slug": "bring",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Bring",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Druida Eladrin seguidor de Skade. Ultima vez avistado en forma de fuego",
-      "description": "",
-      "portraitPath": "portraits/afebb91a-5ab8-4a08-a136-ad96ddf6cf1f.png",
-      "coordinates": {
-        "x": 2834.68,
-        "y": 1921.5
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-captitan",
-      "slug": "captitan",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Captitan",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Capitan de un navio mercante de los mares del sur de los reinos olvidados. A quien el siga, su barco lo sigue. Seguidor de Skade tras aparicion",
-      "description": "",
-      "portraitPath": "portraits/bf7c5e3e-1ad3-4513-9587-9cdef099d871.png",
-      "coordinates": {
-        "x": 1382.01,
-        "y": 305.5
-      },
-      "categoryId": "category-npc",
-      "tagIds": []
-    },
-    {
-      "id": "entity-jhonny",
-      "slug": "jhonny",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Jhonny Labios Sellados",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Marinero de la tripulacion del Captitan. Hibrido de Gnoll, lizzard, drow. Seguidor de Ura",
-      "description": "",
-      "portraitPath": "portraits/b1573807-7832-4691-8283-2d2d24df440b.png",
-      "coordinates": {
-        "x": 1450.96,
-        "y": 292.28
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-ura"]
-    },
-    {
-      "id": "entity-masred",
-      "slug": "masred",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Masred",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Paladin de guerra enano. Antiguo seguidor de Moradin. Actual seguidor de Skade. Expulsado del consejo de paladines y atacado por la Sombra de Moradin",
-      "description": "",
-      "portraitPath": "portraits/40d5b702-8dc4-42a4-bd65-5eb71b594eff.jpg",
-      "coordinates": {
-        "x": 2000.3,
-        "y": 1722.1
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-memnon",
-      "slug": "memnon",
-      "entityType": "location",
-      "visibility": "pin",
-      "name": "Memnon",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Ciudad seguidora de la fe de Ura tras la defensa contra la Sombra de Moradin",
-      "description": "Ciudad costera gemela de Myrtah con transito fluvial y comercio activo",
-      "coordinates": {
-        "x": 1912.82,
-        "y": 402.69
-      },
-      "categoryId": "category-settlement",
-      "tagIds": ["category-ura", "coastal"]
-    },
-    {
-      "id": "entity-myrath",
-      "slug": "myrath",
-      "entityType": "location",
-      "visibility": "pin",
-      "name": "Myrath",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Ciudad gemela de Memnon. Entregada a la fe de Skade tras la defensa contra la sombra",
-      "description": "Ciudad costera con trnasito fluvial y comercio activo",
-      "coordinates": {
-        "x": 1901.27,
-        "y": 428.21
-      },
-      "categoryId": "category-settlement",
-      "tagIds": ["category-skade", "coastal"]
-    },
-    {
-      "id": "entity-ojos-tempestad",
-      "slug": "ojos-tempestad",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Ojos de la Tempestad",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Seguidor aferrimo de Ura. Hibrido de Kenku, elfo de la noche e indeterminado",
-      "description": "",
-      "portraitPath": "portraits/33f9ba70-198f-4142-b474-ffce8a744966.png",
-      "coordinates": {
-        "x": 2796.59,
-        "y": 1156.98
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-ura"]
-    },
-    {
-      "id": "entity-request-07d26371bbff42d9b91e076d099891b0",
-      "slug": "request-07d26371bbff42d9b91e076d099891b0",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Veyra",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "",
-      "description": "Posición inicial Veyra (dudo entre neverwinter y lidian)",
-      "portraitPath": "portraits/9d3dcfeb-0320-4bca-9f5d-941d68aa6410.jpg",
-      "coordinates": {
-        "x": 1425.88,
-        "y": 1855.21
-      },
-      "categoryId": "category-pj",
-      "tagIds": ["category-veyra"]
-    },
-    {
-      "id": "entity-skade",
-      "slug": "skade",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Skade",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Antigua paladina de Tyr. Nuevo deida de la justicia y la tormenta",
-      "description": "personaje jugable por Jesus",
-      "portraitPath": "portraits/ec8a33ec-3607-4347-805a-4808227e00f9.jpg",
-      "coordinates": {
-        "x": 2816.05,
-        "y": 1282.32
-      },
-      "categoryId": "category-pj",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-thalasis",
-      "slug": "thalasis",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Thalasis",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Paladin Aaracrocka. Anteriormente seguidora de Akadi. Actual seguidora de SSkade. Todavia forma parte del consejo de paladines, no ha sido descubierta",
-      "description": "",
-      "portraitPath": "portraits/9d504070-26c0-40dd-ba04-5587bd1cd545.jpg",
-      "coordinates": {
-        "x": 1941.97,
-        "y": 1188.15
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-thar",
-      "slug": "thar",
-      "entityType": "location",
-      "visibility": "pin",
-      "name": "Thar",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Region inicialmente protegida y fervorosa de Skade ahora en ruinas y deshabitada",
-      "description": "Zona pantanosa sin lores ni dueños. Recientemente ha habido un enfrentamiento que ha derruido distintas edificaciones aunque no se han reportado muertos",
-      "coordinates": {
-        "x": 3475.44,
-        "y": 1366.13
-      },
-      "categoryId": "category-landmark",
-      "tagIds": ["category-skade"]
-    },
-    {
-      "id": "entity-tulu",
-      "slug": "tulu",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Cutu",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Ser liberado por Ura y Skade, seguidor de la fe de Ura y protector de las islas del mar de Moonshae",
-      "description": "",
-      "portraitPath": "portraits/2bbc52d6-24dc-43ec-9f07-193229a0e14a.png",
-      "coordinates": {
-        "x": 1260.76,
-        "y": 1074.78
-      },
-      "categoryId": "category-npc",
-      "tagIds": ["category-ura"]
-    },
-    {
-      "id": "entity-ura",
-      "slug": "ura",
-      "entityType": "character",
-      "visibility": "pin",
-      "name": "Ura",
-      "nameLanguage": "en",
-      "aliases": [],
-      "summary": "Antiguo clerigo de Umberlee. Nuevo Dios de la tempestad y el Agua. Afin a seres hibridos",
-      "description": "Personaje jugable por Aitor",
-      "portraitPath": "portraits/33647250-df27-4954-8449-620c0431e47b.jpg",
-      "coordinates": {
-        "x": 2813.51,
-        "y": 1287.91
-      },
-      "categoryId": "category-pj",
-      "tagIds": ["category-ura"]
-    }
-  ],
-  "dispositions": [
-    {
-      "entityId": "entity-agamen",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-agamen",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-agamen",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-asentamiento-thar",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-asentamiento-thar",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-asentamiento-thar",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-bring",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-bring",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-bring",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-captitan",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-captitan",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-captitan",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-jhonny",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-jhonny",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-jhonny",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-masred",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-masred",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-masred",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-memnon",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-memnon",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-memnon",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-myrath",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-myrath",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-myrath",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-ojos-tempestad",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-ojos-tempestad",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-ojos-tempestad",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-request-07d26371bbff42d9b91e076d099891b0",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-request-07d26371bbff42d9b91e076d099891b0",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-request-07d26371bbff42d9b91e076d099891b0",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-skade",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-skade",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-skade",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-thalasis",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-thalasis",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-thalasis",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-thar",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-thar",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-thar",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-tulu",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-tulu",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-tulu",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-ura",
-      "playerId": "player-skade",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-ura",
-      "playerId": "player-ura",
-      "disposition": "neutral"
-    },
-    {
-      "entityId": "entity-ura",
-      "playerId": "player-veyra",
-      "disposition": "neutral"
-    }
-  ],
-  "characterLocationRelations": [
-    {
-      "characterId": "entity-agamen",
-      "locationId": "entity-asentamiento-thar",
-      "relationStatus": "associated"
-    }
-  ],
-  "notes": [],
   "geographicNames": [
     {
       "id": "geo-alaron",
@@ -597,8 +643,7 @@
         "y": 914
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-amn",
@@ -611,8 +656,7 @@
         "y": 369
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-amphail",
@@ -625,8 +669,7 @@
         "y": 1549
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-anauroch",
@@ -644,8 +687,7 @@
         "minY": 1050,
         "maxY": 1700
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-arabel",
@@ -658,8 +700,7 @@
         "y": 899
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-archwood",
@@ -672,8 +713,7 @@
         "y": 879
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-arn-forest",
@@ -686,8 +726,7 @@
         "y": 1984
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-ascore",
@@ -700,8 +739,7 @@
         "y": 2019
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-baldurs-gate",
@@ -721,8 +759,7 @@
         "y": 824
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-beorunnas-well",
@@ -735,8 +772,7 @@
         "y": 2144
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-berdusk",
@@ -749,8 +785,7 @@
         "y": 729
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-blackford-crossing",
@@ -763,8 +798,7 @@
         "y": 2014
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-blackford-road",
@@ -777,8 +811,7 @@
         "y": 2044
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-boareskyr-bridge",
@@ -791,8 +824,7 @@
         "y": 1059
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-border-forest",
@@ -805,8 +837,7 @@
         "y": 1364
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-caer-corwell",
@@ -819,8 +850,7 @@
         "y": 739
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-caer-moray",
@@ -833,8 +863,7 @@
         "y": 884
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-caer-westphal",
@@ -847,8 +876,7 @@
         "y": 724
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-candlekeep",
@@ -868,8 +896,7 @@
         "y": 659
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-castle-hartwick",
@@ -882,8 +909,7 @@
         "y": 2164
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-citadel-adbar",
@@ -896,8 +922,7 @@
         "y": 2094
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-citadel-felbarr",
@@ -910,8 +935,7 @@
         "y": 2059
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-coast-way",
@@ -924,8 +948,7 @@
         "y": 749
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-cold-wood",
@@ -938,8 +961,7 @@
         "y": 2184
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-cormanthor",
@@ -952,8 +974,7 @@
         "y": 1104
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-cormyr",
@@ -971,8 +992,7 @@
         "minY": 600,
         "maxY": 950
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-daggerford",
@@ -985,8 +1005,7 @@
         "y": 1386
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-darkhold",
@@ -999,8 +1018,7 @@
         "y": 901
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-deepwing-mountains",
@@ -1013,8 +1031,7 @@
         "y": 94
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-delimbiyr-river",
@@ -1027,8 +1044,7 @@
         "y": 1429
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-dernall-forest",
@@ -1041,8 +1057,7 @@
         "y": 979
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-desertsmouth-mountains",
@@ -1055,8 +1070,7 @@
         "y": 1114
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-dessarin-river",
@@ -1069,8 +1083,7 @@
         "y": 1809
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-dragonspear-castle",
@@ -1083,8 +1096,7 @@
         "y": 1169
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-dynnegall",
@@ -1097,8 +1109,7 @@
         "y": 855
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-easting",
@@ -1111,8 +1122,7 @@
         "y": 644
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-elturel",
@@ -1125,8 +1135,7 @@
         "y": 879
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-elturgard",
@@ -1139,8 +1148,7 @@
         "y": 814
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-elversult",
@@ -1153,8 +1161,7 @@
         "y": 624
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-evereska",
@@ -1167,8 +1174,7 @@
         "y": 1249
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-evermoors",
@@ -1193,8 +1199,7 @@
         "minY": 1810,
         "maxY": 2020
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-fairheight-range",
@@ -1207,8 +1212,7 @@
         "y": 1044
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-fairview",
@@ -1221,8 +1225,7 @@
         "y": 834
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-fields-of-the-dead",
@@ -1242,8 +1245,7 @@
         "y": 959
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-finback",
@@ -1256,8 +1258,7 @@
         "y": 1447
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-fireshear",
@@ -1270,8 +1271,7 @@
         "y": 2059
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-flint-rock",
@@ -1284,8 +1284,7 @@
         "y": 1864
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-forest-of-tethir",
@@ -1303,8 +1302,7 @@
         "minY": 0,
         "maxY": 300
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-forest-of-wyrms",
@@ -1317,8 +1315,7 @@
         "y": 1084
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-fort-morninglord",
@@ -1331,8 +1328,7 @@
         "y": 859
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-gauntlgrym",
@@ -1345,8 +1341,7 @@
         "y": 1944
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-giants-run-mountains",
@@ -1359,8 +1354,7 @@
         "y": 499
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-grandfather-tree",
@@ -1373,8 +1367,7 @@
         "y": 1836
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-great-worm-cavern",
@@ -1387,8 +1380,7 @@
         "y": 2119
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-greycloak-hills",
@@ -1401,8 +1393,7 @@
         "y": 1319
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-greypeak-mountains",
@@ -1415,8 +1406,7 @@
         "y": 1539
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-gulthmere",
@@ -1429,8 +1419,7 @@
         "y": 489
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-gundarlun",
@@ -1443,8 +1432,7 @@
         "y": 1824
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-gundbarg",
@@ -1457,8 +1445,7 @@
         "y": 1861
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-gwynneth",
@@ -1471,8 +1458,7 @@
         "y": 839
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-hardbuckler",
@@ -1485,8 +1471,7 @@
         "y": 979
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-hartsvale",
@@ -1499,8 +1484,7 @@
         "y": 2169
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-hellgate-dell",
@@ -1513,8 +1497,7 @@
         "y": 1874
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-helms-hold",
@@ -1527,8 +1510,7 @@
         "y": 1829
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-high-forest",
@@ -1553,8 +1535,7 @@
         "minY": 1500,
         "maxY": 2010
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-high-moor",
@@ -1579,8 +1560,7 @@
         "minY": 1100,
         "maxY": 1450
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-high-road",
@@ -1593,8 +1573,7 @@
         "y": 1789
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-hillsfar",
@@ -1607,8 +1586,7 @@
         "y": 1229
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-hlondeth",
@@ -1621,8 +1599,7 @@
         "y": 139
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-hullack-forest",
@@ -1635,8 +1612,7 @@
         "y": 879
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-ice-spires",
@@ -1649,8 +1625,7 @@
         "y": 2134
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-icewind-dale",
@@ -1675,8 +1650,7 @@
         "minY": 2010,
         "maxY": 2290
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-iriaebor",
@@ -1689,8 +1663,7 @@
         "y": 689
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-iron-keep",
@@ -1703,8 +1676,7 @@
         "y": 951
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-ironmaster",
@@ -1717,8 +1689,7 @@
         "y": 2147
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-karse",
@@ -1731,8 +1702,7 @@
         "y": 1744
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-kelvins-cairn",
@@ -1745,8 +1715,7 @@
         "y": 2184
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-kingdom-of-many-arrows",
@@ -1759,8 +1728,7 @@
         "y": 2169
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-korinn-archipelago",
@@ -1773,8 +1741,7 @@
         "y": 1359
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-lake-of-dragons",
@@ -1787,8 +1754,7 @@
         "y": 659
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-long-road",
@@ -1801,8 +1767,7 @@
         "y": 1679
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-longsaddle",
@@ -1815,8 +1780,7 @@
         "y": 1922
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-luskan",
@@ -1829,8 +1793,7 @@
         "y": 2011
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-marsember",
@@ -1843,8 +1806,7 @@
         "y": 699
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-marsh-of-chelimber",
@@ -1857,8 +1819,7 @@
         "y": 1319
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-menzoberranzan",
@@ -1871,8 +1832,7 @@
         "y": 2019
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-mere-of-dead-men",
@@ -1885,8 +1845,7 @@
         "y": 1677
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-mintarn",
@@ -1899,8 +1858,7 @@
         "y": 1099
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-mirabar",
@@ -1913,8 +1871,7 @@
         "y": 2093
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-misty-forest",
@@ -1927,8 +1884,7 @@
         "y": 1351
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-mithral-hall",
@@ -1941,8 +1897,7 @@
         "y": 2044
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-moonshae-isles",
@@ -1967,8 +1922,7 @@
         "minY": 570,
         "maxY": 1250
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-moray",
@@ -1981,8 +1935,7 @@
         "y": 806
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-morgurs-mound",
@@ -1995,8 +1948,7 @@
         "y": 1974
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-mount-hotenow",
@@ -2009,8 +1961,7 @@
         "y": 1919
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-mulhessen",
@@ -2023,8 +1974,7 @@
         "y": 779
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-murann",
@@ -2037,8 +1987,7 @@
         "y": 249
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-myrloch-vale",
@@ -2051,8 +2000,7 @@
         "y": 789
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-myth-drannor",
@@ -2065,8 +2013,7 @@
         "y": 1149
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-najara",
@@ -2079,8 +2026,7 @@
         "y": 1159
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-nether-mountains",
@@ -2093,8 +2039,7 @@
         "y": 1944
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-neverwinter",
@@ -2114,8 +2059,7 @@
         "y": 1853
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-neverwinter-wood",
@@ -2128,8 +2072,7 @@
         "y": 1874
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-norland",
@@ -2142,8 +2085,7 @@
         "y": 994
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-northdark-wood",
@@ -2156,8 +2098,7 @@
         "y": 1019
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-northlander-isles",
@@ -2170,8 +2111,7 @@
         "y": 1394
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-omans-isle",
@@ -2184,8 +2124,7 @@
         "y": 899
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-one-stone",
@@ -2198,8 +2137,7 @@
         "y": 2064
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-ordulin",
@@ -2212,8 +2150,7 @@
         "y": 879
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-orlumbor",
@@ -2226,8 +2163,7 @@
         "y": 1199
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-ormath",
@@ -2240,8 +2176,7 @@
         "y": 184
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-orogoth",
@@ -2254,8 +2189,7 @@
         "y": 1319
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-orsraun-mountains",
@@ -2268,8 +2202,7 @@
         "y": 319
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-priapurl",
@@ -2282,8 +2215,7 @@
         "y": 604
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-proskur",
@@ -2296,8 +2228,7 @@
         "y": 664
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-raven-rock",
@@ -2310,8 +2241,7 @@
         "y": 2124
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-reghed-glacier",
@@ -2324,8 +2254,7 @@
         "y": 2224
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-riatavin",
@@ -2338,8 +2267,7 @@
         "y": 189
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-river-chionthar",
@@ -2352,8 +2280,7 @@
         "y": 879
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-river-mirar",
@@ -2366,8 +2293,7 @@
         "y": 2044
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-river-rauvin",
@@ -2380,8 +2306,7 @@
         "y": 1939
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-river-surbrin",
@@ -2394,8 +2319,7 @@
         "y": 1864
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-rogarsheim",
@@ -2408,8 +2332,7 @@
         "y": 1044
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-ruathym",
@@ -2422,8 +2345,7 @@
         "y": 1479
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-ruins-of-ascarle",
@@ -2436,8 +2358,7 @@
         "y": 1936
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-saerloon",
@@ -2450,8 +2371,7 @@
         "y": 709
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-scornubel",
@@ -2464,8 +2384,7 @@
         "y": 854
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-sea-of-fallen-stars",
@@ -2478,8 +2397,7 @@
         "y": 679
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-sea-of-moonshae",
@@ -2492,8 +2410,7 @@
         "y": 1039
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-sea-of-moving-ice",
@@ -2506,8 +2423,7 @@
         "y": 2194
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-sea-of-swords",
@@ -2525,8 +2441,7 @@
         "minY": 680,
         "maxY": 1180
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-secomber",
@@ -2539,8 +2454,7 @@
         "y": 1449
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-selgaunt",
@@ -2553,8 +2467,7 @@
         "y": 749
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-sembia",
@@ -2567,8 +2480,7 @@
         "y": 759
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-serpent-hills",
@@ -2581,8 +2493,7 @@
         "y": 1239
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-settlestone",
@@ -2595,8 +2506,7 @@
         "y": 2024
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-shilmista-forest",
@@ -2609,8 +2519,7 @@
         "y": 309
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-silverymoon",
@@ -2630,8 +2539,7 @@
         "y": 1969
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-skadaurak",
@@ -2644,8 +2552,7 @@
         "y": 1199
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-snowdown",
@@ -2658,8 +2565,7 @@
         "y": 759
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-snowflake-mountains",
@@ -2672,8 +2578,7 @@
         "y": 259
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-southwood",
@@ -2686,8 +2591,7 @@
         "y": 1469
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-spiderhaunt-woods",
@@ -2700,8 +2604,7 @@
         "y": 1144
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-ssthartissssun",
@@ -2714,8 +2617,7 @@
         "y": 1179
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-star-mountains",
@@ -2735,8 +2637,7 @@
         "y": 1746
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-stone-stand",
@@ -2749,8 +2650,7 @@
         "y": 1909
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-sundabar",
@@ -2763,8 +2663,7 @@
         "y": 1984
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-sunset-mountains",
@@ -2777,8 +2676,7 @@
         "y": 829
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-sword-coast",
@@ -2803,8 +2701,7 @@
         "minY": 750,
         "maxY": 1500
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-sword-mountains",
@@ -2817,8 +2714,7 @@
         "y": 1569
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-tejarn-hills",
@@ -2831,8 +2727,7 @@
         "y": 249
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-ten-towns",
@@ -2845,8 +2740,7 @@
         "y": 2149
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-thar",
@@ -2859,8 +2753,7 @@
         "y": 1379
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-aphrunn-mountains",
@@ -2873,8 +2766,7 @@
         "y": 199
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-cloakwood",
@@ -2887,8 +2779,7 @@
         "y": 764
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-cloud-peaks",
@@ -2901,8 +2792,7 @@
         "y": 479
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-dalelands",
@@ -2920,8 +2810,7 @@
         "minY": 850,
         "maxY": 1200
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-endless-ice-sea",
@@ -2934,8 +2823,7 @@
         "y": 2239
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-far-forest",
@@ -2948,8 +2836,7 @@
         "y": 1847
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-far-hills",
@@ -2962,8 +2849,7 @@
         "y": 859
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-flooded-forest",
@@ -2976,8 +2862,7 @@
         "y": 289
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-frozen-forest",
@@ -2990,8 +2875,7 @@
         "y": 1924
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-frozen-sea",
@@ -3004,8 +2888,7 @@
         "y": 1809
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-giants-plain",
@@ -3018,8 +2901,7 @@
         "y": 479
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-green-fields",
@@ -3032,8 +2914,7 @@
         "y": 584
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-high-ice",
@@ -3051,8 +2932,7 @@
         "minY": 1650,
         "maxY": 2290
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-high-moors",
@@ -3065,8 +2945,7 @@
         "y": 1004
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-laughingflow",
@@ -3079,8 +2958,7 @@
         "y": 1909
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-lurkwood",
@@ -3093,8 +2971,7 @@
         "y": 2069
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-nelanther",
@@ -3107,8 +2984,7 @@
         "y": 419
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-plain-of-standing-stones",
@@ -3121,8 +2997,7 @@
         "y": 1579
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-purple-rocks",
@@ -3135,8 +3010,7 @@
         "y": 1919
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-reaching-woods",
@@ -3149,8 +3023,7 @@
         "y": 879
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-ride",
@@ -3163,8 +3036,7 @@
         "y": 1459
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-shining-plains",
@@ -3182,8 +3054,7 @@
         "minY": 70,
         "maxY": 380
       },
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-small-teeth",
@@ -3196,8 +3067,7 @@
         "y": 309
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-snakewood",
@@ -3210,8 +3080,7 @@
         "y": 469
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-spine-of-the-world",
@@ -3224,8 +3093,7 @@
         "y": 2159
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-storm-horns",
@@ -3238,8 +3106,7 @@
         "y": 899
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-tortured-land",
@@ -3252,8 +3119,7 @@
         "y": 1639
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-trollclaws",
@@ -3266,8 +3132,7 @@
         "y": 1069
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-vilhon-reach",
@@ -3280,8 +3145,7 @@
         "y": 89
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-the-whale-bones",
@@ -3294,8 +3158,7 @@
         "y": 1489
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-thornhold",
@@ -3308,8 +3171,7 @@
         "y": 1596
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-thunder-peaks",
@@ -3322,8 +3184,7 @@
         "y": 859
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-trackless-sea",
@@ -3336,8 +3197,7 @@
         "y": 1649
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-trade-way",
@@ -3350,8 +3210,7 @@
         "y": 1229
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-triboar",
@@ -3364,8 +3223,7 @@
         "y": 1814
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-triel",
@@ -3378,8 +3236,7 @@
         "y": 899
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-trielta-hills",
@@ -3392,8 +3249,7 @@
         "y": 989
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-trisk",
@@ -3406,8 +3262,7 @@
         "y": 1909
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-troll-mountains",
@@ -3420,8 +3275,7 @@
         "y": 514
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-trollbark-forest",
@@ -3434,8 +3288,7 @@
         "y": 1201
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-trollclaw-ford",
@@ -3448,8 +3301,7 @@
         "y": 1039
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-trollclaw-range",
@@ -3462,8 +3314,7 @@
         "y": 869
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-tuern",
@@ -3476,8 +3327,7 @@
         "y": 2134
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-turmish",
@@ -3490,8 +3340,7 @@
         "y": 334
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-turnback-mountains",
@@ -3504,8 +3353,7 @@
         "y": 1759
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-ulf-of-thuger",
@@ -3518,8 +3366,7 @@
         "y": 1891
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-unicorn-run",
@@ -3532,8 +3379,7 @@
         "y": 1639
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-utherall",
@@ -3546,8 +3392,7 @@
         "y": 1869
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-uttersea",
@@ -3560,8 +3405,7 @@
         "y": 2164
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-vercy-wood",
@@ -3574,8 +3418,7 @@
         "y": 1524
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-vilkstead",
@@ -3588,8 +3431,7 @@
         "y": 1874
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-warlocks-crypt",
@@ -3602,8 +3444,7 @@
         "y": 1139
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-waterdeep",
@@ -3629,8 +3470,7 @@
         "y": 1465
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-westgate",
@@ -3643,8 +3483,7 @@
         "y": 679
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-white-peaks",
@@ -3657,8 +3496,7 @@
         "y": 1549
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-winding-water",
@@ -3671,8 +3509,7 @@
         "y": 1069
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-wood-of-sharp-teeth",
@@ -3685,8 +3522,7 @@
         "y": 739
       },
       "searchExtent": null,
-      "recommendedZoom": 0.5,
-      "entityId": null
+      "recommendedZoom": 0.5
     },
     {
       "id": "geo-yartar",
@@ -3699,8 +3535,7 @@
         "y": 1809
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-yhaunn",
@@ -3713,8 +3548,7 @@
         "y": 869
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     },
     {
       "id": "geo-zhentil-keep",
@@ -3727,12 +3561,10 @@
         "y": 1314
       },
       "searchExtent": null,
-      "recommendedZoom": 0.75,
-      "entityId": null
+      "recommendedZoom": 0.75
     }
   ],
-  "characterLocationEvents": [],
   "generatedAt": "2026-08-27T13:17:50.708Z",
-  "checksum": "sha256:a3225894bbc5a15102debbfe38eb19cd75b8af9fba9681055f0c993ad7763ce6",
-  "sourceRevision": "sha256:a3225894bbc5a15102debbfe38eb19cd75b8af9fba9681055f0c993ad7763ce6"
+  "sourceRevision": "sha256:e82455416df47ab4a4eb4db2185b2e58515501a1010f4b47ebd588966c3b71b4",
+  "checksum": "sha256:e82455416df47ab4a4eb4db2185b2e58515501a1010f4b47ebd588966c3b71b4"
 }
