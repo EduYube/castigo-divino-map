@@ -21,6 +21,28 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Refine campaign E2E locators
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/e2e/campaign-switcher.spec.ts')
+          text = path.read_text()
+          text = text.replace("page.getByLabel('Campaña')", "page.getByLabel('Campaña', { exact: true })")
+          replacements = {
+            "getByLabel('Nombre o apodo')": "getByLabel('Tu nombre o apodo')",
+            "getByLabel('Nombre propuesto del pin')": "getByLabel('Nombre propuesto')",
+            "getByLabel('Tipo de pin')": "getByLabel('Tipo', { exact: true })",
+            "getByRole('button', { name: 'Usar el centro visible' })": "getByRole('button', { name: 'Usar el centro del mapa' })",
+            "getByLabel('Motivo de la solicitud')": "getByLabel('Motivo', { exact: true })",
+            "getByRole('button', { name: 'Enviar solicitud para revisión' })": "getByRole('button', { name: 'Enviar solicitud' })",
+            "page.locator('[data-public-pin-request-status]')": "page.getByText('Solicitud enviada. Gracias; la revisaremos antes de publicarla.')",
+          }
+          for old, new in replacements.items():
+            if old not in text:
+              raise SystemExit(f'locator target not found: {old}')
+            text = text.replace(old, new)
+          path.write_text(text)
+          PY
       - name: Format campaign E2E
         run: npx prettier --write tests/e2e/campaign-switcher.spec.ts
       - name: Install Chromium
@@ -29,15 +51,11 @@ jobs:
         env:
           CI: '1'
         run: npx playwright test tests/e2e/campaign-switcher.spec.ts --project=chromium --reporter=line
-      - name: Commit validated E2E formatting
+      - name: Commit validated E2E
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add tests/e2e/campaign-switcher.spec.ts
-          if git diff --cached --quiet; then
-            echo "No formatting changes."
-            exit 0
-          fi
-          git commit -m "MAP-055 format campaign E2E coverage"
+          git commit -m "MAP-055 validate A-B campaign E2E coverage"
           git push origin HEAD:agent/map-055-public-campaign-runtime
