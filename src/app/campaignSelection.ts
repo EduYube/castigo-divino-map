@@ -1,4 +1,5 @@
 import { INITIAL_PUBLIC_CAMPAIGN_ID } from '../data-access/publicCatalogQueryContract.js';
+import '../styles/campaign-switcher.css';
 
 export const INITIAL_PUBLIC_CAMPAIGN_SLUG = 'castigo-divino';
 
