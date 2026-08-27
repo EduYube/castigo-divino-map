@@ -3,6 +3,7 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
+const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -152,7 +153,18 @@ async function configureBackend(page: Page, available = true): Promise<void> {
 
     const match = /\/rest\/v1\/([^?]+)/.exec(route.request().url());
     const table = match?.[1] ?? '';
-    const rows = PUBLIC_ROWS[table] ?? [];
+    const rows =
+      table === 'campaigns'
+        ? [
+            {
+              id: CAMPAIGN_A_ID,
+              slug: 'castigo-divino',
+              name: 'Castigo Divino',
+              status: 'active',
+              display_order: 0,
+            },
+          ]
+        : (PUBLIC_ROWS[table] ?? []);
     const contentRange = rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
 
     await route.fulfill({
@@ -213,7 +225,10 @@ test('renders compact location data and exposes a safe full-details link', async
   await expect(fullAction).toBeVisible();
   await expect(fullAction).toHaveAttribute('target', '_blank');
   await expect(fullAction).toHaveAttribute('rel', /noopener/);
-  await expect(fullAction).toHaveAttribute('href', /\?entity=puerto-de-demostracion$/);
+  await expect(fullAction).toHaveAttribute(
+    'href',
+    /\?entity=puerto-de-demostracion&campaign=castigo-divino$/,
+  );
   await expect(panel).toContainText(
     'Se abrirá en una pestaña nueva para conservar el estado actual del mapa.',
   );
@@ -243,7 +258,7 @@ test('opens a character card and returns focus on close', async ({ page }) => {
   await expect(important).toHaveCount(0);
   await expect(
     panel.getByRole('link', { name: 'Abrir ficha completa de Scout en una pestaña nueva' }),
-  ).toHaveAttribute('href', /\?entity=scout$/);
+  ).toHaveAttribute('href', /\?entity=scout&campaign=castigo-divino$/);
 
   await panel.getByRole('button', { name: 'Cerrar la ficha de Scout' }).click();
   await expect(panel).toBeHidden();
@@ -280,7 +295,10 @@ test('falls back to a compact Beta 0.2 snapshot card offline with a safe full UR
   await expect(fullAction).toBeVisible();
   await expect(fullAction).toHaveAttribute('target', '_blank');
   await expect(fullAction).toHaveAttribute('rel', /noopener/);
-  await expect(fullAction).toHaveAttribute('href', /\?entity=puerto-de-demostracion$/);
+  await expect(fullAction).toHaveAttribute(
+    'href',
+    /\?entity=puerto-de-demostracion&campaign=castigo-divino$/,
+  );
 });
 
 test('stays usable at 320 px in forced colors and reduced motion', async ({ page }) => {

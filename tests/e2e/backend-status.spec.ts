@@ -139,7 +139,6 @@ test('falls back and recovers without changing search, filters, selection or URL
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   const category = page.getByRole('checkbox', { name: /Lugar destacado/ });
   const tag = page.getByRole('checkbox', { name: /Paso de montaña/ });
-  const originalUrl = page.url();
 
   await expectConnected(status, backend);
   await expect(status).toContainText('Servicio de datos conectado');
@@ -148,6 +147,8 @@ test('falls back and recovers without changing search, filters, selection or URL
   await expect(searchbox).toHaveValue('paso');
   await expect(category).toBeChecked();
   await expect(tag).toBeChecked();
+  const originalUrl = page.url();
+  expect(new URL(originalUrl).searchParams.get('campaign')).toBe('castigo-divino');
 
   backend.setMode('failure');
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
