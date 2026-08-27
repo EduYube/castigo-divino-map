@@ -5,6 +5,7 @@ import {
   type AuthorizedMasterCatalog,
   type MasterCatalogRepository,
 } from '../data-access/masterCatalog';
+import { INITIAL_PUBLIC_CAMPAIGN_ID } from '../data-access/publicCatalogQueryContract.js';
 
 export type MasterModePhase = 'unavailable' | 'off' | 'loading' | 'on' | 'error';
 
@@ -34,6 +35,7 @@ export class MasterModeController {
   readonly #unsubscribeAuth: () => void;
   readonly #unsubscribeMapEntities: () => void;
   #state = INITIAL_STATE;
+  #campaignId: string;
   #operationId = 0;
   #abortController: AbortController | null = null;
   #destroyed = false;
@@ -42,10 +44,12 @@ export class MasterModeController {
     repository: MasterCatalogRepository,
     authController: AdminAuthController,
     mapEntityController: AdminMapEntityController,
+    initialCampaignId: string = INITIAL_PUBLIC_CAMPAIGN_ID,
   ) {
     this.#repository = repository;
     this.#authController = authController;
     this.#mapEntityController = mapEntityController;
+    this.#campaignId = initialCampaignId;
     this.#unsubscribeAuth = authController.subscribe(() => this.#synchronizeAvailability());
     this.#unsubscribeMapEntities = mapEntityController.subscribe(() =>
       this.#synchronizeAvailability(),
@@ -58,25 +62,33 @@ export class MasterModeController {
 
   subscribe(listener: MasterModeStateListener): () => void {
     this.#listeners.add(listener);
-    // Defer only the initial replay. mountPublicExperience restores/canonicalizes the
-    // incoming public URL synchronously after wiring Modo Máster; an eager replay here
-    // used to force an empty-state catalog render that replaced that URL first.
     queueMicrotask(() => {
       if (!this.#destroyed && this.#listeners.has(listener)) listener(this.#state);
     });
     return () => this.#listeners.delete(listener);
   }
 
+  setCampaign(campaignId: string): void {
+    if (this.#destroyed || campaignId === this.#campaignId) return;
+    this.#campaignId = campaignId;
+
+    if (this.#state.enabled) {
+      // reload() synchronously aborts and publishes catalog:null before its first await,
+      // so the previous campaign's private catalog is purged before public adoption.
+      void this.reload();
+    }
+  }
+
   async setEnabled(enabled: boolean): Promise<void> {
     if (this.#destroyed) return;
     if (!enabled) {
-      this.#purge(this.#isAvailable() ? 'off' : 'unavailable', null);
+      this.#purge(this.#isAuthorized() ? 'off' : 'unavailable', null);
       return;
     }
-    if (!this.#isAvailable()) {
+    if (!this.#isAuthorized()) {
       this.#purge(
         'unavailable',
-        'Modo Máster requiere una sesión administrativa autorizada y Supabase conectado.',
+        'Modo Máster requiere una sesión administrativa autorizada.',
       );
       return;
     }
@@ -84,13 +96,26 @@ export class MasterModeController {
   }
 
   async reload(): Promise<void> {
-    if (this.#destroyed || !this.#isAvailable()) {
+    if (this.#destroyed || !this.#isAuthorized()) {
       this.#purge('unavailable', null);
       return;
     }
 
     this.#cancelActive();
     const operationId = ++this.#operationId;
+
+    if (!this.#isBackendConnected()) {
+      this.#publish({
+        available: false,
+        enabled: true,
+        phase: 'error',
+        catalog: null,
+        message:
+          'Modo Máster sigue activo, pero Supabase no está disponible. El contenido privado se cargará al recuperar la conexión.',
+      });
+      return;
+    }
+
     const controller = new AbortController();
     this.#abortController = controller;
     this.#publish({
@@ -102,8 +127,11 @@ export class MasterModeController {
     });
 
     try {
-      const catalog = await this.#repository.load({ signal: controller.signal });
-      if (!this.#isCurrent(operationId) || !this.#isAvailable()) return;
+      const catalog = await this.#repository.load({
+        signal: controller.signal,
+        campaignId: this.#campaignId,
+      });
+      if (!this.#isCurrent(operationId) || !this.#isAuthorized()) return;
       this.#publish({
         available: true,
         enabled: true,
@@ -111,8 +139,8 @@ export class MasterModeController {
         catalog,
         message:
           catalog.entities.length === 0
-            ? 'Modo Máster activo. No hay entidades Máster publicadas.'
-            : `Modo Máster activo. ${catalog.entities.length} entidades privadas cargadas solo en memoria.`,
+            ? 'Modo Máster activo. No hay entidades Máster publicadas en esta campaña.'
+            : `Modo Máster activo. ${catalog.entities.length} entidades privadas de esta campaña cargadas solo en memoria.`,
       });
     } catch (error) {
       if (!this.#isCurrent(operationId) || controller.signal.aborted) return;
@@ -137,11 +165,11 @@ export class MasterModeController {
         return;
       }
       this.#publish({
-        available: true,
-        enabled: false,
+        available: false,
+        enabled: true,
         phase: 'error',
         catalog: null,
-        message: normalized.message,
+        message: `${normalized.message} Modo Máster permanece activo y reintentará al recuperar el backend.`,
       });
     }
   }
@@ -156,21 +184,58 @@ export class MasterModeController {
     this.#state = INITIAL_STATE;
   }
 
-  #isAvailable(): boolean {
-    const authAuthorized = this.#authController.getState().phase === 'authorized';
-    const entityState = this.#mapEntityController.getState();
-    return authAuthorized && entityState.authorized && entityState.backendConnected;
+  #isAuthorized(): boolean {
+    return (
+      this.#authController.getState().phase === 'authorized' &&
+      this.#mapEntityController.getState().authorized
+    );
+  }
+
+  #isBackendConnected(): boolean {
+    return this.#mapEntityController.getState().backendConnected;
   }
 
   #synchronizeAvailability(): void {
     if (this.#destroyed) return;
-    const available = this.#isAvailable();
-    if (!available) {
+
+    if (!this.#isAuthorized()) {
       this.#purge('unavailable', null);
       return;
     }
-    if (!this.#state.available) {
-      // A restored admin session never restores Modo Máster. It always starts OFF.
+
+    if (!this.#isBackendConnected()) {
+      this.#cancelActive();
+      this.#operationId += 1;
+      if (this.#state.enabled) {
+        this.#publish({
+          available: false,
+          enabled: true,
+          phase: 'error',
+          catalog: null,
+          message:
+            'Modo Máster sigue activo, pero Supabase no está disponible. El contenido privado se cargará al recuperar la conexión.',
+        });
+      } else if (this.#state.phase !== 'unavailable' || this.#state.available) {
+        this.#publish({
+          available: false,
+          enabled: false,
+          phase: 'unavailable',
+          catalog: null,
+          message: null,
+        });
+      }
+      return;
+    }
+
+    if (this.#state.enabled) {
+      if (this.#state.phase !== 'loading' && this.#state.catalog === null) {
+        void this.reload();
+      }
+      return;
+    }
+
+    if (!this.#state.available || this.#state.phase !== 'off') {
+      // Restoring an authorized session starts OFF; a campaign switch does not alter it.
       this.#publish({
         available: true,
         enabled: false,
