@@ -2,17 +2,22 @@ import { readFile } from 'node:fs/promises';
 
 import { describe, expect, test } from 'vitest';
 
+import type { PublicCatalogSnapshotV2 } from '../../data/beta02-model';
+import type { PublicCatalogSnapshotV3 } from '../../data/beta03-model';
 import { createSha256Checksum } from '../../data-access/publicCatalog';
+import { INITIAL_PUBLIC_CAMPAIGN_ID } from '../../data-access/publicCatalogQueryContract.js';
+import { parsePublicCatalogSnapshotV2 } from '../supabase/publicCatalogRepository';
+import {
+  parsePublicCatalogSnapshotV3,
+  projectPublicCatalogSnapshotV3ToV2,
+} from './multicampaignSnapshotCodec';
 import {
   BundledPublicCatalogRepository,
-  parsePublicCatalogSnapshotV1,
   PUBLIC_SNAPSHOT_MAX_AGE_MS,
+  parsePublicCatalogSnapshotV1,
 } from './publicCatalogSnapshot';
-import { parsePublicCatalogSnapshotV3 } from './multicampaignSnapshotCodec';
-import { parsePublicCatalogSnapshotV2 } from '../supabase/publicCatalogCodec';
 
 const SNAPSHOT_URL = new URL('../../../public/data/public-catalog.snapshot.json', import.meta.url);
-const INITIAL_CAMPAIGN_ID = '00000000-0000-4000-8000-000000000053';
 
 async function readSnapshot(): Promise<Record<string, unknown>> {
   return JSON.parse(await readFile(SNAPSHOT_URL, 'utf8')) as Record<string, unknown>;
@@ -20,46 +25,43 @@ async function readSnapshot(): Promise<Record<string, unknown>> {
 
 async function upgradeCommittedSnapshotToV3(
   snapshot: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
-  const legacyGeographicNames = snapshot.geographicNames as Record<string, unknown>[];
-  const geographicNames = legacyGeographicNames.map((name) => {
-    const globalName = { ...name };
-    delete globalName.entityId;
-    return globalName;
-  });
-  const geographicEntityLinks = legacyGeographicNames.flatMap((name) =>
-    typeof name.entityId === 'string'
-      ? [
+): Promise<PublicCatalogSnapshotV3> {
+  const catalog = snapshot as unknown as PublicCatalogSnapshotV2;
+  const campaign = {
+    id: INITIAL_PUBLIC_CAMPAIGN_ID,
+    slug: 'castigo-divino',
+    name: 'Castigo Divino',
+    status: 'active' as const,
+    displayOrder: 0,
+  };
+  const geographicEntityLinks = catalog.geographicNames.flatMap((name) =>
+    name.entityId === null
+      ? []
+      : [
           {
-            campaignId: INITIAL_CAMPAIGN_ID,
+            campaignId: campaign.id,
             geographicNameId: name.id,
             entityId: name.entityId,
           },
-        ]
-      : [],
+        ],
+  );
+  const geographicNames = catalog.geographicNames.map(
+    ({ entityId: _entityId, ...geographicName }) => geographicName,
   );
   const content = {
-    schemaVersion: 3,
-    campaigns: [
-      {
-        id: INITIAL_CAMPAIGN_ID,
-        slug: 'castigo-divino',
-        name: 'Castigo Divino',
-        status: 'active',
-        displayOrder: 0,
-      },
-    ],
+    schemaVersion: 3 as const,
+    campaigns: [campaign],
     campaignCatalogs: [
       {
-        campaignId: INITIAL_CAMPAIGN_ID,
-        categories: snapshot.categories,
-        tags: snapshot.tags,
-        players: snapshot.players,
-        entities: snapshot.entities,
-        dispositions: snapshot.dispositions,
-        characterLocationRelations: snapshot.characterLocationRelations,
-        notes: snapshot.notes,
-        characterLocationEvents: snapshot.characterLocationEvents,
+        campaignId: campaign.id,
+        categories: catalog.categories,
+        tags: catalog.tags,
+        players: catalog.players,
+        entities: catalog.entities,
+        dispositions: catalog.dispositions,
+        characterLocationRelations: catalog.characterLocationRelations,
+        notes: catalog.notes,
+        characterLocationEvents: catalog.characterLocationEvents,
         geographicEntityLinks,
       },
     ],
@@ -69,7 +71,7 @@ async function upgradeCommittedSnapshotToV3(
 
   return {
     ...content,
-    generatedAt: snapshot.generatedAt,
+    generatedAt: snapshot.generatedAt as string,
     sourceRevision: checksum,
     checksum,
   };
@@ -87,7 +89,7 @@ describe('public catalog snapshot', () => {
     expect(result.metadata.checksum).toBe(snapshot.checksum);
   });
 
-  test('loads an equivalent multicampaign v3 snapshot through the degraded-mode repository', async () => {
+  test('loads a native multicampaign v3 snapshot through the degraded-mode repository', async () => {
     const legacySnapshot = await readSnapshot();
     const snapshotV3 = await upgradeCommittedSnapshotToV3(legacySnapshot);
     const generatedAt = Date.parse(String(snapshotV3.generatedAt));
@@ -107,14 +109,20 @@ describe('public catalog snapshot', () => {
     expect(parsed.metadata.schemaVersion).toBe(3);
     expect(loaded.metadata.schemaVersion).toBe(3);
     expect(loaded.source).toBe('bundled-snapshot');
-    expect(loaded.data.contract).toBe('beta02');
+    expect(loaded.data.contract).toBe('beta03');
 
-    if (loaded.data.contract !== 'beta02') {
-      throw new Error('Expected the v3 snapshot to project as beta02.');
+    if (loaded.data.contract !== 'beta03') {
+      throw new Error('Expected the v3 snapshot to remain beta03.');
     }
 
-    expect(loaded.data.catalog.entities).toEqual(legacySnapshot.entities);
-    expect(loaded.data.catalog.geographicNames).toEqual(legacySnapshot.geographicNames);
+    expect(loaded.data.catalog.campaigns).toEqual(snapshotV3.campaigns);
+    const projected = await projectPublicCatalogSnapshotV3ToV2(
+      loaded.data.catalog,
+      INITIAL_PUBLIC_CAMPAIGN_ID,
+      () => generatedAt,
+    );
+    expect(projected.entities).toEqual(legacySnapshot.entities);
+    expect(projected.geographicNames).toEqual(legacySnapshot.geographicNames);
   });
 
   test('rejects a Beta 0.2 snapshot whose public content no longer matches its checksum', async () => {
@@ -140,34 +148,30 @@ describe('public catalog snapshot', () => {
         }),
     });
 
-    const result = await repository.load({ signal: new AbortController().signal });
+    const loaded = await repository.load({ signal: new AbortController().signal });
 
-    expect(result.source).toBe('bundled-snapshot');
-    expect(result.data.contract).toBe('beta02');
-    expect(result.metadata.stale).toBe(true);
+    expect(loaded.source).toBe('bundled-snapshot');
+    expect(loaded.data.contract).toBe('beta02');
+    expect(loaded.metadata.stale).toBe(true);
   });
 
   test('keeps the Beta 0.1 parser available for a forward rollback deployment', async () => {
-    const catalog = { categories: [], tags: [], places: [], notes: [] };
-    const generatedAt = '2026-08-06T00:00:00.000Z';
-    const sourceRevision = 'sha256:legacy';
-    const checksum = await createSha256Checksum({
+    const snapshot = await readSnapshot();
+    const catalog = {
+      categories: [],
+      tags: [],
+      places: [],
+      notes: [],
+    };
+    const checksum = await createSha256Checksum(catalog);
+    const parsed = await parsePublicCatalogSnapshotV1({
       schemaVersion: 1,
-      contract: 'beta01',
-      generatedAt,
-      sourceRevision,
-      catalog,
-    });
-
-    const result = await parsePublicCatalogSnapshotV1({
-      schemaVersion: 1,
-      contract: 'beta01',
-      generatedAt,
-      sourceRevision,
+      generatedAt: snapshot.generatedAt,
+      sourceRevision: checksum,
       checksum,
       catalog,
     });
 
-    expect(result.data.contract).toBe('beta01');
+    expect(parsed.data.contract).toBe('beta01');
   });
 });
