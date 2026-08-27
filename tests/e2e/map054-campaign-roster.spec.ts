@@ -177,10 +177,20 @@ async function configureBackend(page: Page, options: BackendOptions = {}): Promi
         await new Promise((resolve) => setTimeout(resolve, options.campaignBPlayerDelayMs));
       }
       const players = rosters.get(campaignId) ?? [];
+      const publicPlayerSelect = 'id,slug,display_name,name_language';
+      const responsePlayers =
+        url.searchParams.get('select') === publicPlayerSelect
+          ? players.map((player) => ({
+              id: player.id,
+              slug: player.slug,
+              display_name: player.display_name,
+              name_language: player.name_language,
+            }))
+          : players;
       await route.fulfill({
         status: 200,
-        headers: collectionHeaders(players.length),
-        body: JSON.stringify(players),
+        headers: collectionHeaders(responsePlayers.length),
+        body: JSON.stringify(responsePlayers),
       });
       return;
     }
