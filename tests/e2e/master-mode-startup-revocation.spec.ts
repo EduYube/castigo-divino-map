@@ -168,7 +168,7 @@ async function configureStartupRaceBackend(page: Page): Promise<StartupRaceBacke
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v3')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v4')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -177,7 +177,7 @@ async function configureStartupRaceBackend(page: Page): Promise<StartupRaceBacke
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v3')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v4')) {
       const body = request.postDataJSON() as Record<string, unknown>;
       entity.audience = body.p_audience === 'master' ? 'master' : 'public';
       entity.publication_status = body.p_publication_status === 'published' ? 'published' : 'draft';
