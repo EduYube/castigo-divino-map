@@ -1,0 +1,61 @@
+.campaign-switcher {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 20rem);
+  align-items: end;
+  gap: 0.5rem 1rem;
+  padding: clamp(0.85rem, 2vw, 1.25rem) clamp(1rem, 2.5vw, 2rem);
+  background: rgba(23, 31, 26, 0.94);
+  border-bottom: 1px solid var(--line);
+}
+
+.campaign-switcher__label {
+  align-self: center;
+  color: var(--ink);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.campaign-switcher__select {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--touch-target, 2.75rem);
+  padding: 0.65rem 2.5rem 0.65rem 0.8rem;
+  color: var(--ink);
+  font: inherit;
+  background: #18211b;
+  border: 1px solid rgba(240, 213, 138, 0.42);
+  border-radius: 0.65rem;
+}
+
+.campaign-switcher__select:hover {
+  border-color: var(--accent-strong);
+}
+
+.campaign-switcher__status {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: max(0.82rem, 13px);
+  line-height: 1.45;
+}
+
+@media (max-width: 48rem) {
+  .campaign-switcher {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    padding: clamp(0.8rem, 4vw, 1rem) clamp(0.85rem, 4vw, 1.1rem);
+  }
+}
+
+@media (forced-colors: active) {
+  .campaign-switcher {
+    background: Canvas;
+    border-color: CanvasText;
+  }
+
+  .campaign-switcher__select {
+    color: CanvasText;
+    background: Canvas;
+    border: 1px solid CanvasText;
+  }
+}
