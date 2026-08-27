@@ -95,10 +95,11 @@ create index players_campaign_roster_idx
 grant insert (display_order, accent_color) on table public.players to authenticated;
 grant update (display_order, accent_color) on table public.players to authenticated;
 
--- A clean Supabase reset applies migrations before seed.sql and therefore has
--- no campaign content to migrate. Do not infer "clean" merely from the absence
--- of the three expected names: an upgrade with other historic content but a
--- missing/renamed roster source must stop rather than invent identities.
+-- A clean Supabase reset already contains the two MAP-028 demo entities before
+-- seed.sql runs. Treat only that migration-owned baseline as clean. Any player,
+-- public request or additional map entity is independent evidence that this is
+-- an upgrade with historic campaign content and therefore must fail closed if
+-- the complete Skade/Ura/Veyra source cannot be identified.
 do $$
 declare
   initial_campaign constant uuid := '00000000-0000-4000-8000-000000000053'::uuid;
@@ -119,6 +120,7 @@ begin
     exists (
       select 1 from public.map_entities entity
       where entity.campaign_id = initial_campaign
+        and entity.id not in ('place-demo-harbor', 'place-demo-pass')
     )
     or exists (
       select 1 from public.players player
@@ -131,7 +133,7 @@ begin
   into historic_campaign_has_content;
 
   if historic_source_count = 0 and not historic_campaign_has_content then
-    raise notice 'MAP-054 clean install: no pre-migration campaign content exists, historic roster migration deferred until seed data';
+    raise notice 'MAP-054 clean install: only the migration-owned MAP-028 baseline exists, historic roster migration deferred until seed data';
     return;
   end if;
 
