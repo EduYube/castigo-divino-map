@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 
 import { expect, test, type Page, type Route } from '@playwright/test';
 
-import { PUBLIC_CATALOG_TABLE_QUERIES } from '../../src/data-access/publicCatalogQueryContract.js';
+import {
+  INITIAL_PUBLIC_CAMPAIGN_ID,
+  PUBLIC_CAMPAIGNS_QUERY,
+  PUBLIC_CATALOG_TABLE_QUERIES,
+} from '../../src/data-access/publicCatalogQueryContract.js';
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
@@ -120,7 +124,18 @@ async function configureBackend(page: Page, timeoutMs = 75): Promise<TestBackend
 
     const match = /\/rest\/v1\/([^?]+)/.exec(route.request().url());
     const table = match?.[1] ?? '';
-    let rows = projectFixtureRows(table);
+    let rows =
+      table === PUBLIC_CAMPAIGNS_QUERY.name
+        ? [
+            {
+              id: INITIAL_PUBLIC_CAMPAIGN_ID,
+              slug: 'castigo-divino',
+              name: 'Castigo Divino',
+              status: 'active',
+              display_order: 0,
+            },
+          ]
+        : projectFixtureRows(table);
 
     if (table === 'map_entities' && entityNameOverride) {
       rows = rows.map((row, index) => (index === 0 ? { ...row, name: entityNameOverride } : row));
@@ -173,11 +188,10 @@ test('performs one initial public request per contract table and does not poll w
   const backend = await configureBackend(page, 1000);
   await openConnected(page);
 
-  await expect
-    .poll(() => backend.requestCount())
-    .toBe(Object.keys(PUBLIC_CATALOG_TABLE_QUERIES).length);
+  const initialRequestCount = Object.keys(PUBLIC_CATALOG_TABLE_QUERIES).length + 1;
+  await expect.poll(() => backend.requestCount()).toBe(initialRequestCount);
   const settledCount = backend.requestCount();
-  expect(settledCount).toBe(Object.keys(PUBLIC_CATALOG_TABLE_QUERIES).length);
+  expect(settledCount).toBe(initialRequestCount);
 
   await page.waitForTimeout(300);
   expect(backend.requestCount()).toBe(settledCount);
