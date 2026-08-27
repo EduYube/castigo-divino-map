@@ -76,7 +76,8 @@ async function campaignScopedFetch(
       },
     );
   }
-  const campaignId = adminCampaignContext.getCampaignId();
+  const campaignId =
+    adminCampaignContext.getTransition()?.targetCampaignId ?? adminCampaignContext.getCampaignId();
   const tableScoped = scopeAdminTableRequest(url, init, campaignId);
   const rpcScoped = scopeAdminRpcRequest(tableScoped.url, tableScoped.init, campaignId);
   return originalFetch(rpcScoped.url, rpcScoped.init);
