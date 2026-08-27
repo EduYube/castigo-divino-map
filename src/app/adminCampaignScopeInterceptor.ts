@@ -25,6 +25,12 @@ function requestHeaders(input: RequestInfo | URL, init?: RequestInit): Headers {
   return headers;
 }
 
+function requestMethod(input: RequestInfo | URL, init?: RequestInit): string {
+  if (init?.method) return init.method.toUpperCase();
+  if (input instanceof Request) return input.method.toUpperCase();
+  return 'GET';
+}
+
 function isCurrentAdminRequest(input: RequestInfo | URL, init?: RequestInit): boolean {
   const token = storedAdminAccessToken();
   if (!token) return false;
@@ -41,6 +47,15 @@ function toUrl(input: RequestInfo | URL): URL | null {
   }
 }
 
+export function shouldBlockAdminMutationDuringCampaignTransition(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): boolean {
+  if (!adminCampaignContext.isTransitioning()) return false;
+  const method = requestMethod(input, init);
+  return method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+}
+
 async function campaignScopedFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -49,6 +64,18 @@ async function campaignScopedFetch(
 
   const url = toUrl(input);
   if (!url) return originalFetch(input, init);
+  if (shouldBlockAdminMutationDuringCampaignTransition(input, init)) {
+    return new Response(
+      JSON.stringify({
+        code: 'campaign_transition',
+        message: 'Administrative mutations are blocked while the campaign is changing.',
+      }),
+      {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+  }
   const campaignId = adminCampaignContext.getCampaignId();
   const tableScoped = scopeAdminTableRequest(url, init, campaignId);
   const rpcScoped = scopeAdminRpcRequest(tableScoped.url, tableScoped.init, campaignId);
