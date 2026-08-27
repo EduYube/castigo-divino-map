@@ -144,9 +144,10 @@ export function bootstrapAdminCampaignRosterRuntime(
     onAuthorizationRejected: rejectAuthorization,
   });
   const ui = mountAdminCampaignRoster(root, controller, authController);
-  root
-    .querySelector<HTMLInputElement>('#admin-campaign-name')
-    ?.setAttribute('aria-label', 'Nombre de campaña');
+  const campaignName = root.querySelector<HTMLInputElement>('#admin-campaign-name');
+  campaignName?.setAttribute('aria-label', 'Nombre de campaña');
+  const campaignNameLabel = root.querySelector<HTMLLabelElement>('label[for="admin-campaign-name"]');
+  if (campaignNameLabel) campaignNameLabel.textContent = 'Nombre de campaña';
   const ownSection = root.querySelector<HTMLElement>('.admin-campaign-roster');
   const unsubscribeTransition = adminCampaignContext.subscribeTransition((transition) => {
     if (!transition) return;
