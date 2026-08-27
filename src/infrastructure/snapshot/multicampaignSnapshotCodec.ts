@@ -13,8 +13,7 @@ import {
 } from '../../data-access/publicCatalog';
 import { parsePublicCatalogSnapshotV2 } from '../supabase/publicCatalogCodec';
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CHECKSUM_PATTERN = /^sha256:[0-9a-f]{64}$/;
 
 function invalid(message: string, cause?: unknown): never {
@@ -131,7 +130,10 @@ function parseCampaignCatalog(value: unknown, index: number): PublicCampaignCata
   const campaignId = string(item.campaignId, `${path}.campaignId`);
   return {
     campaignId,
-    categories: array(item.categories, `${path}.categories`) as PublicCampaignCatalogV3['categories'],
+    categories: array(
+      item.categories,
+      `${path}.categories`,
+    ) as PublicCampaignCatalogV3['categories'],
     tags: array(item.tags, `${path}.tags`) as PublicCampaignCatalogV3['tags'],
     players: array(item.players, `${path}.players`) as PublicCampaignCatalogV3['players'],
     entities: array(item.entities, `${path}.entities`) as PublicCampaignCatalogV3['entities'],
@@ -217,7 +219,9 @@ function validateLinks(
   );
   for (const link of catalog.geographicEntityLinks) {
     if (!geographicIds.has(link.geographicNameId as never)) {
-      invalid(`El vínculo geográfico “${link.geographicNameId}” apunta a un nombre global ausente.`);
+      invalid(
+        `El vínculo geográfico “${link.geographicNameId}” apunta a un nombre global ausente.`,
+      );
     }
     const entity = entitiesById.get(link.entityId as never);
     if (!entity || entity.entityType !== 'location') {
@@ -232,7 +236,9 @@ export function projectPublicCatalogSnapshotV3ToV2(
   snapshot: PublicCatalogSnapshotV3,
   campaignId: string,
 ): PublicCatalogSnapshotV2 | null {
-  const catalog = snapshot.campaignCatalogs.find((candidate) => candidate.campaignId === campaignId);
+  const catalog = snapshot.campaignCatalogs.find(
+    (candidate) => candidate.campaignId === campaignId,
+  );
   if (!catalog) return null;
   return {
     ...projectionContent(catalog, snapshot.geographicNames),
@@ -268,7 +274,8 @@ export async function parsePublicCatalogSnapshotV3(
     );
   }
   const generatedAt = string(snapshotRecord.generatedAt, 'snapshot.generatedAt');
-  if (!Number.isFinite(Date.parse(generatedAt))) invalid('snapshot.generatedAt no contiene una fecha válida.');
+  if (!Number.isFinite(Date.parse(generatedAt)))
+    invalid('snapshot.generatedAt no contiene una fecha válida.');
   const sourceRevision = string(snapshotRecord.sourceRevision, 'snapshot.sourceRevision');
   const checksum = string(snapshotRecord.checksum, 'snapshot.checksum');
   if (!CHECKSUM_PATTERN.test(sourceRevision) || !CHECKSUM_PATTERN.test(checksum)) {
@@ -283,10 +290,22 @@ export async function parsePublicCatalogSnapshotV3(
       record(name, `snapshot.geographicNames[${index}]`) as unknown as PublicGlobalGeographicNameV3,
   );
   if (campaigns.length === 0) invalid('El snapshot v3 debe contener al menos una campaña pública.');
-  unique(campaigns.map(({ id }) => id), 'campaigns.id');
-  unique(campaigns.map(({ slug }) => slug), 'campaigns.slug');
-  unique(campaignCatalogs.map(({ campaignId }) => campaignId), 'campaignCatalogs.campaignId');
-  unique(geographicNames.map(({ id }) => id), 'geographicNames.id');
+  unique(
+    campaigns.map(({ id }) => id),
+    'campaigns.id',
+  );
+  unique(
+    campaigns.map(({ slug }) => slug),
+    'campaigns.slug',
+  );
+  unique(
+    campaignCatalogs.map(({ campaignId }) => campaignId),
+    'campaignCatalogs.campaignId',
+  );
+  unique(
+    geographicNames.map(({ id }) => id),
+    'geographicNames.id',
+  );
   const campaignIds = new Set(campaigns.map(({ id }) => id));
   if (
     campaignCatalogs.length !== campaigns.length ||

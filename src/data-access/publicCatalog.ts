@@ -5,11 +5,7 @@ import type { CampaignCatalog } from '../data/model';
 export type BackendState = 'connected' | 'degraded' | 'offline';
 export type PublicCatalogContract = 'beta01' | 'beta02' | 'beta03';
 export type PublicDataSource =
-  | 'supabase'
-  | 'memory-cache'
-  | 'session-cache'
-  | 'bundled-snapshot'
-  | 'legacy-static';
+  'supabase' | 'memory-cache' | 'session-cache' | 'bundled-snapshot' | 'legacy-static';
 
 export type PublicDataErrorCode =
   | 'configuration-missing'

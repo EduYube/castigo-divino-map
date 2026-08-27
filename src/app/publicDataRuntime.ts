@@ -14,9 +14,7 @@ import {
   applyEntityRevocationsToBeta01,
   applyEntityRevocationsToBeta02,
 } from '../data/publicCatalogRevocations';
-import {
-  projectPublicCatalogSnapshotV3ToV2,
-} from '../infrastructure/snapshot/multicampaignSnapshotCodec';
+import { projectPublicCatalogSnapshotV3ToV2 } from '../infrastructure/snapshot/multicampaignSnapshotCodec';
 import { BundledPublicCatalogRepository } from '../infrastructure/snapshot/publicCatalogSnapshot';
 import { BrowserPublicCatalogSessionCache } from '../infrastructure/snapshot/sessionCatalogCache';
 import { SupabasePublicCatalogRepository } from '../infrastructure/supabase/publicCatalogRepository';
@@ -173,7 +171,9 @@ function toCatalogState(
 }
 
 function campaignsSignature(campaigns: readonly PublicCampaignV3[]): string {
-  return campaigns.map(({ id, slug, name, displayOrder }) => `${id}:${slug}:${name}:${displayOrder}`).join('|');
+  return campaigns
+    .map(({ id, slug, name, displayOrder }) => `${id}:${slug}:${name}:${displayOrder}`)
+    .join('|');
 }
 
 function isSameCatalogRevision(left: PublicCatalogState, right: PublicCatalogState): boolean {
@@ -258,7 +258,10 @@ function mountCampaignSelector(
 }
 
 function campaignSlugFromLocation(): string {
-  return new URL(window.location.href).searchParams.get('campaign')?.trim() || INITIAL_PUBLIC_CAMPAIGN_SLUG;
+  return (
+    new URL(window.location.href).searchParams.get('campaign')?.trim() ||
+    INITIAL_PUBLIC_CAMPAIGN_SLUG
+  );
 }
 
 function setCampaignInUrl(slug: string, mode: 'push' | 'replace'): void {

@@ -71,7 +71,10 @@ function findPlaceId(catalog: CampaignCatalog, value: string): PlaceId | null {
 }
 
 function findCategoryId(facets: UrlFacetCatalog, value: string): CategoryId | null {
-  return facets.categories.find((category) => category.slug === value || category.id === value)?.id ?? null;
+  return (
+    facets.categories.find((category) => category.slug === value || category.id === value)?.id ??
+    null
+  );
 }
 
 function getFirstValidPlaceId(catalog: CampaignCatalog, values: readonly string[]): PlaceId | null {
@@ -104,7 +107,8 @@ export function normalizePublicAppUrlState(
   const selectedTagIds = new Set(state.selectedTagIds);
   const validPlaceIds = new Set(catalog.places.map(({ id }) => id));
   return {
-    activePlaceId: state.activePlaceId && validPlaceIds.has(state.activePlaceId) ? state.activePlaceId : null,
+    activePlaceId:
+      state.activePlaceId && validPlaceIds.has(state.activePlaceId) ? state.activePlaceId : null,
     query: normalizeQuery(state.query),
     geographicNameId: normalizeGeographicNameId(state.geographicNameId),
     selectedCategoryIds: facets.categories
@@ -177,10 +181,17 @@ export function parsePublicAppUrlState(
   const state = normalizePublicAppUrlState(
     catalog,
     {
-      activePlaceId: getFirstValidPlaceId(catalog, source.searchParams.getAll(URL_PARAMETERS.activePlace)),
+      activePlaceId: getFirstValidPlaceId(
+        catalog,
+        source.searchParams.getAll(URL_PARAMETERS.activePlace),
+      ),
       query: getFirstNonEmptyValue(source.searchParams.getAll(URL_PARAMETERS.query)),
-      geographicNameId: getFirstGeographicNameId(source.searchParams.getAll(URL_PARAMETERS.geographicName)),
-      selectedCategoryIds: facets.categories.filter(({ id }) => categoryValues.has(id)).map(({ id }) => id),
+      geographicNameId: getFirstGeographicNameId(
+        source.searchParams.getAll(URL_PARAMETERS.geographicName),
+      ),
+      selectedCategoryIds: facets.categories
+        .filter(({ id }) => categoryValues.has(id))
+        .map(({ id }) => id),
       selectedTagIds: facets.tags.filter(({ id }) => tagValues.has(id)).map(({ id }) => id),
     },
     beta02Catalog,
@@ -202,8 +213,12 @@ export function arePublicAppUrlStatesEqual(
     normalizedLeft.query === normalizedRight.query &&
     normalizedLeft.geographicNameId === normalizedRight.geographicNameId &&
     normalizedLeft.selectedCategoryIds.length === normalizedRight.selectedCategoryIds.length &&
-    normalizedLeft.selectedCategoryIds.every((categoryId, index) => categoryId === normalizedRight.selectedCategoryIds[index]) &&
+    normalizedLeft.selectedCategoryIds.every(
+      (categoryId, index) => categoryId === normalizedRight.selectedCategoryIds[index],
+    ) &&
     normalizedLeft.selectedTagIds.length === normalizedRight.selectedTagIds.length &&
-    normalizedLeft.selectedTagIds.every((tagId, index) => tagId === normalizedRight.selectedTagIds[index])
+    normalizedLeft.selectedTagIds.every(
+      (tagId, index) => tagId === normalizedRight.selectedTagIds[index],
+    )
   );
 }

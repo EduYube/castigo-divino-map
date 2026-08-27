@@ -82,9 +82,13 @@ function expectString(value: unknown, path: string): string {
 
 function expectDisplayOrder(value: unknown, path: string): number {
   if (!Number.isSafeInteger(value) || (value as number) < 0) {
-    throw new PublicDataRepositoryError('invalid-response', `${path} debe ser un entero no negativo.`, {
-      source: 'supabase',
-    });
+    throw new PublicDataRepositoryError(
+      'invalid-response',
+      `${path} debe ser un entero no negativo.`,
+      {
+        source: 'supabase',
+      },
+    );
   }
   return value as number;
 }
@@ -152,7 +156,8 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
     const publishableKey = options.publishableKey.trim();
     const isLocalProject = LOCAL_PROJECT_URL_PATTERN.test(projectUrl);
     const validProjectUrl =
-      PROJECT_URL_PATTERN.test(projectUrl) || (options.allowLocalProject === true && isLocalProject);
+      PROJECT_URL_PATTERN.test(projectUrl) ||
+      (options.allowLocalProject === true && isLocalProject);
     const validPublishableKey = PUBLISHABLE_KEY_PATTERN.test(publishableKey);
     const validLocalAnonKey =
       options.allowLocalProject === true && isLocalProject && isLegacyAnonKey(publishableKey);
@@ -214,9 +219,13 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
       PublicCatalogTableQuery,
     ][];
     const responses = await Promise.all(
-      entries.map(async ([key, query]) => [key, await this.#loadTable(query, signal, campaign.id)] as const),
+      entries.map(
+        async ([key, query]) => [key, await this.#loadTable(query, signal, campaign.id)] as const,
+      ),
     );
-    const payloads = Object.fromEntries(responses) as unknown as PublicCatalogPayloadsWithGeographicLinks;
+    const payloads = Object.fromEntries(
+      responses,
+    ) as unknown as PublicCatalogPayloadsWithGeographicLinks;
     const geographicNames = projectCampaignGeographicEntityLinks(
       payloads.geographicNames,
       payloads.geographicEntityLinks,

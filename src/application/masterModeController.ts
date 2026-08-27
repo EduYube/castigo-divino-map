@@ -86,10 +86,7 @@ export class MasterModeController {
       return;
     }
     if (!this.#isAuthorized()) {
-      this.#purge(
-        'unavailable',
-        'Modo Máster requiere una sesión administrativa autorizada.',
-      );
+      this.#purge('unavailable', 'Modo Máster requiere una sesión administrativa autorizada.');
       return;
     }
     await this.reload();
