@@ -28,20 +28,11 @@ jobs:
           path = Path('tests/e2e/campaign-switcher.spec.ts')
           text = path.read_text()
           text = text.replace("page.getByLabel('Campaña')", "page.getByLabel('Campaña', { exact: true })")
-          replacements = {
-            "getByLabel('Nombre o apodo')": "getByLabel('Tu nombre o apodo')",
-            "getByLabel('Nombre propuesto del pin')": "getByLabel('Nombre propuesto')",
-            "getByLabel('Tipo de pin')": "getByLabel('Tipo', { exact: true })",
-            "getByRole('button', { name: 'Usar el centro visible' })": "getByRole('button', { name: 'Usar el centro del mapa' })",
-            "getByLabel('Motivo de la solicitud')": "getByLabel('Motivo', { exact: true })",
-            "getByRole('button', { name: 'Enviar solicitud para revisión' })": "getByRole('button', { name: 'Enviar solicitud' })",
-            "page.locator('[data-public-pin-request-status]')": "page.getByText('Solicitud enviada. Gracias; la revisaremos antes de publicarla.')",
-          }
-          for old, new in replacements.items():
-            if old not in text:
-              raise SystemExit(f'locator target not found: {old}')
-            text = text.replace(old, new)
-          path.write_text(text)
+          old = "page.locator('[data-public-pin-request-status]')"
+          new = "page.getByText('Solicitud enviada para revisión. No se publicará automáticamente en el mapa.')"
+          if old not in text:
+            raise SystemExit('public request status target not found')
+          path.write_text(text.replace(old, new, 1))
           PY
       - name: Format campaign E2E
         run: npx prettier --write tests/e2e/campaign-switcher.spec.ts
