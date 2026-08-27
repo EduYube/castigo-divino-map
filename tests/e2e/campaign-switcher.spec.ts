@@ -249,23 +249,23 @@ async function configureCampaignBackend(
 }
 
 async function expectCampaignA(page: Page): Promise<void> {
-  await expect(page.getByLabel('Campaña')).toHaveValue('castigo-divino');
-  await expect(page.locator('[data-testid="place-marker"][data-place-id="place-campaign-a"]')).toHaveCount(
-    1,
-  );
-  await expect(page.locator('[data-testid="place-marker"][data-place-id="place-campaign-b"]')).toHaveCount(
-    0,
-  );
+  await expect(page.getByLabel('Campaña', { exact: true })).toHaveValue('castigo-divino');
+  await expect(
+    page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-a"]'),
+  ).toHaveCount(1);
+  await expect(
+    page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-b"]'),
+  ).toHaveCount(0);
 }
 
 async function expectCampaignB(page: Page): Promise<void> {
-  await expect(page.getByLabel('Campaña')).toHaveValue('campaign-b');
-  await expect(page.locator('[data-testid="place-marker"][data-place-id="place-campaign-a"]')).toHaveCount(
-    0,
-  );
-  await expect(page.locator('[data-testid="place-marker"][data-place-id="place-campaign-b"]')).toHaveCount(
-    1,
-  );
+  await expect(page.getByLabel('Campaña', { exact: true })).toHaveValue('campaign-b');
+  await expect(
+    page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-a"]'),
+  ).toHaveCount(0);
+  await expect(
+    page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-b"]'),
+  ).toHaveCount(1);
 }
 
 test('A/B selection isolates map, search and details while URL Back/Forward remains canonical', async ({
@@ -274,14 +274,14 @@ test('A/B selection isolates map, search and details while URL Back/Forward rema
   await configureCampaignBackend(page);
   await page.goto('/?campaign=not-a-campaign');
 
-  const selector = page.getByLabel('Campaña');
+  const selector = page.getByLabel('Campaña', { exact: true });
   await expect(selector).toBeVisible();
   await expect(selector.locator('option')).toHaveCount(2);
   await expect(page.locator('[data-campaign-status]')).toContainText('Castigo Divino');
   await expect(page).toHaveURL(/campaign=castigo-divino/);
   await expectCampaignA(page);
 
-  await page.locator('[data-testid="place-marker"][data-place-id="place-campaign-a"]').click();
+  await page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-a"]').click();
   await expect(page.getByTestId('place-details')).toContainText('Alpha Atalaya');
 
   await selector.selectOption('campaign-b');
@@ -301,10 +301,12 @@ test('A/B selection isolates map, search and details while URL Back/Forward rema
   await expectCampaignB(page);
 });
 
-test('a public request submitted from B is persisted explicitly with campaign B', async ({ page }) => {
+test('a public request submitted from B is persisted explicitly with campaign B', async ({
+  page,
+}) => {
   const backend = await configureCampaignBackend(page);
   await page.goto('/');
-  await page.getByLabel('Campaña').selectOption('campaign-b');
+  await page.getByLabel('Campaña', { exact: true }).selectOption('campaign-b');
   await expectCampaignB(page);
 
   await page.getByRole('button', { name: 'Proponer un pin' }).click();
@@ -316,7 +318,9 @@ test('a public request submitted from B is persisted explicitly with campaign B'
   await page.getByLabel('Motivo de la solicitud').fill('Verificar el aislamiento multicampaña.');
   await page.getByRole('button', { name: 'Enviar solicitud para revisión' }).click();
 
-  await expect(page.locator('[data-public-pin-request-status]')).toContainText('Solicitud enviada');
+  await expect(
+    page.getByText('Solicitud enviada para revisión. No se publicará automáticamente en el mapa.'),
+  ).toContainText('Solicitud enviada');
   await expect.poll(() => backend.getPublicRequests().length).toBe(1);
   expect(backend.getPublicRequests()[0]?.p_campaign_id).toBe(CAMPAIGN_B_ID);
 });
@@ -340,13 +344,15 @@ test('degraded schema v3 keeps B selected and backend recovery does not reset it
 });
 
 for (const width of [320, 430]) {
-  test(`campaign selector remains keyboard-visible at ${width}px and forced colors`, async ({ page }) => {
+  test(`campaign selector remains keyboard-visible at ${width}px and forced colors`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width, height: 760 });
     await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
     await configureCampaignBackend(page);
     await page.goto('/');
 
-    const selector = page.getByLabel('Campaña');
+    const selector = page.getByLabel('Campaña', { exact: true });
     await expect(selector).toBeVisible();
     await selector.focus();
     await expect(selector).toBeFocused();
