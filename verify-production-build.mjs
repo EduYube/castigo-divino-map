@@ -176,8 +176,8 @@ try {
   fail('the bundled public snapshot does not contain valid JSON');
 }
 
-if (snapshot.schemaVersion !== 2) {
-  fail('the bundled public snapshot does not use the Beta 0.2 public contract');
+if (snapshot.schemaVersion !== 3) {
+  fail('the bundled public snapshot does not use the Beta 0.3 multicampaign public contract');
 }
 
 if (!snapshot.generatedAt || !Number.isFinite(Date.parse(snapshot.generatedAt))) {
@@ -253,5 +253,5 @@ for (const pattern of SECRET_PATTERNS) {
 }
 
 console.log(
-  `Verified ${publicPaths.length} production files for ${expectedBase}: index, JavaScript, CSS, Beta 0.2 public snapshot, remote map reference, no master-only canaries, no raster map copy and no known or privileged Supabase credential patterns.`,
+  `Verified ${publicPaths.length} production files for ${expectedBase}: index, JavaScript, CSS, Beta 0.3 multicampaign public snapshot, remote map reference, no master-only canaries, no raster map copy and no known or privileged Supabase credential patterns.`,
 );
