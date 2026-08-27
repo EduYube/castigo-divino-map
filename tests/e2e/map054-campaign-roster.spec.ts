@@ -282,17 +282,20 @@ test('campaign transition discards old editors and blocks writes while the targe
   await page.getByLabel('Campaña administrativa').selectOption(CAMPAIGN_B_ID);
 
   await expect(catalogEditor).toBeHidden();
-  const mutationStatus = await page.evaluate(async ({ accessToken, projectUrl }) => {
-    const response = await fetch(`${projectUrl}/rest/v1/categories?id=eq.category-stale-editor`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name: 'Must not be written' }),
-    });
-    return response.status;
-  }, { accessToken: ACCESS_TOKEN, projectUrl: PROJECT_URL });
+  const mutationStatus = await page.evaluate(
+    async ({ accessToken, projectUrl }) => {
+      const response = await fetch(`${projectUrl}/rest/v1/categories?id=eq.category-stale-editor`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: 'Must not be written' }),
+      });
+      return response.status;
+    },
+    { accessToken: ACCESS_TOKEN, projectUrl: PROJECT_URL },
+  );
   expect(mutationStatus).toBe(409);
 
   await expect(page.getByLabel('Campaña administrativa')).toHaveValue(CAMPAIGN_B_ID);
