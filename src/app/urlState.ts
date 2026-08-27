@@ -22,13 +22,8 @@ export interface ParsedPublicAppUrlState {
 }
 
 interface UrlFacetCatalog {
-  readonly categories: readonly {
-    readonly id: CategoryId;
-    readonly slug: string;
-  }[];
-  readonly tags: readonly {
-    readonly id: TagId;
-  }[];
+  readonly categories: readonly { readonly id: CategoryId; readonly slug: string }[];
+  readonly tags: readonly { readonly id: TagId }[];
 }
 
 export const EMPTY_PUBLIC_APP_URL_STATE: PublicAppUrlState = {
@@ -40,6 +35,7 @@ export const EMPTY_PUBLIC_APP_URL_STATE: PublicAppUrlState = {
 };
 
 const URL_PARAMETERS = {
+  campaign: 'campaign',
   activePlace: 'place',
   query: 'q',
   geographicName: 'geo',
@@ -65,17 +61,9 @@ function resolveUrlFacetCatalog(
 ): UrlFacetCatalog {
   if (beta02Catalog) {
     const facets = derivePublicFilterFacets(beta02Catalog);
-
-    return {
-      categories: facets.categories,
-      tags: facets.tags,
-    };
+    return { categories: facets.categories, tags: facets.tags };
   }
-
-  return {
-    categories: catalog.categories,
-    tags: catalog.tags,
-  };
+  return { categories: catalog.categories, tags: catalog.tags };
 }
 
 function findPlaceId(catalog: CampaignCatalog, value: string): PlaceId | null {
@@ -83,21 +71,14 @@ function findPlaceId(catalog: CampaignCatalog, value: string): PlaceId | null {
 }
 
 function findCategoryId(facets: UrlFacetCatalog, value: string): CategoryId | null {
-  return (
-    facets.categories.find((category) => category.slug === value || category.id === value)?.id ??
-    null
-  );
+  return facets.categories.find((category) => category.slug === value || category.id === value)?.id ?? null;
 }
 
 function getFirstValidPlaceId(catalog: CampaignCatalog, values: readonly string[]): PlaceId | null {
   for (const value of values) {
     const placeId = findPlaceId(catalog, value.trim());
-
-    if (placeId) {
-      return placeId;
-    }
+    if (placeId) return placeId;
   }
-
   return null;
 }
 
@@ -110,7 +91,6 @@ function getFirstGeographicNameId(values: readonly string[]): GeographicNameId |
     const normalized = normalizeGeographicNameId(value.trim() as GeographicNameId);
     if (normalized) return normalized;
   }
-
   return null;
 }
 
@@ -123,10 +103,8 @@ export function normalizePublicAppUrlState(
   const selectedCategoryIds = new Set(state.selectedCategoryIds);
   const selectedTagIds = new Set(state.selectedTagIds);
   const validPlaceIds = new Set(catalog.places.map(({ id }) => id));
-
   return {
-    activePlaceId:
-      state.activePlaceId && validPlaceIds.has(state.activePlaceId) ? state.activePlaceId : null,
+    activePlaceId: state.activePlaceId && validPlaceIds.has(state.activePlaceId) ? state.activePlaceId : null,
     query: normalizeQuery(state.query),
     geographicNameId: normalizeGeographicNameId(state.geographicNameId),
     selectedCategoryIds: facets.categories
@@ -145,32 +123,22 @@ export function serializePublicAppUrlState(
   const normalizedState = normalizePublicAppUrlState(catalog, state, beta02Catalog);
   const parameters = new URLSearchParams();
   const activePlace = catalog.places.find(({ id }) => id === normalizedState.activePlaceId);
-
-  if (activePlace) {
-    parameters.append(URL_PARAMETERS.activePlace, activePlace.slug);
-  }
-
-  if (normalizedState.query) {
-    parameters.append(URL_PARAMETERS.query, normalizedState.query);
-  }
-
+  if (activePlace) parameters.append(URL_PARAMETERS.activePlace, activePlace.slug);
+  if (normalizedState.query) parameters.append(URL_PARAMETERS.query, normalizedState.query);
   if (normalizedState.geographicNameId) {
     parameters.append(URL_PARAMETERS.geographicName, normalizedState.geographicNameId);
   }
-
   normalizedState.selectedCategoryIds.forEach((categoryId) => {
     const category = facets.categories.find(({ id }) => id === categoryId);
-
-    if (category) {
-      parameters.append(URL_PARAMETERS.category, category.slug);
-    }
+    if (category) parameters.append(URL_PARAMETERS.category, category.slug);
   });
-
-  normalizedState.selectedTagIds.forEach((tagId) => {
-    parameters.append(URL_PARAMETERS.tag, tagId);
-  });
-
+  normalizedState.selectedTagIds.forEach((tagId) => parameters.append(URL_PARAMETERS.tag, tagId));
   return parameters;
+}
+
+function preserveCampaignParameter(source: URL, parameters: URLSearchParams): void {
+  const campaign = source.searchParams.get(URL_PARAMETERS.campaign)?.trim();
+  if (campaign) parameters.set(URL_PARAMETERS.campaign, campaign);
 }
 
 export function createCanonicalPublicAppUrl(
@@ -181,10 +149,9 @@ export function createCanonicalPublicAppUrl(
 ): URL {
   const canonicalUrl = new URL(baseUrl.href);
   const parameters = serializePublicAppUrlState(catalog, state, beta02Catalog);
-
+  preserveCampaignParameter(baseUrl, parameters);
   canonicalUrl.search = parameters.toString();
   canonicalUrl.hash = '';
-
   return canonicalUrl;
 }
 
@@ -210,28 +177,16 @@ export function parsePublicAppUrlState(
   const state = normalizePublicAppUrlState(
     catalog,
     {
-      activePlaceId: getFirstValidPlaceId(
-        catalog,
-        source.searchParams.getAll(URL_PARAMETERS.activePlace),
-      ),
+      activePlaceId: getFirstValidPlaceId(catalog, source.searchParams.getAll(URL_PARAMETERS.activePlace)),
       query: getFirstNonEmptyValue(source.searchParams.getAll(URL_PARAMETERS.query)),
-      geographicNameId: getFirstGeographicNameId(
-        source.searchParams.getAll(URL_PARAMETERS.geographicName),
-      ),
-      selectedCategoryIds: facets.categories
-        .filter(({ id }) => categoryValues.has(id))
-        .map(({ id }) => id),
+      geographicNameId: getFirstGeographicNameId(source.searchParams.getAll(URL_PARAMETERS.geographicName)),
+      selectedCategoryIds: facets.categories.filter(({ id }) => categoryValues.has(id)).map(({ id }) => id),
       selectedTagIds: facets.tags.filter(({ id }) => tagValues.has(id)).map(({ id }) => id),
     },
     beta02Catalog,
   );
   const canonicalUrl = createCanonicalPublicAppUrl(catalog, source, state, beta02Catalog);
-
-  return {
-    state,
-    canonicalUrl,
-    isCanonical: canonicalUrl.href === source.href,
-  };
+  return { state, canonicalUrl, isCanonical: canonicalUrl.href === source.href };
 }
 
 export function arePublicAppUrlStatesEqual(
@@ -242,18 +197,13 @@ export function arePublicAppUrlStatesEqual(
 ): boolean {
   const normalizedLeft = normalizePublicAppUrlState(catalog, left, beta02Catalog);
   const normalizedRight = normalizePublicAppUrlState(catalog, right, beta02Catalog);
-
   return (
     normalizedLeft.activePlaceId === normalizedRight.activePlaceId &&
     normalizedLeft.query === normalizedRight.query &&
     normalizedLeft.geographicNameId === normalizedRight.geographicNameId &&
     normalizedLeft.selectedCategoryIds.length === normalizedRight.selectedCategoryIds.length &&
-    normalizedLeft.selectedCategoryIds.every(
-      (categoryId, index) => categoryId === normalizedRight.selectedCategoryIds[index],
-    ) &&
+    normalizedLeft.selectedCategoryIds.every((categoryId, index) => categoryId === normalizedRight.selectedCategoryIds[index]) &&
     normalizedLeft.selectedTagIds.length === normalizedRight.selectedTagIds.length &&
-    normalizedLeft.selectedTagIds.every(
-      (tagId, index) => tagId === normalizedRight.selectedTagIds[index],
-    )
+    normalizedLeft.selectedTagIds.every((tagId, index) => tagId === normalizedRight.selectedTagIds[index])
   );
 }
