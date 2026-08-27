@@ -245,6 +245,8 @@ test('global geographic names and aliases remain searchable across A and B', asy
 
   await expect(selector).toHaveValue('campaign-b');
   await expect(searchbox).toHaveValue('Geografía Compartida MAP055');
+  await searchbox.fill('');
+  await searchbox.fill('Geografía Compartida MAP055');
   await searchbox.press('Escape');
   const globalResult = results.getByRole('button', {
     name: /Costa Global MAP055.*Lugar geográfico/i,
