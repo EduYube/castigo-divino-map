@@ -34,7 +34,10 @@ function navigateToMountedPanel(root: ParentNode): void {
 }
 
 function preservePublicRequestAccessibilityContract(root: ParentNode): void {
-  const form = getRequiredElement<HTMLFormElement>(root, '[data-public-pin-request-form]');
+  const form = getRequiredElement<HTMLFormElement>(
+    root,
+    '[data-public-pin-request-form]',
+  );
   const campaignTarget = getRequiredElement<HTMLElement>(
     root,
     '[data-public-pin-request-campaign-target]',
