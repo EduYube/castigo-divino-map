@@ -367,10 +367,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (
-      resource === 'rpc/submit_public_request' ||
-      resource === 'rpc/submit_public_request_v2'
-    ) {
+    if (resource === 'rpc/submit_public_request' || resource === 'rpc/submit_public_request_v2') {
       await route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
       return;
     }
@@ -724,10 +721,7 @@ test('manipulated public campaign payloads fail closed', async ({ page }) => {
         });
         return response.status;
       };
-      const legacy = async (
-        name: string,
-        body: Record<string, unknown>,
-      ): Promise<number> => {
+      const legacy = async (name: string, body: Record<string, unknown>): Promise<number> => {
         const response = await fetch(`${projectUrl}/rest/v1/rpc/${name}`, {
           method: 'POST',
           headers,
@@ -744,9 +738,7 @@ test('manipulated public campaign payloads fail closed', async ({ page }) => {
       return {
         archived: archived.status,
         forgedAtoB: await submit(forgedToken),
-        extraCampaignId: await submit(bindingForExtraField.token, {
-          p_campaign_id: campaignB,
-        }),
+        extraCampaignId: await submit(bindingForExtraField.token, { p_campaign_id: campaignB }),
         legacyV2: await legacy('submit_public_request_v2', {
           ...base,
           p_campaign_id: campaignB,
