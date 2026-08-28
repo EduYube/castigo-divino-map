@@ -212,11 +212,17 @@ function detailFor(entity: EntityRow): Record<string, unknown> {
 async function configureBackend(page: Page): Promise<BackendControl> {
   const requests: RequestRow[] = [];
   const entities: EntityRow[] = [];
+  const submissionBindings = new Map<string, string>();
   const snapshot = await makeSnapshot();
   let timestampSequence = 0;
+  let bindingSequence = 0;
 
   const timestamp = (): string =>
     `2026-08-28T13:00:${String(timestampSequence++).padStart(2, '0')}.000Z`;
+  const issueSubmissionToken = (campaignId: string): string => {
+    const nonce = String(bindingSequence++).padStart(12, '0');
+    return `${campaignId}.1788052500.56000000-0000-4000-8000-${nonce}.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`;
+  };
 
   await page.addInitScript(
     ({ projectUrl, publishableKey }) => {
@@ -280,12 +286,42 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     const authorization = requestInfo.headers()['authorization'] ?? '';
     const admin = authorization === `Bearer ${ACCESS_TOKEN}`;
 
-    if (resource === 'rpc/submit_public_request_v2') {
+    if (resource === 'rpc/begin_public_request_submission') {
       const body = requestInfo.postDataJSON() as Record<string, unknown>;
       const campaignId = typeof body.p_campaign_id === 'string' ? body.p_campaign_id : '';
       const scenario = SCENARIOS.find((candidate) => candidate.campaignId === campaignId);
+      if (!scenario || Object.keys(body).some((key) => key !== 'p_campaign_id')) {
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: '22023', message: 'invalid campaign' }),
+        });
+        return;
+      }
+      const submissionToken = issueSubmissionToken(scenario.campaignId);
+      submissionBindings.set(submissionToken, scenario.campaignId);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          campaign_id: scenario.campaignId,
+          campaign_slug: scenario.slug,
+          campaign_name: scenario.name,
+          submission_token: submissionToken,
+          expires_at: '2026-08-29T01:15:00.000Z',
+        }),
+      });
+      return;
+    }
+
+    if (resource === 'rpc/submit_public_request_v3') {
+      const body = requestInfo.postDataJSON() as Record<string, unknown>;
+      const submissionToken =
+        typeof body.p_submission_token === 'string' ? body.p_submission_token : '';
+      const campaignId = submissionBindings.get(submissionToken) ?? '';
+      const scenario = SCENARIOS.find((candidate) => candidate.campaignId === campaignId);
       const acceptedKeys = new Set([
-        'p_campaign_id',
+        'p_submission_token',
         'p_sender_name',
         'p_proposed_name',
         'p_entity_type',
@@ -296,14 +332,15 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         'p_honeypot',
       ]);
       const hasUnexpectedInput = Object.keys(body).some((key) => !acceptedKeys.has(key));
-      if (!scenario || campaignId === ARCHIVED_CAMPAIGN_ID || hasUnexpectedInput) {
+      if (!scenario || hasUnexpectedInput) {
         await route.fulfill({
           status: 400,
           contentType: 'application/json',
-          body: JSON.stringify({ code: '22023', message: 'invalid campaign request' }),
+          body: JSON.stringify({ code: '22023', message: 'invalid public request submission token' }),
         });
         return;
       }
+      submissionBindings.delete(submissionToken);
       const createdAt = timestamp();
       requests.push({
         id: scenario.requestId,
@@ -324,6 +361,11 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         updated_at: createdAt,
       });
       await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
+      return;
+    }
+
+    if (resource === 'rpc/submit_public_request' || resource === 'rpc/submit_public_request_v2') {
+      await route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
       return;
     }
 
@@ -624,11 +666,21 @@ for (const scenario of SCENARIOS) {
 }
 
 test('manipulated public campaign payloads fail closed', async ({ page }) => {
-  await configureBackend(page);
+  const backend = await configureBackend(page);
   await page.goto('/?campaign=castigo-divino');
+  await expect(page.getByLabel('Campaña', { exact: true })).toHaveValue('castigo-divino');
+  await page.getByRole('button', { name: 'Proponer un pin' }).click();
+  await expect(page.locator('[data-public-pin-request-campaign-target]')).toContainText(
+    'Castigo Divino',
+  );
 
   const results = await page.evaluate(
-    async ({ projectUrl, publishableKey, campaignA, archivedCampaign }) => {
+    async ({ projectUrl, publishableKey, campaignA, campaignB, archivedCampaign }) => {
+      const headers = {
+        apikey: publishableKey,
+        Authorization: `Bearer ${publishableKey}`,
+        'Content-Type': 'application/json',
+      };
       const base = {
         p_sender_name: 'Manipulated visitor',
         p_proposed_name: 'Manipulated request',
@@ -639,34 +691,76 @@ test('manipulated public campaign payloads fail closed', async ({ page }) => {
         p_reason: 'Manipulated reason',
         p_honeypot: '',
       };
-      const post = async (body: Record<string, unknown>): Promise<number> => {
-        const response = await fetch(`${projectUrl}/rest/v1/rpc/submit_public_request_v2`, {
-          method: 'POST',
-          headers: {
-            apikey: publishableKey,
-            Authorization: `Bearer ${publishableKey}`,
-            'Content-Type': 'application/json',
+      const begin = async (
+        campaignId: string,
+      ): Promise<{ readonly status: number; readonly token: string }> => {
+        const response = await fetch(
+          `${projectUrl}/rest/v1/rpc/begin_public_request_submission`,
+          {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ p_campaign_id: campaignId }),
           },
+        );
+        const body = response.ok
+          ? ((await response.json()) as { submission_token?: unknown })
+          : null;
+        return {
+          status: response.status,
+          token: typeof body?.submission_token === 'string' ? body.submission_token : '',
+        };
+      };
+      const submit = async (
+        token: string,
+        extra: Record<string, unknown> = {},
+      ): Promise<number> => {
+        const response = await fetch(`${projectUrl}/rest/v1/rpc/submit_public_request_v3`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ p_submission_token: token, ...base, ...extra }),
+        });
+        return response.status;
+      };
+      const legacy = async (name: string, body: Record<string, unknown>): Promise<number> => {
+        const response = await fetch(`${projectUrl}/rest/v1/rpc/${name}`, {
+          method: 'POST',
+          headers,
           body: JSON.stringify(body),
         });
         return response.status;
       };
+
+      const bindingForForgery = await begin(campaignA);
+      const bindingForExtraField = await begin(campaignA);
+      const archived = await begin(archivedCampaign);
+      const forgedToken = bindingForForgery.token.replace(campaignA, campaignB);
+
       return {
-        archived: await post({ ...base, p_campaign_id: archivedCampaign }),
-        mismatchedSlug: await post({
+        archived: archived.status,
+        forgedAtoB: await submit(forgedToken),
+        extraCampaignId: await submit(bindingForExtraField.token, { p_campaign_id: campaignB }),
+        legacyV2: await legacy('submit_public_request_v2', {
           ...base,
-          p_campaign_id: campaignA,
-          p_campaign_slug: 'campaign-b',
+          p_campaign_id: campaignB,
         }),
+        legacyV1: await legacy('submit_public_request', base),
       };
     },
     {
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
       campaignA: CAMPAIGN_A_ID,
+      campaignB: CAMPAIGN_B_ID,
       archivedCampaign: ARCHIVED_CAMPAIGN_ID,
     },
   );
 
-  expect(results).toEqual({ archived: 400, mismatchedSlug: 400 });
+  expect(results).toEqual({
+    archived: 400,
+    forgedAtoB: 400,
+    extraCampaignId: 400,
+    legacyV2: 404,
+    legacyV1: 404,
+  });
+  expect(backend.requests()).toHaveLength(0);
 });
