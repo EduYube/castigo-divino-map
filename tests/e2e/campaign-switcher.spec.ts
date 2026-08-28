@@ -335,7 +335,9 @@ test('a public request submitted from B displays and persists campaign B explici
   expect(backend.getPublicRequests()[0]?.p_campaign_id).toBe(CAMPAIGN_B_ID);
 });
 
-test('an empty open form follows A to B and B to A without a confirmation prompt', async ({ page }) => {
+test('an empty open form follows A to B and B to A without a confirmation prompt', async ({
+  page,
+}) => {
   await configureCampaignBackend(page);
   await page.goto('/?campaign=castigo-divino');
   await page.getByRole('button', { name: 'Proponer un pin' }).click();
@@ -389,7 +391,9 @@ test('a partial A draft keeps A when the global selector moves to B and cancel i
   expect(backend.getPublicRequests()[0]?.p_campaign_id).toBe(CAMPAIGN_A_ID);
 });
 
-test('a complete A draft can explicitly move to B without losing fields or position', async ({ page }) => {
+test('a complete A draft can explicitly move to B without losing fields or position', async ({
+  page,
+}) => {
   const backend = await configureCampaignBackend(page);
   await page.goto('/?campaign=castigo-divino');
   await page.getByRole('button', { name: 'Proponer un pin' }).click();
@@ -400,7 +404,9 @@ test('a complete A draft can explicitly move to B without losing fields or posit
   await expect(page.locator('[data-public-pin-request-campaign-change]')).toBeVisible();
   await page.getByRole('button', { name: 'Mover borrador a Campaña B' }).click();
 
-  await expect(page.locator('[data-public-pin-request-campaign-target]')).toContainText('Campaña B');
+  await expect(page.locator('[data-public-pin-request-campaign-target]')).toContainText(
+    'Campaña B',
+  );
   await expect(page.getByLabel('Nombre o apodo')).toHaveValue('Completo A visitante');
   await expect(page.getByLabel('Nombre propuesto del pin')).toHaveValue('Completo A propuesta');
   await expect(page.getByLabel('Descripción')).toHaveValue('Completo A descripción');
@@ -411,7 +417,9 @@ test('a complete A draft can explicitly move to B without losing fields or posit
   expect(backend.getPublicRequests()[0]?.p_campaign_id).toBe(CAMPAIGN_B_ID);
 });
 
-test('a B draft switching back to A cannot submit until keep-or-move is resolved', async ({ page }) => {
+test('a B draft switching back to A cannot submit until keep-or-move is resolved', async ({
+  page,
+}) => {
   const backend = await configureCampaignBackend(page);
   await page.goto('/?campaign=campaign-b');
   await page.getByRole('button', { name: 'Proponer un pin' }).click();
@@ -419,8 +427,12 @@ test('a B draft switching back to A cannot submit until keep-or-move is resolved
 
   await page.getByLabel('Campaña', { exact: true }).selectOption('castigo-divino');
   await page.getByRole('button', { name: 'Enviar solicitud para revisión' }).click();
-  await expect(page.locator('[data-public-pin-request-status]')).toContainText('Antes de enviar, decide');
-  await expect(page.getByRole('button', { name: 'Conservar borrador en Campaña B' })).toBeFocused();
+  await expect(page.locator('[data-public-pin-request-status]')).toContainText(
+    'Antes de enviar, decide',
+  );
+  await expect(
+    page.getByRole('button', { name: 'Conservar borrador en Campaña B' }),
+  ).toBeFocused();
   expect(backend.getPublicRequests()).toHaveLength(0);
 
   await page.getByRole('button', { name: 'Mover borrador a Castigo Divino' }).click();
