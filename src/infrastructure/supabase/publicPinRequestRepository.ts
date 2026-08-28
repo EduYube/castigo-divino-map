@@ -13,6 +13,15 @@ const PUBLISHABLE_KEY_PATTERN = /^sb_publishable_[A-Za-z0-9_-]{10,}$/;
 const LEGACY_ANON_KEY_PATTERN = /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 const CAMPAIGN_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_SUBMISSION_TOKEN_LENGTH = 512;
+
+interface PublicRequestCampaignBinding {
+  readonly campaign_id: string;
+  readonly campaign_slug: string;
+  readonly campaign_name: string;
+  readonly submission_token: string;
+  readonly expires_at: string;
+}
 
 export interface SupabasePublicPinRequestRepositoryOptions {
   readonly projectUrl: string;
@@ -45,6 +54,27 @@ function isLegacyAnonKey(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+function responseErrorKind(status: number): 'rate-limited' | 'server' | 'rejected' {
+  return status === 429 ? 'rate-limited' : status >= 500 ? 'server' : 'rejected';
+}
+
+function isCampaignBinding(value: unknown, campaignId: string): value is PublicRequestCampaignBinding {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    record.campaign_id === campaignId &&
+    typeof record.campaign_slug === 'string' &&
+    record.campaign_slug.length > 0 &&
+    typeof record.campaign_name === 'string' &&
+    record.campaign_name.length > 0 &&
+    typeof record.submission_token === 'string' &&
+    record.submission_token.length > 0 &&
+    record.submission_token.length <= MAX_SUBMISSION_TOKEN_LENGTH &&
+    typeof record.expires_at === 'string' &&
+    record.expires_at.length > 0
+  );
 }
 
 export class SupabasePublicPinRequestRepository implements PublicPinRequestRepository {
@@ -80,6 +110,59 @@ export class SupabasePublicPinRequestRepository implements PublicPinRequestRepos
     this.#fetchImplementation = options.fetchImplementation ?? globalThis.fetch.bind(globalThis);
   }
 
+  async #beginCampaignBinding(campaignId: string, signal: AbortSignal): Promise<string> {
+    let response: Response;
+
+    try {
+      response = await this.#fetchImplementation(
+        `${this.#projectUrl}/rest/v1/rpc/begin_public_request_submission`,
+        {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            apikey: this.#publishableKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ p_campaign_id: campaignId }),
+          cache: 'no-store',
+          signal,
+        },
+      );
+    } catch (error) {
+      throw new PublicPinRequestRepositoryError('network', 'No se pudo contactar con Supabase.', {
+        cause: error,
+      });
+    }
+
+    if (!response.ok) {
+      throw new PublicPinRequestRepositoryError(
+        responseErrorKind(response.status),
+        `Supabase rechazó la vinculación de campaña (${response.status}).`,
+        { status: response.status },
+      );
+    }
+
+    let binding: unknown;
+    try {
+      binding = await response.json();
+    } catch (error) {
+      throw new PublicPinRequestRepositoryError(
+        'invalid-response',
+        'Supabase devolvió una vinculación de campaña no verificable.',
+        { cause: error },
+      );
+    }
+
+    if (!isCampaignBinding(binding, campaignId)) {
+      throw new PublicPinRequestRepositoryError(
+        'invalid-response',
+        'Supabase no confirmó de forma verificable la campaña destinataria.',
+      );
+    }
+
+    return binding.submission_token;
+  }
+
   async submit(
     request: ValidatedPublicPinRequest,
     campaignId: string,
@@ -92,11 +175,12 @@ export class SupabasePublicPinRequestRepository implements PublicPinRequestRepos
       );
     }
 
+    const submissionToken = await this.#beginCampaignBinding(campaignId, signal);
     let response: Response;
 
     try {
       response = await this.#fetchImplementation(
-        `${this.#projectUrl}/rest/v1/rpc/submit_public_request_v2`,
+        `${this.#projectUrl}/rest/v1/rpc/submit_public_request_v3`,
         {
           method: 'POST',
           headers: {
@@ -105,7 +189,7 @@ export class SupabasePublicPinRequestRepository implements PublicPinRequestRepos
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            p_campaign_id: campaignId,
+            p_submission_token: submissionToken,
             ...buildPublicPinRequestRpcPayload(request),
           }),
           cache: 'no-store',
@@ -119,11 +203,8 @@ export class SupabasePublicPinRequestRepository implements PublicPinRequestRepos
     }
 
     if (!response.ok) {
-      const kind =
-        response.status === 429 ? 'rate-limited' : response.status >= 500 ? 'server' : 'rejected';
-
       throw new PublicPinRequestRepositoryError(
-        kind,
+        responseErrorKind(response.status),
         `Supabase rechazó la solicitud pública (${response.status}).`,
         { status: response.status },
       );
