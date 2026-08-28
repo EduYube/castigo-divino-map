@@ -1,5 +1,7 @@
 import { expect, test, type Route } from '@playwright/test';
 
+import { INITIAL_PUBLIC_CAMPAIGN_ID } from '../../src/data-access/publicCatalogQueryContract.js';
+
 const ACCESS_TOKEN = 'map046_pages_access_token';
 const REFRESH_TOKEN = 'map046_pages_refresh_token';
 const CORS_HEADERS = {
@@ -51,15 +53,28 @@ async function routeProductionBackend(route: Route): Promise<void> {
   }
 
   if (url.pathname.includes('/rest/v1/') && request.method() === 'GET') {
+    const table = url.pathname.split('/').at(-1) ?? '';
+    const rows =
+      table === 'campaigns'
+        ? [
+            {
+              id: INITIAL_PUBLIC_CAMPAIGN_ID,
+              slug: 'castigo-divino',
+              name: 'Castigo Divino',
+              status: 'active',
+              display_order: 0,
+            },
+          ]
+        : [];
     await route.fulfill({
       status: 200,
       headers: {
         ...CORS_HEADERS,
         'Access-Control-Expose-Headers': 'Content-Range',
         'Content-Type': 'application/json',
-        'Content-Range': '*/0',
+        'Content-Range': rows.length ? `0-${rows.length - 1}/${rows.length}` : '*/0',
       },
-      body: '[]',
+      body: JSON.stringify(rows),
     });
     return;
   }
