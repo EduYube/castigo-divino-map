@@ -97,5 +97,12 @@ export function scopeAdminRpcRequest(
     };
   }
 
+  if (url.pathname.endsWith('/rest/v1/rpc/admin_moderate_public_request_v2')) {
+    return {
+      url,
+      init: { ...init, body: JSON.stringify({ ...body, p_campaign_id: campaignId }) },
+    };
+  }
+
   return { url, init };
 }
