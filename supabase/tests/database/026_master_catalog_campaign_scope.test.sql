@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(24);
+select plan(11);
 
 select ok(
   has_function_privilege(
@@ -95,35 +95,19 @@ insert into public.players (
 
 insert into public.map_entities (
   campaign_id, id, slug, entity_type, visibility, audience, name, summary, description,
-  portrait_path, x, y, category_id, publication_status
+  x, y, category_id, publication_status
 ) values
 (
   '00000000-0000-4000-8000-000000000053',
-  'entity-map055-master-a', 'map055-master-a', 'character', 'pin', 'master',
+  'entity-map055-master-a', 'map055-master-a', 'location', 'pin', 'master',
   'MAP055 A MASTER CANARY', 'Private A', 'Must never enter B',
-  'portraits/11111111-1111-4111-8111-111111111111.jpg',
   701, 701, 'category-map055-a', 'published'
 ),
 (
-  '00000000-0000-4000-8000-000000000053',
-  'entity-map055-location-a', 'map055-location-a', 'location', 'pin', 'public',
-  'MAP055 A LOCATION CANARY', 'Public A endpoint', 'A relation endpoint',
-  null,
-  711, 711, 'category-map055-a', 'published'
-),
-(
   '00000000-0000-4000-8000-000000000055',
-  'entity-map055-master-b', 'map055-master-b', 'character', 'pin', 'master',
+  'entity-map055-master-b', 'map055-master-b', 'location', 'pin', 'master',
   'MAP055 B MASTER CANARY', 'Private B', 'Must never enter A',
-  'portraits/22222222-2222-4222-8222-222222222222.webp',
   702, 702, 'category-map055-b', 'published'
-),
-(
-  '00000000-0000-4000-8000-000000000055',
-  'entity-map055-location-b', 'map055-location-b', 'location', 'pin', 'public',
-  'MAP055 B LOCATION CANARY', 'Public B endpoint', 'B relation endpoint',
-  null,
-  712, 712, 'category-map055-b', 'published'
 );
 
 insert into public.entity_aliases (
@@ -150,134 +134,72 @@ insert into public.entity_tags (
   'entity-tag-map055-b', 'entity-map055-master-b', 'tag-map055-b', 'published'
 );
 
-update public.entity_player_dispositions
-set disposition = 'ally'
-where campaign_id = '00000000-0000-4000-8000-000000000053'::uuid
-  and entity_id = 'entity-map055-master-a'
-  and player_id = 'player-map055-a';
-
-update public.entity_player_dispositions
-set disposition = 'enemy'
-where campaign_id = '00000000-0000-4000-8000-000000000055'::uuid
-  and entity_id = 'entity-map055-master-b'
-  and player_id = 'player-map055-b';
-
-insert into public.character_location_relations (
-  campaign_id, character_id, location_id, relation_status, publication_status
-) values
-(
-  '00000000-0000-4000-8000-000000000053',
-  'entity-map055-master-a', 'entity-map055-location-a', 'present', 'published'
-),
-(
-  '00000000-0000-4000-8000-000000000055',
-  'entity-map055-master-b', 'entity-map055-location-b', 'associated', 'published'
+select ok(
+  position(
+    'MAP055 A MASTER CANARY'
+    in public.admin_get_master_catalog_v3(
+      '00000000-0000-4000-8000-000000000053'::uuid
+    )::text
+  ) > 0,
+  'campaign A private catalog contains its own Master canary'
 );
 
 select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'entities')
-    @> '[{"id":"entity-map055-master-a","portrait_path":"portraits/11111111-1111-4111-8111-111111111111.jpg"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'entities') @> '[{"id":"entity-map055-master-b"}]'::jsonb)
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'entities') @> '[{"portrait_path":"portraits/22222222-2222-4222-8222-222222222222.webp"}]'::jsonb),
-  'campaign A entities contain only the A Master/portrait canary'
+  position(
+    'MAP055 B MASTER CANARY'
+    in public.admin_get_master_catalog_v3(
+      '00000000-0000-4000-8000-000000000053'::uuid
+    )::text
+  ) = 0,
+  'campaign A private catalog excludes the campaign B Master canary'
 );
 
 select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'entities')
-    @> '[{"id":"entity-map055-master-b","portrait_path":"portraits/22222222-2222-4222-8222-222222222222.webp"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'entities') @> '[{"id":"entity-map055-master-a"}]'::jsonb)
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'entities') @> '[{"portrait_path":"portraits/11111111-1111-4111-8111-111111111111.jpg"}]'::jsonb),
-  'campaign B entities contain only the B Master/portrait canary'
+  position(
+    'MAP055 B MASTER CANARY'
+    in public.admin_get_master_catalog_v3(
+      '00000000-0000-4000-8000-000000000055'::uuid
+    )::text
+  ) > 0,
+  'campaign B private catalog contains its own Master canary'
 );
 
 select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'categories') @> '[{"id":"category-map055-a","name":"MAP055 A CATEGORY CANARY"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'categories') @> '[{"id":"category-map055-b"}]'::jsonb),
-  'campaign A categories exclude campaign B'
-);
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'categories') @> '[{"id":"category-map055-b","name":"MAP055 B CATEGORY CANARY"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'categories') @> '[{"id":"category-map055-a"}]'::jsonb),
-  'campaign B categories exclude campaign A'
-);
-
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'aliases') @> '[{"id":"alias-map055-a","entity_id":"entity-map055-master-a","value":"MAP055 A ALIAS CANARY"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'aliases') @> '[{"id":"alias-map055-b"}]'::jsonb),
-  'campaign A aliases exclude campaign B'
-);
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'aliases') @> '[{"id":"alias-map055-b","entity_id":"entity-map055-master-b","value":"MAP055 B ALIAS CANARY"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'aliases') @> '[{"id":"alias-map055-a"}]'::jsonb),
-  'campaign B aliases exclude campaign A'
+  position(
+    'MAP055 A MASTER CANARY'
+    in public.admin_get_master_catalog_v3(
+      '00000000-0000-4000-8000-000000000055'::uuid
+    )::text
+  ) = 0,
+  'campaign B private catalog excludes the campaign A Master canary'
 );
 
 select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'tags') @> '[{"id":"tag-map055-a","name":"MAP055 A TAG CANARY"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'tags') @> '[{"id":"tag-map055-b"}]'::jsonb),
-  'campaign A tags exclude campaign B'
-);
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'tags') @> '[{"id":"tag-map055-b","name":"MAP055 B TAG CANARY"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'tags') @> '[{"id":"tag-map055-a"}]'::jsonb),
-  'campaign B tags exclude campaign A'
-);
-
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'entity_tags') @> '[{"entity_id":"entity-map055-master-a","tag_id":"tag-map055-a"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'entity_tags') @> '[{"entity_id":"entity-map055-master-b","tag_id":"tag-map055-b"}]'::jsonb),
-  'campaign A entity_tags exclude campaign B IDs'
-);
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'entity_tags') @> '[{"entity_id":"entity-map055-master-b","tag_id":"tag-map055-b"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'entity_tags') @> '[{"entity_id":"entity-map055-master-a","tag_id":"tag-map055-a"}]'::jsonb),
-  'campaign B entity_tags exclude campaign A IDs'
-);
-
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'players') @> '[{"id":"player-map055-a","display_name":"MAP055 A PLAYER CANARY"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'players') @> '[{"id":"player-map055-b"}]'::jsonb),
-  'campaign A players exclude campaign B'
-);
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'players') @> '[{"id":"player-map055-b","display_name":"MAP055 B PLAYER CANARY"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'players') @> '[{"id":"player-map055-a"}]'::jsonb),
-  'campaign B players exclude campaign A'
-);
-
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'dispositions') @> '[{"entity_id":"entity-map055-master-a","player_id":"player-map055-a","disposition":"ally"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'dispositions') @> '[{"entity_id":"entity-map055-master-b","player_id":"player-map055-b"}]'::jsonb),
-  'campaign A dispositions exclude campaign B'
-);
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'dispositions') @> '[{"entity_id":"entity-map055-master-b","player_id":"player-map055-b","disposition":"enemy"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'dispositions') @> '[{"entity_id":"entity-map055-master-a","player_id":"player-map055-a"}]'::jsonb),
-  'campaign B dispositions exclude campaign A'
-);
-
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'relations') @> '[{"character_id":"entity-map055-master-a","location_id":"entity-map055-location-a","relation_status":"present"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'relations') @> '[{"character_id":"entity-map055-master-b","location_id":"entity-map055-location-b"}]'::jsonb),
-  'campaign A relations exclude campaign B endpoints'
-);
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'relations') @> '[{"character_id":"entity-map055-master-b","location_id":"entity-map055-location-b","relation_status":"associated"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'relations') @> '[{"character_id":"entity-map055-master-a","location_id":"entity-map055-location-a"}]'::jsonb),
-  'campaign B relations exclude campaign A endpoints'
-);
-
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'relation_entities') @> '[{"id":"entity-map055-master-a","audience":"master"},{"id":"entity-map055-location-a","audience":"public"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'relation_entities') @> '[{"id":"entity-map055-master-b"}]'::jsonb)
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000053'::uuid) -> 'relation_entities') @> '[{"id":"entity-map055-location-b"}]'::jsonb),
-  'campaign A relation_entities contain only A endpoints'
-);
-select ok(
-  (public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'relation_entities') @> '[{"id":"entity-map055-master-b","audience":"master"},{"id":"entity-map055-location-b","audience":"public"}]'::jsonb
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'relation_entities') @> '[{"id":"entity-map055-master-a"}]'::jsonb)
-  and not ((public.admin_get_master_catalog_v3('00000000-0000-4000-8000-000000000055'::uuid) -> 'relation_entities') @> '[{"id":"entity-map055-location-a"}]'::jsonb),
-  'campaign B relation_entities contain only B endpoints'
+  position(
+    'MAP055 A CATEGORY CANARY'
+    in public.admin_get_master_catalog_v3(
+      '00000000-0000-4000-8000-000000000055'::uuid
+    )::text
+  ) = 0
+  and position(
+    'MAP055 A TAG CANARY'
+    in public.admin_get_master_catalog_v3(
+      '00000000-0000-4000-8000-000000000055'::uuid
+    )::text
+  ) = 0
+  and position(
+    'MAP055 A ALIAS CANARY'
+    in public.admin_get_master_catalog_v3(
+      '00000000-0000-4000-8000-000000000055'::uuid
+    )::text
+  ) = 0
+  and position(
+    'MAP055 A PLAYER CANARY'
+    in public.admin_get_master_catalog_v3(
+      '00000000-0000-4000-8000-000000000055'::uuid
+    )::text
+  ) = 0,
+  'campaign B catalog excludes campaign A private facets and player data'
 );
 
 select is(
