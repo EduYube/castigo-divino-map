@@ -114,7 +114,11 @@ export function mountAdminPublicRequests(
     const option = Array.from(selector?.options ?? []).find(
       (candidate) => candidate.value === campaignId,
     );
-    return option?.textContent?.trim() || campaignId;
+    const label = option?.textContent
+      ?.replace(/ — archivada/g, '')
+      .replace(/ — inicial v1\.0/g, '')
+      .trim();
+    return label || campaignId;
   };
 
   heading.textContent = 'Solicitudes públicas';
@@ -321,7 +325,7 @@ export function mountAdminPublicRequests(
     } else if (feedback) {
       status.textContent = feedback;
     } else {
-      status.textContent = `${state.records.length} solicitudes disponibles en ${activeCampaignLabel()}.`;
+      status.textContent = `${state.records.length} solicitudes administrativas disponibles en ${activeCampaignLabel()}.`;
     }
 
     for (const request of state.records) {
