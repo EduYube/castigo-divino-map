@@ -56,7 +56,34 @@ describe('MAP-054 administrative campaign scoping', () => {
     });
   });
 
-  it('rewrites save and moderation RPCs without changing unrelated endpoints', () => {
+  it('rewrites legacy moderation and overwrites campaign scope on direct v2 requests', () => {
+    const legacy = scopeAdminRpcRequest(
+      new URL('https://example.supabase.co/rest/v1/rpc/admin_moderate_public_request'),
+      { method: 'POST', body: JSON.stringify({ p_request_id: 'request-id' }) },
+      SELECTED_CAMPAIGN,
+    );
+    expect(legacy.url.pathname.endsWith('/rpc/admin_moderate_public_request_v2')).toBe(true);
+    expect(jsonBody(legacy.init).p_campaign_id).toBe(SELECTED_CAMPAIGN);
+
+    const directV2 = scopeAdminRpcRequest(
+      new URL('https://example.supabase.co/rest/v1/rpc/admin_moderate_public_request_v2'),
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          p_request_id: 'request-id',
+          p_campaign_id: ATTACKER_CAMPAIGN,
+        }),
+      },
+      SELECTED_CAMPAIGN,
+    );
+    expect(directV2.url.pathname.endsWith('/rpc/admin_moderate_public_request_v2')).toBe(true);
+    expect(jsonBody(directV2.init)).toMatchObject({
+      p_request_id: 'request-id',
+      p_campaign_id: SELECTED_CAMPAIGN,
+    });
+  });
+
+  it('rewrites save and leaves unrelated endpoints unchanged', () => {
     const save = scopeAdminRpcRequest(
       new URL('https://example.supabase.co/rest/v1/rpc/admin_save_map_entity_v3'),
       { method: 'POST', body: JSON.stringify({ p_id: 'entity-test' }) },
@@ -64,14 +91,6 @@ describe('MAP-054 administrative campaign scoping', () => {
     );
     expect(save.url.pathname.endsWith('/rpc/admin_save_map_entity_v4')).toBe(true);
     expect(jsonBody(save.init).p_campaign_id).toBe(SELECTED_CAMPAIGN);
-
-    const moderation = scopeAdminRpcRequest(
-      new URL('https://example.supabase.co/rest/v1/rpc/admin_moderate_public_request'),
-      { method: 'POST', body: JSON.stringify({ p_request_id: 'request-id' }) },
-      SELECTED_CAMPAIGN,
-    );
-    expect(moderation.url.pathname.endsWith('/rpc/admin_moderate_public_request_v2')).toBe(true);
-    expect(jsonBody(moderation.init).p_campaign_id).toBe(SELECTED_CAMPAIGN);
 
     const unrelatedUrl = new URL('https://example.supabase.co/rest/v1/rpc/current_user_is_admin');
     const unrelatedInit = { method: 'POST', body: '{}' } satisfies RequestInit;
