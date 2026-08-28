@@ -387,6 +387,9 @@ test('a partial A draft keeps A when the global selector moves to B and cancel i
   await page.getByLabel('Motivo de la solicitud').fill('Cancelar el retarget');
   await page.getByRole('button', { name: 'Enviar solicitud para revisión' }).click();
 
+  await expect(page.locator('[data-public-pin-request-status]')).toContainText(
+    'Solicitud enviada a Castigo Divino',
+  );
   await expect.poll(() => backend.getPublicRequests().length).toBe(1);
   expect(backend.getPublicRequests()[0]?.p_campaign_id).toBe(CAMPAIGN_A_ID);
 });
@@ -430,9 +433,7 @@ test('a B draft switching back to A cannot submit until keep-or-move is resolved
   await expect(page.locator('[data-public-pin-request-status]')).toContainText(
     'Antes de enviar, decide',
   );
-  await expect(
-    page.getByRole('button', { name: 'Conservar borrador en Campaña B' }),
-  ).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Conservar borrador en Campaña B' })).toBeFocused();
   expect(backend.getPublicRequests()).toHaveLength(0);
 
   await page.getByRole('button', { name: 'Mover borrador a Castigo Divino' }).click();
