@@ -200,12 +200,17 @@ for (const viewport of DESKTOP_VIEWPORTS) {
     await openEntityEditor(page);
     await expectTwoColumnEntityGrid(page);
     const fields = page.locator('.admin-map-entity__fields > .admin-map-entity__field');
-    const firstField = await fields.nth(0).boundingBox();
-    const secondField = await fields.nth(1).boundingBox();
-    expect(firstField).not.toBeNull();
-    expect(secondField).not.toBeNull();
-    expect(Math.abs(secondField!.y - firstField!.y)).toBeLessThan(4);
-    expect(secondField!.x).toBeGreaterThan(firstField!.x + firstField!.width * 0.8);
+    await expect
+      .poll(async () => {
+        const firstField = await fields.nth(0).boundingBox();
+        const secondField = await fields.nth(1).boundingBox();
+        if (!firstField || !secondField) return false;
+        return (
+          Math.abs(secondField.y - firstField.y) < 4 &&
+          secondField.x > firstField.x + firstField.width * 0.8
+        );
+      })
+      .toBe(true);
 
     const map = page.getByTestId('admin-coordinate-map');
     const mapBox = await map.boundingBox();
