@@ -121,6 +121,15 @@ export function mountAdminPublicRequests(
     return label || campaignId;
   };
 
+  let renderedCampaignLabel = activeCampaignLabel();
+  const campaignLabelObserver = new MutationObserver(() => {
+    const nextCampaignLabel = activeCampaignLabel();
+    if (nextCampaignLabel === renderedCampaignLabel) return;
+    renderedCampaignLabel = nextCampaignLabel;
+    render(controller.getState());
+  });
+  campaignLabelObserver.observe(shell, { childList: true, subtree: true });
+
   heading.textContent = 'Solicitudes públicas';
   heading.id = 'admin-public-requests-heading';
   section.setAttribute('aria-labelledby', heading.id);
@@ -380,7 +389,7 @@ export function mountAdminPublicRequests(
       }
       moderationNoteDrafts.delete(action.request.id);
       feedback =
-        'Borrador creado en la campaña activa, sin categoría ni etiquetas. Debe revisarse en el editor antes de cualquier publicación.';
+        'Borrador creado sin categoría ni etiquetas en la campaña activa. Debe revisarse en el editor antes de cualquier publicación.';
       render(controller.getState());
       try {
         await options.onOpenDraft?.(result.draftEntityId);
@@ -430,6 +439,7 @@ export function mountAdminPublicRequests(
       unsubscribeController();
       unsubscribeAuth();
       unsubscribeCampaign();
+      campaignLabelObserver.disconnect();
       moderationNoteDrafts.clear();
       filter.removeEventListener('change', handleFilter);
       sort.removeEventListener('change', handleSort);
