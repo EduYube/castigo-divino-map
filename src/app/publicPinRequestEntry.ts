@@ -46,8 +46,7 @@ function preservePublicRequestAccessibilityContract(root: ParentNode): void {
     root,
     '[data-public-pin-request-campaign-target-name]',
   );
-  const campaignTargetLabel =
-    campaignTarget.querySelector<HTMLElement>('strong');
+  const campaignTargetLabel = campaignTarget.querySelector<HTMLElement>('strong');
 
   form.setAttribute(
     'aria-describedby',
