@@ -301,7 +301,8 @@ test('stale campaign A cannot re-enter the DOM when it resolves after campaign B
   await search.fill('Canario actual B');
   const resultB = page.locator(`[data-search-result-id="${MASTER_B_ID}"]`);
   await expect(resultB).toBeVisible();
-  await resultB.click();
+  await resultB.focus();
+  await resultB.press('Enter');
   await expect(page.getByTestId('place-details')).toContainText(MASTER_B_NAME);
   await expect(page.getByTestId('place-details')).not.toContainText(MASTER_A_NAME);
   await expect
