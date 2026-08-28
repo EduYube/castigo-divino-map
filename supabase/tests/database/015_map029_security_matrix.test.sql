@@ -87,18 +87,34 @@ select ok(
 select ok(
   pg_catalog.has_function_privilege(
     'anon',
-    'public.submit_public_request(text,text,public.entity_type,double precision,double precision,text,text,text)',
+    'public.begin_public_request_submission(uuid)',
     'EXECUTE'
-  ),
-  'anon may execute only the closed public request RPC'
+  )
+  and pg_catalog.has_function_privilege(
+    'anon',
+    'public.submit_public_request_v3(text,text,text,public.entity_type,double precision,double precision,text,text,text)',
+    'EXECUTE'
+  )
+  and to_regprocedure(
+    'public.submit_public_request(text,text,public.entity_type,double precision,double precision,text,text,text)'
+  ) is null
+  and to_regprocedure(
+    'public.submit_public_request_v2(uuid,text,text,public.entity_type,double precision,double precision,text,text,text)'
+  ) is null,
+  'anon can execute only the backend-bound public request ingress'
 );
 select ok(
   pg_catalog.has_function_privilege(
     'authenticated',
-    'public.submit_public_request(text,text,public.entity_type,double precision,double precision,text,text,text)',
+    'public.begin_public_request_submission(uuid)',
+    'EXECUTE'
+  )
+  and pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.submit_public_request_v3(text,text,text,public.entity_type,double precision,double precision,text,text,text)',
     'EXECUTE'
   ),
-  'authenticated users may use the same public request RPC'
+  'authenticated users may use the same backend-bound public request ingress'
 );
 select ok(
   not pg_catalog.has_function_privilege(
