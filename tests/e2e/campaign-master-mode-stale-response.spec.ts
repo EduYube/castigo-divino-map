@@ -136,11 +136,7 @@ async function configureStaleBackend(page: Page): Promise<StaleBackend> {
       const nativeFetch = window.fetch.bind(window);
       window.fetch = (input, init) => {
         const requestUrl =
-          typeof input === 'string'
-            ? input
-            : input instanceof URL
-              ? input.href
-              : input.url;
+          typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
         if (requestUrl.includes('/rest/v1/rpc/admin_get_master_catalog_v3') && init) {
           const abortIgnoringInit = { ...init };
           delete abortIgnoringInit.signal;
