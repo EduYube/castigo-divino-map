@@ -1,6 +1,7 @@
 import type { Map as LeafletMap } from 'leaflet';
 
 import '../styles/public-pin-request.css';
+import '../styles/public-pin-request-campaign.css';
 import {
   mountPublicPinRequest as mountPublicPinRequestController,
   type PublicPinRequestController,
