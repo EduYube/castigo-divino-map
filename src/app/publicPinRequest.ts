@@ -682,13 +682,14 @@ export function mountPublicPinRequest(
 
     submitController?.abort();
     const controller = new AbortController();
+    const submittedCampaign = requestCampaign;
     submitController = controller;
     elements.submitButton.disabled = true;
     elements.form.dataset.submitState = 'submitting';
-    setStatus(`Enviando la solicitud a ${requestCampaign.name}…`);
+    setStatus(`Enviando la solicitud a ${submittedCampaign.name}…`);
 
     try {
-      await repository.submit(validation.value, requestCampaign.id, controller.signal);
+      await repository.submit(validation.value, submittedCampaign.id, controller.signal);
       const completedAt = Date.now();
       lastSuccessAt = completedAt;
       storeLastSuccessAt(completedAt);
@@ -698,7 +699,7 @@ export function mountPublicPinRequest(
       hideCampaignChangePrompt();
       renderCampaignTarget();
       setStatus(
-        `Solicitud enviada a ${requestCampaign.name} para revisión. No se publicará automáticamente en el mapa.`,
+        `Solicitud enviada a ${submittedCampaign.name} para revisión. No se publicará automáticamente en el mapa.`,
         'success',
       );
     } catch (error) {
