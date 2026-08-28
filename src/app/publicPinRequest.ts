@@ -11,11 +11,25 @@ import { getCurrentPublicCampaignSelection } from './campaignSelection';
 
 const DEFAULT_COOLDOWN_MS = 60_000;
 const LAST_SUCCESS_STORAGE_KEY = 'atlas:public-pin-request:last-success-at';
+const CAMPAIGN_WILL_CHANGE_EVENT = 'atlas:campaign-will-change';
 
 interface PublicPinRequestTestConfig {
   readonly projectUrl?: string;
   readonly publishableKey?: string;
   readonly cooldownMs?: number;
+}
+
+interface PublicRequestCampaignTarget {
+  readonly id: string;
+  readonly slug: string;
+  readonly name: string;
+}
+
+interface CampaignWillChangeDetail {
+  readonly fromCampaignId: string;
+  readonly fromCampaignSlug: string;
+  readonly toCampaignId: string;
+  readonly toCampaignSlug: string;
 }
 
 declare global {
@@ -34,6 +48,12 @@ interface PublicPinRequestElements {
   readonly heading: HTMLElement;
   readonly closeButton: HTMLButtonElement;
   readonly form: HTMLFormElement;
+  readonly campaignTarget: HTMLElement;
+  readonly campaignTargetName: HTMLElement;
+  readonly campaignChangePrompt: HTMLElement;
+  readonly campaignChangeText: HTMLElement;
+  readonly campaignKeepButton: HTMLButtonElement;
+  readonly campaignMoveButton: HTMLButtonElement;
   readonly senderName: HTMLInputElement;
   readonly proposedName: HTMLInputElement;
   readonly entityType: HTMLSelectElement;
@@ -50,18 +70,12 @@ interface PublicPinRequestElements {
 
 function getRequiredElement<T extends Element>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector);
-
-  if (!element) {
-    throw new Error(`Missing required public request element: ${selector}`);
-  }
-
+  if (!element) throw new Error(`Missing required public request element: ${selector}`);
   return element;
 }
 
 function ensurePublicPinRequestMarkup(root: ParentNode): void {
-  if (root.querySelector('[data-public-pin-request-panel]')) {
-    return;
-  }
+  if (root.querySelector('[data-public-pin-request-panel]')) return;
 
   const mapHeading = getRequiredElement<HTMLElement>(root, '.map-experience__heading');
   const mapWorkspace = getRequiredElement<HTMLElement>(root, '[data-map-workspace]');
@@ -113,8 +127,34 @@ function ensurePublicPinRequestMarkup(root: ParentNode): void {
       data-public-pin-request-form
       data-submit-state="idle"
       novalidate
-      aria-describedby="public-pin-request-privacy public-pin-request-status"
+      aria-describedby="public-pin-request-privacy public-pin-request-campaign-target public-pin-request-status"
     >
+      <div
+        id="public-pin-request-campaign-target"
+        class="public-pin-request__campaign-target public-pin-request__field--wide"
+        data-public-pin-request-campaign-target
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <strong>Campaña destinataria:</strong>
+        <span data-public-pin-request-campaign-target-name></span>
+        <span>Esta propuesta se enviará únicamente a esa campaña.</span>
+      </div>
+
+      <div
+        class="public-pin-request__campaign-change public-pin-request__field--wide"
+        data-public-pin-request-campaign-change
+        role="group"
+        aria-labelledby="public-pin-request-campaign-change-text"
+        hidden
+      >
+        <p id="public-pin-request-campaign-change-text" data-public-pin-request-campaign-change-text></p>
+        <div class="public-pin-request__campaign-change-actions">
+          <button type="button" data-public-pin-request-campaign-keep></button>
+          <button type="button" data-public-pin-request-campaign-move></button>
+        </div>
+      </div>
+
       <div class="public-pin-request__field">
         <label for="public-pin-request-sender">Nombre o apodo</label>
         <input
@@ -127,12 +167,7 @@ function ensurePublicPinRequestMarkup(root: ParentNode): void {
           autocomplete="nickname"
           required
         />
-        <p
-          id="public-pin-request-sender-error"
-          class="public-pin-request__error"
-          data-public-pin-request-error="senderName"
-          hidden
-        ></p>
+        <p id="public-pin-request-sender-error" class="public-pin-request__error" data-public-pin-request-error="senderName" hidden></p>
       </div>
 
       <div class="public-pin-request__field">
@@ -147,12 +182,7 @@ function ensurePublicPinRequestMarkup(root: ParentNode): void {
           autocomplete="off"
           required
         />
-        <p
-          id="public-pin-request-name-error"
-          class="public-pin-request__error"
-          data-public-pin-request-error="proposedName"
-          hidden
-        ></p>
+        <p id="public-pin-request-name-error" class="public-pin-request__error" data-public-pin-request-error="proposedName" hidden></p>
       </div>
 
       <div class="public-pin-request__field">
@@ -169,12 +199,7 @@ function ensurePublicPinRequestMarkup(root: ParentNode): void {
           <option value="location">Emplazamiento</option>
         </select>
         <p class="public-pin-request__hint">La lista es cerrada; no se pueden proponer categorías ni etiquetas.</p>
-        <p
-          id="public-pin-request-type-error"
-          class="public-pin-request__error"
-          data-public-pin-request-error="entityType"
-          hidden
-        ></p>
+        <p id="public-pin-request-type-error" class="public-pin-request__error" data-public-pin-request-error="entityType" hidden></p>
       </div>
 
       <fieldset class="public-pin-request__field public-pin-request__position-field">
@@ -183,28 +208,13 @@ function ensurePublicPinRequestMarkup(root: ParentNode): void {
           Puedes señalarla con ratón o toque. Si navegas con teclado, usa el centro visible del mapa.
         </p>
         <div class="public-pin-request__position-actions">
-          <button
-            type="button"
-            data-public-pin-request-choose-position
-            data-public-pin-request-field="position"
-            aria-pressed="false"
-          >
+          <button type="button" data-public-pin-request-choose-position data-public-pin-request-field="position" aria-pressed="false">
             Elegir posición en el mapa
           </button>
           <button type="button" data-public-pin-request-use-center>Usar el centro visible</button>
         </div>
-        <output
-          class="public-pin-request__position"
-          data-public-pin-request-position
-          aria-live="polite"
-          aria-atomic="true"
-        ></output>
-        <p
-          id="public-pin-request-position-error"
-          class="public-pin-request__error"
-          data-public-pin-request-error="position"
-          hidden
-        ></p>
+        <output class="public-pin-request__position" data-public-pin-request-position aria-live="polite" aria-atomic="true"></output>
+        <p id="public-pin-request-position-error" class="public-pin-request__error" data-public-pin-request-error="position" hidden></p>
       </fieldset>
 
       <div class="public-pin-request__field public-pin-request__field--wide">
@@ -219,12 +229,7 @@ function ensurePublicPinRequestMarkup(root: ParentNode): void {
           required
         ></textarea>
         <p class="public-pin-request__hint">Máximo 2000 caracteres.</p>
-        <p
-          id="public-pin-request-description-error"
-          class="public-pin-request__error"
-          data-public-pin-request-error="description"
-          hidden
-        ></p>
+        <p id="public-pin-request-description-error" class="public-pin-request__error" data-public-pin-request-error="description" hidden></p>
       </div>
 
       <div class="public-pin-request__field public-pin-request__field--wide">
@@ -239,24 +244,12 @@ function ensurePublicPinRequestMarkup(root: ParentNode): void {
           required
         ></textarea>
         <p class="public-pin-request__hint">Máximo 1000 caracteres.</p>
-        <p
-          id="public-pin-request-reason-error"
-          class="public-pin-request__error"
-          data-public-pin-request-error="reason"
-          hidden
-        ></p>
+        <p id="public-pin-request-reason-error" class="public-pin-request__error" data-public-pin-request-error="reason" hidden></p>
       </div>
 
       <div class="public-pin-request__trap" aria-hidden="true">
         <label for="public-pin-request-contact">Deja este campo vacío</label>
-        <input
-          id="public-pin-request-contact"
-          data-public-pin-request-honeypot
-          name="contact"
-          type="text"
-          tabindex="-1"
-          autocomplete="off"
-        />
+        <input id="public-pin-request-contact" data-public-pin-request-honeypot name="contact" type="text" tabindex="-1" autocomplete="off" />
       </div>
 
       <p
@@ -285,6 +278,12 @@ function resolveElements(root: ParentNode): PublicPinRequestElements {
     heading: getRequiredElement(root, '[data-public-pin-request-heading]'),
     closeButton: getRequiredElement(root, '[data-public-pin-request-close]'),
     form: getRequiredElement(root, '[data-public-pin-request-form]'),
+    campaignTarget: getRequiredElement(root, '[data-public-pin-request-campaign-target]'),
+    campaignTargetName: getRequiredElement(root, '[data-public-pin-request-campaign-target-name]'),
+    campaignChangePrompt: getRequiredElement(root, '[data-public-pin-request-campaign-change]'),
+    campaignChangeText: getRequiredElement(root, '[data-public-pin-request-campaign-change-text]'),
+    campaignKeepButton: getRequiredElement(root, '[data-public-pin-request-campaign-keep]'),
+    campaignMoveButton: getRequiredElement(root, '[data-public-pin-request-campaign-move]'),
     senderName: getRequiredElement(root, '[data-public-pin-request-sender]'),
     proposedName: getRequiredElement(root, '[data-public-pin-request-name]'),
     entityType: getRequiredElement(root, '[data-public-pin-request-type]'),
@@ -353,6 +352,21 @@ function errorMessage(error: unknown): string {
   }
 }
 
+function resolveCampaignName(root: ParentNode, slug: string): string {
+  const selector = root.querySelector<HTMLSelectElement>('[data-campaign-select]');
+  const option = Array.from(selector?.options ?? []).find((candidate) => candidate.value === slug);
+  return option?.textContent?.trim() || slug;
+}
+
+function resolveCampaignTarget(root: ParentNode): PublicRequestCampaignTarget {
+  const selection = getCurrentPublicCampaignSelection();
+  return {
+    id: selection.id,
+    slug: selection.slug,
+    name: resolveCampaignName(root, selection.slug),
+  };
+}
+
 export function mountPublicPinRequest(
   root: ParentNode,
   map: LeafletMap,
@@ -372,6 +386,8 @@ export function mountPublicPinRequest(
   let selectingPosition = false;
   let lastSuccessAt = readLastSuccessAt();
   let submitController: AbortController | null = null;
+  let requestCampaign = resolveCampaignTarget(root);
+  let pendingCampaign: PublicRequestCampaignTarget | null = null;
 
   try {
     repository = new SupabasePublicPinRequestRepository({
@@ -396,6 +412,43 @@ export function mountPublicPinRequest(
     elements.status.textContent = message;
     elements.status.dataset.statusKind = kind;
   };
+
+  const renderCampaignTarget = (): void => {
+    elements.campaignTargetName.textContent = `${requestCampaign.name}. `;
+    elements.campaignTarget.dataset.campaignId = requestCampaign.id;
+    elements.campaignTarget.dataset.campaignSlug = requestCampaign.slug;
+  };
+
+  const hideCampaignChangePrompt = (): void => {
+    pendingCampaign = null;
+    elements.campaignChangePrompt.hidden = true;
+    elements.campaignChangeText.textContent = '';
+    elements.campaignKeepButton.textContent = '';
+    elements.campaignMoveButton.textContent = '';
+  };
+
+  const renderCampaignChangePrompt = (): void => {
+    if (!pendingCampaign) {
+      hideCampaignChangePrompt();
+      return;
+    }
+    elements.campaignChangeText.textContent =
+      `Has cambiado el mapa a ${pendingCampaign.name}, pero este borrador sigue destinado a ${requestCampaign.name}. ` +
+      'Elige qué campaña debe recibirlo; tus datos no se modificarán.';
+    elements.campaignKeepButton.textContent = `Conservar borrador en ${requestCampaign.name}`;
+    elements.campaignMoveButton.textContent = `Mover borrador a ${pendingCampaign.name}`;
+    elements.campaignChangePrompt.hidden = false;
+  };
+
+  const isDraftDirty = (): boolean =>
+    elements.senderName.value.trim().length > 0 ||
+    elements.proposedName.value.trim().length > 0 ||
+    elements.entityType.value.length > 0 ||
+    elements.description.value.trim().length > 0 ||
+    elements.reason.value.trim().length > 0 ||
+    elements.honeypot.value.length > 0 ||
+    selectedX !== null ||
+    selectedY !== null;
 
   const setSelectingPosition = (value: boolean): void => {
     selectingPosition = value;
@@ -427,7 +480,6 @@ export function mountPublicPinRequest(
     const error = elements.form.querySelector<HTMLElement>(
       `[data-public-pin-request-error="${field}"]`,
     );
-
     target.removeAttribute('aria-invalid');
     target.removeAttribute('aria-errormessage');
     if (error) {
@@ -458,7 +510,15 @@ export function mountPublicPinRequest(
     clearFieldError('position');
   };
 
+  const syncEmptyDraftToCurrentCampaign = (): void => {
+    if (isDraftDirty()) return;
+    requestCampaign = resolveCampaignTarget(root);
+    hideCampaignChangePrompt();
+    renderCampaignTarget();
+  };
+
   const openPanel = (): void => {
+    syncEmptyDraftToCurrentCampaign();
     elements.panel.hidden = false;
     elements.openButton.setAttribute('aria-expanded', 'true');
     window.requestAnimationFrame(() => elements.heading.focus({ preventScroll: true }));
@@ -495,7 +555,6 @@ export function mountPublicPinRequest(
         `[data-public-pin-request-error="${field}"]`,
       );
       if (!error) continue;
-
       error.textContent = message;
       error.hidden = false;
       target.setAttribute('aria-invalid', 'true');
@@ -526,8 +585,65 @@ export function mountPublicPinRequest(
     if (field) clearFieldError(field);
   };
 
+  const handleCampaignWillChange = (event: Event): void => {
+    const detail = (event as CustomEvent<CampaignWillChangeDetail>).detail;
+    if (!detail?.toCampaignId || !detail.toCampaignSlug) return;
+
+    if (detail.toCampaignId === requestCampaign.id) {
+      hideCampaignChangePrompt();
+      return;
+    }
+
+    const nextCampaign: PublicRequestCampaignTarget = {
+      id: detail.toCampaignId,
+      slug: detail.toCampaignSlug,
+      name: resolveCampaignName(root, detail.toCampaignSlug),
+    };
+
+    if (!isDraftDirty()) {
+      requestCampaign = nextCampaign;
+      hideCampaignChangePrompt();
+      renderCampaignTarget();
+      if (!elements.panel.hidden) {
+        setStatus(`La propuesta vacía ahora está destinada a ${nextCampaign.name}.`);
+      }
+      return;
+    }
+
+    pendingCampaign = nextCampaign;
+    renderCampaignChangePrompt();
+    setStatus(
+      `El borrador sigue destinado a ${requestCampaign.name}. Confirma si quieres moverlo a ${nextCampaign.name}.`,
+    );
+  };
+
+  const handleKeepCampaign = (): void => {
+    const keptCampaign = requestCampaign;
+    hideCampaignChangePrompt();
+    setStatus(
+      `Borrador conservado en ${keptCampaign.name}. El cambio del mapa no ha cambiado el destino de la solicitud.`,
+    );
+  };
+
+  const handleMoveCampaign = (): void => {
+    if (!pendingCampaign) return;
+    requestCampaign = pendingCampaign;
+    hideCampaignChangePrompt();
+    renderCampaignTarget();
+    setStatus(`Borrador movido a ${requestCampaign.name}. Tus datos se han conservado.`);
+  };
+
   const handleSubmit = async (event: SubmitEvent): Promise<void> => {
     event.preventDefault();
+
+    if (pendingCampaign) {
+      setStatus(
+        `Antes de enviar, decide si el borrador permanece en ${requestCampaign.name} o se mueve a ${pendingCampaign.name}.`,
+        'error',
+      );
+      elements.campaignKeepButton.focus({ preventScroll: false });
+      return;
+    }
 
     const draft: PublicPinRequestDraft = {
       senderName: elements.senderName.value,
@@ -569,21 +685,20 @@ export function mountPublicPinRequest(
     submitController = controller;
     elements.submitButton.disabled = true;
     elements.form.dataset.submitState = 'submitting';
-    setStatus('Enviando la solicitud…');
+    setStatus(`Enviando la solicitud a ${requestCampaign.name}…`);
 
     try {
-      await repository.submit(
-        validation.value,
-        getCurrentPublicCampaignSelection().id,
-        controller.signal,
-      );
+      await repository.submit(validation.value, requestCampaign.id, controller.signal);
       const completedAt = Date.now();
       lastSuccessAt = completedAt;
       storeLastSuccessAt(completedAt);
       elements.form.reset();
       clearPosition();
+      requestCampaign = resolveCampaignTarget(root);
+      hideCampaignChangePrompt();
+      renderCampaignTarget();
       setStatus(
-        'Solicitud enviada para revisión. No se publicará automáticamente en el mapa.',
+        `Solicitud enviada a ${requestCampaign.name} para revisión. No se publicará automáticamente en el mapa.`,
         'success',
       );
     } catch (error) {
@@ -597,19 +712,21 @@ export function mountPublicPinRequest(
       }
     }
   };
-  const handleSubmitEvent = (event: SubmitEvent): void => {
-    void handleSubmit(event);
-  };
+  const handleSubmitEvent = (event: SubmitEvent): void => void handleSubmit(event);
 
   elements.openButton.addEventListener('click', handleOpen);
   elements.closeButton.addEventListener('click', handleClose);
   elements.choosePositionButton.addEventListener('click', handleChoosePosition);
   elements.useCenterButton.addEventListener('click', handleUseCenter);
+  elements.campaignKeepButton.addEventListener('click', handleKeepCampaign);
+  elements.campaignMoveButton.addEventListener('click', handleMoveCampaign);
   elements.form.addEventListener('input', handleInput);
   elements.form.addEventListener('change', handleInput);
   elements.form.addEventListener('submit', handleSubmitEvent);
+  window.addEventListener(CAMPAIGN_WILL_CHANGE_EVENT, handleCampaignWillChange);
   map.on('click', handleMapClick);
   clearPosition();
+  renderCampaignTarget();
 
   return {
     destroy(): void {
@@ -620,9 +737,12 @@ export function mountPublicPinRequest(
       elements.closeButton.removeEventListener('click', handleClose);
       elements.choosePositionButton.removeEventListener('click', handleChoosePosition);
       elements.useCenterButton.removeEventListener('click', handleUseCenter);
+      elements.campaignKeepButton.removeEventListener('click', handleKeepCampaign);
+      elements.campaignMoveButton.removeEventListener('click', handleMoveCampaign);
       elements.form.removeEventListener('input', handleInput);
       elements.form.removeEventListener('change', handleInput);
       elements.form.removeEventListener('submit', handleSubmitEvent);
+      window.removeEventListener(CAMPAIGN_WILL_CHANGE_EVENT, handleCampaignWillChange);
       delete elements.mapCanvas.dataset.publicRequestSelecting;
     },
   };
