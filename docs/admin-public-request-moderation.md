@@ -24,7 +24,9 @@ La bandeja vive dentro de la administración existente y reutiliza la autenticac
 
 El formulario de `Proponer un pin` muestra siempre una línea de campaña destinataria. Al abrirse captura la selección pública vigente de MAP-055. El jugador no introduce un segundo ID o slug de campaña y el formulario no expone audiencia Máster.
 
-El envío usa `public.submit_public_request_v2(...)`, que recibe el UUID de campaña y valida en PostgreSQL que corresponda a una campaña activa. El RPC solo acepta los campos propios de la propuesta; no acepta audiencia, categoría, jugador, tags, relaciones ni `converted_entity_id`.
+El ingreso público se divide en dos operaciones. `public.begin_public_request_submission(uuid)` valida que la campaña solicitada exista y siga activa y devuelve una capacidad opaca, firmada y de corta duración. El cliente comprueba además que la identidad de campaña devuelta por backend coincide con la campaña que el formulario había fijado. Después `public.submit_public_request_v3(...)` recibe esa capacidad junto a los campos propios de la propuesta, pero **no recibe `campaign_id`**: PostgreSQL deriva la campaña exclusivamente de la capacidad firmada, comprueba de nuevo que siga activa y consume el nonce una sola vez antes de insertar la solicitud.
+
+Una capacidad emitida para A no se puede convertir en una capacidad válida para B sustituyendo el UUID: la firma HMAC deja de coincidir. Reintroducir un `p_campaign_id` adicional tampoco forma parte de la firma de `submit_public_request_v3` y PostgREST rechaza ese payload. Las antiguas `submit_public_request(...)` y `submit_public_request_v2(...)` se revocan y eliminan, de modo que no queda un entrypoint público que fuerce la campaña inicial ni que acepte un UUID de campaña directamente durante el submit final.
 
 Si la campaña global cambia con el formulario abierto:
 
@@ -34,7 +36,22 @@ Si la campaña global cambia con el formulario abierto:
 - mientras esa decisión esté pendiente, el submit queda bloqueado;
 - mover el borrador conserva campos y posición; conservarlo mantiene la campaña original aunque el mapa global ya muestre otra.
 
-La selección capturada por el formulario es la que se envía al backend. El submit no vuelve a leer de forma oportunista el selector global en el último instante.
+La selección capturada por el formulario es la que inicia la vinculación con backend. El submit final no vuelve a leer de forma oportunista el selector global y no transmite una campaña mutable separada de la capacidad.
+
+## Seguridad del ingreso público
+
+El navegador sigue siendo no confiable. La capacidad no pretende autenticar al jugador: su función es hacer que la campaña validada en el paso de vinculación sea inmutable durante la operación final de escritura.
+
+- `atlas_public_request_submitter` es un rol dedicado `NOLOGIN`, sin `SUPERUSER`, `CREATEDB`, `CREATEROLE`, `REPLICATION` ni `BYPASSRLS`.
+- `begin_public_request_submission` y `submit_public_request_v3` son `SECURITY DEFINER`, usan `search_path = ''` y pertenecen a ese rol dedicado, no a `postgres`.
+- El rol solo puede leer campañas activas mediante RLS, leer el secreto privado de firma, registrar nonces consumidos e insertar las columnas mínimas de `public_requests` bajo una policy específica.
+- `anon` y `authenticated` no reciben `SELECT` sobre el secreto ni acceso a la tabla de nonces; solo `EXECUTE` sobre los dos RPC públicos.
+- El secreto HMAC se genera durante la migración con `pgcrypto` y permanece en `private`; nunca se devuelve al cliente ni forma parte del snapshot o del artefacto web.
+- La capacidad contiene campaña, expiración y nonce, firmados con HMAC-SHA256. El submit rechaza estructura/firma inválida, expiración, fechas excesivamente futuras, campaña ya archivada y replay del nonce.
+- La fila de nonce se inserta en la misma transacción que la solicitud; si la validación posterior o el insert fallan, el consumo también hace rollback.
+- `public_requests` conserva la validación de estado inicial `pending`, ausencia de campos de moderación y campaña activa. El submit no acepta audiencia, categoría, jugador, tags, relaciones ni `converted_entity_id`.
+
+La API permite comenzar legítimamente una propuesta para cualquier campaña pública activa, porque un visitante también puede seleccionar legítimamente cualquiera de esas campañas. Lo que se impide es cambiar el destino entre la vinculación que el formulario confirma y la escritura final, o conservar un entrypoint alternativo que acepte un scope distinto sin esa vinculación.
 
 ## Seguridad administrativa
 
@@ -50,9 +67,9 @@ PostgreSQL sigue siendo la frontera definitiva de autorización.
 - La función comprueba explícitamente `public.current_user_is_admin()` antes de bloquear o modificar una solicitud.
 - El `search_path` de la RPC queda vacío y las relaciones/funciones sensibles se referencian con esquema explícito.
 - El `EXECUTE` implícito de `PUBLIC` se revoca y solo se concede a `authenticated`; `anon` permanece excluido.
-- No se añade `service_role`, secreto, credencial privilegiada ni persistencia de tokens nueva.
+- No se añade `service_role`, JWT administrativo, contraseña de base de datos ni otra credencial privilegiada al cliente o al repositorio.
 
-La creación del rol dedicado sigue siendo idempotente para reconstrucciones locales. Si el rol ya existe, las migraciones previas verifican que siga siendo `NOLOGIN`, no privilegiado, sin `BYPASSRLS` y con herencia habilitada. Para transferir el ownership de la RPC en PostgreSQL 17, el usuario de migración recibe membresía temporal en ese rol y el rol recibe `CREATE` temporal sobre `public`; ambas concesiones se revocan antes del commit.
+La creación de roles dedicados sigue siendo idempotente para reconstrucciones locales. Si un rol ya existe, las migraciones verifican que siga siendo `NOLOGIN`, no privilegiado, sin `BYPASSRLS` y con herencia habilitada. Para transferir ownership de funciones `SECURITY DEFINER` en PostgreSQL 17, el usuario de migración recibe membresía temporal en el rol y el rol recibe `CREATE` temporal sobre `public`; ambas concesiones se revocan antes del commit.
 
 ## Integridad del scope de campaña
 
@@ -162,12 +179,13 @@ La carga completa sigue siendo un límite de rendimiento para historiales grande
 
 La cobertura de MAP-056 conserva las regresiones de MAP-026/MAP-027/MAP-046 y añade aislamiento multicampaña:
 
-- unitarios del interceptor para demostrar que filtros y `p_campaign_id` manipulados se sustituyen por la campaña administrativa activa;
+- unitarios del repositorio público para demostrar que el submit final usa una capacidad verificada y no transmite `campaign_id`, y que una vinculación devuelta para una campaña distinta se rechaza antes de enviar contenido;
+- unitarios del interceptor administrativo para demostrar que filtros y `p_campaign_id` manipulados se sustituyen por la campaña administrativa activa;
 - E2E del formulario vacío/parcial/completo, A→B y B→A, keep/move, preservación de campos/posición y bloqueo del submit hasta resolver la decisión;
 - E2E completo para A y B: solicitud pública → bandeja scopeada → conversión → borrador en la misma campaña → publicación → pin visible únicamente en esa campaña;
-- E2E de payload público con campaña archivada o parámetros de campaña adicionales manipulados que falla de forma cerrada;
-- pgTAP para campaña inexistente/archivada, mismatch A/B, grants, autorización no-admin, audiencia pública forzada, `converted_entity_id` same-campaign y ausencia de la antigua RPC sin scope;
-- prueba PostgreSQL de dos sesiones concurrentes que usa v2 y verifica que exactamente una conversión gana y que request/entidad mantienen la misma campaña;
+- E2E adversarial con el formulario visible en A que intenta convertir una capacidad de A en B, reintroducir `p_campaign_id = B`, iniciar contra una campaña archivada y usar los entrypoints públicos legacy; todos fallan y dejan cero solicitudes;
+- pgTAP para firma A→B manipulada, campañas inexistentes/archivadas, replay/entrypoints legacy, grants, ownership del `SECURITY DEFINER`, autorización no-admin, audiencia pública forzada, `converted_entity_id` same-campaign y ausencia de la antigua RPC administrativa sin scope;
+- prueba PostgreSQL de dos sesiones concurrentes que usa la moderación v2 y verifica que exactamente una conversión gana y que request/entidad mantienen la misma campaña;
 - rehearsal de upgrades desde las baselines históricas del repositorio, además de reconstrucción limpia.
 
 La migración es forward-only. `seed.sql` no forma parte del despliegue de producción.
