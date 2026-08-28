@@ -33,6 +33,26 @@ function navigateToMountedPanel(root: ParentNode): void {
   });
 }
 
+function preservePublicRequestAccessibilityContract(root: ParentNode): void {
+  const form = getRequiredElement<HTMLFormElement>(root, '[data-public-pin-request-form]');
+  const campaignTarget = getRequiredElement<HTMLElement>(
+    root,
+    '[data-public-pin-request-campaign-target]',
+  );
+  const campaignTargetName = getRequiredElement<HTMLElement>(
+    root,
+    '[data-public-pin-request-campaign-target-name]',
+  );
+  const campaignTargetLabel = campaignTarget.querySelector<HTMLElement>('strong');
+
+  form.setAttribute(
+    'aria-describedby',
+    'public-pin-request-privacy public-pin-request-status',
+  );
+  form.setAttribute('aria-details', 'public-pin-request-campaign-target');
+  campaignTargetLabel?.after(campaignTargetName);
+}
+
 export function mountPublicPinRequest(
   root: ParentNode,
   map: LeafletMap,
@@ -56,6 +76,7 @@ export function mountPublicPinRequest(
     openButton.removeEventListener('click', handleFirstOpen);
     openButton.remove();
     controller = mountPublicPinRequestController(root, map);
+    preservePublicRequestAccessibilityContract(root);
 
     mountedOpenButton = getRequiredElement<HTMLButtonElement>(
       root,
