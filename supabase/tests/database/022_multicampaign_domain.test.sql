@@ -324,7 +324,8 @@ select is(
 
 select lives_ok(
   $sql$
-    select public.admin_moderate_public_request(
+    select public.admin_moderate_public_request_v2(
+      request.campaign_id,
       request.id,
       request.updated_at,
       'convert',
@@ -333,7 +334,7 @@ select lives_ok(
     from public.public_requests request
     where request.proposed_name = 'MAP053 proposed B'
   $sql$,
-  'admin moderation converts the campaign B request atomically'
+  'admin moderation converts the campaign B request atomically through the scoped RPC'
 );
 select is(
   (
