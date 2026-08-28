@@ -10,6 +10,8 @@ const PUBLISHABLE_KEY = 'sb_publishable_map026_test_key';
 const LEGACY_ANON_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.signature';
 const LEGACY_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.signature';
 const CAMPAIGN_ID = '00000000-0000-4000-8000-000000000054';
+const SUBMISSION_TOKEN =
+  '00000000-0000-4000-8000-000000000054.1788048000.56000000-0000-4000-8000-000000000001.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
 const REQUEST: ValidatedPublicPinRequest = {
   senderName: 'Edu',
@@ -22,33 +24,67 @@ const REQUEST: ValidatedPublicPinRequest = {
   honeypot: '',
 };
 
+function bindingBody(campaignId = CAMPAIGN_ID): string {
+  return JSON.stringify({
+    campaign_id: campaignId,
+    campaign_slug: 'campaign-b',
+    campaign_name: 'Campaña B',
+    submission_token: SUBMISSION_TOKEN,
+    expires_at: '2026-08-29T01:15:00.000Z',
+  });
+}
+
+const successfulFetch: typeof fetch = async (input) => {
+  const pathname = new URL(input instanceof Request ? input.url : String(input)).pathname;
+  return pathname.endsWith('/begin_public_request_submission')
+    ? new Response(bindingBody(), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    : new Response('true', { status: 200, headers: { 'Content-Type': 'application/json' } });
+};
+
 describe('SupabasePublicPinRequestRepository', () => {
-  test('posts only the closed RPC payload with the publishable key', async () => {
+  test('binds the selected campaign before posting a campaign-free submission payload', async () => {
     const capturedRequests: Request[] = [];
     const repository = new SupabasePublicPinRequestRepository({
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input, init) => {
-        capturedRequests.push(new Request(input, init));
-        return new Response('true', {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        const request = new Request(input, init);
+        capturedRequests.push(request);
+        return request.url.endsWith('/begin_public_request_submission')
+          ? new Response(bindingBody(), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          : new Response('true', {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            });
       },
     });
 
     await repository.submit(REQUEST, CAMPAIGN_ID, new AbortController().signal);
 
-    expect(capturedRequests).toHaveLength(1);
-    const capturedRequest = capturedRequests[0];
-    expect(capturedRequest).toBeDefined();
-    if (!capturedRequest) return;
-    expect(capturedRequest.method).toBe('POST');
-    expect(new URL(capturedRequest.url).pathname).toBe('/rest/v1/rpc/submit_public_request_v2');
-    expect(capturedRequest.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
-    expect(capturedRequest.headers.has('authorization')).toBe(false);
-    expect(await capturedRequest.json()).toEqual({
-      p_campaign_id: CAMPAIGN_ID,
+    expect(capturedRequests).toHaveLength(2);
+    const bindingRequest = capturedRequests[0];
+    const submissionRequest = capturedRequests[1];
+    expect(bindingRequest).toBeDefined();
+    expect(submissionRequest).toBeDefined();
+    if (!bindingRequest || !submissionRequest) return;
+
+    expect(bindingRequest.method).toBe('POST');
+    expect(new URL(bindingRequest.url).pathname).toBe(
+      '/rest/v1/rpc/begin_public_request_submission',
+    );
+    expect(bindingRequest.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
+    expect(bindingRequest.headers.has('authorization')).toBe(false);
+    expect(await bindingRequest.json()).toEqual({ p_campaign_id: CAMPAIGN_ID });
+
+    expect(submissionRequest.method).toBe('POST');
+    expect(new URL(submissionRequest.url).pathname).toBe('/rest/v1/rpc/submit_public_request_v3');
+    expect(submissionRequest.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
+    expect(submissionRequest.headers.has('authorization')).toBe(false);
+    expect(await submissionRequest.json()).toEqual({
+      p_submission_token: SUBMISSION_TOKEN,
       p_sender_name: 'Edu',
       p_proposed_name: 'Torre del Alba',
       p_entity_type: 'location',
@@ -77,12 +113,32 @@ describe('SupabasePublicPinRequestRepository', () => {
     expect(requests).toBe(0);
   });
 
+  test('rejects a backend binding for a different campaign before submitting content', async () => {
+    let requests = 0;
+    const repository = new SupabasePublicPinRequestRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      fetchImplementation: async () => {
+        requests += 1;
+        return new Response(bindingBody('00000000-0000-4000-8000-000000000053'), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      },
+    });
+
+    await expect(
+      repository.submit(REQUEST, CAMPAIGN_ID, new AbortController().signal),
+    ).rejects.toMatchObject({ kind: 'invalid-response' });
+    expect(requests).toBe(1);
+  });
+
   test('accepts the legacy anon key only for the local stack', async () => {
     const repository = new SupabasePublicPinRequestRepository({
       projectUrl: LOCAL_PROJECT_URL,
       publishableKey: LEGACY_ANON_KEY,
       allowLocalProject: true,
-      fetchImplementation: async () => new Response('true'),
+      fetchImplementation: successfulFetch,
     });
 
     await expect(
@@ -107,7 +163,7 @@ describe('SupabasePublicPinRequestRepository', () => {
       () =>
         new SupabasePublicPinRequestRepository({
           ...options,
-          fetchImplementation: async () => new Response('true'),
+          fetchImplementation: successfulFetch,
         }),
     ).toThrow(PublicPinRequestRepositoryError);
   });
@@ -148,11 +204,22 @@ describe('SupabasePublicPinRequestRepository', () => {
     });
   });
 
-  test('requires the RPC to return the minimal boolean confirmation', async () => {
+  test('requires the submission RPC to return the minimal boolean confirmation', async () => {
     const repository = new SupabasePublicPinRequestRepository({
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
-      fetchImplementation: async () => new Response('{"id":"must-not-be-returned"}'),
+      fetchImplementation: async (input) => {
+        const pathname = new URL(input instanceof Request ? input.url : String(input)).pathname;
+        return pathname.endsWith('/begin_public_request_submission')
+          ? new Response(bindingBody(), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          : new Response('{"id":"must-not-be-returned"}', {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            });
+      },
     });
 
     await expect(
