@@ -7,6 +7,7 @@ import {
   type PublicPinRequestField,
 } from '../domain/publicPinRequest';
 import { SupabasePublicPinRequestRepository } from '../infrastructure/supabase/publicPinRequestRepository';
+import { getCurrentPublicCampaignSelection } from './campaignSelection';
 
 const DEFAULT_COOLDOWN_MS = 60_000;
 const LAST_SUCCESS_STORAGE_KEY = 'atlas:public-pin-request:last-success-at';
@@ -571,7 +572,11 @@ export function mountPublicPinRequest(
     setStatus('Enviando la solicitud…');
 
     try {
-      await repository.submit(validation.value, controller.signal);
+      await repository.submit(
+        validation.value,
+        getCurrentPublicCampaignSelection().id,
+        controller.signal,
+      );
       const completedAt = Date.now();
       lastSuccessAt = completedAt;
       storeLastSuccessAt(completedAt);

@@ -4,6 +4,7 @@ const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const PROJECT_URL = 'http://127.0.0.1:4173';
 const ACCESS_TOKEN = 'map019_e2e_access_token';
+const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
 const PUBLIC_KEY = 'sb_publishable_map019_e2e_key';
 const REFRESH_TOKEN = 'map019_e2e_refresh_token';
 const PORTRAIT_PNG = Buffer.from(
@@ -251,56 +252,66 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         (entity) => entity.publication_status === 'published' && entity.audience === 'public',
       );
       const publicRows: Record<string, unknown>[] =
-        table === 'categories'
-          ? categories
-              .filter(({ publication_status }) => publication_status === 'published')
-              .map(({ id, name }) => ({ id, slug: id, name, description: '' }))
-          : table === 'tags'
-            ? tags
+        table === 'campaigns'
+          ? [
+              {
+                id: CAMPAIGN_A_ID,
+                slug: 'castigo-divino',
+                name: 'Castigo Divino',
+                status: 'active',
+                display_order: 0,
+              },
+            ]
+          : table === 'categories'
+            ? categories
                 .filter(({ publication_status }) => publication_status === 'published')
-                .map(({ id, name }) => ({ id, name, description: '' }))
-            : table === 'players'
-              ? players
+                .map(({ id, name }) => ({ id, slug: id, name, description: '' }))
+            : table === 'tags'
+              ? tags
                   .filter(({ publication_status }) => publication_status === 'published')
-                  .map(({ id, display_name }) => ({
-                    id,
-                    slug: id,
-                    display_name,
-                    name_language: 'en',
-                  }))
-              : table === 'map_entities'
-                ? publishedEntities.map((entity) => ({
-                    id: entity.id,
-                    slug: entity.slug,
-                    entity_type: entity.entity_type,
-                    visibility: entity.visibility,
-                    name: entity.name,
-                    name_language: 'en',
-                    summary: entity.summary,
-                    description: entity.description,
-                    portrait_path: entity.portrait_path,
-                    x: entity.x,
-                    y: entity.y,
-                    category_id: entity.category_id,
-                  }))
-                : table === 'entity_tags'
-                  ? publishedEntities.flatMap((entity) =>
-                      (entityTags.get(entity.id) ?? []).map((tagId) => ({
-                        entity_id: entity.id,
-                        tag_id: tagId,
-                      })),
-                    )
-                  : table === 'entity_player_dispositions'
+                  .map(({ id, name }) => ({ id, name, description: '' }))
+              : table === 'players'
+                ? players
+                    .filter(({ publication_status }) => publication_status === 'published')
+                    .map(({ id, display_name }) => ({
+                      id,
+                      slug: id,
+                      display_name,
+                      name_language: 'en',
+                    }))
+                : table === 'map_entities'
+                  ? publishedEntities.map((entity) => ({
+                      id: entity.id,
+                      slug: entity.slug,
+                      entity_type: entity.entity_type,
+                      visibility: entity.visibility,
+                      name: entity.name,
+                      name_language: 'en',
+                      summary: entity.summary,
+                      description: entity.description,
+                      portrait_path: entity.portrait_path,
+                      x: entity.x,
+                      y: entity.y,
+                      category_id: entity.category_id,
+                    }))
+                  : table === 'entity_tags'
                     ? publishedEntities.flatMap((entity) =>
-                        Object.entries(dispositions.get(entity.id) ?? {}).map(
-                          ([playerId, playerDisposition]) => ({
-                            entity_id: entity.id,
-                            player_id: playerId,
-                            disposition: playerDisposition,
-                          }),
-                        ),
+                        (entityTags.get(entity.id) ?? []).map((tagId) => ({
+                          entity_id: entity.id,
+                          tag_id: tagId,
+                        })),
                       )
-                    : [];
+                    : table === 'entity_player_dispositions'
+                      ? publishedEntities.flatMap((entity) =>
+                          Object.entries(dispositions.get(entity.id) ?? {}).map(
+                            ([playerId, playerDisposition]) => ({
+                              entity_id: entity.id,
+                              player_id: playerId,
+                              disposition: playerDisposition,
+                            }),
+                          ),
+                        )
+                      : [];
       const select = (url.searchParams.get('select') ?? '').split(',').filter(Boolean);
       const projected = select.length
         ? publicRows.map((row) => Object.fromEntries(select.map((field) => [field, row[field]])))

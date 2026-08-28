@@ -2,7 +2,11 @@ import { readFile } from 'node:fs/promises';
 
 import { describe, expect, test } from 'vitest';
 
-import { parsePublicCatalogSnapshotV2 } from '../infrastructure/supabase/publicCatalogCodec';
+import { INITIAL_PUBLIC_CAMPAIGN_ID } from '../data-access/publicCatalogQueryContract.js';
+import {
+  parsePublicCatalogSnapshotV3,
+  projectPublicCatalogSnapshotV3ToV2,
+} from '../infrastructure/snapshot/multicampaignSnapshotCodec';
 import { campaignCatalog } from './catalog';
 import { toBeta01CompatibilityCatalog } from './beta01Compatibility';
 
@@ -16,15 +20,20 @@ const EMPTY_BETA01_CATALOG = {
 
 async function readCommittedBeta02Catalog() {
   const snapshot = JSON.parse(await readFile(SNAPSHOT_URL, 'utf8')) as unknown;
-  const envelope = await parsePublicCatalogSnapshotV2(snapshot);
+  const envelope = await parsePublicCatalogSnapshotV3(snapshot);
 
-  expect(envelope.data.contract).toBe('beta02');
+  expect(envelope.data.contract).toBe('beta03');
 
-  if (envelope.data.contract !== 'beta02') {
-    throw new Error('Expected the committed Beta 0.2 snapshot.');
+  if (envelope.data.contract !== 'beta03') {
+    throw new Error('Expected the committed Beta 0.3 snapshot.');
   }
 
-  return envelope.data.catalog;
+  const projected = projectPublicCatalogSnapshotV3ToV2(
+    envelope.data.catalog,
+    INITIAL_PUBLIC_CAMPAIGN_ID,
+  );
+  if (!projected) throw new Error('Expected the initial campaign in the committed v3 snapshot.');
+  return projected;
 }
 
 describe('Beta 0.1 compatibility projection', () => {

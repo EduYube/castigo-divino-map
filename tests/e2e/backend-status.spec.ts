@@ -7,6 +7,7 @@ import { PUBLIC_CATALOG_TABLE_QUERIES } from '../../src/data-access/publicCatalo
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
+const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
 const SUPABASE_PATTERN = '**/rest/v1/**';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
@@ -40,6 +41,18 @@ interface PublicDataTestBackend {
 }
 
 function projectFixtureRows(table: string): readonly Record<string, unknown>[] {
+  if (table === 'campaigns') {
+    return [
+      {
+        id: CAMPAIGN_A_ID,
+        slug: 'castigo-divino',
+        name: 'Castigo Divino',
+        status: 'active',
+        display_order: 0,
+      },
+    ];
+  }
+
   const query = Object.values(PUBLIC_CATALOG_TABLE_QUERIES).find(({ name }) => name === table);
   const fixtureKey = FIXTURE_KEYS_BY_TABLE[table];
   const fixtureRows = fixtureKey ? BETA01_FIXTURE[fixtureKey] : undefined;
@@ -126,7 +139,6 @@ test('falls back and recovers without changing search, filters, selection or URL
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   const category = page.getByRole('checkbox', { name: /Lugar destacado/ });
   const tag = page.getByRole('checkbox', { name: /Paso de montaña/ });
-  const originalUrl = page.url();
 
   await expectConnected(status, backend);
   await expect(status).toContainText('Servicio de datos conectado');
@@ -135,6 +147,8 @@ test('falls back and recovers without changing search, filters, selection or URL
   await expect(searchbox).toHaveValue('paso');
   await expect(category).toBeChecked();
   await expect(tag).toBeChecked();
+  const originalUrl = page.url();
+  expect(new URL(originalUrl).searchParams.get('campaign')).toBe('castigo-divino');
 
   backend.setMode('failure');
   await page.evaluate(() => window.dispatchEvent(new Event('online')));

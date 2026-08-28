@@ -44,11 +44,11 @@ test('gives every marker a stable canonical place URL', async ({ page }) => {
   await openReadyMap(page);
 
   await marker(page, 'place-demo-harbor').click();
-  await expect(page).toHaveURL(/\?place=puerto-de-demostracion$/);
+  await expect(page).toHaveURL(/\?place=puerto-de-demostracion&campaign=castigo-divino$/);
   const harborUrl = page.url();
 
   await marker(page, 'place-demo-pass').click();
-  await expect(page).toHaveURL(/\?place=paso-de-demostracion$/);
+  await expect(page).toHaveURL(/\?place=paso-de-demostracion&campaign=castigo-divino$/);
   const passUrl = page.url();
 
   expect(harborUrl).not.toBe(passUrl);
@@ -111,15 +111,17 @@ test('updates query with replaceState and discrete actions with pushState', asyn
 
   await searchbox.pressSequentially('paso');
 
-  await expect(page).toHaveURL(/\?q=paso$/);
+  await expect(page).toHaveURL(/\?q=paso&campaign=castigo-divino$/);
   expect(await page.evaluate(() => window.history.length)).toBe(initialHistoryLength);
 
   await page.getByRole('checkbox', { name: /Lugar destacado/ }).check();
-  await expect(page).toHaveURL(/\?q=paso&category=lugares-destacados$/);
+  await expect(page).toHaveURL(/\?q=paso&category=lugares-destacados&campaign=castigo-divino$/);
   expect(await page.evaluate(() => window.history.length)).toBe(initialHistoryLength + 1);
 
   await marker(page, 'place-demo-pass').click();
-  await expect(page).toHaveURL(/\?place=paso-de-demostracion&q=paso&category=lugares-destacados$/);
+  await expect(page).toHaveURL(
+    /\?place=paso-de-demostracion&q=paso&category=lugares-destacados&campaign=castigo-divino$/,
+  );
   expect(await page.evaluate(() => window.history.length)).toBe(initialHistoryLength + 2);
 });
 
@@ -174,7 +176,7 @@ test('canonicalizes invalid and repeated values while preserving valid state', a
   );
 
   await expect(page).toHaveURL(
-    /\?place=puerto-de-demostracion&category=asentamientos&tag=coastal$/,
+    /\?place=puerto-de-demostracion&category=asentamientos&tag=coastal&campaign=castigo-divino$/,
   );
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-place-id',

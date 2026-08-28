@@ -2,7 +2,8 @@ import { expect, test, type Locator, type Page, type Request } from '@playwright
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
-const RPC_URL = 'http://127.0.0.1:54321/rest/v1/rpc/submit_public_request';
+const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
+const RPC_URL = 'http://127.0.0.1:54321/rest/v1/rpc/submit_public_request_v2';
 const TEST_PUBLISHABLE_KEY = 'sb_publishable_map026_e2e_key';
 const NEUTRAL_TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
@@ -177,6 +178,7 @@ test('submits a valid anonymous request through the closed RPC without publishin
   expect(rpcRequests[0]?.headers()['apikey']).toBe(TEST_PUBLISHABLE_KEY);
   expect(rpcRequests[0]?.headers()['authorization']).toBeUndefined();
   expect(rpcRequests[0]?.postDataJSON()).toEqual({
+    p_campaign_id: CAMPAIGN_A_ID,
     p_sender_name: 'Jugadora de prueba',
     p_proposed_name: 'Torre del Horizonte',
     p_entity_type: 'location',

@@ -1,4 +1,5 @@
 const ENTITY_QUERY_PARAMETER = 'entity';
+const CAMPAIGN_QUERY_PARAMETER = 'campaign';
 const PUBLIC_ENTITY_SLUG_PATTERN = /^[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?$/;
 
 export interface FullEntityUrlRequest {
@@ -17,10 +18,12 @@ export function createFullEntityUrl(sourceUrl: URL, slug: string): URL {
     throw new Error('Cannot create a public entity URL from an invalid slug.');
   }
 
+  const campaign = sourceUrl.searchParams.get(CAMPAIGN_QUERY_PARAMETER)?.trim() ?? '';
   const url = new URL(sourceUrl);
   url.search = '';
   url.hash = '';
   url.searchParams.set(ENTITY_QUERY_PARAMETER, slug);
+  if (campaign) url.searchParams.set(CAMPAIGN_QUERY_PARAMETER, campaign);
   return url;
 }
 

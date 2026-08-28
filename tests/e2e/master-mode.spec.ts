@@ -256,7 +256,7 @@ async function configureMap044Backend(
       await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
       return;
     }
-    if (adminRequest && resource === 'rpc/admin_get_master_catalog_v2') {
+    if (adminRequest && resource === 'rpc/admin_get_master_catalog_v3') {
       if (masterCatalogStatus !== 200) {
         await route.fulfill({
           status: masterCatalogStatus,
@@ -304,7 +304,18 @@ async function configureMap044Backend(
     }
 
     const table = resource.split('?')[0] ?? '';
-    const rows = projectRows(table, audience);
+    const rows =
+      table === 'campaigns'
+        ? [
+            {
+              id: '00000000-0000-4000-8000-000000000053',
+              slug: 'castigo-divino',
+              name: 'Castigo Divino',
+              status: 'active',
+              display_order: 0,
+            },
+          ]
+        : projectRows(table, audience);
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

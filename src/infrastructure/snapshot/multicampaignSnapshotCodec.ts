@@ -3,6 +3,7 @@ import type {
   PublicCampaignCatalogV3,
   PublicCampaignGeographicEntityLinkV3,
   PublicCampaignV3,
+  PublicCatalogSnapshotV3,
   PublicGlobalGeographicNameV3,
 } from '../../data/beta03-model';
 import {
@@ -12,7 +13,6 @@ import {
 } from '../../data-access/publicCatalog';
 import { parsePublicCatalogSnapshotV2 } from '../supabase/publicCatalogCodec';
 
-const INITIAL_CAMPAIGN_SLUG = 'castigo-divino';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CHECKSUM_PATTERN = /^sha256:[0-9a-f]{64}$/;
 
@@ -28,18 +28,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function record(value: unknown, path: string): Record<string, unknown> {
-  if (!isRecord(value)) {
-    invalid(`${path} debe ser un objeto.`);
-  }
-
+  if (!isRecord(value)) invalid(`${path} debe ser un objeto.`);
   return value;
 }
 
 function array(value: unknown, path: string): readonly unknown[] {
-  if (!Array.isArray(value)) {
-    invalid(`${path} debe ser una colección.`);
-  }
-
+  if (!Array.isArray(value)) invalid(`${path} debe ser una colección.`);
   return value;
 }
 
@@ -47,7 +41,6 @@ function string(value: unknown, path: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) {
     invalid(`${path} debe ser texto no vacío.`);
   }
-
   return value;
 }
 
@@ -55,7 +48,6 @@ function integer(value: unknown, path: string): number {
   if (!Number.isSafeInteger(value) || (value as number) < 0) {
     invalid(`${path} debe ser un entero no negativo.`);
   }
-
   return value as number;
 }
 
@@ -66,20 +58,13 @@ function assertAllowed(
 ): void {
   const allowed = new Set(allowedProperties);
   const unexpected = Object.keys(value).find((key) => !allowed.has(key));
-
-  if (unexpected) {
-    invalid(`${path}.${unexpected} no forma parte del snapshot v3.`);
-  }
+  if (unexpected) invalid(`${path}.${unexpected} no forma parte del snapshot v3.`);
 }
 
 function unique(values: readonly string[], path: string): void {
   const seen = new Set<string>();
-
   for (const value of values) {
-    if (seen.has(value)) {
-      invalid(`${path} contiene la identidad duplicada “${value}”.`);
-    }
-
+    if (seen.has(value)) invalid(`${path} contiene la identidad duplicada “${value}”.`);
     seen.add(value);
   }
 }
@@ -89,18 +74,12 @@ function parseCampaign(value: unknown, index: number): PublicCampaignV3 {
   const item = record(value, path);
   assertAllowed(item, ['id', 'slug', 'name', 'status', 'displayOrder'], path);
   const id = string(item.id, `${path}.id`);
-
-  if (!UUID_PATTERN.test(id)) {
-    invalid(`${path}.id debe ser un UUID estable.`);
-  }
-
+  if (!UUID_PATTERN.test(id)) invalid(`${path}.id debe ser un UUID estable.`);
   const slug = string(item.slug, `${path}.slug`);
   const name = string(item.name, `${path}.name`);
-
   if (item.status !== 'active') {
     invalid(`${path}.status debe ser “active” en la proyección pública.`);
   }
-
   return {
     id,
     slug,
@@ -119,11 +98,9 @@ function parseLink(
   const item = record(value, path);
   assertAllowed(item, ['campaignId', 'geographicNameId', 'entityId'], path);
   const linkCampaignId = string(item.campaignId, `${path}.campaignId`);
-
   if (linkCampaignId !== campaignId) {
     invalid(`${path}.campaignId no coincide con el catálogo contenedor.`);
   }
-
   return {
     campaignId: linkCampaignId,
     geographicNameId: string(item.geographicNameId, `${path}.geographicNameId`),
@@ -151,7 +128,6 @@ function parseCampaignCatalog(value: unknown, index: number): PublicCampaignCata
     path,
   );
   const campaignId = string(item.campaignId, `${path}.campaignId`);
-
   return {
     campaignId,
     categories: array(
@@ -187,7 +163,6 @@ function geographicWithCampaignLink(
   const entityByGeographicName = new Map(
     links.map((link) => [link.geographicNameId, link.entityId] as const),
   );
-
   return geographicNames.map((name) => ({
     ...name,
     entityId: (entityByGeographicName.get(name.id) ??
@@ -195,15 +170,12 @@ function geographicWithCampaignLink(
   }));
 }
 
-async function validatedV2Projection(
+function projectionContent(
   catalog: PublicCampaignCatalogV3,
   geographicNames: readonly PublicGlobalGeographicNameV3[],
-  generatedAt: string,
-  sourceRevision: string,
-  now: () => number,
-): Promise<PublicCatalogSnapshotV2> {
-  const content = {
-    schemaVersion: 2 as const,
+): Omit<PublicCatalogSnapshotV2, 'generatedAt' | 'sourceRevision' | 'checksum'> {
+  return {
+    schemaVersion: 2,
     categories: catalog.categories,
     tags: catalog.tags,
     players: catalog.players,
@@ -214,21 +186,24 @@ async function validatedV2Projection(
     geographicNames: geographicWithCampaignLink(geographicNames, catalog.geographicEntityLinks),
     characterLocationEvents: catalog.characterLocationEvents,
   };
+}
+
+async function validatedV2Projection(
+  catalog: PublicCampaignCatalogV3,
+  geographicNames: readonly PublicGlobalGeographicNameV3[],
+  generatedAt: string,
+  sourceRevision: string,
+  now: () => number,
+): Promise<PublicCatalogSnapshotV2> {
+  const content = projectionContent(catalog, geographicNames);
   const projectedChecksum = await createSha256Checksum(content);
   const parsed = await parsePublicCatalogSnapshotV2(
-    {
-      ...content,
-      generatedAt,
-      sourceRevision,
-      checksum: projectedChecksum,
-    },
+    { ...content, generatedAt, sourceRevision, checksum: projectedChecksum },
     now,
   );
-
   if (parsed.data.contract !== 'beta02') {
     invalid('La proyección de compatibilidad v3 no produjo un catálogo Beta 0.2.');
   }
-
   return parsed.data.catalog;
 }
 
@@ -242,22 +217,35 @@ function validateLinks(
     catalog.geographicEntityLinks.map(({ geographicNameId }) => geographicNameId),
     `campaignCatalogs.${catalog.campaignId}.geographicEntityLinks.geographicNameId`,
   );
-
   for (const link of catalog.geographicEntityLinks) {
     if (!geographicIds.has(link.geographicNameId as never)) {
       invalid(
         `El vínculo geográfico “${link.geographicNameId}” apunta a un nombre global ausente.`,
       );
     }
-
     const entity = entitiesById.get(link.entityId as never);
-
     if (!entity || entity.entityType !== 'location') {
       invalid(
         `El vínculo geográfico “${link.geographicNameId}” no apunta a una ubicación pública de su campaña.`,
       );
     }
   }
+}
+
+export function projectPublicCatalogSnapshotV3ToV2(
+  snapshot: PublicCatalogSnapshotV3,
+  campaignId: string,
+): PublicCatalogSnapshotV2 | null {
+  const catalog = snapshot.campaignCatalogs.find(
+    (candidate) => candidate.campaignId === campaignId,
+  );
+  if (!catalog) return null;
+  return {
+    ...projectionContent(catalog, snapshot.geographicNames),
+    generatedAt: snapshot.generatedAt,
+    sourceRevision: snapshot.sourceRevision,
+    checksum: snapshot.checksum,
+  };
 }
 
 export async function parsePublicCatalogSnapshotV3(
@@ -278,7 +266,6 @@ export async function parsePublicCatalogSnapshotV3(
     ],
     'snapshot',
   );
-
   if (snapshotRecord.schemaVersion !== 3) {
     throw new PublicDataRepositoryError(
       'unsupported-schema',
@@ -286,32 +273,23 @@ export async function parsePublicCatalogSnapshotV3(
       { source: 'snapshot', recoverable: false },
     );
   }
-
   const generatedAt = string(snapshotRecord.generatedAt, 'snapshot.generatedAt');
-
-  if (!Number.isFinite(Date.parse(generatedAt))) {
+  if (!Number.isFinite(Date.parse(generatedAt)))
     invalid('snapshot.generatedAt no contiene una fecha válida.');
-  }
-
   const sourceRevision = string(snapshotRecord.sourceRevision, 'snapshot.sourceRevision');
   const checksum = string(snapshotRecord.checksum, 'snapshot.checksum');
-
   if (!CHECKSUM_PATTERN.test(sourceRevision) || !CHECKSUM_PATTERN.test(checksum)) {
     invalid('snapshot.sourceRevision/checksum deben contener SHA-256 válidos.');
   }
-
   const campaigns = array(snapshotRecord.campaigns, 'snapshot.campaigns').map(parseCampaign);
   const campaignCatalogs = array(snapshotRecord.campaignCatalogs, 'snapshot.campaignCatalogs').map(
     parseCampaignCatalog,
   );
   const geographicNames = array(snapshotRecord.geographicNames, 'snapshot.geographicNames').map(
-    (name) => record(name, 'snapshot.geographicNames[]') as unknown as PublicGlobalGeographicNameV3,
+    (name, index) =>
+      record(name, `snapshot.geographicNames[${index}]`) as unknown as PublicGlobalGeographicNameV3,
   );
-
-  if (campaigns.length === 0) {
-    invalid('El snapshot v3 debe contener al menos una campaña pública.');
-  }
-
+  if (campaigns.length === 0) invalid('El snapshot v3 debe contener al menos una campaña pública.');
   unique(
     campaigns.map(({ id }) => id),
     'campaigns.id',
@@ -328,24 +306,15 @@ export async function parsePublicCatalogSnapshotV3(
     geographicNames.map(({ id }) => id),
     'geographicNames.id',
   );
-
   const campaignIds = new Set(campaigns.map(({ id }) => id));
-
   if (
     campaignCatalogs.length !== campaigns.length ||
     campaignCatalogs.some(({ campaignId }) => !campaignIds.has(campaignId))
   ) {
     invalid('Cada campaña pública debe tener exactamente un catálogo v3 asociado.');
   }
-
-  const content = {
-    schemaVersion: 3 as const,
-    campaigns,
-    campaignCatalogs,
-    geographicNames,
-  };
+  const content = { schemaVersion: 3 as const, campaigns, campaignCatalogs, geographicNames };
   const calculatedChecksum = await createSha256Checksum(content);
-
   if (calculatedChecksum !== checksum || sourceRevision !== calculatedChecksum) {
     throw new PublicDataRepositoryError(
       'checksum-mismatch',
@@ -353,53 +322,26 @@ export async function parsePublicCatalogSnapshotV3(
       { source: 'snapshot' },
     );
   }
-
   const catalogsByCampaign = new Map(
     campaignCatalogs.map((catalog) => [catalog.campaignId, catalog] as const),
   );
-
-  // Validate every campaign, not only the v1.0 compatibility projection.
   for (const campaign of campaigns) {
     const catalog = catalogsByCampaign.get(campaign.id);
-
-    if (!catalog) {
-      invalid(`La campaña “${campaign.id}” no tiene catálogo.`);
-    }
-
+    if (!catalog) invalid(`La campaña “${campaign.id}” no tiene catálogo.`);
     validateLinks(catalog, geographicNames);
     await validatedV2Projection(catalog, geographicNames, generatedAt, sourceRevision, now);
   }
-
-  const selectedCampaign = [...campaigns].sort(
-    (left, right) =>
-      Number(left.slug !== INITIAL_CAMPAIGN_SLUG) - Number(right.slug !== INITIAL_CAMPAIGN_SLUG) ||
-      left.displayOrder - right.displayOrder ||
-      left.id.localeCompare(right.id),
-  )[0];
-
-  if (!selectedCampaign) {
-    invalid('No se pudo resolver la campaña pública inicial.');
-  }
-
-  const selectedCatalog = catalogsByCampaign.get(selectedCampaign.id);
-
-  if (!selectedCatalog) {
-    invalid('No se pudo resolver el catálogo de la campaña pública inicial.');
-  }
-
-  const projectedCatalog = await validatedV2Projection(
-    selectedCatalog,
-    geographicNames,
+  const snapshot: PublicCatalogSnapshotV3 = {
+    ...content,
     generatedAt,
     sourceRevision,
-    now,
-  );
-
+    checksum,
+  };
   return {
-    data: { contract: 'beta02', catalog: projectedCatalog },
+    data: { contract: 'beta03', catalog: snapshot },
     source: 'session-cache',
     metadata: {
-      contract: 'beta02',
+      contract: 'beta03',
       schemaVersion: 3,
       generatedAt,
       loadedAt: new Date(now()).toISOString(),

@@ -4,6 +4,7 @@ import { bootstrapAdminAuthRuntime, type AdminAuthRuntime } from './app/adminAut
 import { mountAdminPinVisualSync } from './app/adminPinVisualSync';
 import { mountCollapsibleMapControls } from './app/collapsibleControls';
 import { mountCompactPinDetails } from './app/compactPinDetails';
+import { INITIAL_PUBLIC_CAMPAIGN_SLUG } from './app/campaignSelection';
 import { mountFullEntityDetails, renderFullEntityDetailsShell } from './app/fullEntityDetails';
 import { createFullEntityUrl, parseFullEntityUrlRequest } from './app/fullEntityUrl';
 import { mountMasterDetailActions } from './app/masterDetailActions';
@@ -886,6 +887,8 @@ function unavailableCatalogState(catalog: CampaignCatalog): PublicCatalogState {
     checksum: null,
     beta02: null,
     compatibility: catalog,
+    campaigns: [],
+    selectedCampaign: null,
   };
 }
 
@@ -914,7 +917,9 @@ function startFullEntityExperience(sourceUrl: URL): void {
 
   app.innerHTML = renderFullEntityDetailsShell();
   const mapUrl = new URL(sourceUrl);
+  const campaignSlug = mapUrl.searchParams.get('campaign')?.trim() || INITIAL_PUBLIC_CAMPAIGN_SLUG;
   mapUrl.search = '';
+  mapUrl.searchParams.set('campaign', campaignSlug);
   mapUrl.hash = '';
   const portraitResources = createPortraitResources();
   const detailsController = mountFullEntityDetails(app, mapUrl, {

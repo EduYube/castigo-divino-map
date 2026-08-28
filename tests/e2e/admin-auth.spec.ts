@@ -166,7 +166,7 @@ test('invalid credentials show only the generic safe message', async ({ page }) 
   const status = page.locator('#admin-auth-status');
   await expect(status).toContainText('No se pudo iniciar sesión');
   await expect(status).not.toContainText('No account details');
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\?campaign=castigo-divino$/);
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toBeVisible();
 });
 
@@ -177,7 +177,7 @@ test('administrator can login, reload the same tab and logout locally', async ({
   await login(page);
   await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
   await expect(page.getByText(/Sesión autorizada: admin@example\.invalid/)).toBeVisible();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\?campaign=castigo-divino$/);
 
   await page.reload();
   await expect(page.getByRole('button', { name: 'Administración' })).toBeVisible();

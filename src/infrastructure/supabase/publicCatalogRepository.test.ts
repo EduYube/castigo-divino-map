@@ -9,7 +9,23 @@ const PUBLISHABLE_KEY = 'sb_publishable_map016_test_key';
 const LEGACY_ANON_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.signature';
 const LEGACY_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.signature';
 const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000054';
-const GLOBAL_TABLES = new Set(['geographic_names', 'geographic_name_aliases']);
+const GLOBAL_TABLES = new Set(['campaigns', 'geographic_names', 'geographic_name_aliases']);
+
+const INITIAL_CAMPAIGN_ROW = {
+  id: INITIAL_PUBLIC_CAMPAIGN_ID,
+  slug: 'castigo-divino',
+  name: 'Castigo Divino',
+  status: 'active',
+  display_order: 0,
+} as const;
+
+const CAMPAIGN_B_ROW = {
+  id: CAMPAIGN_B_ID,
+  slug: 'campaign-b',
+  name: 'Campaign B',
+  status: 'active',
+  display_order: 1,
+} as const;
 
 function jsonResponse(
   value: unknown,
@@ -34,10 +50,7 @@ function rangeStart(request: Request): number {
   const range = request.headers.get('range');
   const match = /^(\d+)-(\d+)$/.exec(range ?? '');
 
-  if (!match) {
-    throw new Error(`Missing or invalid Range header: ${range}`);
-  }
-
+  if (!match) throw new Error(`Missing or invalid Range header: ${range}`);
   return Number(match[1]);
 }
 
@@ -53,15 +66,32 @@ function expectCampaignScope(url: URL, campaignId = INITIAL_PUBLIC_CAMPAIGN_ID):
   }
 }
 
+function rowsForEmptyInitialCampaign(url: URL): readonly Record<string, unknown>[] {
+  return tableName(url) === 'campaigns' ? [INITIAL_CAMPAIGN_ROW] : [];
+}
+
+function initialCampaignCatalog(
+  result: Awaited<ReturnType<SupabasePublicCatalogRepository['load']>>,
+) {
+  expect(result.data.contract).toBe('beta03');
+  if (result.data.contract !== 'beta03') throw new Error('Expected Beta 0.3 catalog.');
+  const catalog = result.data.catalog.campaignCatalogs.find(
+    ({ campaignId }) => campaignId === INITIAL_PUBLIC_CAMPAIGN_ID,
+  );
+  if (!catalog) throw new Error('Missing initial campaign catalog.');
+  return catalog;
+}
+
 describe('SupabasePublicCatalogRepository', () => {
-  test('loads the complete initial-campaign projection using only the apikey header', async () => {
+  test('loads the active campaign roster and its complete projection using only the apikey header', async () => {
     const requests: Request[] = [];
     const repository = new SupabasePublicCatalogRepository({
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input, init) => {
-        requests.push(new Request(input, init));
-        return jsonResponse([]);
+        const request = new Request(input, init);
+        requests.push(request);
+        return jsonResponse(rowsForEmptyInitialCampaign(new URL(request.url)));
       },
       now: () => Date.parse('2026-08-06T00:00:00.000Z'),
     });
@@ -69,8 +99,9 @@ describe('SupabasePublicCatalogRepository', () => {
     const result = await repository.load({ signal: new AbortController().signal });
 
     expect(result.source).toBe('supabase');
-    expect(result.data.contract).toBe('beta02');
-    expect(requests).toHaveLength(14);
+    expect(result.data.contract).toBe('beta03');
+    expect(result.metadata.schemaVersion).toBe(3);
+    expect(requests).toHaveLength(15);
     requests.forEach((request) => {
       expect(request.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
       expect(request.headers.get('prefer')).toBe('count=exact');
@@ -87,52 +118,80 @@ describe('SupabasePublicCatalogRepository', () => {
     );
   });
 
-  test('uses explicit publication filters except where RLS owns the public predicate', async () => {
+  test('uses explicit publication filters while campaign discovery uses active status', async () => {
     const urls: URL[] = [];
     const repository = new SupabasePublicCatalogRepository({
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input) => {
-        urls.push(new URL(String(input)));
-        return jsonResponse([]);
+        const url = new URL(String(input));
+        urls.push(url);
+        return jsonResponse(rowsForEmptyInitialCampaign(url));
       },
     });
 
     await repository.load({ signal: new AbortController().signal });
+
+    const campaignUrl = urls.find((url) => tableName(url) === 'campaigns');
+    expect(campaignUrl?.searchParams.has('status')).toBe(false);
+    expect(campaignUrl?.searchParams.has('publication_status')).toBe(false);
 
     const rlsOnlyTables = new Set([
       'entity_player_dispositions',
       'character_location_relations',
       'campaign_geographic_entity_links',
     ]);
-    urls.forEach((url) => {
-      if (rlsOnlyTables.has(tableName(url))) {
-        expect(url.searchParams.has('publication_status')).toBe(false);
-      } else {
-        expect(url.searchParams.get('publication_status')).toBe('eq.published');
-      }
-    });
+    urls
+      .filter((url) => tableName(url) !== 'campaigns')
+      .forEach((url) => {
+        if (rlsOnlyTables.has(tableName(url))) {
+          expect(url.searchParams.has('publication_status')).toBe(false);
+        } else {
+          expect(url.searchParams.get('publication_status')).toBe('eq.published');
+        }
+      });
   });
 
-  test('can target another campaign without scoping the global geographic index', async () => {
+  test('loads two active campaigns while keeping the geographic index global', async () => {
     const urls: URL[] = [];
     const repository = new SupabasePublicCatalogRepository({
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
-      campaignId: CAMPAIGN_B_ID,
       fetchImplementation: async (input) => {
-        urls.push(new URL(String(input)));
-        return jsonResponse([]);
+        const url = new URL(String(input));
+        urls.push(url);
+        return jsonResponse(
+          tableName(url) === 'campaigns' ? [INITIAL_CAMPAIGN_ROW, CAMPAIGN_B_ROW] : [],
+        );
       },
     });
 
-    await repository.load({ signal: new AbortController().signal });
+    const result = await repository.load({ signal: new AbortController().signal });
 
-    expect(urls).toHaveLength(14);
-    urls.forEach((url) => expectCampaignScope(url, CAMPAIGN_B_ID));
+    expect(result.data.contract).toBe('beta03');
+    if (result.data.contract !== 'beta03') throw new Error('Expected Beta 0.3 catalog.');
+    expect(result.data.catalog.campaigns.map(({ id }) => id)).toEqual([
+      INITIAL_PUBLIC_CAMPAIGN_ID,
+      CAMPAIGN_B_ID,
+    ]);
+    expect(result.data.catalog.campaignCatalogs).toHaveLength(2);
+    expect(urls).toHaveLength(29);
+
+    const scopedUrls = urls.filter((url) => !GLOBAL_TABLES.has(tableName(url)));
+    expect(
+      scopedUrls.some(
+        (url) => url.searchParams.get('campaign_id') === `eq.${INITIAL_PUBLIC_CAMPAIGN_ID}`,
+      ),
+    ).toBe(true);
+    expect(
+      scopedUrls.some((url) => url.searchParams.get('campaign_id') === `eq.${CAMPAIGN_B_ID}`),
+    ).toBe(true);
+    urls
+      .filter((url) => GLOBAL_TABLES.has(tableName(url)))
+      .forEach((url) => expect(url.searchParams.has('campaign_id')).toBe(false));
   });
 
-  test('rehydrates the selected campaign geographic link over global geography', async () => {
+  test('keeps campaign-specific geographic links separate from global geography', async () => {
     const rowsByTable: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
       categories: [{ id: 'category-places', slug: 'places', name: 'Places', description: '' }],
       tags: [],
@@ -188,24 +247,39 @@ describe('SupabasePublicCatalogRepository', () => {
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input) => {
-        const table = tableName(new URL(String(input)));
-        return jsonResponse(rowsByTable[table] ?? []);
+        const url = new URL(String(input));
+        return jsonResponse(
+          tableName(url) === 'campaigns'
+            ? [INITIAL_CAMPAIGN_ROW]
+            : (rowsByTable[tableName(url)] ?? []),
+        );
       },
     });
 
     const result = await repository.load({ signal: new AbortController().signal });
-    if (result.data.contract !== 'beta02') throw new Error('Expected Beta 0.2 projection.');
+    const catalog = initialCampaignCatalog(result);
 
-    expect(result.data.catalog.geographicNames).toHaveLength(1);
-    expect(result.data.catalog.geographicNames[0]?.entityId).toBe('entity-location');
+    expect(catalog.geographicEntityLinks).toEqual([
+      {
+        campaignId: INITIAL_PUBLIC_CAMPAIGN_ID,
+        geographicNameId: 'geo-location',
+        entityId: 'entity-location',
+      },
+    ]);
+    if (result.data.contract !== 'beta03') throw new Error('Expected Beta 0.3 catalog.');
+    expect(result.data.catalog.geographicNames).toEqual([
+      expect.not.objectContaining({ entityId: expect.anything() }),
+    ]);
   });
 
-  test('rejects a geographic association that does not belong to the selected campaign', async () => {
+  test('rejects a geographic association that belongs to another campaign', async () => {
     const repository = new SupabasePublicCatalogRepository({
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input) => {
-        if (tableName(new URL(String(input))) === 'campaign_geographic_entity_links') {
+        const url = new URL(String(input));
+        if (tableName(url) === 'campaigns') return jsonResponse([INITIAL_CAMPAIGN_ROW]);
+        if (tableName(url) === 'campaign_geographic_entity_links') {
           return jsonResponse([
             {
               campaign_id: CAMPAIGN_B_ID,
@@ -280,16 +354,17 @@ describe('SupabasePublicCatalogRepository', () => {
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input) => {
-        const table = tableName(new URL(String(input)));
-        return jsonResponse(rowsByTable[table] ?? []);
+        const url = new URL(String(input));
+        return jsonResponse(
+          tableName(url) === 'campaigns'
+            ? [INITIAL_CAMPAIGN_ROW]
+            : (rowsByTable[tableName(url)] ?? []),
+        );
       },
     });
 
     const result = await repository.load({ signal: new AbortController().signal });
-    if (result.data.contract !== 'beta02') {
-      throw new Error('Expected Beta 0.2 projection.');
-    }
-    expect(result.data.catalog.characterLocationRelations).toEqual([
+    expect(initialCampaignCatalog(result).characterLocationRelations).toEqual([
       {
         characterId: 'entity-character',
         locationId: 'entity-location',
@@ -298,14 +373,9 @@ describe('SupabasePublicCatalogRepository', () => {
     ]);
   });
 
-  test('paginates and verifies a projection with more than one thousand dispositions', async () => {
+  test('paginates and verifies a campaign projection with more than one thousand dispositions', async () => {
     const categoryRows = [
-      {
-        id: 'category-location',
-        slug: 'locations',
-        name: 'Locations',
-        description: '',
-      },
+      { id: 'category-location', slug: 'locations', name: 'Locations', description: '' },
     ];
     const playerRows = Array.from({ length: 6 }, (_, index) => ({
       id: `player-${index + 1}`,
@@ -315,7 +385,6 @@ describe('SupabasePublicCatalogRepository', () => {
     }));
     const entityRows = Array.from({ length: 200 }, (_, index) => {
       const suffix = String(index + 1).padStart(3, '0');
-
       return {
         id: `entity-${suffix}`,
         slug: `entity-${suffix}`,
@@ -359,26 +428,19 @@ describe('SupabasePublicCatalogRepository', () => {
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input, init) => {
         const request = new Request(input, init);
-        const table = tableName(new URL(request.url));
-        const allRows = rowsByTable[table] ?? [];
+        const url = new URL(request.url);
+        if (tableName(url) === 'campaigns') return jsonResponse([INITIAL_CAMPAIGN_ROW]);
+        const allRows = rowsByTable[tableName(url)] ?? [];
         const start = rangeStart(request);
         const pageRows = allRows.slice(start, start + 1000);
-
-        if (table === 'entity_player_dispositions') {
-          dispositionRequests.push(request);
-        }
-
+        if (tableName(url) === 'entity_player_dispositions') dispositionRequests.push(request);
         return jsonResponse(pageRows, { start, total: allRows.length });
       },
     });
 
     const result = await repository.load({ signal: new AbortController().signal });
 
-    expect(result.data.contract).toBe('beta02');
-    if (result.data.contract !== 'beta02') {
-      throw new Error('Expected Beta 0.2 projection.');
-    }
-    expect(result.data.catalog.dispositions).toHaveLength(1200);
+    expect(initialCampaignCatalog(result).dispositions).toHaveLength(1200);
     expect(dispositionRequests.map((request) => request.headers.get('range'))).toEqual([
       '0-999',
       '1000-1999',
@@ -398,7 +460,7 @@ describe('SupabasePublicCatalogRepository', () => {
     });
   });
 
-  test('aborts the rest of the table batch when one table fails', async () => {
+  test('aborts the rest of a campaign table batch when one table fails', async () => {
     let pendingRequests = 0;
     let abortedRequests = 0;
     const repository = new SupabasePublicCatalogRepository({
@@ -406,25 +468,23 @@ describe('SupabasePublicCatalogRepository', () => {
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input, init) => {
         const request = new Request(input, init);
-
-        if (new URL(request.url).pathname.endsWith('/categories')) {
+        const url = new URL(request.url);
+        if (tableName(url) === 'campaigns') return jsonResponse([INITIAL_CAMPAIGN_ROW]);
+        if (tableName(url) === 'categories') {
           return new Response('temporary failure', { status: 503 });
         }
 
         pendingRequests += 1;
-
         return await new Promise<Response>((_resolve, reject) => {
           const signal = request.signal;
           const handleAbort = (): void => {
             abortedRequests += 1;
             reject(new DOMException('Aborted', 'AbortError'));
           };
-
           if (signal.aborted) {
             handleAbort();
             return;
           }
-
           signal.addEventListener('abort', handleAbort, { once: true });
         });
       },
@@ -451,14 +511,24 @@ describe('SupabasePublicCatalogRepository', () => {
     });
   });
 
-  test('rejects malformed public rows before they enter application state', async () => {
-    const repository = new SupabasePublicCatalogRepository({
+  test('rejects malformed public campaign and domain rows before they enter application state', async () => {
+    const malformedCampaignRepository = new SupabasePublicCatalogRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      fetchImplementation: async () =>
+        jsonResponse([{ ...INITIAL_CAMPAIGN_ROW, id: 'not-a-uuid' }]),
+    });
+    await expect(
+      malformedCampaignRepository.load({ signal: new AbortController().signal }),
+    ).rejects.toMatchObject({ code: 'invalid-response' });
+
+    const malformedCategoryRepository = new SupabasePublicCatalogRepository({
       projectUrl: PROJECT_URL,
       publishableKey: PUBLISHABLE_KEY,
       fetchImplementation: async (input) => {
         const url = new URL(String(input));
-
-        if (url.pathname.endsWith('/categories')) {
+        if (tableName(url) === 'campaigns') return jsonResponse([INITIAL_CAMPAIGN_ROW]);
+        if (tableName(url) === 'categories') {
           return jsonResponse([
             {
               id: 'draft-category-without-prefix',
@@ -468,26 +538,15 @@ describe('SupabasePublicCatalogRepository', () => {
             },
           ]);
         }
-
         return jsonResponse([]);
       },
     });
-
-    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject({
-      code: 'invalid-response',
-    });
+    await expect(
+      malformedCategoryRepository.load({ signal: new AbortController().signal }),
+    ).rejects.toMatchObject({ code: 'invalid-response' });
   });
 
-  test('validates campaign ids and hosted/local publishable credentials', () => {
-    expect(
-      () =>
-        new SupabasePublicCatalogRepository({
-          projectUrl: PROJECT_URL,
-          publishableKey: PUBLISHABLE_KEY,
-          campaignId: 'not-a-campaign-id',
-        }),
-    ).toThrowError(expect.objectContaining({ code: 'configuration-invalid' }));
-
+  test('validates hosted and local publishable credentials', () => {
     expect(
       () =>
         new SupabasePublicCatalogRepository({

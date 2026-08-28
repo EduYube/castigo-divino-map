@@ -8,6 +8,7 @@ const beta01Fixture = JSON.parse(
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
+const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -196,7 +197,18 @@ async function configureBackend(page: Page, getRows: () => PublicRows | null): P
 
     const match = /\/rest\/v1\/([^?]+)/.exec(route.request().url());
     const table = match?.[1] ?? '';
-    const rows = availableRows[table] ?? [];
+    const rows =
+      table === 'campaigns'
+        ? [
+            {
+              id: CAMPAIGN_A_ID,
+              slug: 'castigo-divino',
+              name: 'Castigo Divino',
+              status: 'active',
+              display_order: 0,
+            },
+          ]
+        : (availableRows[table] ?? []);
     const contentRange = rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
 
     await route.fulfill({

@@ -81,7 +81,7 @@ export function mountMasterMode(
     }
 
     ensureMounted();
-    const active = state.enabled && (state.phase === 'loading' || state.phase === 'on');
+    const active = state.enabled;
     button.setAttribute('aria-pressed', String(active));
     button.disabled = state.phase === 'loading';
     button.textContent = active ? 'Desactivar Modo Máster' : 'Activar Modo Máster';
@@ -93,14 +93,14 @@ export function mountMasterMode(
           (state.phase === 'on'
             ? 'Modo Máster activo.'
             : state.phase === 'error'
-              ? 'No se pudo activar Modo Máster.'
+              ? 'No se pudo cargar el contenido de Modo Máster.'
               : 'Modo Máster desactivado.'));
     renderLegendItem(state.phase === 'on');
   };
 
   const handleToggle = (): void => {
     const state = controller.getState();
-    void controller.setEnabled(!(state.enabled && state.phase !== 'error'));
+    void controller.setEnabled(!state.enabled);
   };
   button.addEventListener('click', handleToggle);
   const unsubscribe = controller.subscribe(render);

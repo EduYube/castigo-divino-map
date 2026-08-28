@@ -10,6 +10,9 @@ import {
 import type { AdminMapEntityController, AdminMapEntityState } from './adminMapEntityController';
 import { MasterModeController } from './masterModeController';
 
+const CAMPAIGN_A = '00000000-0000-4000-8000-000000000053';
+const CAMPAIGN_B = '00000000-0000-4000-8000-000000000055';
+
 const EMPTY_CATALOG: AuthorizedMasterCatalog = {
   entities: [],
   categories: [],
@@ -105,6 +108,7 @@ function createController(
       repository,
       auth as unknown as AdminAuthController,
       entities as unknown as AdminMapEntityController,
+      CAMPAIGN_A,
     ),
     auth,
     entities,
@@ -122,7 +126,10 @@ describe('MasterModeController', () => {
     expect(controller.getState().catalog).toBeNull();
 
     await controller.setEnabled(true);
-    expect(repository.load).toHaveBeenCalledTimes(1);
+    expect(repository.load).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
+      campaignId: CAMPAIGN_A,
+    });
     expect(controller.getState()).toMatchObject({ available: true, enabled: true, phase: 'on' });
     expect(controller.getState().catalog).toBe(EMPTY_CATALOG);
 
@@ -137,6 +144,41 @@ describe('MasterModeController', () => {
       phase: 'unavailable',
       catalog: null,
     });
+  });
+
+  test('purges campaign A synchronously before loading campaign B and keeps Master intent ON', async () => {
+    let resolveCampaignB: (catalog: AuthorizedMasterCatalog) => void = () => {
+      throw new Error('Campaign B resolver was not initialized.');
+    };
+    const campaignBCatalog: AuthorizedMasterCatalog = { ...EMPTY_CATALOG, entities: [] };
+    const repository: MasterCatalogRepository = {
+      load: vi.fn(({ campaignId }) => {
+        if (campaignId === CAMPAIGN_A) return Promise.resolve(EMPTY_CATALOG);
+        return new Promise<AuthorizedMasterCatalog>((resolve) => {
+          resolveCampaignB = resolve;
+        });
+      }),
+    };
+    const { controller } = createController(repository);
+
+    await controller.setEnabled(true);
+    expect(controller.getState().catalog).toBe(EMPTY_CATALOG);
+
+    controller.setCampaign(CAMPAIGN_B);
+
+    expect(controller.getState()).toMatchObject({
+      enabled: true,
+      phase: 'loading',
+      catalog: null,
+    });
+    expect(repository.load).toHaveBeenLastCalledWith({
+      signal: expect.any(AbortSignal),
+      campaignId: CAMPAIGN_B,
+    });
+
+    resolveCampaignB(campaignBCatalog);
+    await vi.waitFor(() => expect(controller.getState().phase).toBe('on'));
+    expect(controller.getState().catalog).toBe(campaignBCatalog);
   });
 
   test.each([
@@ -161,7 +203,7 @@ describe('MasterModeController', () => {
     });
   });
 
-  test('purges immediately when the public backend becomes unavailable', async () => {
+  test('keeps the ON intention but purges private content while the backend is unavailable', async () => {
     const repository: MasterCatalogRepository = {
       load: vi.fn(async () => EMPTY_CATALOG),
     };
@@ -172,8 +214,8 @@ describe('MasterModeController', () => {
 
     expect(controller.getState()).toMatchObject({
       available: false,
-      enabled: false,
-      phase: 'unavailable',
+      enabled: true,
+      phase: 'error',
       catalog: null,
     });
   });

@@ -23,12 +23,19 @@ test('loads a direct full-entity URL under the GitHub Pages subdirectory', async
     page.getByRole('heading', { level: 1, name: 'Entidad no disponible' }),
   ).toBeVisible();
   await expect(page).toHaveTitle('Entidad no disponible · El Atlas de los Nuevos Dioses');
-  await expect(page.getByRole('link', { name: 'Volver al mapa' })).toHaveAttribute('href', /\/$/);
+  const mapLink = page.getByRole('link', { name: 'Volver al mapa' });
+  const mapHref = await mapLink.getAttribute('href');
+  expect(mapHref).not.toBeNull();
+  const mapUrl = new URL(mapHref!, page.url());
+  expect(mapUrl.pathname).toMatch(/\/$/);
+  expect(mapUrl.searchParams.get('campaign')).toBe('castigo-divino');
   await expect(page.getByText('Contenido de fans no oficial', { exact: true })).toBeVisible();
 
   const expectedPathname = new URL(baseURL ?? page.url()).pathname;
-  expect(new URL(page.url()).pathname).toBe(expectedPathname);
-  expect(new URL(page.url()).search).toBe('?entity=map024-smoke-missing');
+  const canonicalEntityUrl = new URL(page.url());
+  expect(canonicalEntityUrl.pathname).toBe(expectedPathname);
+  expect(canonicalEntityUrl.searchParams.get('entity')).toBe('map024-smoke-missing');
+  expect(canonicalEntityUrl.searchParams.get('campaign')).toBe('castigo-divino');
   expect(generatedResourceRequests(requests).length).toBeGreaterThanOrEqual(2);
 
   for (const request of generatedResourceRequests(requests)) {
@@ -41,5 +48,7 @@ test('loads a direct full-entity URL under the GitHub Pages subdirectory', async
   await expect(
     page.getByRole('heading', { level: 1, name: 'Entidad no disponible' }),
   ).toBeVisible();
-  expect(new URL(page.url()).search).toBe('?entity=map024-smoke-missing');
+  const reloadedEntityUrl = new URL(page.url());
+  expect(reloadedEntityUrl.searchParams.get('entity')).toBe('map024-smoke-missing');
+  expect(reloadedEntityUrl.searchParams.get('campaign')).toBe('castigo-divino');
 });
