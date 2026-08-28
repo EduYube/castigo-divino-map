@@ -265,20 +265,21 @@ select is(
   'anon cannot infer a master pin through the campaign geographic association'
 );
 select ok(
-  has_function_privilege(
+  has_function_privilege('anon', 'public.begin_public_request_submission(uuid)', 'execute')
+  and has_function_privilege(
     'anon',
-    'public.submit_public_request_v2(uuid,text,text,entity_type,double precision,double precision,text,text,text)',
+    'public.submit_public_request_v3(text,text,text,entity_type,double precision,double precision,text,text,text)',
     'execute'
   ),
-  'anon can use campaign-aware public request ingress'
+  'anon can use the backend-bound public request ingress'
 );
 select ok(
-  public.submit_public_request_v2(
-    '00000000-0000-4000-8000-000000000054',
+  public.submit_public_request_v3(
+    public.begin_public_request_submission('00000000-0000-4000-8000-000000000054'::uuid) ->> 'submission_token',
     'MAP053 Visitor', 'MAP053 proposed B', 'location', 550, 550,
     'Campaign B proposal', 'MAP053 isolation test', ''
   ),
-  'anon can submit a request to an active campaign'
+  'anon can submit a bound request to an active campaign'
 );
 
 reset role;
@@ -319,7 +320,7 @@ select is((select private.is_admin()), true, 'admin fixture remains authorized a
 select is(
   (select campaign_id from public.public_requests where proposed_name = 'MAP053 proposed B'),
   '00000000-0000-4000-8000-000000000054'::uuid,
-  'campaign-aware request ingress persists the chosen scope'
+  'backend-bound request ingress persists the chosen scope'
 );
 
 select lives_ok(
@@ -370,13 +371,11 @@ select is(
 );
 select ok(
   pg_temp.statement_fails($sql$
-    select public.submit_public_request_v2(
-      '00000000-0000-4000-8000-000000000054',
-      'MAP053 Visitor', 'Archived target', 'location', 560, 560,
-      'Must be rejected', 'Archived campaign', ''
+    select public.begin_public_request_submission(
+      '00000000-0000-4000-8000-000000000054'::uuid
     )
   $sql$),
-  'public request ingress rejects archived campaigns'
+  'public request ingress rejects archived campaigns before issuing a capability'
 );
 
 select * from finish();
