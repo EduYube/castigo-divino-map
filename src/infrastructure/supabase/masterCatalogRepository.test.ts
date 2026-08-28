@@ -28,9 +28,7 @@ const VALID_PAYLOAD = {
     },
   ],
   categories: [{ id: 'category-master-test', name: 'Master Category' }],
-  aliases: [
-    { id: 'alias-master-test', entity_id: 'entity-master-test', value: 'Private alias' },
-  ],
+  aliases: [{ id: 'alias-master-test', entity_id: 'entity-master-test', value: 'Private alias' }],
   tags: [{ id: 'tag-master-test', name: 'Private tag' }],
   entity_tags: [{ entity_id: 'entity-master-test', tag_id: 'tag-master-test' }],
   players: [{ id: 'player-master-test', display_name: 'Private player' }],
@@ -200,7 +198,9 @@ describe('SupabaseMasterCatalogRepository', () => {
   ] as const)('normalizes HTTP %s without falling back to a legacy RPC', async (status, code) => {
     const requestedPaths: string[] = [];
     const repository = repositoryWith(async (input) => {
-      requestedPaths.push(new URL(input instanceof Request ? input.url : input.toString()).pathname);
+      requestedPaths.push(
+        new URL(input instanceof Request ? input.url : input.toString()).pathname,
+      );
       return new Response('{}', { status });
     });
 
@@ -215,11 +215,12 @@ describe('SupabaseMasterCatalogRepository', () => {
   });
 
   test('fails closed on malformed successful payloads', async () => {
-    const repository = repositoryWith(async () =>
-      new Response('{"entities":[]}', {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+    const repository = repositoryWith(
+      async () =>
+        new Response('{"entities":[]}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
     );
 
     await expect(
