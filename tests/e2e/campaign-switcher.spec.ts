@@ -47,14 +47,14 @@ const CAMPAIGN_ROWS = CAMPAIGNS.map((campaign) => ({
   display_order: campaign.displayOrder,
 }));
 
-interface PublicRequestBody {
-  readonly p_campaign_id?: unknown;
-  readonly [key: string]: unknown;
+interface PublicRequestCapture {
+  readonly campaignId: string;
+  readonly body: Readonly<Record<string, unknown>>;
 }
 
 interface CampaignBackend {
   setRemoteAvailable(value: boolean): void;
-  getPublicRequests(): readonly PublicRequestBody[];
+  getPublicRequests(): readonly PublicRequestCapture[];
 }
 
 function contentRange(rows: readonly unknown[]): string {
@@ -180,8 +180,10 @@ async function configureCampaignBackend(
   options: { readonly remoteAvailable?: boolean } = {},
 ): Promise<CampaignBackend> {
   let remoteAvailable = options.remoteAvailable !== false;
-  const publicRequests: PublicRequestBody[] = [];
+  const publicRequests: PublicRequestCapture[] = [];
+  const submissionBindings = new Map<string, string>();
   const snapshot = await makeSnapshot();
+  let bindingSequence = 0;
 
   await page.addInitScript(
     ({ projectUrl, publishableKey }) => {
@@ -217,8 +219,48 @@ async function configureCampaignBackend(
     const url = new URL(request.url());
     const resource = url.pathname.split('/rest/v1/')[1] ?? '';
 
-    if (resource === 'rpc/submit_public_request_v2') {
-      publicRequests.push(JSON.parse(request.postData() ?? '{}') as PublicRequestBody);
+    if (resource === 'rpc/begin_public_request_submission') {
+      if (!remoteAvailable) {
+        await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+        return;
+      }
+      const body = request.postDataJSON() as Record<string, unknown>;
+      const campaign = CAMPAIGNS.find((candidate) => candidate.id === body.p_campaign_id);
+      if (!campaign) {
+        await route.fulfill({ status: 400, contentType: 'application/json', body: '{}' });
+        return;
+      }
+      const submissionToken = `map055-bound-${bindingSequence++}-${campaign.id}`;
+      submissionBindings.set(submissionToken, campaign.id);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          campaign_id: campaign.id,
+          campaign_slug: campaign.slug,
+          campaign_name: campaign.name,
+          submission_token: submissionToken,
+          expires_at: '2026-08-29T01:15:00.000Z',
+        }),
+      });
+      return;
+    }
+
+    if (resource === 'rpc/submit_public_request_v3') {
+      if (!remoteAvailable) {
+        await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+        return;
+      }
+      const body = request.postDataJSON() as Record<string, unknown>;
+      const submissionToken =
+        typeof body.p_submission_token === 'string' ? body.p_submission_token : '';
+      const campaignId = submissionBindings.get(submissionToken);
+      if (!campaignId) {
+        await route.fulfill({ status: 400, contentType: 'application/json', body: '{}' });
+        return;
+      }
+      submissionBindings.delete(submissionToken);
+      publicRequests.push({ campaignId, body });
       await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
       return;
     }
@@ -332,7 +374,8 @@ test('a public request submitted from B displays and persists campaign B explici
     'Solicitud enviada a Campaña B',
   );
   await expect.poll(() => backend.getPublicRequests().length).toBe(1);
-  expect(backend.getPublicRequests()[0]?.p_campaign_id).toBe(CAMPAIGN_B_ID);
+  expect(backend.getPublicRequests()[0]?.campaignId).toBe(CAMPAIGN_B_ID);
+  expect(backend.getPublicRequests()[0]?.body).not.toHaveProperty('p_campaign_id');
 });
 
 test('an empty open form follows A to B and B to A without a confirmation prompt', async ({
@@ -391,7 +434,8 @@ test('a partial A draft keeps A when the global selector moves to B and cancel i
     'Solicitud enviada a Castigo Divino',
   );
   await expect.poll(() => backend.getPublicRequests().length).toBe(1);
-  expect(backend.getPublicRequests()[0]?.p_campaign_id).toBe(CAMPAIGN_A_ID);
+  expect(backend.getPublicRequests()[0]?.campaignId).toBe(CAMPAIGN_A_ID);
+  expect(backend.getPublicRequests()[0]?.body).not.toHaveProperty('p_campaign_id');
 });
 
 test('a complete A draft can explicitly move to B without losing fields or position', async ({
@@ -417,7 +461,8 @@ test('a complete A draft can explicitly move to B without losing fields or posit
 
   await page.getByRole('button', { name: 'Enviar solicitud para revisión' }).click();
   await expect.poll(() => backend.getPublicRequests().length).toBe(1);
-  expect(backend.getPublicRequests()[0]?.p_campaign_id).toBe(CAMPAIGN_B_ID);
+  expect(backend.getPublicRequests()[0]?.campaignId).toBe(CAMPAIGN_B_ID);
+  expect(backend.getPublicRequests()[0]?.body).not.toHaveProperty('p_campaign_id');
 });
 
 test('a B draft switching back to A cannot submit until keep-or-move is resolved', async ({
@@ -439,7 +484,8 @@ test('a B draft switching back to A cannot submit until keep-or-move is resolved
   await page.getByRole('button', { name: 'Mover borrador a Castigo Divino' }).click();
   await page.getByRole('button', { name: 'Enviar solicitud para revisión' }).click();
   await expect.poll(() => backend.getPublicRequests().length).toBe(1);
-  expect(backend.getPublicRequests()[0]?.p_campaign_id).toBe(CAMPAIGN_A_ID);
+  expect(backend.getPublicRequests()[0]?.campaignId).toBe(CAMPAIGN_A_ID);
+  expect(backend.getPublicRequests()[0]?.body).not.toHaveProperty('p_campaign_id');
 });
 
 test('degraded schema v3 keeps B selected and backend recovery does not reset it to A', async ({
