@@ -313,14 +313,15 @@ select ok(
 
 select ok(
   pg_temp.statement_succeeds(
-    $$select public.admin_moderate_public_request(
+    $$select public.admin_moderate_public_request_v2(
+      '00000000-0000-4000-8000-000000000053',
       '10000000-0000-4000-8000-000000000001',
       (select updated_at from public.public_requests where id = '10000000-0000-4000-8000-000000000001'),
       'reject',
       null
     )$$
   ),
-  'administrator can moderate a request through the authoritative RPC'
+  'administrator can moderate a request through the authoritative scoped RPC'
 );
 
 select * from finish();
