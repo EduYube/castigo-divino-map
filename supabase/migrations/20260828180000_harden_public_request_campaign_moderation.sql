@@ -28,7 +28,7 @@ as $$
 declare
   request_record public.public_requests%rowtype;
   result_record public.public_requests%rowtype;
-  normalized_note text := pg_catalog.nullif(pg_catalog.btrim(p_moderation_note), '');
+  normalized_note text := nullif(pg_catalog.btrim(p_moderation_note), '');
   draft_entity_id text;
   draft_slug text;
 begin
