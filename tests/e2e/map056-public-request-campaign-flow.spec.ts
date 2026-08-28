@@ -336,7 +336,10 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         await route.fulfill({
           status: 400,
           contentType: 'application/json',
-          body: JSON.stringify({ code: '22023', message: 'invalid public request submission token' }),
+          body: JSON.stringify({
+            code: '22023',
+            message: 'invalid public request submission token',
+          }),
         });
         return;
       }
@@ -364,7 +367,10 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (resource === 'rpc/submit_public_request' || resource === 'rpc/submit_public_request_v2') {
+    if (
+      resource === 'rpc/submit_public_request' ||
+      resource === 'rpc/submit_public_request_v2'
+    ) {
       await route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
       return;
     }
@@ -694,14 +700,11 @@ test('manipulated public campaign payloads fail closed', async ({ page }) => {
       const begin = async (
         campaignId: string,
       ): Promise<{ readonly status: number; readonly token: string }> => {
-        const response = await fetch(
-          `${projectUrl}/rest/v1/rpc/begin_public_request_submission`,
-          {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ p_campaign_id: campaignId }),
-          },
-        );
+        const response = await fetch(`${projectUrl}/rest/v1/rpc/begin_public_request_submission`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ p_campaign_id: campaignId }),
+        });
         const body = response.ok
           ? ((await response.json()) as { submission_token?: unknown })
           : null;
@@ -721,7 +724,10 @@ test('manipulated public campaign payloads fail closed', async ({ page }) => {
         });
         return response.status;
       };
-      const legacy = async (name: string, body: Record<string, unknown>): Promise<number> => {
+      const legacy = async (
+        name: string,
+        body: Record<string, unknown>,
+      ): Promise<number> => {
         const response = await fetch(`${projectUrl}/rest/v1/rpc/${name}`, {
           method: 'POST',
           headers,
@@ -738,7 +744,9 @@ test('manipulated public campaign payloads fail closed', async ({ page }) => {
       return {
         archived: archived.status,
         forgedAtoB: await submit(forgedToken),
-        extraCampaignId: await submit(bindingForExtraField.token, { p_campaign_id: campaignB }),
+        extraCampaignId: await submit(bindingForExtraField.token, {
+          p_campaign_id: campaignB,
+        }),
         legacyV2: await legacy('submit_public_request_v2', {
           ...base,
           p_campaign_id: campaignB,
