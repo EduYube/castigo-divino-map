@@ -152,10 +152,12 @@ set local role authenticated;
 select throws_ok(
   $sql$
     select public.admin_moderate_public_request_v2(
-      '00000000-0000-4000-8000-000000000053', request.id, request.updated_at, 'reject', null
+      '00000000-0000-4000-8000-000000000053',
+      (select request.id from public.public_requests request where request.proposed_name = 'MAP056 A REQUEST CANARY'),
+      (select request.updated_at from public.public_requests request where request.proposed_name = 'MAP056 A REQUEST CANARY'),
+      'reject',
+      null
     )
-    from public.public_requests request
-    where request.proposed_name = 'MAP056 A REQUEST CANARY'
   $sql$,
   '42501',
   'administrative authorization required',
