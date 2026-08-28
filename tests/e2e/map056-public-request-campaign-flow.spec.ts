@@ -28,7 +28,7 @@ type Scenario = {
   readonly campaignId: string;
   readonly slug: string;
   readonly name: string;
-  readonly categoryId: string;
+  readonly categoryId: PublicCampaignCatalogV3['categories'][number]['id'];
   readonly requestId: string;
   readonly otherSlug: string;
 };
@@ -53,7 +53,7 @@ interface RequestRow extends Record<string, unknown> {
 }
 
 interface CategoryRow extends Record<string, unknown> {
-  id: string;
+  id: PublicCampaignCatalogV3['categories'][number]['id'];
   campaign_id: string;
   slug: string;
   name: string;
