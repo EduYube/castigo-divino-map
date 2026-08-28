@@ -583,7 +583,9 @@ for (const scenario of SCENARIOS) {
     await page.getByRole('alertdialog').getByRole('button', { name: 'Crear borrador' }).click();
 
     const draftId = `entity-request-${scenario.requestId.replaceAll('-', '')}`;
-    await expect(page.getByRole('heading', { name: `Editar Pin MAP-056 ${scenario.name}` })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: `Editar Pin MAP-056 ${scenario.name}` }),
+    ).toBeVisible();
     expect(backend.requests()[0]).toMatchObject({
       campaign_id: scenario.campaignId,
       request_status: 'converted',
