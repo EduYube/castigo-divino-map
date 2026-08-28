@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(26);
+select plan(28);
 
 -- Synthetic A/B canaries are deliberately distinct. Campaign A is the seeded
 -- initial campaign; B and archived C exist only inside this rolled-back test.
