@@ -131,7 +131,7 @@ declare
   signing_secret bytea;
   nonce_value uuid := extensions.gen_random_uuid();
   expires_epoch bigint := pg_catalog.floor(
-    pg_catalog.extract(epoch from pg_catalog.clock_timestamp() + interval '15 minutes')
+    extract(epoch from pg_catalog.clock_timestamp() + interval '15 minutes')
   )::bigint;
   payload text;
   signature text;
@@ -241,9 +241,9 @@ begin
     raise exception using errcode = '22023', message = 'invalid public request submission token';
   end if;
 
-  if expires_epoch < pg_catalog.floor(pg_catalog.extract(epoch from pg_catalog.clock_timestamp()))::bigint
+  if expires_epoch < pg_catalog.floor(extract(epoch from pg_catalog.clock_timestamp()))::bigint
      or expires_epoch > pg_catalog.floor(
-       pg_catalog.extract(epoch from pg_catalog.clock_timestamp() + interval '20 minutes')
+       extract(epoch from pg_catalog.clock_timestamp() + interval '20 minutes')
      )::bigint then
     raise exception using errcode = '22023', message = 'invalid public request submission token';
   end if;
