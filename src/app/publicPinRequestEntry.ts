@@ -34,26 +34,18 @@ function navigateToMountedPanel(root: ParentNode): void {
 }
 
 function preservePublicRequestAccessibilityContract(root: ParentNode): void {
-  const form = getRequiredElement<HTMLFormElement>(
-    root,
-    '[data-public-pin-request-form]',
-  );
-  const campaignTarget = getRequiredElement<HTMLElement>(
-    root,
-    '[data-public-pin-request-campaign-target]',
-  );
-  const campaignTargetName = getRequiredElement<HTMLElement>(
-    root,
-    '[data-public-pin-request-campaign-target-name]',
-  );
-  const campaignTargetLabel = campaignTarget.querySelector<HTMLElement>('strong');
+  const formSelector = '[data-public-pin-request-form]';
+  const campaignSelector = '[data-public-pin-request-campaign-target]';
+  const nameSelector = '[data-public-pin-request-campaign-target-name]';
+  const form = getRequiredElement<HTMLFormElement>(root, formSelector);
+  const campaign = getRequiredElement<HTMLElement>(root, campaignSelector);
+  const name = getRequiredElement<HTMLElement>(root, nameSelector);
+  const label = campaign.querySelector<HTMLElement>('strong');
+  const describedBy = 'public-pin-request-privacy public-pin-request-status';
 
-  form.setAttribute(
-    'aria-describedby',
-    'public-pin-request-privacy public-pin-request-status',
-  );
+  form.setAttribute('aria-describedby', describedBy);
   form.setAttribute('aria-details', 'public-pin-request-campaign-target');
-  campaignTargetLabel?.after(campaignTargetName);
+  label?.after(name);
 }
 
 export function mountPublicPinRequest(
