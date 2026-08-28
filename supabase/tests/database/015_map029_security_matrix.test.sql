@@ -117,12 +117,15 @@ select ok(
   'anon cannot call the administrative entity reader'
 );
 select ok(
-  not pg_catalog.has_function_privilege(
+  to_regprocedure(
+    'public.admin_moderate_public_request(uuid,timestamp with time zone,text,text)'
+  ) is null
+  and not pg_catalog.has_function_privilege(
     'anon',
-    'public.admin_moderate_public_request(uuid,timestamp with time zone,text,text)',
+    'public.admin_moderate_public_request_v2(uuid,uuid,timestamp with time zone,text,text)',
     'EXECUTE'
   ),
-  'anon cannot call public request moderation'
+  'the legacy unscoped moderation RPC is absent and anon cannot call scoped moderation'
 );
 
 select is(
@@ -144,7 +147,7 @@ select is(
     from pg_catalog.pg_proc as function
     join pg_catalog.pg_namespace as namespace on namespace.oid = function.pronamespace
     where namespace.nspname = 'public'
-      and function.proname = 'admin_moderate_public_request'
+      and function.proname = 'admin_moderate_public_request_v2'
   ),
   'atlas_public_request_moderator',
   'moderation SECURITY DEFINER keeps its dedicated NOLOGIN owner'
