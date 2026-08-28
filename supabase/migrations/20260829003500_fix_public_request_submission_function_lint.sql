@@ -4,6 +4,8 @@
 
 begin;
 
+grant atlas_public_request_submitter to current_user;
+
 create or replace function public.submit_public_request_v3(
   p_submission_token text,
   p_sender_name text,
@@ -149,5 +151,7 @@ begin
   return true;
 end;
 $$;
+
+revoke atlas_public_request_submitter from current_user;
 
 commit;
