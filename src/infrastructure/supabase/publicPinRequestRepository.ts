@@ -60,7 +60,10 @@ function responseErrorKind(status: number): 'rate-limited' | 'server' | 'rejecte
   return status === 429 ? 'rate-limited' : status >= 500 ? 'server' : 'rejected';
 }
 
-function isCampaignBinding(value: unknown, campaignId: string): value is PublicRequestCampaignBinding {
+function isCampaignBinding(
+  value: unknown,
+  campaignId: string,
+): value is PublicRequestCampaignBinding {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
   const record = value as Record<string, unknown>;
   return (
