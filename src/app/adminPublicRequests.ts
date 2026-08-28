@@ -111,7 +111,9 @@ export function mountAdminPublicRequests(
   const activeCampaignLabel = (): string => {
     const campaignId = adminCampaignContext.getCampaignId();
     const selector = root.querySelector<HTMLSelectElement>('#admin-campaign-context');
-    const option = Array.from(selector?.options ?? []).find((candidate) => candidate.value === campaignId);
+    const option = Array.from(selector?.options ?? []).find(
+      (candidate) => candidate.value === campaignId,
+    );
     return option?.textContent?.trim() || campaignId;
   };
 
@@ -331,7 +333,9 @@ export function mountAdminPublicRequests(
     empty.textContent =
       selectedFilter === 'all'
         ? `No hay solicitudes para mostrar en ${activeCampaignLabel()}.`
-        : `No hay solicitudes con estado ${statusLabel(selectedFilter as AdminPublicRequestRecord['requestStatus']).toLowerCase()} en ${activeCampaignLabel()}.`;
+        : `No hay solicitudes con estado ${statusLabel(
+            selectedFilter as AdminPublicRequestRecord['requestStatus'],
+          ).toLowerCase()} en ${activeCampaignLabel()}.`;
   }
 
   const handleFilter = (): void => {
