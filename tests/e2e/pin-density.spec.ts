@@ -28,6 +28,15 @@ function getDensityDisposition(index: number): string {
 }
 
 const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
+  campaigns: [
+    {
+      id: '00000000-0000-4000-8000-000000000053',
+      slug: 'castigo-divino',
+      name: 'Castigo Divino',
+      status: 'active',
+      display_order: 0,
+    },
+  ],
   categories: [
     {
       id: 'category-density',
