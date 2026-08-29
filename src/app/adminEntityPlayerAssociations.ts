@@ -25,13 +25,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function projectUrl(): string | null {
-  const value = import.meta.env.VITE_SUPABASE_URL?.trim();
-  return value ? value.replace(/\/$/, '') : null;
+  const value =
+    (import.meta.env.DEV ? window.__MAP017_AUTH_TEST_CONFIG__?.projectUrl : undefined) ??
+    import.meta.env.VITE_SUPABASE_URL;
+  const normalized = value?.trim();
+  return normalized ? normalized.replace(/\/$/, '') : null;
 }
 
 function publishableKey(): string | null {
-  const value = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
-  return value || null;
+  const value =
+    (import.meta.env.DEV ? window.__MAP017_AUTH_TEST_CONFIG__?.publishableKey : undefined) ??
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  return value?.trim() || null;
 }
 
 function readAdminSession(): AdminSessionPayload | null {
@@ -83,20 +88,6 @@ function selectedPlayerIds(): readonly string[] {
     .map((checkbox) => checkbox.value);
 }
 
-function unavailableAssociationSaveResponse(): Response {
-  return new Response(
-    JSON.stringify({
-      code: 'MAP058_ASSOCIATIONS_UNAVAILABLE',
-      message:
-        'Las asociaciones con jugadores no están disponibles todavía. Recarga el editor antes de guardar.',
-    }),
-    {
-      status: 409,
-      headers: { 'Content-Type': 'application/json' },
-    },
-  );
-}
-
 async function associationAwareFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -119,9 +110,6 @@ async function associationAwareFetch(
               p_player_association_ids: [...selectedPlayerIds()],
             }),
           });
-        }
-        if (body.p_expected_updated_at != null) {
-          return unavailableAssociationSaveResponse();
         }
       }
     } catch {
