@@ -99,7 +99,7 @@ function synchronize(root: ParentNode): void {
     coordinateMarker.dataset.audience = audience;
     coordinateMarker.setAttribute(
       'aria-label',
-      `Coordenada seleccionada. ${type.label}.${audienceDescription} Disposición por jugador: ${dispositionDescription}. Puedes arrastrarla con un puntero o editar X e Y en el formulario.`,
+      `Coordenada seleccionada. ${type.label}.${audienceDescription} Relación con los personajes: ${dispositionDescription}. Puedes arrastrarla con un puntero o editar X e Y en el formulario.`,
     );
   }
 
@@ -116,7 +116,7 @@ function synchronize(root: ParentNode): void {
     previewMarker.setAttribute('data-testid', 'admin-pin-preview');
     previewMarker.dataset.entityType = entityType;
     previewMarker.dataset.audience = audience;
-    previewMarker.title = `${type.label}.${audienceDescription} Disposición por jugador: ${dispositionDescription}.`;
+    previewMarker.title = `${type.label}.${audienceDescription} Relación con los personajes: ${dispositionDescription}.`;
     populatePinVisual(visual, entityType, audience, dispositions);
   }
 }
