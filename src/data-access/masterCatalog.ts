@@ -45,12 +45,18 @@ export interface MasterCatalogEntityTag {
 export interface MasterCatalogPlayer {
   readonly id: string;
   readonly displayName: string;
+  readonly accentColor: string;
 }
 
 export interface MasterCatalogDisposition {
   readonly entityId: string;
   readonly playerId: string;
   readonly disposition: PlayerDisposition;
+}
+
+export interface MasterCatalogAssociation {
+  readonly entityId: string;
+  readonly playerId: string;
 }
 
 export interface MasterCatalogRelation {
@@ -74,6 +80,7 @@ export interface AuthorizedMasterCatalog {
   readonly entityTags: readonly MasterCatalogEntityTag[];
   readonly players: readonly MasterCatalogPlayer[];
   readonly dispositions: readonly MasterCatalogDisposition[];
+  readonly associations: readonly MasterCatalogAssociation[];
   readonly relations: readonly MasterCatalogRelation[];
   readonly relationEntities: readonly MasterCatalogRelationEntity[];
 }
