@@ -25,40 +25,32 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('tests/e2e/admin-map-entities.spec.ts')
           text = path.read_text()
-          old = '''  const popupPromise = page.waitForEvent('popup');
-          await panel
-            .getByRole('link', {
-              name: 'Abrir ficha completa de MAP-019 Character en una pestaña nueva',
-            })
-            .click();
-          const detailsPage = await popupPromise;
-          await expect(
-            detailsPage.getByRole('heading', { level: 2, name: 'Relación con los personajes' }),
-          ).toBeVisible();
-          await expect(detailsPage.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();
-          await expect(detailsPage.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
-          await expect(detailsPage.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
-          await detailsPage.close();
-          '''
-          new = '''  const fullAction = panel.getByRole('link', {
-            name: 'Abrir ficha completa de MAP-019 Character en una pestaña nueva',
-          });
-          const fullHref = await fullAction.getAttribute('href');
-          expect(fullHref).toMatch(/\\?entity=map019-character&campaign=castigo-divino$/);
-          await page.goto(fullHref ?? '/');
-          await expect(
-            page.getByRole('heading', { level: 2, name: 'Relación con los personajes' }),
-          ).toBeVisible();
-          await expect(page.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();
-          await expect(page.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
-          await expect(page.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
-          '''
-          if old not in text:
-              raise SystemExit('Expected MAP-057 popup block not found')
-          path.write_text(text.replace(old, new, 1))
+          pattern = re.compile(
+              r"  const popupPromise = page\.waitForEvent\('popup'\);\n.*?  await detailsPage\.close\(\);\n",
+              re.DOTALL,
+          )
+          new = (
+              "  const fullAction = panel.getByRole('link', {\n"
+              "    name: 'Abrir ficha completa de MAP-019 Character en una pestaña nueva',\n"
+              "  });\n"
+              "  const fullHref = await fullAction.getAttribute('href');\n"
+              "  expect(fullHref).toMatch(/\\?entity=map019-character&campaign=castigo-divino$/);\n"
+              "  await page.goto(fullHref ?? '/');\n"
+              "  await expect(\n"
+              "    page.getByRole('heading', { level: 2, name: 'Relación con los personajes' }),\n"
+              "  ).toBeVisible();\n"
+              "  await expect(page.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();\n"
+              "  await expect(page.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();\n"
+              "  await expect(page.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();\n"
+          )
+          text, replacements = pattern.subn(lambda _: new, text, count=1)
+          if replacements != 1:
+              raise SystemExit(f'Expected one MAP-057 popup block, found {replacements}')
+          path.write_text(text)
           PY
       - run: npx prettier --write tests/e2e/admin-map-entities.spec.ts
       - name: Commit patch
