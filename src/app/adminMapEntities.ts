@@ -360,7 +360,9 @@ export function mountAdminMapEntities(
     if (dispositionError) {
       const message = validation.fieldErrors.dispositions ?? '';
       dispositionError.textContent = message;
-      dispositionSelects.forEach((select) => select.setAttribute('aria-invalid', message ? 'true' : 'false'));
+      dispositionSelects.forEach((select) =>
+        select.setAttribute('aria-invalid', message ? 'true' : 'false'),
+      );
     }
     return validation.valid;
   }
@@ -371,7 +373,12 @@ export function mountAdminMapEntities(
       .map((tagId) => state.references.tags.find(({ id }) => id === tagId)?.name ?? tagId)
       .join(', ');
     const dispositions = draft.dispositions
-      .filter(({ playerId }) => state.references.players.some(({ id, publicationStatus }) => id === playerId && publicationStatus !== 'archived'))
+      .filter(({ playerId }) =>
+        state.references.players.some(
+          ({ id, publicationStatus }) =>
+            id === playerId && publicationStatus !== 'archived',
+        ),
+      )
       .map(({ playerId, disposition: value }) => {
         const player = state.references.players.find(({ id }) => id === playerId);
         return `${player?.displayName ?? playerId}: ${getPinDispositionVisual(value).label}`;
@@ -627,7 +634,10 @@ export function mountAdminMapEntities(
     tagFieldset.append(tagError);
     fields.append(tagFieldset);
 
-    const dispositionFieldset = createElement('fieldset', 'admin-map-entity__fieldset admin-map-entity__dispositions');
+    const dispositionFieldset = createElement(
+      'fieldset',
+      'admin-map-entity__fieldset admin-map-entity__dispositions',
+    );
     const dispositionLegend = createElement('legend', 'admin-map-entity__legend');
     const dispositionHelp = createElement('p', 'admin-map-entity__help');
     const dispositionHelpId = 'admin-map-entity-dispositions-help';
@@ -636,7 +646,10 @@ export function mountAdminMapEntities(
     dispositionHelp.id = dispositionHelpId;
     dispositionHelp.textContent =
       'Define cómo se relaciona esta entidad con cada personaje jugador activo de la campaña. Las relaciones históricas de jugadores archivados se conservan sin mostrarse aquí.';
-    dispositionFieldset.setAttribute('aria-describedby', `${dispositionHelpId} ${dispositionErrorId}`);
+    dispositionFieldset.setAttribute(
+      'aria-describedby',
+      `${dispositionHelpId} ${dispositionErrorId}`,
+    );
     dispositionFieldset.append(dispositionLegend, dispositionHelp);
     dispositionError = createElement('p', 'admin-map-entity__field-error');
     dispositionError.id = dispositionErrorId;
@@ -649,7 +662,10 @@ export function mountAdminMapEntities(
     }
 
     for (const player of activePlayers) {
-      const wrapper = createElement('div', 'admin-map-entity__field admin-map-entity__disposition');
+      const wrapper = createElement(
+        'div',
+        'admin-map-entity__field admin-map-entity__disposition',
+      );
       const label = createElement('label', 'admin-map-entity__label');
       const select = createElement('select', 'admin-map-entity__control');
       const selected = draft.dispositions.find(
