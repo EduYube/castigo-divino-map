@@ -195,7 +195,9 @@ export function parseTag(row: Record<string, unknown>, index: number): PublicTag
   };
 }
 
-export function parsePlayer(row: Record<string, unknown>, index: number): PublicPlayer {
+export type ParsedPublicPlayer = PublicPlayer & { readonly accentColor: string };
+
+export function parsePlayer(row: Record<string, unknown>, index: number): ParsedPublicPlayer {
   const path = `players[${index}]`;
   assertAllowedProperties(
     row,
