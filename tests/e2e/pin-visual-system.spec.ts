@@ -196,13 +196,13 @@ test('distinguishes character and location pins by shape and exposes per-player 
   await expect(character.locator('.pin-visual')).toHaveClass(/pin-visual--character/);
   await expect(character).toHaveAttribute(
     'aria-label',
-    /Scout\. Personaje\. Disposición por jugador: Alicia: enemigo; Borin: neutral\./i,
+    /Scout\. Personaje\. Relación con los personajes: Alicia: enemigo; Borin: neutral\./i,
   );
   await expect(location).toHaveAttribute('data-entity-type', 'location');
   await expect(location.locator('.pin-visual')).toHaveClass(/pin-visual--location/);
   await expect(location).toHaveAttribute(
     'aria-label',
-    /Watchtower\. Emplazamiento\. Disposición por jugador: Alicia: aliado; Borin: enemigo\./i,
+    /Watchtower\. Emplazamiento\. Relación con los personajes: Alicia: aliado; Borin: enemigo\./i,
   );
 
   await expect(character.locator('.pin-disposition--enemy')).toHaveText('−');
@@ -272,7 +272,7 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await expect(options.nth(1)).toHaveAttribute('data-entity-type', 'character');
   await expect(options.nth(1)).toHaveAttribute(
     'aria-label',
-    /Harbor Guard\. Personaje\. Disposición por jugador: Alicia: enemigo; Borin: sin disposición disponible/i,
+    /Harbor Guard\. Personaje\. Relación con los personajes: Alicia: enemigo; Borin: relación sin configurar/i,
   );
 
   await options.first().click();

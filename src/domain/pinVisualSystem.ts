@@ -70,7 +70,7 @@ const DISPOSITION_VISUALS: Record<PinDispositionState, PinDispositionVisual> = {
   },
   unknown: {
     disposition: 'unknown',
-    label: 'Sin disposición disponible',
+    label: 'Relación sin configurar',
     symbol: '?',
     className: 'pin-disposition--unknown',
   },
@@ -89,16 +89,6 @@ export function getPinDispositionVisual(
 export function createPlayerDispositionVisuals(
   dispositions: readonly PinPlayerDispositionInput[],
 ): readonly PinPlayerDispositionVisual[] {
-  if (dispositions.length === 0) {
-    return [
-      {
-        playerId: 'unknown',
-        playerName: 'Perspectiva no disponible',
-        ...DISPOSITION_VISUALS.unknown,
-      },
-    ];
-  }
-
   return dispositions.map(({ playerId, playerName, disposition }) => ({
     playerId,
     playerName,

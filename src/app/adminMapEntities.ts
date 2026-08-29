@@ -21,6 +21,7 @@ import {
   validateCharacterPortraitFile,
 } from '../domain/characterPortrait';
 import { isMapCoordinateWithinBounds } from '../domain/mapCoordinates';
+import { getPinDispositionVisual } from '../domain/pinVisualSystem';
 import {
   mountAdminEntityEditorMap,
   type AdminEntityEditorMapController,
@@ -122,6 +123,7 @@ export function mountAdminMapEntities(
   let controls = new Map<string, FieldControl>();
   let tagCheckboxes: HTMLInputElement[] = [];
   let dispositionSelects: HTMLSelectElement[] = [];
+  let preservedDispositions: AdminMapEntityDraft['dispositions'] = [];
   let tagError: HTMLParagraphElement | null = null;
   let dispositionError: HTMLParagraphElement | null = null;
   let restoreFocus: HTMLElement | null = null;
@@ -324,10 +326,13 @@ export function mountAdminMapEntities(
       tagIds: tagCheckboxes
         .filter((checkbox) => checkbox.checked)
         .map((checkbox) => checkbox.value),
-      dispositions: dispositionSelects.map((select) => ({
-        playerId: select.dataset.playerId ?? '',
-        disposition: select.value as PlayerDisposition,
-      })),
+      dispositions: [
+        ...dispositionSelects.map((select) => ({
+          playerId: select.dataset.playerId ?? '',
+          disposition: select.value as PlayerDisposition,
+        })),
+        ...preservedDispositions,
+      ],
       publicationStatus,
     };
   }
@@ -353,7 +358,11 @@ export function mountAdminMapEntities(
     }
     if (tagError) tagError.textContent = validation.fieldErrors.tagIds ?? '';
     if (dispositionError) {
-      dispositionError.textContent = validation.fieldErrors.dispositions ?? '';
+      const message = validation.fieldErrors.dispositions ?? '';
+      dispositionError.textContent = message;
+      dispositionSelects.forEach((select) =>
+        select.setAttribute('aria-invalid', message ? 'true' : 'false'),
+      );
     }
     return validation.valid;
   }
@@ -364,9 +373,14 @@ export function mountAdminMapEntities(
       .map((tagId) => state.references.tags.find(({ id }) => id === tagId)?.name ?? tagId)
       .join(', ');
     const dispositions = draft.dispositions
+      .filter(({ playerId }) =>
+        state.references.players.some(
+          ({ id, publicationStatus }) => id === playerId && publicationStatus !== 'archived',
+        ),
+      )
       .map(({ playerId, disposition: value }) => {
         const player = state.references.players.find(({ id }) => id === playerId);
-        return `${player?.displayName ?? playerId}: ${value}`;
+        return `${player?.displayName ?? playerId}: ${getPinDispositionVisual(value).label}`;
       })
       .join(' · ');
     previewMarker.textContent = draft.visibility === 'pin' ? '◆' : '';
@@ -403,6 +417,7 @@ export function mountAdminMapEntities(
     controls = new Map();
     tagCheckboxes = [];
     dispositionSelects = [];
+    preservedDispositions = [];
     tagError = null;
     dispositionError = null;
     fields.replaceChildren();
@@ -414,6 +429,13 @@ export function mountAdminMapEntities(
       ? detailToDraft(detail)
       : createEmptyMapEntityDraft(state.references, requestedEntityType);
     const existing = Boolean(detail);
+    const activePlayers = state.references.players.filter(
+      ({ publicationStatus }) => publicationStatus !== 'archived',
+    );
+    const activePlayerIds = new Set(activePlayers.map(({ id }) => id));
+    preservedDispositions = draft.dispositions.filter(
+      ({ playerId }) => !activePlayerIds.has(playerId),
+    );
     editorHeading.textContent = existing ? `Editar ${draft.name}` : `Crear ${draft.entityType}`;
 
     addField({
@@ -611,30 +633,74 @@ export function mountAdminMapEntities(
     tagFieldset.append(tagError);
     fields.append(tagFieldset);
 
-    const dispositionFieldset = createElement('fieldset', 'admin-map-entity__fieldset');
+    const dispositionFieldset = createElement(
+      'fieldset',
+      'admin-map-entity__fieldset admin-map-entity__dispositions',
+    );
     const dispositionLegend = createElement('legend', 'admin-map-entity__legend');
-    dispositionLegend.textContent = 'Disposición por jugador';
-    dispositionFieldset.append(dispositionLegend);
+    const dispositionHelp = createElement('p', 'admin-map-entity__help');
+    const dispositionHelpId = 'admin-map-entity-dispositions-help';
+    const dispositionErrorId = 'admin-map-entity-dispositions-error';
+    dispositionLegend.textContent = 'Relación con los personajes';
+    dispositionHelp.id = dispositionHelpId;
+    dispositionHelp.textContent =
+      'Define cómo se relaciona esta entidad con cada personaje jugador activo de la campaña. Las relaciones históricas de jugadores archivados se conservan sin mostrarse aquí.';
+    dispositionFieldset.setAttribute(
+      'aria-describedby',
+      `${dispositionHelpId} ${dispositionErrorId}`,
+    );
+    dispositionFieldset.append(dispositionLegend, dispositionHelp);
     dispositionError = createElement('p', 'admin-map-entity__field-error');
+    dispositionError.id = dispositionErrorId;
     dispositionError.setAttribute('aria-live', 'polite');
-    for (const player of state.references.players) {
-      const wrapper = createElement('div', 'admin-map-entity__field');
+
+    if (activePlayers.length === 0) {
+      const noPlayers = createElement('p', 'admin-map-entity__help');
+      noPlayers.textContent = 'No hay personajes jugadores configurados.';
+      dispositionFieldset.append(noPlayers);
+    }
+
+    for (const player of activePlayers) {
+      const wrapper = createElement('div', 'admin-map-entity__field admin-map-entity__disposition');
       const label = createElement('label', 'admin-map-entity__label');
       const select = createElement('select', 'admin-map-entity__control');
-      const selected =
-        draft.dispositions.find(({ playerId }) => playerId === player.id)?.disposition ?? 'neutral';
+      const selected = draft.dispositions.find(
+        ({ playerId }) => playerId === player.id,
+      )?.disposition;
       const id = `admin-map-entity-disposition-${player.id}`;
       label.htmlFor = id;
-      label.textContent = `${player.displayName} · ${player.publicationStatus}`;
+      label.textContent = player.displayName;
       select.id = id;
       select.dataset.playerId = player.id;
+      select.setAttribute('data-testid', `admin-player-disposition-${player.id}`);
+      select.setAttribute('aria-describedby', `${dispositionHelpId} ${dispositionErrorId}`);
+
+      if (!selected) {
+        const missing = document.createElement('option');
+        missing.value = '';
+        missing.textContent = 'Relación sin configurar';
+        missing.selected = true;
+        missing.disabled = true;
+        select.append(missing);
+      }
+
       for (const value of ['ally', 'neutral', 'enemy'] as const) {
         const option = document.createElement('option');
         option.value = value;
-        option.textContent = value;
+        option.textContent = getPinDispositionVisual(value).label;
         option.selected = value === selected;
         select.append(option);
       }
+
+      const updateAccessibleName = (): void => {
+        const disposition = select.value as PlayerDisposition;
+        const labelText = select.value
+          ? getPinDispositionVisual(disposition).label
+          : 'Relación sin configurar';
+        select.setAttribute('aria-label', `${player.displayName}: ${labelText}`);
+      };
+      updateAccessibleName();
+      select.addEventListener('change', updateAccessibleName);
       wrapper.append(label, select);
       dispositionFieldset.append(wrapper);
       dispositionSelects.push(select);
@@ -706,6 +772,7 @@ export function mountAdminMapEntities(
     clearPortraitPreviewUrl();
     mapController?.destroy();
     mapController = null;
+    preservedDispositions = [];
     renderedEditorKey = null;
     editor.hidden = true;
     preview.hidden = true;
@@ -990,6 +1057,7 @@ export function mountAdminMapEntities(
       document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('atlas:public-data-status', handlePublicDataStatus);
       clearPortraitPreviewUrl();
+      preservedDispositions = [];
       section.remove();
     },
   };

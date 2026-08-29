@@ -13,6 +13,7 @@ export interface AdminMapEntityValidationResult {
 
 const ENTITY_ID_PATTERN = /^(?:entity|place)-[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?$/;
 const SLUG_PATTERN = /^[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?$/;
+const PLAYER_DISPOSITIONS = new Set(['ally', 'neutral', 'enemy']);
 
 function setError(errors: Record<string, string>, field: string, message: string): void {
   if (!errors[field]) {
@@ -100,7 +101,13 @@ export function validateAdminMapEntityDraft(
     setError(
       errors,
       'dispositions',
-      'Las disposiciones ya no coinciden con los jugadores actuales. Recarga el editor.',
+      'Las relaciones ya no coinciden con los personajes jugadores actuales. Recarga el editor.',
+    );
+  } else if (draft.dispositions.some(({ disposition }) => !PLAYER_DISPOSITIONS.has(disposition))) {
+    setError(
+      errors,
+      'dispositions',
+      'Selecciona Aliado, Neutral o Enemigo para cada personaje jugador activo.',
     );
   }
 

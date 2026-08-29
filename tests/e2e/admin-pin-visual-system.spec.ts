@@ -184,10 +184,10 @@ test('admin coordinate editor and preview reuse the public type/disposition visu
   await expect(marker.locator('.pin-disposition--neutral')).toHaveText('•');
   await expect(marker).toHaveAttribute(
     'aria-label',
-    /Personaje\. Disposición por jugador: Demo Player One: aliado; Demo Player Two: neutral/i,
+    /Personaje\. Relación con los personajes: Demo Player One: aliado; Demo Player Two: neutral/i,
   );
 
-  await page.getByLabel('Demo Player One · published').selectOption('enemy');
+  await page.getByTestId('admin-player-disposition-player-demo-one').selectOption('enemy');
   await expect(marker.locator('.pin-disposition--enemy')).toHaveText('−');
   await expect(marker).toHaveAttribute('aria-label', /Demo Player One: enemigo/i);
 
@@ -196,7 +196,7 @@ test('admin coordinate editor and preview reuse the public type/disposition visu
   await expect(preview).toHaveAttribute('data-entity-type', 'character');
   await expect(preview.locator('.pin-visual--character')).toBeVisible();
   await expect(preview.locator('.pin-disposition--enemy')).toHaveText('−');
-  await expect(preview).toHaveAttribute('title', /Personaje\. Disposición por jugador:/i);
+  await expect(preview).toHaveAttribute('title', /Personaje\. Relación con los personajes:/i);
 });
 
 test('admin preview shows location shape for a new location without altering persistence', async ({

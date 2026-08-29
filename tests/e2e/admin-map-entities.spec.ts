@@ -79,8 +79,9 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     { id: 'draft-tag', name: 'Draft tag', publication_status: 'draft' },
   ];
   const players = [
-    { id: 'player-demo-one', display_name: 'Demo Player One', publication_status: 'published' },
-    { id: 'player-demo-two', display_name: 'Demo Player Two', publication_status: 'published' },
+    { id: 'player-skade', display_name: 'Skade', publication_status: 'published' },
+    { id: 'player-ura', display_name: 'Ura', publication_status: 'published' },
+    { id: 'player-veyra', display_name: 'Veyra', publication_status: 'published' },
   ];
   const entities: EntityRow[] = [
     {
@@ -104,7 +105,10 @@ async function configureBackend(page: Page): Promise<BackendControl> {
   ];
   const entityTags = new Map<string, string[]>([['entity-aster-guide', ['notable']]]);
   const dispositions = new Map<string, Record<string, Disposition>>([
-    ['entity-aster-guide', { 'player-demo-one': 'ally', 'player-demo-two': 'neutral' }],
+    [
+      'entity-aster-guide',
+      { 'player-skade': 'ally', 'player-ura': 'neutral', 'player-veyra': 'enemy' },
+    ],
   ]);
 
   const timestamp = (): string => `2026-08-07T12:00:${String(counter++).padStart(2, '0')}.000Z`;
@@ -547,7 +551,19 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   });
   await page.getByLabel('Categoría', { exact: true }).selectOption('category-people');
   await page.getByLabel(/Notable · published/).check();
-  await page.getByLabel('Demo Player One · published').selectOption('ally');
+  const skade = page.getByTestId('admin-player-disposition-player-skade');
+  const ura = page.getByTestId('admin-player-disposition-player-ura');
+  const veyra = page.getByTestId('admin-player-disposition-player-veyra');
+  await expect(skade).toHaveAttribute('aria-label', 'Skade: Neutral');
+  await expect(ura).toHaveAttribute('aria-label', 'Ura: Neutral');
+  await expect(veyra).toHaveAttribute('aria-label', 'Veyra: Neutral');
+  await skade.focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(skade).toHaveValue('enemy');
+  await ura.selectOption('ally');
+  await expect(skade).toHaveAttribute('aria-label', 'Skade: Enemigo');
+  await expect(ura).toHaveAttribute('aria-label', 'Ura: Aliado');
+  await expect(veyra).toHaveAttribute('aria-label', 'Veyra: Neutral');
 
   const map = page.getByTestId('admin-coordinate-map');
   await expect(map).toHaveClass(/leaflet-container/);
@@ -609,7 +625,63 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await expect(page.getByText('MAP-019 Character', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Editar MAP-019 Character' }).click();
   await expect(page.getByLabel('Nombre principal (inglés)')).toHaveValue('MAP-019 Character');
+  await expect(page.getByTestId('admin-player-disposition-player-skade')).toHaveValue('enemy');
+  await expect(page.getByTestId('admin-player-disposition-player-ura')).toHaveValue('ally');
+  await expect(page.getByTestId('admin-player-disposition-player-veyra')).toHaveValue('neutral');
+
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar editor' }).click();
+  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+
+  const publicMarker = page.locator(
+    '.campaign-marker-icon[data-entity-id="entity-map019-character"]',
+  );
+  await expect(publicMarker).toBeVisible();
+  await publicMarker.click();
+  const panel = page.getByTestId('place-details');
+  await expect(
+    panel.getByRole('heading', { level: 4, name: 'Relación con los personajes' }),
+  ).toBeVisible();
+  await expect(panel.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();
+  await expect(panel.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
+  await expect(panel.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
+
+  const fullAction = panel.getByRole('link', {
+    name: 'Abrir ficha completa de MAP-019 Character en una pestaña nueva',
+  });
+  const fullHref = await fullAction.getAttribute('href');
+  expect(fullHref).toMatch(/\?entity=map019-character&campaign=castigo-divino$/);
+  await page.goto(fullHref ?? '/');
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Relación con los personajes' }),
+  ).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
 });
+
+for (const width of [320, 390, 430]) {
+  test(`MAP-057 relation editor reflows at ${width} px with forced colors`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 760 });
+    await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+    await configureBackend(page);
+    await page.goto('/');
+    await loginAndConnect(page);
+    await page.getByRole('button', { name: 'Editar Aster Guide' }).click();
+
+    const relations = page.getByRole('group', { name: 'Relación con los personajes' });
+    await expect(relations).toBeVisible();
+    await expect(page.getByTestId('admin-player-disposition-player-skade')).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      ),
+    ).toBe(false);
+    const selectBox = await page.getByTestId('admin-player-disposition-player-skade').boundingBox();
+    expect(selectBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+  });
+}
 
 test('MAP-045 edits coordinates and portrait in one character flow without changing identity', async ({
   page,

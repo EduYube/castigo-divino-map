@@ -227,6 +227,11 @@ async function expectLocationDetails(page: Page): Promise<void> {
   await expect(page.getByText('Aliado', { exact: true })).toBeVisible();
   await expect(page.getByText('Borin', { exact: true })).toBeVisible();
   await expect(page.getByText('Neutral', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Relación con los personajes' }),
+  ).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'Alicia: Aliado' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'Borin: Neutral' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Notas públicas' })).toBeVisible();
   await expect(page.getByText('<b>Nota pública literal</b>')).toBeVisible();
   await expect(page.getByText('<img src=x onerror=alert(1)>')).toBeVisible();

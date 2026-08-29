@@ -30,13 +30,14 @@ describe('pin visual system', () => {
     expect(getPinDispositionVisual(value)).toMatchObject({ symbol, label, className });
   });
 
-  it('uses unknown only as a visual fallback for absent disposition data', () => {
+  it('degrades incomplete relation data without inventing Neutral or technical copy', () => {
     expect(getPinDispositionVisual(null)).toMatchObject({
       disposition: 'unknown',
       symbol: '?',
-      label: 'Sin disposición disponible',
+      label: 'Relación sin configurar',
     });
-    expect(createPlayerDispositionVisuals([])).toHaveLength(1);
+    expect(getPinDispositionVisual(undefined).label).not.toBe('Neutral');
+    expect(createPlayerDispositionVisuals([])).toEqual([]);
   });
 
   it('keeps player perspectives explicit in accessible disposition text', () => {
@@ -46,6 +47,14 @@ describe('pin visual system', () => {
         { playerId: 'player-b', playerName: 'B', disposition: 'enemy' },
       ]),
     ).toBe('A: aliado; B: enemigo');
+  });
+
+  it('describes incomplete data explicitly instead of coercing it to neutral', () => {
+    expect(
+      describePlayerDispositions([
+        { playerId: 'player-skade', playerName: 'Skade', disposition: undefined },
+      ]),
+    ).toBe('Skade: relación sin configurar');
   });
 
   it('groups coincident pins without mutating canonical coordinates', () => {
