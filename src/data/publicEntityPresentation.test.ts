@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type {
-  PublicCatalogSnapshotV2,
-  PublicMapEntity,
-  PublicPlayer,
-} from './beta02-model';
+import type { PublicCatalogSnapshotV2, PublicMapEntity, PublicPlayer } from './beta02-model';
 import { buildPublicEntityPresentation } from './publicEntityPresentation';
 
 const entityA: PublicMapEntity = {
@@ -85,11 +81,15 @@ function catalog(
 
 describe('MAP-057 public player disposition projection', () => {
   it('projects three distinct real dispositions for the selected campaign roster', () => {
-    const campaignA = catalog([skade, ura, veyra], [entityA], [
-      { entityId: entityA.id, playerId: skade.id, disposition: 'ally' },
-      { entityId: entityA.id, playerId: ura.id, disposition: 'neutral' },
-      { entityId: entityA.id, playerId: veyra.id, disposition: 'enemy' },
-    ]);
+    const campaignA = catalog(
+      [skade, ura, veyra],
+      [entityA],
+      [
+        { entityId: entityA.id, playerId: skade.id, disposition: 'ally' },
+        { entityId: entityA.id, playerId: ura.id, disposition: 'neutral' },
+        { entityId: entityA.id, playerId: veyra.id, disposition: 'enemy' },
+      ],
+    );
 
     expect(buildPublicEntityPresentation(campaignA, entityA)?.dispositions).toEqual([
       { playerId: skade.id, playerName: 'Skade', disposition: 'ally' },
@@ -99,12 +99,16 @@ describe('MAP-057 public player disposition projection', () => {
   });
 
   it('uses only campaign B roster and cannot leak A dispositions into its presentation', () => {
-    const campaignB = catalog([echo], [entityB], [
-      { entityId: entityB.id, playerId: echo.id, disposition: 'enemy' },
-      // A stale/corrupt row is deliberately present in the input fixture. Because Skade is not
-      // in campaign B roster, the public projection must never expose it.
-      { entityId: entityB.id, playerId: skade.id, disposition: 'ally' },
-    ]);
+    const campaignB = catalog(
+      [echo],
+      [entityB],
+      [
+        { entityId: entityB.id, playerId: echo.id, disposition: 'enemy' },
+        // A stale/corrupt row is deliberately present in the input fixture. Because Skade is not
+        // in campaign B roster, the public projection must never expose it.
+        { entityId: entityB.id, playerId: skade.id, disposition: 'ally' },
+      ],
+    );
 
     expect(buildPublicEntityPresentation(campaignB, entityB)?.dispositions).toEqual([
       { playerId: echo.id, playerName: 'Echo', disposition: 'enemy' },
@@ -112,9 +116,11 @@ describe('MAP-057 public player disposition projection', () => {
   });
 
   it('does not invent Neutral when a campaign player is missing a relation row', () => {
-    const incomplete = catalog([skade, ura], [entityA], [
-      { entityId: entityA.id, playerId: skade.id, disposition: 'ally' },
-    ]);
+    const incomplete = catalog(
+      [skade, ura],
+      [entityA],
+      [{ entityId: entityA.id, playerId: skade.id, disposition: 'ally' }],
+    );
 
     expect(buildPublicEntityPresentation(incomplete, entityA)?.dispositions).toEqual([
       { playerId: skade.id, playerName: 'Skade', disposition: 'ally' },
