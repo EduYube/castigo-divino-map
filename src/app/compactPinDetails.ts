@@ -59,7 +59,9 @@ function resolveElements(root: ParentNode): CompactPinDetailsElements {
 }
 
 function isMobileSheet(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia(MOBILE_SHEET_MEDIA_QUERY).matches;
+  return (
+    typeof window.matchMedia === 'function' && window.matchMedia(MOBILE_SHEET_MEDIA_QUERY).matches
+  );
 }
 
 function restoreViewportPosition(scrollX: number, scrollY: number): void {
@@ -113,7 +115,12 @@ function appendCategory(parent: HTMLElement, details: CompactPinDetailModel): vo
 function appendAssociations(parent: HTMLElement, details: CompactPinDetailModel): void {
   if (details.associatedPlayers.length === 0) return;
   const section = document.createElement('section');
-  const heading = appendTextElement(section, 'h4', 'compact-details__section-title', 'Relacionado con');
+  const heading = appendTextElement(
+    section,
+    'h4',
+    'compact-details__section-title',
+    'Relacionado con',
+  );
   heading.id = 'compact-details-associations-title';
   section.setAttribute('aria-labelledby', heading.id);
   const list = document.createElement('ul');
@@ -138,7 +145,12 @@ function appendDispositions(parent: HTMLElement, details: CompactPinDetailModel)
   const dispositions = createPlayerDispositionVisuals(details.dispositions);
   if (dispositions.length === 0) return;
   const section = document.createElement('section');
-  const heading = appendTextElement(section, 'h4', 'compact-details__section-title', 'Relación con los personajes');
+  const heading = appendTextElement(
+    section,
+    'h4',
+    'compact-details__section-title',
+    'Relación con los personajes',
+  );
   const list = document.createElement('ul');
   heading.id = 'compact-details-dispositions-title';
   section.setAttribute('aria-labelledby', heading.id);
@@ -184,7 +196,12 @@ function appendTags(parent: HTMLElement, details: CompactPinDetailModel): void {
 function appendImportantCharacters(parent: HTMLElement, details: CompactPinDetailModel): void {
   if (details.entityType !== 'location' || details.importantCharacters.length === 0) return;
   const section = document.createElement('section');
-  const heading = appendTextElement(section, 'h4', 'compact-details__section-title', 'Personajes importantes aquí');
+  const heading = appendTextElement(
+    section,
+    'h4',
+    'compact-details__section-title',
+    'Personajes importantes aquí',
+  );
   const list = document.createElement('ul');
   heading.id = 'compact-details-important-characters-title';
   section.setAttribute('aria-labelledby', heading.id);
@@ -192,7 +209,12 @@ function appendImportantCharacters(parent: HTMLElement, details: CompactPinDetai
   details.importantCharacters.forEach((character) => {
     const item = document.createElement('li');
     const name = appendTextElement(item, 'span', 'compact-details__character-name', character.name);
-    const status = appendTextElement(item, 'span', 'compact-details__relation-status', character.relationLabel);
+    const status = appendTextElement(
+      item,
+      'span',
+      'compact-details__relation-status',
+      character.relationLabel,
+    );
     name.dataset.entityId = character.id;
     status.dataset.relationStatus = character.relationStatus;
     list.append(item);
@@ -201,7 +223,11 @@ function appendImportantCharacters(parent: HTMLElement, details: CompactPinDetai
   parent.append(section);
 }
 
-function appendFullDetailsAction(parent: HTMLElement, details: CompactPinDetailModel, url: string | null): void {
+function appendFullDetailsAction(
+  parent: HTMLElement,
+  details: CompactPinDetailModel,
+  url: string | null,
+): void {
   const section = document.createElement('section');
   const note = document.createElement('p');
   section.className = 'compact-details__full-boundary';
@@ -264,10 +290,19 @@ function createDetailsSignature(details: CompactPinDetailModel): string {
   });
 }
 
-function renderDetails(content: HTMLElement, details: CompactPinDetailModel, fullDetailsUrl: string | null): HTMLElement {
+function renderDetails(
+  content: HTMLElement,
+  details: CompactPinDetailModel,
+  fullDetailsUrl: string | null,
+): HTMLElement {
   content.replaceChildren();
   appendType(content, details);
-  const title = appendTextElement(content, 'h3', 'place-details__title compact-details__title', details.name);
+  const title = appendTextElement(
+    content,
+    'h3',
+    'place-details__title compact-details__title',
+    details.name,
+  );
   title.id = 'place-details-title';
   title.tabIndex = -1;
   appendCategory(content, details);
@@ -279,7 +314,10 @@ function renderDetails(content: HTMLElement, details: CompactPinDetailModel, ful
   return title;
 }
 
-export function mountCompactPinDetails(root: ParentNode = document, options: CompactPinDetailsOptions): CompactPinDetailsController {
+export function mountCompactPinDetails(
+  root: ParentNode = document,
+  options: CompactPinDetailsOptions,
+): CompactPinDetailsController {
   const elements = resolveElements(root);
   let portraitAbort: AbortController | null = null;
   const closePreservingViewport = (): void => {
@@ -293,7 +331,9 @@ export function mountCompactPinDetails(root: ParentNode = document, options: Com
   };
   const handleClose = (): void => closePreservingViewport();
   const handleReturnToPin = (): void => {
-    const marker = elements.workspace.querySelector<HTMLElement>('.campaign-marker-icon[aria-pressed="true"]');
+    const marker = elements.workspace.querySelector<HTMLElement>(
+      '.campaign-marker-icon[aria-pressed="true"]',
+    );
     if (!marker) return;
     const preserveViewport = isMobileSheet();
     const scrollX = preserveViewport ? window.scrollX : 0;
@@ -316,8 +356,14 @@ export function mountCompactPinDetails(root: ParentNode = document, options: Com
     show(details, showOptions = {}): void {
       const existingTitle = elements.content.querySelector<HTMLElement>('#place-details-title');
       const detailsSignature = createDetailsSignature(details);
-      const canReuseContent = !elements.panel.hidden && elements.panel.dataset.activePinId === details.id && elements.panel.dataset.detailsSignature === detailsSignature && existingTitle !== null;
-      const title = canReuseContent ? existingTitle : renderDetails(elements.content, details, options.createFullDetailsUrl(details));
+      const canReuseContent =
+        !elements.panel.hidden &&
+        elements.panel.dataset.activePinId === details.id &&
+        elements.panel.dataset.detailsSignature === detailsSignature &&
+        existingTitle !== null;
+      const title = canReuseContent
+        ? existingTitle
+        : renderDetails(elements.content, details, options.createFullDetailsUrl(details));
       elements.panel.hidden = false;
       elements.panel.dataset.activePinId = details.id;
       elements.panel.dataset.entityType = details.entityType;
@@ -339,7 +385,13 @@ export function mountCompactPinDetails(root: ParentNode = document, options: Com
           const request = new AbortController();
           portraitAbort = request;
           void options.loadPortrait(details, request.signal).then((url) => {
-            if (!url || request.signal.aborted || elements.panel.hidden || elements.panel.dataset.activePinId !== details.id) return;
+            if (
+              !url ||
+              request.signal.aborted ||
+              elements.panel.hidden ||
+              elements.panel.dataset.activePinId !== details.id
+            )
+              return;
             appendPortrait(elements.content, details, url);
           });
         }

@@ -424,7 +424,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
           p_publication_status: draft.publicationStatus,
           p_tag_ids: [...draft.tagIds],
           p_dispositions: draft.dispositions,
-          p_player_association_ids: [...draft.playerAssociationIds],
+          p_player_association_ids: [...(draft.playerAssociationIds ?? [])],
         }),
       },
       options.signal,

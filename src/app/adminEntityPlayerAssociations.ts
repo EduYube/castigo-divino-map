@@ -176,7 +176,9 @@ async function loadAssociationState(
   playersUrl.searchParams.set('publication_status', 'neq.archived');
   playersUrl.searchParams.set('order', 'display_order.asc,display_name.asc,id.asc');
 
-  const playersPromise = inheritedFetch(playersUrl, { method: 'GET', headers, signal }).then(readJson);
+  const playersPromise = inheritedFetch(playersUrl, { method: 'GET', headers, signal }).then(
+    readJson,
+  );
 
   if (!entityId || entityId === 'entity-' || entityId === 'place-') {
     return { players: parsePlayers(await playersPromise), selected: new Set() };
@@ -309,7 +311,12 @@ function scheduleEnhancement(): void {
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   const start = (): void => {
     const observer = new MutationObserver(scheduleEnhancement);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['hidden'],
+    });
     adminCampaignContext.subscribe(() => {
       activeAbort?.abort();
       currentSelection = null;

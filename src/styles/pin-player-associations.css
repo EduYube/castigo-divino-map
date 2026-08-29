@@ -84,3 +84,22 @@
     forced-color-adjust: auto;
   }
 }
+
+.player-association-accent {
+  display: inline-block;
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+  background: var(--player-association-accent, CanvasText);
+  border: 2px solid CanvasText;
+  border-radius: 50%;
+}
+
+@media (forced-colors: active) {
+  .player-association-accent {
+    background: Canvas;
+    border-style: double;
+    border-width: 4px;
+    forced-color-adjust: auto;
+  }
+}

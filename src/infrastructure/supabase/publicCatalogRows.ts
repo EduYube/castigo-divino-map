@@ -197,7 +197,11 @@ export function parseTag(row: Record<string, unknown>, index: number): PublicTag
 
 export function parsePlayer(row: Record<string, unknown>, index: number): PublicPlayer {
   const path = `players[${index}]`;
-  assertAllowedProperties(row, ['id', 'slug', 'display_name', 'name_language', 'accent_color'], path);
+  assertAllowedProperties(
+    row,
+    ['id', 'slug', 'display_name', 'name_language', 'accent_color'],
+    path,
+  );
 
   return {
     id: expectString(row.id, `${path}.id`, IDENTIFIER_PATTERNS.player) as PublicPlayer['id'],

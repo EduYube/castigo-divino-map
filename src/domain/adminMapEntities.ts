@@ -115,7 +115,7 @@ export interface AdminMapEntityDraft extends MapCoordinate {
   readonly categoryId: string;
   readonly tagIds: readonly string[];
   readonly dispositions: readonly AdminDispositionDraft[];
-  readonly playerAssociationIds: readonly string[];
+  readonly playerAssociationIds?: readonly string[];
   readonly publicationStatus: MapEntityPublicationStatus;
 }
 

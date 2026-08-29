@@ -370,7 +370,11 @@ function snapshotPayloads(
   });
   const players = expectRecords(record.players, 'snapshot.players').map((player, index) => {
     const path = `snapshot.players[${index}]`;
-    assertAllowedProperties(player, ['id', 'slug', 'displayName', 'nameLanguage', 'accentColor'], path);
+    assertAllowedProperties(
+      player,
+      ['id', 'slug', 'displayName', 'nameLanguage', 'accentColor'],
+      path,
+    );
     return {
       id: player.id,
       slug: player.slug,

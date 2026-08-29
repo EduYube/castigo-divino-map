@@ -78,7 +78,10 @@ function decorateMarker(element: HTMLElement): void {
     element.prepend(ring);
   }
   ring.classList.toggle(`${RING_CLASS}--location`, entry.entityType === 'location');
-  ring.style.setProperty('--pin-player-association-accent', createPlayerAssociationAccent(associations));
+  ring.style.setProperty(
+    '--pin-player-association-accent',
+    createPlayerAssociationAccent(associations),
+  );
   ring.dataset.associationCount = String(associations.length);
 
   if (!count) {

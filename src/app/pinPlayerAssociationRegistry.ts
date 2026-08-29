@@ -20,8 +20,6 @@ export function publishPinPlayerAssociations(
   }
 }
 
-export function getPinPlayerAssociation(
-  pinId: string,
-): PinPlayerAssociationRegistryEntry | null {
+export function getPinPlayerAssociation(pinId: string): PinPlayerAssociationRegistryEntry | null {
   return entries.get(pinId) ?? null;
 }

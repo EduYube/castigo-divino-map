@@ -90,6 +90,23 @@ export function validateAdminMapEntityDraft(
     }
   }
 
+  const associationIds = draft.playerAssociationIds ?? [];
+  const uniqueAssociationIds = new Set(associationIds);
+  if (uniqueAssociationIds.size !== associationIds.length) {
+    setError(errors, 'playerAssociationIds', 'Un personaje solo puede asociarse una vez.');
+  }
+  for (const playerId of uniqueAssociationIds) {
+    const player = references.players.find((candidate) => candidate.id === playerId);
+    if (!player || player.publicationStatus === 'archived') {
+      setError(
+        errors,
+        'playerAssociationIds',
+        'La selección contiene un personaje que ya no está disponible en esta campaña.',
+      );
+      break;
+    }
+  }
+
   const dispositionIds = draft.dispositions.map(({ playerId }) => playerId);
   const uniqueDispositionIds = new Set(dispositionIds);
   const playerIds = new Set(references.players.map(({ id }) => id));
