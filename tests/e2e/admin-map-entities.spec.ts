@@ -632,6 +632,7 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await page.getByRole('button', { name: 'Publicar' }).click();
   await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
   await page.getByRole('button', { name: 'Cerrar editor' }).click();
+  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
 
   const publicMarker = page.locator(
     '.campaign-marker-icon[data-entity-id="entity-map019-character"]',
