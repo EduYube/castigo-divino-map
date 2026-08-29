@@ -18,7 +18,7 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
   },
   players: {
     name: 'players',
-    select: 'id,slug,display_name,name_language',
+    select: 'id,slug,display_name,name_language,accent_color',
     order: 'id.asc',
     published: true,
     campaignScoped: true,
@@ -48,6 +48,13 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
   dispositions: {
     name: 'entity_player_dispositions',
     select: 'entity_id,player_id,disposition',
+    order: 'entity_id.asc,player_id.asc',
+    published: false,
+    campaignScoped: true,
+  },
+  associations: {
+    name: 'entity_player_associations',
+    select: 'entity_id,player_id',
     order: 'entity_id.asc,player_id.asc',
     published: false,
     campaignScoped: true,
