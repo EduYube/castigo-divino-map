@@ -83,6 +83,20 @@ function selectedPlayerIds(): readonly string[] {
     .map((checkbox) => checkbox.value);
 }
 
+function unavailableAssociationSaveResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      code: 'MAP058_ASSOCIATIONS_UNAVAILABLE',
+      message:
+        'Las asociaciones con jugadores no están disponibles todavía. Recarga el editor antes de guardar.',
+    }),
+    {
+      status: 409,
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
+}
+
 async function associationAwareFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -105,6 +119,9 @@ async function associationAwareFetch(
               p_player_association_ids: [...selectedPlayerIds()],
             }),
           });
+        }
+        if (body.p_expected_updated_at != null) {
+          return unavailableAssociationSaveResponse();
         }
       }
     } catch {
