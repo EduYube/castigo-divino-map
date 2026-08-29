@@ -7,6 +7,7 @@ import type {
 import {
   buildPublicEntityPresentation,
   type PublicEntityPresentation,
+  type PublicEntityPresentationAssociatedPlayer,
   type PublicEntityPresentationRelation,
 } from './publicEntityPresentation';
 import type { PinPlayerDispositionInput } from '../domain/pinVisualSystem';
@@ -34,6 +35,7 @@ export interface FullEntityDetailModel {
   readonly category: PublicEntityPresentation['category'];
   readonly tags: PublicEntityPresentation['tags'];
   readonly dispositions: readonly PinPlayerDispositionInput[];
+  readonly associatedPlayers: readonly PublicEntityPresentationAssociatedPlayer[];
   readonly notes: PublicEntityPresentation['notes'];
   readonly importantCharacters: readonly PublicEntityPresentationRelation[];
   readonly relatedLocations: readonly PublicEntityPresentationRelation[];
@@ -143,6 +145,7 @@ export function resolveFullEntityDetail(
     category: presentation.category,
     tags: presentation.tags,
     dispositions: presentation.dispositions,
+    associatedPlayers: presentation.associatedPlayers,
     notes: presentation.notes,
     importantCharacters: presentation.importantCharacters,
     relatedLocations: presentation.relatedLocations,
