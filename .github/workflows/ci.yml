@@ -128,3 +128,34 @@ jobs:
       - name: Stop local Supabase stack
         if: always()
         run: npx supabase stop --no-backup
+
+  map058_parser_type_fix:
+    name: MAP-058 parser type fix
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/map-058-player-associations'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout MAP-058 branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: agent/map-058-player-associations
+
+      - name: Apply parser type fix
+        run: node scripts/map058-player-parser-type-fix.mjs
+
+      - name: Format changed source
+        run: npx prettier --write --end-of-line auto src/infrastructure/supabase/publicCatalogRows.ts
+
+      - name: Commit parser type fix when needed
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No parser type changes remain."
+            exit 0
+          fi
+          git config user.name "Eduardo Yubero Lavandeira"
+          git config user.email "33625448+EduYube@users.noreply.github.com"
+          git add src/infrastructure/supabase/publicCatalogRows.ts
+          git commit -m "MAP-058 narrow validated player parser type"
+          git push origin HEAD:agent/map-058-player-associations
