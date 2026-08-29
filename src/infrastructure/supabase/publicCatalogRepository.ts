@@ -115,14 +115,25 @@ function toCampaignCatalogV3(
   campaign: PublicCampaignV3,
   catalog: Extract<PublicCatalogEnvelope['data'], { contract: 'beta02' }>['catalog'],
 ): PublicCampaignCatalogV3 {
+  const players = catalog.players.map((player) => {
+    if (!player.accentColor) {
+      throw new PublicDataRepositoryError(
+        'invalid-response',
+        `El jugador ${player.id} no contiene el acento persistido requerido por el catálogo actual.`,
+        { source: 'supabase' },
+      );
+    }
+    return { ...player, accentColor: player.accentColor };
+  });
+
   return {
     campaignId: campaign.id,
     categories: catalog.categories,
     tags: catalog.tags,
-    players: catalog.players,
+    players,
     entities: catalog.entities,
     dispositions: catalog.dispositions,
-    associations: catalog.associations,
+    associations: catalog.associations ?? [],
     characterLocationRelations: catalog.characterLocationRelations,
     notes: catalog.notes,
     characterLocationEvents: catalog.characterLocationEvents,
