@@ -223,7 +223,8 @@ function mapBlockers(value: unknown): AdminMapEntityDeleteBlockers {
     notes: numberValue(value, 'notes'),
     locationEvents: numberValue(value, 'location_events'),
     requests: numberValue(value, 'requests'),
-    playerAssociations: numberValue(value, 'player_associations'),
+    playerAssociations:
+      value.player_associations === undefined ? 0 : numberValue(value, 'player_associations'),
   };
 }
 
@@ -234,10 +235,11 @@ function mapDetail(payload: unknown): AdminMapEntityDetail {
       'Supabase no devolvió el editor de entidad esperado.',
     );
   }
+  const associations = payload.associations ?? [];
   if (
     !Array.isArray(payload.tag_links) ||
     !Array.isArray(payload.dispositions) ||
-    !Array.isArray(payload.associations)
+    !Array.isArray(associations)
   ) {
     throw new AdminMapEntityRepositoryError(
       'invalid-response',
@@ -248,7 +250,7 @@ function mapDetail(payload: unknown): AdminMapEntityDetail {
     record: mapRecord(payload.record),
     tagLinks: payload.tag_links.map(mapTagLink),
     dispositions: payload.dispositions.map(mapDisposition),
-    associations: payload.associations.map(mapAssociation),
+    associations: associations.map(mapAssociation),
     relationsRevision: requiredString(payload, 'relations_revision'),
     deleteBlockers: mapBlockers(payload.delete_blockers),
   };

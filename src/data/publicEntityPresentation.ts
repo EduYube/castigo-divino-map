@@ -83,7 +83,7 @@ export function buildPublicEntityPresentation(
       (candidate) => candidate.entityId === entity.id && candidate.playerId === player.id,
     )?.disposition,
   }));
-  const associatedPlayers = catalog.associations
+  const associatedPlayers = (catalog.associations ?? [])
     .filter(({ entityId }) => entityId === entity.id)
     .map(({ playerId }) => playersById.get(playerId))
     .filter((player): player is NonNullable<typeof player> => Boolean(player))

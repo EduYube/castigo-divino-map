@@ -44,7 +44,7 @@ function resolveBeta02Associations(
   entityId: EntityId,
 ): readonly PinPlayerAssociationInput[] {
   const playerById = new Map(catalog.players.map((player) => [player.id, player] as const));
-  return catalog.associations
+  return (catalog.associations ?? [])
     .filter((association) => association.entityId === entityId)
     .map((association) => {
       const player = playerById.get(association.playerId);

@@ -101,7 +101,7 @@ describe('SupabasePublicCatalogRepository', () => {
     expect(result.source).toBe('supabase');
     expect(result.data.contract).toBe('beta03');
     expect(result.metadata.schemaVersion).toBe(3);
-    expect(requests).toHaveLength(15);
+    expect(requests).toHaveLength(16);
     requests.forEach((request) => {
       expect(request.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
       expect(request.headers.get('prefer')).toBe('count=exact');
@@ -138,6 +138,7 @@ describe('SupabasePublicCatalogRepository', () => {
 
     const rlsOnlyTables = new Set([
       'entity_player_dispositions',
+      'entity_player_associations',
       'character_location_relations',
       'campaign_geographic_entity_links',
     ]);
@@ -175,7 +176,7 @@ describe('SupabasePublicCatalogRepository', () => {
       CAMPAIGN_B_ID,
     ]);
     expect(result.data.catalog.campaignCatalogs).toHaveLength(2);
-    expect(urls).toHaveLength(29);
+    expect(urls).toHaveLength(31);
 
     const scopedUrls = urls.filter((url) => !GLOBAL_TABLES.has(tableName(url)));
     expect(
@@ -382,6 +383,7 @@ describe('SupabasePublicCatalogRepository', () => {
       slug: `player-${index + 1}`,
       display_name: `Player ${index + 1}`,
       name_language: 'en',
+      accent_color: '#475569',
     }));
     const entityRows = Array.from({ length: 200 }, (_, index) => {
       const suffix = String(index + 1).padStart(3, '0');
@@ -494,8 +496,8 @@ describe('SupabasePublicCatalogRepository', () => {
       code: 'http-error',
       status: 503,
     });
-    expect(pendingRequests).toBe(13);
-    expect(abortedRequests).toBe(13);
+    expect(pendingRequests).toBe(14);
+    expect(abortedRequests).toBe(14);
   });
 
   test('normalizes an HTTP failure without exposing the response body', async () => {

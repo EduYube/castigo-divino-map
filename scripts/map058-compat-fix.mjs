@@ -40,8 +40,8 @@ await edit('src/domain/adminMapEntities.ts', (text) => {
   );
   return replaceOnce(
     text,
-    '    playerAssociationIds: detail.associations\n      .filter(({ publicationStatus }) => publicationStatus !== \'archived\')',
-    '    playerAssociationIds: (detail.associations ?? [])\n      .filter(({ publicationStatus }) => publicationStatus !== \'archived\')',
+    "    playerAssociationIds: detail.associations\n      .filter(({ publicationStatus }) => publicationStatus !== 'archived')",
+    "    playerAssociationIds: (detail.associations ?? [])\n      .filter(({ publicationStatus }) => publicationStatus !== 'archived')",
     'admin draft association fallback',
   );
 });
@@ -70,7 +70,7 @@ await edit('src/infrastructure/supabase/adminMapEntityRepository.ts', (text) => 
 await edit('src/infrastructure/snapshot/multicampaignSnapshotCodec.ts', (text) => {
   text = replaceOnce(
     text,
-    "const CHECKSUM_PATTERN = /^sha256:[0-9a-f]{64}$/;",
+    'const CHECKSUM_PATTERN = /^sha256:[0-9a-f]{64}$/;',
     "const CHECKSUM_PATTERN = /^sha256:[0-9a-f]{64}$/;\nconst HISTORIC_PLAYER_ACCENT = '#475569';",
     'historic accent constant',
   );
@@ -141,8 +141,14 @@ await edit('supabase/tests/database/030_entity_player_associations.test.sql', (t
 
 await edit('src/app/adminCampaignScope.test.ts', (text) =>
   text
-    .replace("/rpc/admin_get_map_entity_editor_v4')).toBe(true)", "/rpc/admin_get_map_entity_editor_v5')).toBe(true)")
-    .replace("/rpc/admin_save_map_entity_v4')).toBe(true)", "/rpc/admin_save_map_entity_v5')).toBe(true)"),
+    .replace(
+      "/rpc/admin_get_map_entity_editor_v4')).toBe(true)",
+      "/rpc/admin_get_map_entity_editor_v5')).toBe(true)",
+    )
+    .replace(
+      "/rpc/admin_save_map_entity_v4')).toBe(true)",
+      "/rpc/admin_save_map_entity_v5')).toBe(true)",
+    ),
 );
 
 await edit('src/infrastructure/supabase/masterCatalogRepository.test.ts', (text) => {
@@ -153,7 +159,10 @@ await edit('src/infrastructure/supabase/masterCatalogRepository.test.ts', (text)
     'master fixture v4 player metadata',
   );
   text = text.replaceAll('campaign-scoped v3 RPC', 'campaign-scoped v4 RPC');
-  text = text.replaceAll('/rest/v1/rpc/admin_get_master_catalog_v3', '/rest/v1/rpc/admin_get_master_catalog_v4');
+  text = text.replaceAll(
+    '/rest/v1/rpc/admin_get_master_catalog_v3',
+    '/rest/v1/rpc/admin_get_master_catalog_v4',
+  );
   return text;
 });
 
@@ -173,16 +182,41 @@ await edit('src/infrastructure/supabase/publicCatalogCodec.test.ts', (text) => {
 });
 
 await edit('src/infrastructure/supabase/publicCatalogRepository.test.ts', (text) => {
-  text = replaceOnce(text, '    expect(requests).toHaveLength(15);', '    expect(requests).toHaveLength(16);', 'single campaign request count');
-  text = replaceOnce(text, "      'entity_player_dispositions',\n      'character_location_relations',", "      'entity_player_dispositions',\n      'entity_player_associations',\n      'character_location_relations',", 'association RLS-only query');
-  text = replaceOnce(text, '    expect(urls).toHaveLength(29);', '    expect(urls).toHaveLength(31);', 'two campaign request count');
+  text = replaceOnce(
+    text,
+    '    expect(requests).toHaveLength(15);',
+    '    expect(requests).toHaveLength(16);',
+    'single campaign request count',
+  );
+  text = replaceOnce(
+    text,
+    "      'entity_player_dispositions',\n      'character_location_relations',",
+    "      'entity_player_dispositions',\n      'entity_player_associations',\n      'character_location_relations',",
+    'association RLS-only query',
+  );
+  text = replaceOnce(
+    text,
+    '    expect(urls).toHaveLength(29);',
+    '    expect(urls).toHaveLength(31);',
+    'two campaign request count',
+  );
   text = replaceOnce(
     text,
     `      display_name: \`Player ${'${index + 1}'}\`,\n      name_language: 'en',`,
     `      display_name: \`Player ${'${index + 1}'}\`,\n      name_language: 'en',\n      accent_color: '#475569',`,
     'pagination player accents',
   );
-  text = replaceOnce(text, '    expect(pendingRequests).toBe(13);', '    expect(pendingRequests).toBe(14);', 'pending request count');
-  text = replaceOnce(text, '    expect(abortedRequests).toBe(13);', '    expect(abortedRequests).toBe(14);', 'aborted request count');
+  text = replaceOnce(
+    text,
+    '    expect(pendingRequests).toBe(13);',
+    '    expect(pendingRequests).toBe(14);',
+    'pending request count',
+  );
+  text = replaceOnce(
+    text,
+    '    expect(abortedRequests).toBe(13);',
+    '    expect(abortedRequests).toBe(14);',
+    'aborted request count',
+  );
   return text;
 });

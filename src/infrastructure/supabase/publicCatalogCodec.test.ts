@@ -38,6 +38,7 @@ function validPayloads(): PublicCatalogTablePayloadsWithCharacterLocations {
         slug: 'player-one',
         display_name: 'Player One',
         name_language: 'en',
+        accent_color: '#475569',
       },
     ],
     entities: [
@@ -87,6 +88,7 @@ function validPayloads(): PublicCatalogTablePayloadsWithCharacterLocations {
         disposition: 'ally',
       },
     ],
+    associations: [],
     characterLocationRelations: [
       {
         character_id: 'entity-hero',

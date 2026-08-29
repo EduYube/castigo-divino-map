@@ -85,7 +85,8 @@ export interface AdminMapEntityDetail {
   readonly record: AdminMapEntityRecord;
   readonly tagLinks: readonly AdminEntityTagLink[];
   readonly dispositions: readonly AdminEntityDisposition[];
-  readonly associations: readonly AdminEntityAssociation[];
+  /** Missing only in legacy fixtures/responses that predate MAP-058. */
+  readonly associations?: readonly AdminEntityAssociation[];
   readonly relationsRevision: string;
   readonly deleteBlockers: AdminMapEntityDeleteBlockers;
 }
@@ -150,7 +151,7 @@ export function detailToDraft(detail: AdminMapEntityDetail): AdminMapEntityDraft
       playerId,
       disposition,
     })),
-    playerAssociationIds: detail.associations
+    playerAssociationIds: (detail.associations ?? [])
       .filter(({ publicationStatus }) => publicationStatus !== 'archived')
       .map(({ playerId }) => playerId),
     publicationStatus: detail.record.publicationStatus,

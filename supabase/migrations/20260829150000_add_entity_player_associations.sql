@@ -51,8 +51,8 @@ create policy entity_player_associations_admin_all
 on public.entity_player_associations
 for all
 to authenticated
-using (public.current_user_is_admin())
-with check (public.current_user_is_admin());
+using ((select private.is_admin()))
+with check ((select private.is_admin()));
 
 revoke all on public.entity_player_associations from public, anon, authenticated;
 grant select (campaign_id, entity_id, player_id) on public.entity_player_associations to anon;
@@ -181,10 +181,12 @@ begin
   end if;
 
   if p_expected_updated_at is not null then
+    -- Serialize relation saves on the parent entity. Locking the association table
+    -- would require an unnecessary UPDATE grant on a relation that is insert/delete only.
     perform 1
-    from public.entity_player_associations as association
-    where association.entity_id = p_id
-      and association.campaign_id = p_campaign_id
+    from public.map_entities as entity
+    where entity.id = p_id
+      and entity.campaign_id = p_campaign_id
     for update;
 
     current_editor := public.admin_get_map_entity_editor_v5(p_campaign_id, p_id);

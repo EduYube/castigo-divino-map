@@ -146,6 +146,7 @@ select is(
   1::bigint,
   'archiving a player preserves association history'
 );
+update public.players set publication_status = 'draft' where id = 'player-map058-a';
 update public.players set publication_status = 'published' where id = 'player-map058-a';
 
 update public.map_entities set publication_status = 'archived' where id = 'entity-map058-public-a';
@@ -155,6 +156,7 @@ select is(
   1::bigint,
   'archiving an entity preserves association history'
 );
+update public.map_entities set publication_status = 'draft' where id = 'entity-map058-public-a';
 update public.map_entities set publication_status = 'published' where id = 'entity-map058-public-a';
 
 insert into public.entity_player_associations (campaign_id, entity_id, player_id)

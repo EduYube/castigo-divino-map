@@ -15,6 +15,7 @@ import { parsePublicCatalogSnapshotV2 } from '../supabase/publicCatalogCodec';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CHECKSUM_PATTERN = /^sha256:[0-9a-f]{64}$/;
+const HISTORIC_PLAYER_ACCENT = '#475569';
 
 function invalid(message: string, cause?: unknown): never {
   throw new PublicDataRepositoryError('invalid-snapshot', message, {
@@ -108,6 +109,20 @@ function parseLink(
   };
 }
 
+function normalizeSnapshotPlayer(
+  value: unknown,
+  index: number,
+  catalogPath: string,
+): PublicCampaignCatalogV3['players'][number] {
+  const path = `${catalogPath}.players[${index}]`;
+  const item = record(value, path);
+  assertAllowed(item, ['id', 'slug', 'displayName', 'nameLanguage', 'accentColor'], path);
+  return {
+    ...item,
+    accentColor: item.accentColor === undefined ? HISTORIC_PLAYER_ACCENT : item.accentColor,
+  } as unknown as PublicCampaignCatalogV3['players'][number];
+}
+
 function parseCampaignCatalog(value: unknown, index: number): PublicCampaignCatalogV3 {
   const path = `snapshot.campaignCatalogs[${index}]`;
   const item = record(value, path);
@@ -136,16 +151,21 @@ function parseCampaignCatalog(value: unknown, index: number): PublicCampaignCata
       `${path}.categories`,
     ) as PublicCampaignCatalogV3['categories'],
     tags: array(item.tags, `${path}.tags`) as PublicCampaignCatalogV3['tags'],
-    players: array(item.players, `${path}.players`) as PublicCampaignCatalogV3['players'],
+    players: array(item.players, `${path}.players`).map((player, playerIndex) =>
+      normalizeSnapshotPlayer(player, playerIndex, path),
+    ),
     entities: array(item.entities, `${path}.entities`) as PublicCampaignCatalogV3['entities'],
     dispositions: array(
       item.dispositions,
       `${path}.dispositions`,
     ) as PublicCampaignCatalogV3['dispositions'],
-    associations: array(
-      item.associations,
-      `${path}.associations`,
-    ) as PublicCampaignCatalogV3['associations'],
+    associations:
+      item.associations === undefined
+        ? []
+        : (array(
+            item.associations,
+            `${path}.associations`,
+          ) as PublicCampaignCatalogV3['associations']),
     characterLocationRelations: array(
       item.characterLocationRelations,
       `${path}.characterLocationRelations`,
@@ -287,11 +307,27 @@ export async function parsePublicCatalogSnapshotV3(
   if (!CHECKSUM_PATTERN.test(sourceRevision) || !CHECKSUM_PATTERN.test(checksum)) {
     invalid('snapshot.sourceRevision/checksum deben contener SHA-256 válidos.');
   }
-  const campaigns = array(snapshotRecord.campaigns, 'snapshot.campaigns').map(parseCampaign);
-  const campaignCatalogs = array(snapshotRecord.campaignCatalogs, 'snapshot.campaignCatalogs').map(
-    parseCampaignCatalog,
-  );
-  const geographicNames = array(snapshotRecord.geographicNames, 'snapshot.geographicNames').map(
+  const rawCampaigns = array(snapshotRecord.campaigns, 'snapshot.campaigns');
+  const rawCampaignCatalogs = array(snapshotRecord.campaignCatalogs, 'snapshot.campaignCatalogs');
+  const rawGeographicNames = array(snapshotRecord.geographicNames, 'snapshot.geographicNames');
+  const rawContent = {
+    schemaVersion: 3 as const,
+    campaigns: rawCampaigns,
+    campaignCatalogs: rawCampaignCatalogs,
+    geographicNames: rawGeographicNames,
+  };
+  const calculatedChecksum = await createSha256Checksum(rawContent);
+  if (calculatedChecksum !== checksum || sourceRevision !== calculatedChecksum) {
+    throw new PublicDataRepositoryError(
+      'checksum-mismatch',
+      'El snapshot multicampaña no coincide con su checksum/sourceRevision.',
+      { source: 'snapshot' },
+    );
+  }
+
+  const campaigns = rawCampaigns.map(parseCampaign);
+  const campaignCatalogs = rawCampaignCatalogs.map(parseCampaignCatalog);
+  const geographicNames = rawGeographicNames.map(
     (name, index) =>
       record(name, `snapshot.geographicNames[${index}]`) as unknown as PublicGlobalGeographicNameV3,
   );
