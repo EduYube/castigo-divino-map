@@ -57,6 +57,14 @@
   font: inherit;
 }
 
+.admin-map-entity__control:focus-visible,
+.admin-map-entity__button:focus-visible,
+.admin-map-entity__primary:focus-visible,
+.admin-map-entity__danger:focus-visible {
+  outline: 3px solid Highlight;
+  outline-offset: 2px;
+}
+
 textarea.admin-map-entity__control {
   min-height: 6rem;
   resize: vertical;
@@ -172,6 +180,24 @@ textarea.admin-map-entity__control {
   border-radius: 0.5rem;
 }
 
+.admin-map-entity__dispositions {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 0.75rem;
+}
+
+.admin-map-entity__dispositions > .admin-map-entity__legend,
+.admin-map-entity__dispositions > .admin-map-entity__help,
+.admin-map-entity__dispositions > .admin-map-entity__field-error {
+  grid-column: 1 / -1;
+}
+
+.admin-map-entity__disposition {
+  align-content: start;
+  padding: 0.65rem;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 0.45rem;
+}
+
 .admin-map-entity__check {
   display: flex;
   gap: 0.55rem;
@@ -269,6 +295,10 @@ textarea.admin-map-entity__control {
     grid-column: 1;
   }
 
+  .admin-map-entity__dispositions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .admin-map-entity__item {
     align-items: stretch;
     flex-direction: column;
@@ -293,6 +323,22 @@ textarea.admin-map-entity__control {
 
   .admin-map-entity__map {
     min-height: 17rem;
+  }
+}
+
+@media (forced-colors: active) {
+  .admin-map-entity__disposition,
+  .admin-map-entity__fieldset,
+  .admin-map-entity__editor,
+  .admin-map-entity__map-region {
+    border-color: CanvasText;
+  }
+
+  .admin-map-entity__control:focus-visible,
+  .admin-map-entity__button:focus-visible,
+  .admin-map-entity__primary:focus-visible,
+  .admin-map-entity__danger:focus-visible {
+    outline-color: Highlight;
   }
 }
 
