@@ -1,3 +1,4 @@
+import { publishPinPlayerAssociations } from '../app/pinPlayerAssociationRegistry';
 import type { EntityId, PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
 import { toLeafletSimpleCoordinate, type LeafletSimpleCoordinate } from './coordinates';
 import type { CampaignCatalog, PlaceId } from './model';
@@ -135,5 +136,7 @@ export function createAtlasPinMarkerModels(
       };
     });
 
-  return [...legacyPins, ...supplementalPins];
+  const markers = [...legacyPins, ...supplementalPins];
+  publishPinPlayerAssociations(markers);
+  return markers;
 }
