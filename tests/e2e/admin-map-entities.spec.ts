@@ -79,9 +79,24 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     { id: 'draft-tag', name: 'Draft tag', publication_status: 'draft' },
   ];
   const players = [
-    { id: 'player-skade', display_name: 'Skade', publication_status: 'published' },
-    { id: 'player-ura', display_name: 'Ura', publication_status: 'published' },
-    { id: 'player-veyra', display_name: 'Veyra', publication_status: 'published' },
+    {
+      id: 'player-skade',
+      display_name: 'Skade',
+      publication_status: 'published',
+      accent_color: '#c2410c',
+    },
+    {
+      id: 'player-ura',
+      display_name: 'Ura',
+      publication_status: 'published',
+      accent_color: '#1e3a8a',
+    },
+    {
+      id: 'player-veyra',
+      display_name: 'Veyra',
+      publication_status: 'published',
+      accent_color: '#9d174d',
+    },
   ];
   const entities: EntityRow[] = [
     {
@@ -135,6 +150,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         disposition: currentDispositions[player.id] ?? 'neutral',
         updated_at: entity.updated_at,
       })),
+      associations: [],
       relations_revision: relationRevision(id),
       delete_blockers: {
         aliases: 0,
@@ -143,6 +159,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         notes: 0,
         location_events: 0,
         requests: 0,
+        player_associations: 0,
       },
     };
   };
@@ -277,11 +294,12 @@ async function configureBackend(page: Page): Promise<BackendControl> {
               : table === 'players'
                 ? players
                     .filter(({ publication_status }) => publication_status === 'published')
-                    .map(({ id, display_name }) => ({
+                    .map(({ id, display_name, accent_color }) => ({
                       id,
                       slug: id,
                       display_name,
                       name_language: 'en',
+                      accent_color,
                     }))
                 : table === 'map_entities'
                   ? publishedEntities.map((entity) => ({
@@ -334,7 +352,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v4')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v5')) {
       const body = request.postDataJSON() as { p_entity_id?: string };
       await route.fulfill({
         status: 200,
@@ -344,7 +362,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v4')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v5')) {
       if (mode === 'network') {
         mode = 'normal';
         await route.abort('failed');
