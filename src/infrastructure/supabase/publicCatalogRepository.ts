@@ -122,6 +122,7 @@ function toCampaignCatalogV3(
     players: catalog.players,
     entities: catalog.entities,
     dispositions: catalog.dispositions,
+    associations: catalog.associations,
     characterLocationRelations: catalog.characterLocationRelations,
     notes: catalog.notes,
     characterLocationEvents: catalog.characterLocationEvents,
