@@ -345,7 +345,9 @@ async function verifyV4V5LockOrdering(containerName) {
     );
     await waitForMarker(v5Session, 'MAP058_V5_STARTED');
     await waitForDatabaseLock(containerName, '/* map058-v5-lock-order */', v5Session);
-    console.log('ok - v5 holds its entity locks and waits at the deterministic association barrier');
+    console.log(
+      'ok - v5 holds its entity locks and waits at the deterministic association barrier',
+    );
 
     v4Session = startPsqlSession(containerName);
     v4Session.child.stdin.write(
