@@ -375,8 +375,7 @@ export function mountAdminMapEntities(
     const dispositions = draft.dispositions
       .filter(({ playerId }) =>
         state.references.players.some(
-          ({ id, publicationStatus }) =>
-            id === playerId && publicationStatus !== 'archived',
+          ({ id, publicationStatus }) => id === playerId && publicationStatus !== 'archived',
         ),
       )
       .map(({ playerId, disposition: value }) => {
@@ -662,10 +661,7 @@ export function mountAdminMapEntities(
     }
 
     for (const player of activePlayers) {
-      const wrapper = createElement(
-        'div',
-        'admin-map-entity__field admin-map-entity__disposition',
-      );
+      const wrapper = createElement('div', 'admin-map-entity__field admin-map-entity__disposition');
       const label = createElement('label', 'admin-map-entity__label');
       const select = createElement('select', 'admin-map-entity__control');
       const selected = draft.dispositions.find(
