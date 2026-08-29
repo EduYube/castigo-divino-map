@@ -731,16 +731,6 @@ export async function parsePublicCatalogSnapshotV2(
     );
   }
 
-  const calculatedChecksum = await createSha256Checksum(content);
-
-  if (checksum !== calculatedChecksum) {
-    throw new PublicDataRepositoryError(
-      'checksum-mismatch',
-      'La caché pública no coincide con su checksum.',
-      { source: 'cache' },
-    );
-  }
-
   const snapshot: PublicCatalogSnapshotV2 = {
     ...content,
     generatedAt,
