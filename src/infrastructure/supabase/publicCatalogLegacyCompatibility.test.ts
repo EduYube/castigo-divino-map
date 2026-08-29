@@ -49,9 +49,9 @@ describe('historical Beta 0.2 cache compatibility', () => {
     if (parsedV2.data.contract !== 'beta02') throw new Error('Expected Beta 0.2 cache.');
 
     expect(parsedV2.data.catalog.associations).toEqual([]);
-    expect(parsedV2.data.catalog.players.every(({ accentColor }) => accentColor === '#475569')).toBe(
-      true,
-    );
+    expect(
+      parsedV2.data.catalog.players.every(({ accentColor }) => accentColor === '#475569'),
+    ).toBe(true);
     expect(parsedV2.metadata.checksum).toBe(checksum);
   });
 });
