@@ -44,6 +44,7 @@ export interface AdminPlayerReference {
   readonly id: string;
   readonly displayName: string;
   readonly publicationStatus: MapEntityPublicationStatus;
+  readonly accentColor: string;
 }
 
 export interface AdminEntityTagLink {
@@ -61,6 +62,14 @@ export interface AdminEntityDisposition {
   readonly updatedAt: string;
 }
 
+export interface AdminEntityAssociation {
+  readonly playerId: string;
+  readonly displayName: string;
+  readonly accentColor: string;
+  readonly publicationStatus: MapEntityPublicationStatus;
+  readonly createdAt: string;
+}
+
 export interface AdminMapEntityDeleteBlockers {
   readonly aliases: number;
   readonly tags: number;
@@ -68,12 +77,15 @@ export interface AdminMapEntityDeleteBlockers {
   readonly notes: number;
   readonly locationEvents: number;
   readonly requests: number;
+  /** Missing only in legacy fixtures that predate MAP-058. */
+  readonly playerAssociations?: number;
 }
 
 export interface AdminMapEntityDetail {
   readonly record: AdminMapEntityRecord;
   readonly tagLinks: readonly AdminEntityTagLink[];
   readonly dispositions: readonly AdminEntityDisposition[];
+  readonly associations: readonly AdminEntityAssociation[];
   readonly relationsRevision: string;
   readonly deleteBlockers: AdminMapEntityDeleteBlockers;
 }
@@ -103,6 +115,7 @@ export interface AdminMapEntityDraft extends MapCoordinate {
   readonly categoryId: string;
   readonly tagIds: readonly string[];
   readonly dispositions: readonly AdminDispositionDraft[];
+  readonly playerAssociationIds: readonly string[];
   readonly publicationStatus: MapEntityPublicationStatus;
 }
 
@@ -137,6 +150,9 @@ export function detailToDraft(detail: AdminMapEntityDetail): AdminMapEntityDraft
       playerId,
       disposition,
     })),
+    playerAssociationIds: detail.associations
+      .filter(({ publicationStatus }) => publicationStatus !== 'archived')
+      .map(({ playerId }) => playerId),
     publicationStatus: detail.record.publicationStatus,
   };
 }
@@ -164,12 +180,13 @@ export function createEmptyMapEntityDraft(
       playerId: player.id,
       disposition: 'neutral',
     })),
+    playerAssociationIds: [],
     publicationStatus: 'draft',
   };
 }
 
 export function hasDeleteBlockers(blockers: AdminMapEntityDeleteBlockers): boolean {
-  return Object.values(blockers).some((count) => count > 0);
+  return Object.values(blockers).some((count) => (count ?? 0) > 0);
 }
 
 export function canPhysicallyDeleteMapEntity(detail: AdminMapEntityDetail): boolean {
