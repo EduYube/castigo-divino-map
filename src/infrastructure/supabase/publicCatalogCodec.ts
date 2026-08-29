@@ -12,6 +12,7 @@ import {
 import { parseGeographicNameWithExtent } from './geographicSearchExtentRows';
 import {
   groupValues,
+  parseAssociation,
   parseCategory,
   parseDisposition,
   parseEntity,
@@ -130,6 +131,10 @@ function assertReferences(snapshot: PublicCatalogContentV2): void {
     'dispositions',
   );
   assertUnique(
+    snapshot.associations.map(({ entityId, playerId }) => `${entityId}\u0000${playerId}`),
+    'associations',
+  );
+  assertUnique(
     snapshot.characterLocationRelations.map(
       ({ characterId, locationId }) => `${characterId}\u0000${locationId}`,
     ),
@@ -168,6 +173,12 @@ function assertReferences(snapshot: PublicCatalogContentV2): void {
   snapshot.dispositions.forEach((disposition) => {
     if (!entitiesById.has(disposition.entityId) || !playerIds.has(disposition.playerId)) {
       invalidResponse('Una disposición pública referencia un extremo ausente.');
+    }
+  });
+
+  snapshot.associations.forEach((association) => {
+    if (!entitiesById.has(association.entityId) || !playerIds.has(association.playerId)) {
+      invalidResponse('Una asociación pública referencia un extremo ausente.');
     }
   });
 
@@ -304,6 +315,7 @@ function buildPublicCatalogContentV2(
   const entityAliases = payloads.entityAliases.map(parseEntityAlias);
   const entityTags = payloads.entityTags.map(parseEntityTag);
   const dispositions = payloads.dispositions.map(parseDisposition);
+  const associations = payloads.associations.map(parseAssociation);
   const characterLocationRelations = payloads.characterLocationRelations.map(
     parseCharacterLocationRelation,
   );
@@ -328,6 +340,7 @@ function buildPublicCatalogContentV2(
     players,
     entities,
     dispositions,
+    associations,
     characterLocationRelations,
     notes,
     geographicNames,
@@ -357,12 +370,13 @@ function snapshotPayloads(
   });
   const players = expectRecords(record.players, 'snapshot.players').map((player, index) => {
     const path = `snapshot.players[${index}]`;
-    assertAllowedProperties(player, ['id', 'slug', 'displayName', 'nameLanguage'], path);
+    assertAllowedProperties(player, ['id', 'slug', 'displayName', 'nameLanguage', 'accentColor'], path);
     return {
       id: player.id,
       slug: player.slug,
       display_name: player.displayName,
       name_language: player.nameLanguage,
+      accent_color: player.accentColor,
     };
   });
   const entityAliases: Record<string, unknown>[] = [];
@@ -434,6 +448,16 @@ function snapshotPayloads(
         entity_id: disposition.entityId,
         player_id: disposition.playerId,
         disposition: disposition.disposition,
+      };
+    },
+  );
+  const associations = expectRecords(record.associations, 'snapshot.associations').map(
+    (association, index) => {
+      const path = `snapshot.associations[${index}]`;
+      assertAllowedProperties(association, ['entityId', 'playerId'], path);
+      return {
+        entity_id: association.entityId,
+        player_id: association.playerId,
       };
     },
   );
@@ -579,6 +603,7 @@ function snapshotPayloads(
     entityAliases,
     entityTags,
     dispositions,
+    associations,
     characterLocationRelations,
     notes,
     noteTags,
@@ -625,6 +650,7 @@ export async function parsePublicCatalogSnapshotV2(
         'players',
         'entities',
         'dispositions',
+        'associations',
         'characterLocationRelations',
         'notes',
         'geographicNames',
