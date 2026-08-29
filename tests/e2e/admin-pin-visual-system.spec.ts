@@ -187,7 +187,7 @@ test('admin coordinate editor and preview reuse the public type/disposition visu
     /Personaje\. Relación con los personajes: Demo Player One: aliado; Demo Player Two: neutral/i,
   );
 
-  await page.getByLabel('Demo Player One: Aliado').selectOption('enemy');
+  await page.getByTestId('admin-player-disposition-player-demo-one').selectOption('enemy');
   await expect(marker.locator('.pin-disposition--enemy')).toHaveText('−');
   await expect(marker).toHaveAttribute('aria-label', /Demo Player One: enemigo/i);
 
