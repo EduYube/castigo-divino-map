@@ -53,10 +53,16 @@ function resolveBeta02Associations(
           `Missing player "${association.playerId}" for association with "${entityId}".`,
         );
       }
+      const accentColor = player.accentColor;
+      if (!accentColor) {
+        throw new Error(
+          `Missing persisted accent for player "${player.id}" associated with "${entityId}".`,
+        );
+      }
       return {
         playerId: player.id,
         playerName: player.displayName,
-        accentColor: player.accentColor,
+        accentColor,
       };
     });
 }

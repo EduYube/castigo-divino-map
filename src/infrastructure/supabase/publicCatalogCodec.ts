@@ -26,10 +26,19 @@ import {
   parseTag,
 } from './publicCatalogRows';
 
+const HISTORIC_PLAYER_ACCENT = '#475569';
+
+type NormalizedPublicPlayer = PublicCatalogSnapshotV2['players'][number] & {
+  readonly accentColor: string;
+};
+
 type PublicCatalogContentV2 = Omit<
   PublicCatalogSnapshotV2,
-  'generatedAt' | 'sourceRevision' | 'checksum'
->;
+  'generatedAt' | 'sourceRevision' | 'checksum' | 'players' | 'associations'
+> & {
+  readonly players: readonly NormalizedPublicPlayer[];
+  readonly associations: NonNullable<PublicCatalogSnapshotV2['associations']>;
+};
 
 function invalidResponse(message: string): never {
   throw new PublicDataRepositoryError('invalid-response', message, { source: 'supabase' });
@@ -380,7 +389,7 @@ function snapshotPayloads(
       slug: player.slug,
       display_name: player.displayName,
       name_language: player.nameLanguage,
-      accent_color: player.accentColor,
+      accent_color: player.accentColor ?? HISTORIC_PLAYER_ACCENT,
     };
   });
   const entityAliases: Record<string, unknown>[] = [];
@@ -455,16 +464,17 @@ function snapshotPayloads(
       };
     },
   );
-  const associations = expectRecords(record.associations, 'snapshot.associations').map(
-    (association, index) => {
-      const path = `snapshot.associations[${index}]`;
-      assertAllowedProperties(association, ['entityId', 'playerId'], path);
-      return {
-        entity_id: association.entityId,
-        player_id: association.playerId,
-      };
-    },
-  );
+  const associations =
+    record.associations === undefined
+      ? []
+      : expectRecords(record.associations, 'snapshot.associations').map((association, index) => {
+          const path = `snapshot.associations[${index}]`;
+          assertAllowedProperties(association, ['entityId', 'playerId'], path);
+          return {
+            entity_id: association.entityId,
+            player_id: association.playerId,
+          };
+        });
   const characterLocationRelations = relationSnapshotRows(record.characterLocationRelations);
   const noteTags: Record<string, unknown>[] = [];
   const notes = expectRecords(record.notes, 'snapshot.notes').map((note, index) => {
@@ -683,6 +693,31 @@ export async function parsePublicCatalogSnapshotV2(
     generatedAt = expectString(record.generatedAt, 'snapshot.generatedAt');
     sourceRevision = expectChecksum(record.sourceRevision, 'snapshot.sourceRevision');
     checksum = expectChecksum(record.checksum, 'snapshot.checksum');
+    const checksumContent = Object.fromEntries(
+      [
+        'schemaVersion',
+        'categories',
+        'tags',
+        'players',
+        'entities',
+        'dispositions',
+        'associations',
+        'characterLocationRelations',
+        'notes',
+        'geographicNames',
+        'characterLocationEvents',
+      ]
+        .filter((key) => Object.prototype.hasOwnProperty.call(record, key))
+        .map((key) => [key, record[key]]),
+    );
+    const calculatedChecksum = await createSha256Checksum(checksumContent);
+    if (checksum !== calculatedChecksum) {
+      throw new PublicDataRepositoryError(
+        'checksum-mismatch',
+        'La caché pública no coincide con su checksum.',
+        { source: 'cache' },
+      );
+    }
     content = buildPublicCatalogContentV2(snapshotPayloads(record));
   } catch (error) {
     rethrowAsCacheError(error);

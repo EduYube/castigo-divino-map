@@ -87,11 +87,17 @@ export function buildPublicEntityPresentation(
     .filter(({ entityId }) => entityId === entity.id)
     .map(({ playerId }) => playersById.get(playerId))
     .filter((player): player is NonNullable<typeof player> => Boolean(player))
-    .map((player) => ({
-      id: player.id,
-      name: player.displayName,
-      accentColor: player.accentColor,
-    }));
+    .map((player) => {
+      const accentColor = player.accentColor;
+      if (!accentColor) {
+        throw new Error(`Missing persisted accent for associated player "${player.id}".`);
+      }
+      return {
+        id: player.id,
+        name: player.displayName,
+        accentColor,
+      };
+    });
   const notes = catalog.notes
     .filter(({ entityId }) => entityId === entity.id)
     .sort((left, right) => left.sortOrder - right.sortOrder || left.id.localeCompare(right.id))

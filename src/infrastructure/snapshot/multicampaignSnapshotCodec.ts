@@ -117,10 +117,14 @@ function normalizeSnapshotPlayer(
   const path = `${catalogPath}.players[${index}]`;
   const item = record(value, path);
   assertAllowed(item, ['id', 'slug', 'displayName', 'nameLanguage', 'accentColor'], path);
-  return {
-    ...item,
-    accentColor: item.accentColor === undefined ? HISTORIC_PLAYER_ACCENT : item.accentColor,
-  } as unknown as PublicCampaignCatalogV3['players'][number];
+  const accentColor =
+    item.accentColor === undefined
+      ? HISTORIC_PLAYER_ACCENT
+      : string(item.accentColor, `${path}.accentColor`);
+  if (!/^#[0-9a-f]{6}$/.test(accentColor)) {
+    invalid(`${path}.accentColor no tiene el formato de color persistido esperado.`);
+  }
+  return { ...item, accentColor } as unknown as PublicCampaignCatalogV3['players'][number];
 }
 
 function parseCampaignCatalog(value: unknown, index: number): PublicCampaignCatalogV3 {

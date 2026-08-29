@@ -169,6 +169,7 @@ function publicCampaignCatalog(scenario: Scenario): PublicCampaignCatalogV3 {
     players: [],
     entities: [],
     dispositions: [],
+    associations: [],
     characterLocationRelations: [],
     notes: [],
     characterLocationEvents: [],

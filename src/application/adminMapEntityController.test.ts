@@ -32,7 +32,14 @@ const record: AdminMapEntityRecord = {
 const references: AdminMapEntityReferences = {
   categories: [{ id: 'category-people', name: 'People', publicationStatus: 'published' }],
   tags: [],
-  players: [{ id: 'player-one', displayName: 'One', publicationStatus: 'published' }],
+  players: [
+    {
+      id: 'player-one',
+      displayName: 'One',
+      publicationStatus: 'published',
+      accentColor: '#475569',
+    },
+  ],
 };
 
 const detail: AdminMapEntityDetail = {

@@ -45,8 +45,8 @@ export interface PublicPlayer {
   readonly slug: Slug;
   readonly displayName: string;
   readonly nameLanguage: LanguageCode;
-  /** MAP-054 persisted roster accent used by MAP-058 association visuals. */
-  readonly accentColor: string;
+  /** MAP-054 persisted roster accent. Historic Beta 0.2 snapshots may omit it. */
+  readonly accentColor?: string;
 }
 
 export interface PublicMapEntity {
@@ -170,7 +170,8 @@ export interface PublicCatalogSnapshotV2 {
   readonly players: readonly PublicPlayer[];
   readonly entities: readonly PublicMapEntity[];
   readonly dispositions: readonly PublicEntityPlayerDisposition[];
-  readonly associations: readonly PublicEntityPlayerAssociation[];
+  /** Historic Beta 0.2 snapshots predate MAP-058 and may omit associations. */
+  readonly associations?: readonly PublicEntityPlayerAssociation[];
   readonly characterLocationRelations: readonly PublicCharacterLocationRelation[];
   readonly notes: readonly PublicNote[];
   readonly geographicNames: readonly PublicGeographicName[];

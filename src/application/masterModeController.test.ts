@@ -21,6 +21,7 @@ const EMPTY_CATALOG: AuthorizedMasterCatalog = {
   entityTags: [],
   players: [],
   dispositions: [],
+  associations: [],
   relations: [],
   relationEntities: [],
 };

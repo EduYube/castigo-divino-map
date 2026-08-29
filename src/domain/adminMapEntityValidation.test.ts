@@ -21,8 +21,18 @@ const references: AdminMapEntityReferences = {
     { id: 'draft-tag', name: 'Draft tag', publicationStatus: 'draft' },
   ],
   players: [
-    { id: 'player-one', displayName: 'One', publicationStatus: 'published' },
-    { id: 'player-two', displayName: 'Two', publicationStatus: 'published' },
+    {
+      id: 'player-one',
+      displayName: 'One',
+      publicationStatus: 'published',
+      accentColor: '#475569',
+    },
+    {
+      id: 'player-two',
+      displayName: 'Two',
+      publicationStatus: 'published',
+      accentColor: '#64748b',
+    },
   ],
 };
 
