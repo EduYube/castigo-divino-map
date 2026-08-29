@@ -253,8 +253,11 @@ test('opens compact public details and closes back to its marker', async ({ page
   await expect(panel.getByText('Costero', { exact: true })).toBeVisible();
   await expect(panel.getByText('Dato de demostración', { exact: true })).toBeVisible();
   await expect(panel.getByText('Ruta comercial', { exact: true })).toBeVisible();
-  await expect(panel).toContainText('Perspectiva no disponible');
-  await expect(panel).toContainText('Sin disposición disponible');
+  await expect(panel).not.toContainText('Perspectiva no disponible');
+  await expect(panel).not.toContainText('Sin disposición disponible');
+  await expect(
+    panel.getByRole('heading', { level: 4, name: 'Relación con los personajes' }),
+  ).toHaveCount(0);
   await expect(panel).not.toContainText('Puerto de ejemplo');
   await expect(panel).not.toContainText('Información pública de demostración');
   await expect(panel).not.toContainText('Este puerto ficticio sirve para comprobar fichas');
