@@ -108,7 +108,7 @@ export function mountAdminEntityEditorMap(
     element.setAttribute('role', 'button');
     element.setAttribute(
       'aria-label',
-      `Coordenada seleccionada. ${type.label}. Disposición por jugador: ${describePlayerDispositions(currentDispositions)}. Puedes arrastrarla con un puntero o editar X e Y en el formulario.`,
+      `Coordenada seleccionada. ${type.label}. Relación con los personajes: ${describePlayerDispositions(currentDispositions)}. Puedes arrastrarla con un puntero o editar X e Y en el formulario.`,
     );
     element.setAttribute('data-testid', 'admin-coordinate-marker');
     element.dataset.entityType = currentEntityType;
