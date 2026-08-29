@@ -198,7 +198,7 @@ export function createAuthorizedMasterCatalogView(
         ...buildMasterDispositions(masterCatalog, masterEntityIds),
       ],
       associations: [
-        ...publicCatalog.associations,
+        ...(publicCatalog.associations ?? []),
         ...buildMasterAssociations(publicCatalog, masterCatalog, masterEntityIds),
       ],
       characterLocationRelations: buildAuthorizedRelations(
