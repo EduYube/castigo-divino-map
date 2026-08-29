@@ -27,6 +27,13 @@ export interface PinPlayerDispositionVisual extends PinDispositionVisual {
   readonly playerName: string;
 }
 
+/** MAP-058 narrative link. Color is roster data and never disposition state. */
+export interface PinPlayerAssociationInput {
+  readonly playerId: string;
+  readonly playerName: string;
+  readonly accentColor: string;
+}
+
 export interface CoordinatePin {
   readonly id: string;
   readonly coordinate: readonly [number, number];
@@ -102,6 +109,12 @@ export function describePlayerDispositions(
   return createPlayerDispositionVisuals(dispositions)
     .map(({ playerName, label }) => `${playerName}: ${label.toLocaleLowerCase('es')}`)
     .join('; ');
+}
+
+export function describePlayerAssociations(
+  associations: readonly PinPlayerAssociationInput[],
+): string {
+  return associations.map(({ playerName }) => playerName).join(', ');
 }
 
 export function coordinateGroupKey(coordinate: readonly [number, number]): string {
