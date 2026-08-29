@@ -62,15 +62,15 @@ select plan(29);
 
 select ok(
   to_regprocedure(
-    'public.admin_moderate_public_request(uuid,timestamp with time zone,text,text)'
+    'public.admin_moderate_public_request_v2(uuid,uuid,timestamp with time zone,text,text)'
   ) is not null,
-  'MAP-027 exposes the administrative moderation RPC'
+  'MAP-056 exposes only the campaign-scoped administrative moderation RPC'
 );
 
 select ok(
   not has_function_privilege(
     'anon',
-    'public.admin_moderate_public_request(uuid,timestamp with time zone,text,text)',
+    'public.admin_moderate_public_request_v2(uuid,uuid,timestamp with time zone,text,text)',
     'EXECUTE'
   ),
   'anon cannot execute the moderation RPC'
@@ -79,7 +79,7 @@ select ok(
 select ok(
   has_function_privilege(
     'authenticated',
-    'public.admin_moderate_public_request(uuid,timestamp with time zone,text,text)',
+    'public.admin_moderate_public_request_v2(uuid,uuid,timestamp with time zone,text,text)',
     'EXECUTE'
   ),
   'authenticated may reach the closed moderation RPC'
@@ -101,9 +101,9 @@ select ok(
     from pg_catalog.pg_proc as p
     join pg_catalog.pg_namespace as n on n.oid = p.pronamespace
     where n.nspname = 'public'
-      and p.proname = 'admin_moderate_public_request'
+      and p.proname = 'admin_moderate_public_request_v2'
   ),
-  'the security-definer RPC elevates only to the dedicated moderation role'
+  'the scoped security-definer RPC elevates only to the dedicated moderation role'
 );
 
 select ok(
@@ -145,7 +145,8 @@ set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000002",
 set local role authenticated;
 
 select throws_ok(
-  $$select public.admin_moderate_public_request(
+  $$select public.admin_moderate_public_request_v2(
+      '00000000-0000-4000-8000-000000000053',
       '10000000-0000-4000-8000-000000000273',
       timezone('utc', now()),
       'reject',
@@ -196,13 +197,14 @@ select is(
 set local role authenticated;
 
 select lives_ok(
-  $$select public.admin_moderate_public_request(
+  $$select public.admin_moderate_public_request_v2(
+      '00000000-0000-4000-8000-000000000053',
       '10000000-0000-4000-8000-000000000272',
       (select updated_at from public.public_requests where id = '10000000-0000-4000-8000-000000000272'),
       'reject',
       '  Not enough evidence.  '
     )$$,
-  'an administrator can reject a pending request through the RPC'
+  'an administrator can reject a pending request through the scoped RPC'
 );
 
 select is(
@@ -257,7 +259,8 @@ select throws_ok(
 set local role authenticated;
 
 select lives_ok(
-  $$select public.admin_moderate_public_request(
+  $$select public.admin_moderate_public_request_v2(
+      '00000000-0000-4000-8000-000000000053',
       '10000000-0000-4000-8000-000000000271',
       (select updated_at from public.public_requests where id = '10000000-0000-4000-8000-000000000271'),
       'convert',
@@ -319,6 +322,7 @@ select ok(
   (
     select entity_type = 'location'::public.entity_type
       and visibility = 'pin'::public.map_visibility
+      and audience = 'public'::public.entity_audience
       and name = 'Requested Lantern'
       and summary = ''
       and description = 'A requested location description.'
@@ -327,7 +331,7 @@ select ok(
     from public.map_entities
     where id = 'entity-request-10000000000040008000000000000271'
   ),
-  'conversion copies only the unambiguous editable pin fields'
+  'conversion copies only the unambiguous public editable pin fields'
 );
 
 select ok(
@@ -340,7 +344,8 @@ select ok(
 );
 
 select throws_ok(
-  $$select public.admin_moderate_public_request(
+  $$select public.admin_moderate_public_request_v2(
+      '00000000-0000-4000-8000-000000000053',
       '10000000-0000-4000-8000-000000000271',
       '2000-01-01T00:00:00Z'::timestamptz,
       'convert',
@@ -374,7 +379,7 @@ select is(
 
 select ok(
   pg_temp.statement_fails('select * from public.public_requests'),
-  'anon still cannot enumerate public requests after MAP-027'
+  'anon still cannot enumerate public requests after MAP-056'
 );
 
 select * from finish();

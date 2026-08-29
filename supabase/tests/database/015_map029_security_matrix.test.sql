@@ -87,18 +87,34 @@ select ok(
 select ok(
   pg_catalog.has_function_privilege(
     'anon',
-    'public.submit_public_request(text,text,public.entity_type,double precision,double precision,text,text,text)',
+    'public.begin_public_request_submission(uuid)',
     'EXECUTE'
-  ),
-  'anon may execute only the closed public request RPC'
+  )
+  and pg_catalog.has_function_privilege(
+    'anon',
+    'public.submit_public_request_v3(text,text,text,public.entity_type,double precision,double precision,text,text,text)',
+    'EXECUTE'
+  )
+  and to_regprocedure(
+    'public.submit_public_request(text,text,public.entity_type,double precision,double precision,text,text,text)'
+  ) is null
+  and to_regprocedure(
+    'public.submit_public_request_v2(uuid,text,text,public.entity_type,double precision,double precision,text,text,text)'
+  ) is null,
+  'anon can execute only the backend-bound public request ingress'
 );
 select ok(
   pg_catalog.has_function_privilege(
     'authenticated',
-    'public.submit_public_request(text,text,public.entity_type,double precision,double precision,text,text,text)',
+    'public.begin_public_request_submission(uuid)',
+    'EXECUTE'
+  )
+  and pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.submit_public_request_v3(text,text,text,public.entity_type,double precision,double precision,text,text,text)',
     'EXECUTE'
   ),
-  'authenticated users may use the same public request RPC'
+  'authenticated users may use the same backend-bound public request ingress'
 );
 select ok(
   not pg_catalog.has_function_privilege(
@@ -117,12 +133,15 @@ select ok(
   'anon cannot call the administrative entity reader'
 );
 select ok(
-  not pg_catalog.has_function_privilege(
+  to_regprocedure(
+    'public.admin_moderate_public_request(uuid,timestamp with time zone,text,text)'
+  ) is null
+  and not pg_catalog.has_function_privilege(
     'anon',
-    'public.admin_moderate_public_request(uuid,timestamp with time zone,text,text)',
+    'public.admin_moderate_public_request_v2(uuid,uuid,timestamp with time zone,text,text)',
     'EXECUTE'
   ),
-  'anon cannot call public request moderation'
+  'the legacy unscoped moderation RPC is absent and anon cannot call scoped moderation'
 );
 
 select is(
@@ -144,7 +163,7 @@ select is(
     from pg_catalog.pg_proc as function
     join pg_catalog.pg_namespace as namespace on namespace.oid = function.pronamespace
     where namespace.nspname = 'public'
-      and function.proname = 'admin_moderate_public_request'
+      and function.proname = 'admin_moderate_public_request_v2'
   ),
   'atlas_public_request_moderator',
   'moderation SECURITY DEFINER keeps its dedicated NOLOGIN owner'

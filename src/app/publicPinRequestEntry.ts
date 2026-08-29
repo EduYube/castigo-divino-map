@@ -1,6 +1,7 @@
 import type { Map as LeafletMap } from 'leaflet';
 
 import '../styles/public-pin-request.css';
+import '../styles/public-pin-request-campaign.css';
 import {
   mountPublicPinRequest as mountPublicPinRequestController,
   type PublicPinRequestController,
@@ -32,6 +33,21 @@ function navigateToMountedPanel(root: ParentNode): void {
   });
 }
 
+function preservePublicRequestAccessibilityContract(root: ParentNode): void {
+  const formSelector = '[data-public-pin-request-form]';
+  const campaignSelector = '[data-public-pin-request-campaign-target]';
+  const nameSelector = '[data-public-pin-request-campaign-target-name]';
+  const form = getRequiredElement<HTMLFormElement>(root, formSelector);
+  const campaign = getRequiredElement<HTMLElement>(root, campaignSelector);
+  const name = getRequiredElement<HTMLElement>(root, nameSelector);
+  const label = campaign.querySelector<HTMLElement>('strong');
+  const describedBy = 'public-pin-request-privacy public-pin-request-status';
+
+  form.setAttribute('aria-describedby', describedBy);
+  form.setAttribute('aria-details', 'public-pin-request-campaign-target');
+  label?.after(name);
+}
+
 export function mountPublicPinRequest(
   root: ParentNode,
   map: LeafletMap,
@@ -55,6 +71,7 @@ export function mountPublicPinRequest(
     openButton.removeEventListener('click', handleFirstOpen);
     openButton.remove();
     controller = mountPublicPinRequestController(root, map);
+    preservePublicRequestAccessibilityContract(root);
 
     mountedOpenButton = getRequiredElement<HTMLButtonElement>(
       root,

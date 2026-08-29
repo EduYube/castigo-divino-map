@@ -90,7 +90,9 @@ export class AdminPublicRequestController {
       return;
     }
     const operation = this.#beginOperation();
-    this.#publish({ ...this.#state, phase: 'loading', issue: null });
+    // Campaign switches trigger reloads. Clear the previous campaign immediately so
+    // stale cards can never remain visible under the newly selected context.
+    this.#publish({ ...this.#state, records: [], phase: 'loading', issue: null });
     try {
       const records = await this.#repository.list({ signal: operation.signal });
       if (!this.#isCurrent(operation.generation)) return;

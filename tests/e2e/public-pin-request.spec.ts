@@ -3,7 +3,9 @@ import { expect, test, type Locator, type Page, type Request } from '@playwright
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
-const RPC_URL = 'http://127.0.0.1:54321/rest/v1/rpc/submit_public_request_v2';
+const BEGIN_RPC_URL = 'http://127.0.0.1:54321/rest/v1/rpc/begin_public_request_submission';
+const SUBMIT_RPC_URL = 'http://127.0.0.1:54321/rest/v1/rpc/submit_public_request_v3';
+const SUBMISSION_TOKEN = 'map026-bound-submission-token';
 const TEST_PUBLISHABLE_KEY = 'sb_publishable_map026_e2e_key';
 const NEUTRAL_TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
@@ -67,24 +69,48 @@ async function fillValidRequest(form: Locator): Promise<void> {
   await form.getByLabel('Motivo de la solicitud').fill('Ayuda a recordar la ruta del grupo.');
 }
 
+function corsHeaders(): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'apikey,content-type',
+    'Access-Control-Allow-Methods': 'POST,OPTIONS',
+  };
+}
+
 async function mockRpc(
   page: Page,
   requests: Request[],
   status = 200,
   body = 'true',
 ): Promise<void> {
-  await page.route(RPC_URL, async (route) => {
+  await page.route(BEGIN_RPC_URL, async (route) => {
     const request = route.request();
 
     if (request.method() === 'OPTIONS') {
-      await route.fulfill({
-        status: 204,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'apikey,content-type',
-          'Access-Control-Allow-Methods': 'POST,OPTIONS',
-        },
-      });
+      await route.fulfill({ status: 204, headers: corsHeaders() });
+      return;
+    }
+
+    expect(request.postDataJSON()).toEqual({ p_campaign_id: CAMPAIGN_A_ID });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: corsHeaders(),
+      body: JSON.stringify({
+        campaign_id: CAMPAIGN_A_ID,
+        campaign_slug: 'castigo-divino',
+        campaign_name: 'Castigo Divino',
+        submission_token: SUBMISSION_TOKEN,
+        expires_at: '2026-08-29T01:15:00.000Z',
+      }),
+    });
+  });
+
+  await page.route(SUBMIT_RPC_URL, async (route) => {
+    const request = route.request();
+
+    if (request.method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: corsHeaders() });
       return;
     }
 
@@ -93,10 +119,7 @@ async function mockRpc(
       status,
       body,
       contentType: 'application/json',
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'apikey,content-type',
-      },
+      headers: corsHeaders(),
     });
   });
 }
@@ -178,7 +201,7 @@ test('submits a valid anonymous request through the closed RPC without publishin
   expect(rpcRequests[0]?.headers()['apikey']).toBe(TEST_PUBLISHABLE_KEY);
   expect(rpcRequests[0]?.headers()['authorization']).toBeUndefined();
   expect(rpcRequests[0]?.postDataJSON()).toEqual({
-    p_campaign_id: CAMPAIGN_A_ID,
+    p_submission_token: SUBMISSION_TOKEN,
     p_sender_name: 'Jugadora de prueba',
     p_proposed_name: 'Torre del Horizonte',
     p_entity_type: 'location',
@@ -188,6 +211,7 @@ test('submits a valid anonymous request through the closed RPC without publishin
     p_reason: 'Ayuda a recordar la ruta del grupo.',
     p_honeypot: '',
   });
+  expect(rpcRequests[0]?.postDataJSON()).not.toHaveProperty('p_campaign_id');
   await expect(page.getByTestId('place-marker')).toHaveCount(initialPinCount);
   await expect(page.locator('[data-testid="entity-pin"]')).toHaveCount(initialEntityPinCount);
   expect(page.url()).toBe(initialUrl);

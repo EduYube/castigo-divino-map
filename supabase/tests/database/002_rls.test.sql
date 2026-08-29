@@ -139,7 +139,8 @@ select ok(
 );
 
 select ok(
-  public.submit_public_request(
+  public.submit_public_request_v3(
+    public.begin_public_request_submission('00000000-0000-4000-8000-000000000053'::uuid) ->> 'submission_token',
     'RPC Visitor',
     'RPC Beacon',
     'location',
@@ -148,12 +149,13 @@ select ok(
     'A valid request submitted through the closed operation.',
     'Exercises the approved public path.'
   ),
-  'anon can submit a valid request through the RPC'
+  'anon can submit a valid request through the bound RPC'
 );
 
 select ok(
   pg_temp.statement_fails(
-    $$select public.submit_public_request(
+    $$select public.submit_public_request_v3(
+      public.begin_public_request_submission('00000000-0000-4000-8000-000000000053'::uuid) ->> 'submission_token',
       'Invalid',
       'Out of bounds',
       'location',
@@ -163,11 +165,12 @@ select ok(
       'Must fail.'
     )$$
   ),
-  'the RPC rejects invalid coordinates'
+  'the bound RPC rejects invalid coordinates'
 );
 
 select ok(
-  public.submit_public_request(
+  public.submit_public_request_v3(
+    public.begin_public_request_submission('00000000-0000-4000-8000-000000000053'::uuid) ->> 'submission_token',
     'Bot',
     'Honeypot',
     'location',
@@ -313,14 +316,15 @@ select ok(
 
 select ok(
   pg_temp.statement_succeeds(
-    $$select public.admin_moderate_public_request(
+    $$select public.admin_moderate_public_request_v2(
+      '00000000-0000-4000-8000-000000000053',
       '10000000-0000-4000-8000-000000000001',
       (select updated_at from public.public_requests where id = '10000000-0000-4000-8000-000000000001'),
       'reject',
       null
     )$$
   ),
-  'administrator can moderate a request through the authoritative RPC'
+  'administrator can moderate a request through the authoritative scoped RPC'
 );
 
 select * from finish();

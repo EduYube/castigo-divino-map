@@ -1,3 +1,4 @@
+import { adminCampaignContext } from '../application/adminCampaignContext';
 import type {
   AdminPublicRequestController,
   AdminPublicRequestState,
@@ -107,11 +108,33 @@ export function mountAdminPublicRequests(
   let feedback = '';
   const moderationNoteDrafts = new Map<string, string>();
 
+  const activeCampaignLabel = (): string => {
+    const campaignId = adminCampaignContext.getCampaignId();
+    const selector = root.querySelector<HTMLSelectElement>('#admin-campaign-context');
+    const option = Array.from(selector?.options ?? []).find(
+      (candidate) => candidate.value === campaignId,
+    );
+    const label = option?.textContent
+      ?.replace(/ — archivada/g, '')
+      .replace(/ — inicial v1\.0/g, '')
+      .trim();
+    return label || campaignId;
+  };
+
+  let renderedCampaignLabel = activeCampaignLabel();
+  const campaignLabelObserver = new MutationObserver(() => {
+    const nextCampaignLabel = activeCampaignLabel();
+    if (nextCampaignLabel === renderedCampaignLabel) return;
+    renderedCampaignLabel = nextCampaignLabel;
+    render(controller.getState());
+  });
+  campaignLabelObserver.observe(shell, { childList: true, subtree: true });
+
   heading.textContent = 'Solicitudes públicas';
   heading.id = 'admin-public-requests-heading';
   section.setAttribute('aria-labelledby', heading.id);
   intro.textContent =
-    'Revisa las propuestas recibidas. Convertir crea únicamente un borrador editable y nunca publica contenido.';
+    'Revisa únicamente las propuestas de la campaña administrativa activa. Convertir crea un borrador en esa misma campaña y nunca publica contenido.';
   noChangesChannel.textContent =
     '“Necesita cambios” no está disponible en Beta 0.2: el formulario público no recoge un canal de respuesta al remitente.';
 
@@ -186,12 +209,13 @@ export function mountAdminPublicRequests(
   ): void {
     pendingAction = { action, request, moderationNote };
     restoreFocus = trigger;
+    const campaign = activeCampaignLabel();
     confirmationHeading.textContent =
       action === 'reject' ? 'Confirmar rechazo' : 'Confirmar conversión a borrador';
     confirmationText.textContent =
       action === 'reject'
-        ? `La solicitud “${request.proposedName}” quedará rechazada y conservará su historial de moderación.`
-        : `La solicitud “${request.proposedName}” quedará convertida y se creará un borrador sin categoría ni etiquetas. Esta acción no publica el pin.`;
+        ? `La solicitud “${request.proposedName}” de ${campaign} quedará rechazada y conservará su historial de moderación.`
+        : `La solicitud “${request.proposedName}” de ${campaign} quedará convertida y se creará un borrador en esa misma campaña, sin categoría ni etiquetas. Esta acción no publica el pin.`;
     confirmButton.textContent = action === 'reject' ? 'Rechazar solicitud' : 'Crear borrador';
     confirmation.hidden = false;
     confirmButton.focus();
@@ -226,6 +250,7 @@ export function mountAdminPublicRequests(
     article.setAttribute('aria-labelledby', headingId);
     meta.textContent = `${statusLabel(request.requestStatus)} · ${requestTypeLabel(request.entityType)} · ${formatDate(request.createdAt)}`;
     details.append(
+      addDetail('Campaña', activeCampaignLabel()),
       addDetail('Remitente', request.senderName),
       addDetail('Coordenadas', `X ${request.x} · Y ${request.y}`),
       addDetail('Descripción', request.description),
@@ -301,15 +326,15 @@ export function mountAdminPublicRequests(
       status.textContent =
         'La moderación requiere conexión con el backend antes de leer o procesar solicitudes.';
     } else if (state.phase === 'loading') {
-      status.textContent = 'Cargando solicitudes…';
+      status.textContent = `Cargando solicitudes de ${activeCampaignLabel()}…`;
     } else if (state.phase === 'mutating') {
-      status.textContent = 'Procesando la solicitud…';
+      status.textContent = `Procesando la solicitud de ${activeCampaignLabel()}…`;
     } else if (state.issue) {
       status.textContent = state.issue.message;
     } else if (feedback) {
       status.textContent = feedback;
     } else {
-      status.textContent = `${state.records.length} solicitudes administrativas disponibles.`;
+      status.textContent = `${state.records.length} solicitudes administrativas disponibles en ${activeCampaignLabel()}.`;
     }
 
     for (const request of state.records) {
@@ -320,8 +345,10 @@ export function mountAdminPublicRequests(
     empty.hidden = visible.length !== 0 || state.phase === 'loading';
     empty.textContent =
       selectedFilter === 'all'
-        ? 'No hay solicitudes para mostrar.'
-        : `No hay solicitudes con estado ${statusLabel(selectedFilter as AdminPublicRequestRecord['requestStatus']).toLowerCase()}.`;
+        ? `No hay solicitudes para mostrar en ${activeCampaignLabel()}.`
+        : `No hay solicitudes con estado ${statusLabel(
+            selectedFilter as AdminPublicRequestRecord['requestStatus'],
+          ).toLowerCase()} en ${activeCampaignLabel()}.`;
   }
 
   const handleFilter = (): void => {
@@ -362,7 +389,7 @@ export function mountAdminPublicRequests(
       }
       moderationNoteDrafts.delete(action.request.id);
       feedback =
-        'Borrador creado sin categoría ni etiquetas. Debe revisarse en el editor antes de cualquier publicación.';
+        'Borrador creado sin categoría ni etiquetas en la campaña activa. Debe revisarse en el editor antes de cualquier publicación.';
       render(controller.getState());
       try {
         await options.onOpenDraft?.(result.draftEntityId);
@@ -401,11 +428,18 @@ export function mountAdminPublicRequests(
     controller.setAccess(authState.phase === 'authorized', backendConnected);
     if (authState.phase !== 'authorized' && !confirmation.hidden) closeConfirmation();
   });
+  const unsubscribeCampaign = adminCampaignContext.subscribe(() => {
+    feedback = '';
+    if (!confirmation.hidden) closeConfirmation();
+    render(controller.getState());
+  });
 
   return {
     destroy(): void {
       unsubscribeController();
       unsubscribeAuth();
+      unsubscribeCampaign();
+      campaignLabelObserver.disconnect();
       moderationNoteDrafts.clear();
       filter.removeEventListener('change', handleFilter);
       sort.removeEventListener('change', handleSort);
