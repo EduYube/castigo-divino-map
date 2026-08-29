@@ -205,10 +205,13 @@ test('renders compact location data and exposes a safe full-details link', async
   await expect(panel).toContainText('Asentamiento');
   await expect(panel).toContainText('Costero');
   await expect(panel).toContainText('Vigilancia');
+  await expect(panel).toContainText('Relación con los personajes');
   await expect(panel).toContainText('Alicia');
   await expect(panel).toContainText('Aliado');
   await expect(panel).toContainText('Borin');
   await expect(panel).toContainText('Neutral');
+  await expect(panel.getByRole('listitem', { name: 'Alicia: Aliado' })).toBeVisible();
+  await expect(panel.getByRole('listitem', { name: 'Borin: Neutral' })).toBeVisible();
   await expect(important).toBeVisible();
   await expect(panel).toContainText('Harbor Guard');
   await expect(panel).toContainText('Presente');
@@ -266,7 +269,7 @@ test('opens a character card and returns focus on close', async ({ page }) => {
   await expect(character).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('falls back to a compact Beta 0.2 snapshot card offline with a safe full URL', async ({
+test('offline snapshot card hides player relations instead of showing technical fallbacks', async ({
   page,
 }) => {
   await openMap(page, false);
@@ -283,8 +286,11 @@ test('falls back to a compact Beta 0.2 snapshot card offline with a safe full UR
   await expect(panel).toContainText('Costero');
   await expect(panel).toContainText('Dato de demostración');
   await expect(panel).toContainText('Ruta comercial');
-  await expect(panel).toContainText('Perspectiva no disponible');
-  await expect(panel).toContainText('Sin disposición disponible');
+  await expect(panel).not.toContainText('Perspectiva no disponible');
+  await expect(panel).not.toContainText('Sin disposición disponible');
+  await expect(
+    panel.getByRole('heading', { level: 4, name: 'Relación con los personajes' }),
+  ).toHaveCount(0);
   await expect(panel).not.toContainText('Puerto de ejemplo');
   await expect(panel).not.toContainText('Información pública de demostración');
   await expect(panel).not.toContainText('Este puerto ficticio');
@@ -301,37 +307,39 @@ test('falls back to a compact Beta 0.2 snapshot card offline with a safe full UR
   );
 });
 
-test('stays usable at 320 px in forced colors and reduced motion', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 740 });
-  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
-  await openMap(page);
+for (const width of [320, 390, 430]) {
+  test(`stays usable at ${width} px in forced colors and reduced motion`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 740 });
+    await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+    await openMap(page);
 
-  const character = page.locator('[data-testid="entity-pin"][data-pin-id="entity-scout"]');
-  await character.click();
+    const character = page.locator('[data-testid="entity-pin"][data-pin-id="entity-scout"]');
+    await character.click();
 
-  const panel = page.getByTestId('place-details');
-  await panel.scrollIntoViewIfNeeded();
-  const panelBox = await panel.boundingBox();
-  expect(panelBox).not.toBeNull();
-  expect(panelBox?.x ?? 0).toBeGreaterThanOrEqual(0);
-  expect((panelBox?.x ?? 0) + (panelBox?.width ?? 0)).toBeLessThanOrEqual(320);
+    const panel = page.getByTestId('place-details');
+    await panel.scrollIntoViewIfNeeded();
+    const panelBox = await panel.boundingBox();
+    expect(panelBox).not.toBeNull();
+    expect(panelBox?.x ?? 0).toBeGreaterThanOrEqual(0);
+    expect((panelBox?.x ?? 0) + (panelBox?.width ?? 0)).toBeLessThanOrEqual(width);
 
-  const fullAction = panel.getByRole('link', {
-    name: 'Abrir ficha completa de Scout en una pestaña nueva',
+    const fullAction = panel.getByRole('link', {
+      name: 'Abrir ficha completa de Scout en una pestaña nueva',
+    });
+    const actionBox = await fullAction.boundingBox();
+    expect(actionBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+
+    const shape = panel.locator('.compact-details__type-shape');
+    const typeStyle = await shape.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { borderStyle: style.borderStyle, transitionDuration: style.transitionDuration };
+    });
+    expect(typeStyle.borderStyle).not.toBe('none');
+    expect(Number.parseFloat(typeStyle.transitionDuration)).toBeLessThanOrEqual(0.00001);
+
+    const horizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(horizontalOverflow).toBe(false);
   });
-  const actionBox = await fullAction.boundingBox();
-  expect(actionBox?.height ?? 0).toBeGreaterThanOrEqual(44);
-
-  const shape = panel.locator('.compact-details__type-shape');
-  const typeStyle = await shape.evaluate((element) => {
-    const style = getComputedStyle(element);
-    return { borderStyle: style.borderStyle, transitionDuration: style.transitionDuration };
-  });
-  expect(typeStyle.borderStyle).not.toBe('none');
-  expect(Number.parseFloat(typeStyle.transitionDuration)).toBeLessThanOrEqual(0.00001);
-
-  const horizontalOverflow = await page.evaluate(
-    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-  );
-  expect(horizontalOverflow).toBe(false);
-});
+}
