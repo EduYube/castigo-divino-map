@@ -5,6 +5,7 @@ import {
 import {
   canPhysicallyDeleteMapEntity,
   type AdminCategoryReference,
+  type AdminEntityAssociation,
   type AdminEntityDisposition,
   type AdminEntityTagLink,
   type AdminMapEntityDeleteBlockers,
@@ -185,6 +186,29 @@ function mapDisposition(value: unknown): AdminEntityDisposition {
   };
 }
 
+function mapAssociation(value: unknown): AdminEntityAssociation {
+  if (!isRecord(value)) {
+    throw new AdminMapEntityRepositoryError(
+      'invalid-response',
+      'Supabase devolvió asociaciones de jugadores no válidas.',
+    );
+  }
+  const accentColor = requiredString(value, 'accent_color');
+  if (!/^#[0-9a-f]{6}$/.test(accentColor)) {
+    throw new AdminMapEntityRepositoryError(
+      'invalid-response',
+      'Supabase devolvió un acento de jugador no válido.',
+    );
+  }
+  return {
+    playerId: requiredString(value, 'player_id'),
+    displayName: requiredString(value, 'display_name'),
+    accentColor,
+    publicationStatus: publicationStatus(value.publication_status),
+    createdAt: requiredString(value, 'created_at'),
+  };
+}
+
 function mapBlockers(value: unknown): AdminMapEntityDeleteBlockers {
   if (!isRecord(value)) {
     throw new AdminMapEntityRepositoryError(
@@ -199,6 +223,7 @@ function mapBlockers(value: unknown): AdminMapEntityDeleteBlockers {
     notes: numberValue(value, 'notes'),
     locationEvents: numberValue(value, 'location_events'),
     requests: numberValue(value, 'requests'),
+    playerAssociations: numberValue(value, 'player_associations'),
   };
 }
 
@@ -209,7 +234,11 @@ function mapDetail(payload: unknown): AdminMapEntityDetail {
       'Supabase no devolvió el editor de entidad esperado.',
     );
   }
-  if (!Array.isArray(payload.tag_links) || !Array.isArray(payload.dispositions)) {
+  if (
+    !Array.isArray(payload.tag_links) ||
+    !Array.isArray(payload.dispositions) ||
+    !Array.isArray(payload.associations)
+  ) {
     throw new AdminMapEntityRepositoryError(
       'invalid-response',
       'Supabase devolvió relaciones de entidad no válidas.',
@@ -219,6 +248,7 @@ function mapDetail(payload: unknown): AdminMapEntityDetail {
     record: mapRecord(payload.record),
     tagLinks: payload.tag_links.map(mapTagLink),
     dispositions: payload.dispositions.map(mapDisposition),
+    associations: payload.associations.map(mapAssociation),
     relationsRevision: requiredString(payload, 'relations_revision'),
     deleteBlockers: mapBlockers(payload.delete_blockers),
   };
@@ -281,7 +311,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
       this.#listRows('tags', 'id,name,publication_status', 'name.asc,id.asc', options.signal),
       this.#listRows(
         'players',
-        'id,display_name,publication_status',
+        'id,display_name,publication_status,accent_color',
         'display_name.asc,id.asc',
         options.signal,
       ),
@@ -297,11 +327,21 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
       name: requiredString(row, 'name'),
       publicationStatus: publicationStatus(row.publication_status),
     }));
-    const players: AdminPlayerReference[] = playerRows.map((row) => ({
-      id: requiredString(row, 'id'),
-      displayName: requiredString(row, 'display_name'),
-      publicationStatus: publicationStatus(row.publication_status),
-    }));
+    const players: AdminPlayerReference[] = playerRows.map((row) => {
+      const accentColor = requiredString(row, 'accent_color');
+      if (!/^#[0-9a-f]{6}$/.test(accentColor)) {
+        throw new AdminMapEntityRepositoryError(
+          'invalid-response',
+          'Supabase devolvió un acento de jugador no válido.',
+        );
+      }
+      return {
+        id: requiredString(row, 'id'),
+        displayName: requiredString(row, 'display_name'),
+        publicationStatus: publicationStatus(row.publication_status),
+        accentColor,
+      };
+    });
 
     return { categories, tags, players };
   }
@@ -384,6 +424,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
           p_publication_status: draft.publicationStatus,
           p_tag_ids: [...draft.tagIds],
           p_dispositions: draft.dispositions,
+          p_player_association_ids: [...draft.playerAssociationIds],
         }),
       },
       options.signal,
