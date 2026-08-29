@@ -43,6 +43,7 @@ interface EntityRow extends Record<string, unknown> {
 interface BackendControl {
   getEntity(id: string): EntityRow | undefined;
   getSaveCount(): number;
+  getLastAssociationIds(): readonly string[];
   getStoredPortraits(): readonly string[];
   failNextSave(): void;
   expireNextSave(): void;
@@ -67,6 +68,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
   let mode: 'normal' | 'network' | 'expired' | 'stale' | 'invalid-relation' = 'normal';
   let counter = 10;
   let saveCount = 0;
+  let lastAssociationIds: string[] = [];
   const storedPortraits = new Set<string>();
 
   const categories = [
@@ -447,6 +449,9 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         }
       }
       dispositions.set(id, nextDispositions);
+      lastAssociationIds = Array.isArray(body.p_player_association_ids)
+        ? body.p_player_association_ids.map(String)
+        : [];
       saveCount += 1;
       await route.fulfill({
         status: 200,
@@ -502,9 +507,12 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return entities.find((entity) => entity.id === id);
     },
     getSaveCount(): number {
-      return saveCount;
-    },
-    getStoredPortraits(): readonly string[] {
+        return saveCount;
+      },
+      getLastAssociationIds(): readonly string[] {
+        return [...lastAssociationIds];
+      },
+      getStoredPortraits(): readonly string[] {
       return [...storedPortraits];
     },
     failNextSave(): void {
@@ -575,6 +583,21 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await expect(skade).toHaveAttribute('aria-label', 'Skade: Neutral');
   await expect(ura).toHaveAttribute('aria-label', 'Ura: Neutral');
   await expect(veyra).toHaveAttribute('aria-label', 'Veyra: Neutral');
+
+  const skadeAssociation = page.getByTestId('admin-player-association-player-skade');
+  const uraAssociation = page.getByTestId('admin-player-association-player-ura');
+  await expect(skadeAssociation).toBeVisible();
+  await expect(uraAssociation).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Relacionado con' })).toBeVisible();
+  const skadeAccent = await skadeAssociation.evaluate((checkbox) =>
+    checkbox.parentElement
+      ?.querySelector<HTMLElement>('.admin-map-entity__association-accent')
+      ?.style.getPropertyValue('--player-association-accent'),
+  );
+  expect(skadeAccent).toBe('#c2410c');
+  await skadeAssociation.check();
+  await uraAssociation.check();
+
   await skade.focus();
   await page.keyboard.press('ArrowDown');
   await expect(skade).toHaveValue('enemy');
@@ -629,6 +652,7 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await page.getByRole('button', { name: 'Guardar borrador' }).click();
   await expect(page.getByText('Borrador guardado correctamente.')).toBeVisible();
   expect(backend.getEntity('entity-map019-character')?.publication_status).toBe('draft');
+  expect(backend.getLastAssociationIds()).toEqual(['player-skade', 'player-ura']);
 
   await page.reload();
   const adminEntry = page.getByRole('button', { name: 'Administración' });

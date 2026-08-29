@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(21);
+select plan(23);
 
 select has_table('public', 'entity_player_associations', 'MAP-058 association table exists');
 select has_column('public', 'entity_player_associations', 'campaign_id', 'associations carry campaign identity');
@@ -198,6 +198,11 @@ reset role;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000002","role":"authenticated"}';
 set local role authenticated;
+select is(
+  (select count(*) from public.entity_player_associations where entity_id = 'entity-map058-master-a'),
+  0::bigint,
+  'authenticated non-admin cannot infer Master associations through direct table reads'
+);
 select ok(
   pg_temp.statement_fails($sql$
     select public.admin_get_map_entity_editor_v5(
@@ -205,6 +210,12 @@ select ok(
     )
   $sql$),
   'authenticated non-admin cannot inspect the association editor payload'
+);
+select ok(
+  pg_temp.statement_fails($sql$
+    select public.admin_get_master_catalog_v4('00000000-0000-4000-8000-000000000580')
+  $sql$),
+  'authenticated non-admin cannot inspect the private Master association catalog'
 );
 
 select * from finish();

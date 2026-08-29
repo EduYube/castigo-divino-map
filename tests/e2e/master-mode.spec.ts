@@ -170,9 +170,15 @@ function masterCatalog(audience: 'public' | 'master', includeCoincidentMaster: b
         : [],
     tags: [],
     entity_tags: [],
-    players: [],
+    players:
+      audience === 'master'
+        ? [{ id: 'player-skade', display_name: 'Skade', accent_color: '#c2410c' }]
+        : [],
     dispositions: [],
-    associations: [],
+    associations:
+      audience === 'master'
+        ? [{ entity_id: MASTER_ID, player_id: 'player-skade' }]
+        : [],
     relations: [],
     relation_entities: [],
   };
@@ -377,6 +383,12 @@ test('visitor and admin OFF cannot see master data; ON loads it ephemerally and 
   await expect(privateMarker).toHaveCount(1);
   await expect(privateMarker).toHaveAttribute('aria-label', /Contenido del Máster/);
   await expect(privateMarker).toHaveAttribute('data-portrait-marker', 'true');
+  await expect(privateMarker).toHaveAttribute('data-association-count', '1');
+  await expect(privateMarker).toHaveAttribute('aria-description', /Relacionado con: Skade\./);
+  await expect(privateMarker.locator('.pin-player-association-ring')).toHaveCSS(
+    '--pin-player-association-accent',
+    '#c2410c',
+  );
   await expect
     .poll(() =>
       backend

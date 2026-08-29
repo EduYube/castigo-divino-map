@@ -269,6 +269,14 @@ test('keeps portrait footprint, keyboard interaction and textual association det
   await expect(details).toContainText('Relacionado con');
   await expect(details).toContainText('Skade');
   await expect(details).toContainText('Relación con los personajes');
+
+  const fullAction = details.getByRole('link', { name: /Abrir ficha completa/ });
+  const fullHref = await fullAction.getAttribute('href');
+  await page.goto(fullHref ?? '/');
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Relacionado con' }),
+  ).toBeVisible();
+  await expect(page.locator('.full-entity__associations')).toContainText('Skade');
 });
 
 test('keeps associations perceivable without relying on color in forced-colors mode', async ({
