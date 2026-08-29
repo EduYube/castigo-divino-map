@@ -176,9 +176,7 @@ function masterCatalog(audience: 'public' | 'master', includeCoincidentMaster: b
         : [],
     dispositions: [],
     associations:
-      audience === 'master'
-        ? [{ entity_id: MASTER_ID, player_id: 'player-skade' }]
-        : [],
+      audience === 'master' ? [{ entity_id: MASTER_ID, player_id: 'player-skade' }] : [],
     relations: [],
     relation_entities: [],
   };

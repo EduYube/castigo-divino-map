@@ -273,9 +273,7 @@ test('keeps portrait footprint, keyboard interaction and textual association det
   const fullAction = details.getByRole('link', { name: /Abrir ficha completa/ });
   const fullHref = await fullAction.getAttribute('href');
   await page.goto(fullHref ?? '/');
-  await expect(
-    page.getByRole('heading', { level: 2, name: 'Relacionado con' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Relacionado con' })).toBeVisible();
   await expect(page.locator('.full-entity__associations')).toContainText('Skade');
 });
 

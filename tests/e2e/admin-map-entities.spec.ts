@@ -507,12 +507,12 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return entities.find((entity) => entity.id === id);
     },
     getSaveCount(): number {
-        return saveCount;
-      },
-      getLastAssociationIds(): readonly string[] {
-        return [...lastAssociationIds];
-      },
-      getStoredPortraits(): readonly string[] {
+      return saveCount;
+    },
+    getLastAssociationIds(): readonly string[] {
+      return [...lastAssociationIds];
+    },
+    getStoredPortraits(): readonly string[] {
       return [...storedPortraits];
     },
     failNextSave(): void {
