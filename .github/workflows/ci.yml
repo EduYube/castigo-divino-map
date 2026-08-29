@@ -10,56 +10,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  map058_checksum_fix:
-    name: MAP-058 one-shot checksum compatibility fix
-    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'agent/map-058-player-associations' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          ref: agent/map-058-player-associations
-
-      - name: Patch checksum compatibility
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('src/infrastructure/snapshot/multicampaignSnapshotCodec.ts')
-          text = path.read_text()
-          content_marker = '  const content = { schemaVersion: 3 as const, campaigns, campaignCatalogs, geographicNames };\n'
-          duplicate_marker = '  const calculatedChecksum = await createSha256Checksum(content);\n'
-          next_marker = '  const catalogsByCampaign = new Map(\n'
-
-          content_at = text.find(content_marker)
-          if content_at < 0:
-              raise SystemExit('Could not locate normalized v3 content marker')
-          duplicate_at = text.find(duplicate_marker, content_at + len(content_marker))
-          if duplicate_at < 0:
-              raise SystemExit('Could not locate duplicate normalized checksum marker')
-          next_at = text.find(next_marker, duplicate_at)
-          if next_at < 0:
-              raise SystemExit('Could not locate catalogsByCampaign marker')
-
-          text = text[:duplicate_at] + text[next_at:]
-          path.write_text(text)
-          PY
-
-      - name: Commit generated change
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/infrastructure/snapshot/multicampaignSnapshotCodec.ts
-          git commit -m "MAP-058 preserve historic snapshot checksum [map058-checksum]"
-          git push origin HEAD:agent/map-058-player-associations
-
   validate:
     name: Build, quality and tests
     runs-on: ubuntu-latest
