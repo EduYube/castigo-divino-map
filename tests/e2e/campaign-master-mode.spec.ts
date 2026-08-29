@@ -106,6 +106,7 @@ function masterCatalog(campaignId: string): Record<string, unknown> {
     entity_tags: [],
     players: [],
     dispositions: [],
+    associations: [],
     relations: [],
     relation_entities: [],
   };
@@ -169,7 +170,7 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
       return;
     }
 
-    if (isAdmin && resource === 'rpc/admin_get_master_catalog_v3') {
+    if (isAdmin && resource === 'rpc/admin_get_master_catalog_v4') {
       const body = JSON.parse(request.postData() ?? '{}') as { p_campaign_id?: unknown };
       const campaignId =
         typeof body.p_campaign_id === 'string' ? body.p_campaign_id : CAMPAIGN_A_ID;
