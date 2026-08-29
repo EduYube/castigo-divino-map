@@ -21,11 +21,11 @@ returns bigint
 language plpgsql
 as $$
 declare
-  row_count bigint;
+  affected bigint;
 begin
   execute statement;
-  get diagnostics row_count = row_count;
-  return row_count;
+  get diagnostics affected = row_count;
+  return affected;
 end;
 $$;
 
