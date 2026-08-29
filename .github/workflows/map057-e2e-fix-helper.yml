@@ -1,0 +1,74 @@
+name: MAP-057 E2E fix helper
+
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/map-057-editable-player-dispositions' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Patch full-details E2E navigation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('tests/e2e/admin-map-entities.spec.ts')
+          text = path.read_text()
+          old = '''  const popupPromise = page.waitForEvent('popup');
+          await panel
+            .getByRole('link', {
+              name: 'Abrir ficha completa de MAP-019 Character en una pestaña nueva',
+            })
+            .click();
+          const detailsPage = await popupPromise;
+          await expect(
+            detailsPage.getByRole('heading', { level: 2, name: 'Relación con los personajes' }),
+          ).toBeVisible();
+          await expect(detailsPage.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();
+          await expect(detailsPage.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
+          await expect(detailsPage.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
+          await detailsPage.close();
+          '''
+          new = '''  const fullAction = panel.getByRole('link', {
+            name: 'Abrir ficha completa de MAP-019 Character en una pestaña nueva',
+          });
+          const fullHref = await fullAction.getAttribute('href');
+          expect(fullHref).toMatch(/\\?entity=map019-character&campaign=castigo-divino$/);
+          await page.goto(fullHref ?? '/');
+          await expect(
+            page.getByRole('heading', { level: 2, name: 'Relación con los personajes' }),
+          ).toBeVisible();
+          await expect(page.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();
+          await expect(page.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
+          await expect(page.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
+          '''
+          if old not in text:
+              raise SystemExit('Expected MAP-057 popup block not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - run: npx prettier --write tests/e2e/admin-map-entities.spec.ts
+      - name: Commit patch
+        run: |
+          if git diff --quiet; then
+            echo "No patch required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/admin-map-entities.spec.ts
+          git commit -m "test: validate full relation view on mocked page"
+          git push origin HEAD:${{ github.head_ref }}
