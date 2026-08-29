@@ -106,6 +106,7 @@ function masterCatalog(campaignId: string): Record<string, unknown> {
     entity_tags: [],
     players: [],
     dispositions: [],
+    associations: [],
     relations: [],
     relation_entities: [],
   };
@@ -137,7 +138,7 @@ async function configureStaleBackend(page: Page): Promise<StaleBackend> {
       window.fetch = (input, init) => {
         const requestUrl =
           typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-        if (requestUrl.includes('/rest/v1/rpc/admin_get_master_catalog_v3') && init) {
+        if (requestUrl.includes('/rest/v1/rpc/admin_get_master_catalog_v4') && init) {
           const abortIgnoringInit = { ...init };
           delete abortIgnoringInit.signal;
           return nativeFetch(input, abortIgnoringInit);
@@ -182,7 +183,7 @@ async function configureStaleBackend(page: Page): Promise<StaleBackend> {
       return;
     }
 
-    if (isAdmin && resource === 'rpc/admin_get_master_catalog_v3') {
+    if (isAdmin && resource === 'rpc/admin_get_master_catalog_v4') {
       const body = JSON.parse(request.postData() ?? '{}') as { p_campaign_id?: unknown };
       const campaignId =
         typeof body.p_campaign_id === 'string' ? body.p_campaign_id : CAMPAIGN_A_ID;
