@@ -128,3 +128,34 @@ jobs:
       - name: Stop local Supabase stack
         if: always()
         run: npx supabase stop --no-backup
+
+  map058_e2e_fixture_align:
+    name: MAP-058 align legacy admin E2E fixture
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/map-058-player-associations'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout MAP-058 branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: agent/map-058-player-associations
+
+      - name: Align legacy E2E fixture
+        run: node scripts/map058-align-admin-map-e2e.mjs
+
+      - name: Format changed E2E
+        run: npx prettier --write --end-of-line auto tests/e2e/admin-map-entities.spec.ts
+
+      - name: Commit E2E fixture alignment when needed
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No E2E fixture changes remain."
+            exit 0
+          fi
+          git config user.name "Eduardo Yubero Lavandeira"
+          git config user.email "33625448+EduYube@users.noreply.github.com"
+          git add tests/e2e/admin-map-entities.spec.ts
+          git commit -m "MAP-058 align legacy admin entity E2E contract"
+          git push origin HEAD:agent/map-058-player-associations
