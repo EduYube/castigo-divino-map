@@ -1,0 +1,164 @@
+name: MAP-057 test patch helper
+
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/map-057-editable-player-dispositions'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-057-editable-player-dispositions
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Patch MAP-057 E2E coverage
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          admin = Path('tests/e2e/admin-map-entities.spec.ts')
+          text = admin.read_text()
+          text = text.replace(
+          """  const players = [
+              { id: 'player-demo-one', display_name: 'Demo Player One', publication_status: 'published' },
+              { id: 'player-demo-two', display_name: 'Demo Player Two', publication_status: 'published' },
+            ];""",
+          """  const players = [
+              { id: 'player-skade', display_name: 'Skade', publication_status: 'published' },
+              { id: 'player-ura', display_name: 'Ura', publication_status: 'published' },
+              { id: 'player-veyra', display_name: 'Veyra', publication_status: 'published' },
+            ];"""
+          )
+          text = text.replace(
+          """  const dispositions = new Map<string, Record<string, Disposition>>([
+              ['entity-aster-guide', { 'player-demo-one': 'ally', 'player-demo-two': 'neutral' }],
+            ]);""",
+          """  const dispositions = new Map<string, Record<string, Disposition>>([
+              [
+                'entity-aster-guide',
+                { 'player-skade': 'ally', 'player-ura': 'neutral', 'player-veyra': 'enemy' },
+              ],
+            ]);"""
+          )
+          text = text.replace(
+          """  await page.getByLabel('Demo Player One · published').selectOption('ally');""",
+          """  const skade = page.getByTestId('admin-player-disposition-player-skade');
+            const ura = page.getByTestId('admin-player-disposition-player-ura');
+            const veyra = page.getByTestId('admin-player-disposition-player-veyra');
+            await expect(skade).toHaveAttribute('aria-label', 'Skade: Neutral');
+            await expect(ura).toHaveAttribute('aria-label', 'Ura: Neutral');
+            await expect(veyra).toHaveAttribute('aria-label', 'Veyra: Neutral');
+            await skade.focus();
+            await page.keyboard.press('ArrowDown');
+            await expect(skade).toHaveValue('enemy');
+            await ura.selectOption('ally');
+            await expect(skade).toHaveAttribute('aria-label', 'Skade: Enemigo');
+            await expect(ura).toHaveAttribute('aria-label', 'Ura: Aliado');
+            await expect(veyra).toHaveAttribute('aria-label', 'Veyra: Neutral');"""
+          )
+          text = text.replace(
+          """  await expect(page.getByLabel('Nombre principal (inglés)')).toHaveValue('MAP-019 Character');
+          });
+
+          test('MAP-045 edits coordinates""",
+          """  await expect(page.getByLabel('Nombre principal (inglés)')).toHaveValue('MAP-019 Character');
+            await expect(page.getByTestId('admin-player-disposition-player-skade')).toHaveValue('enemy');
+            await expect(page.getByTestId('admin-player-disposition-player-ura')).toHaveValue('ally');
+            await expect(page.getByTestId('admin-player-disposition-player-veyra')).toHaveValue('neutral');
+
+            await page.getByRole('button', { name: 'Publicar' }).click();
+            await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
+            await page.getByRole('button', { name: 'Cerrar editor' }).click();
+
+            const publicMarker = page.locator(
+              '.campaign-marker-icon[data-entity-id="entity-map019-character"]',
+            );
+            await expect(publicMarker).toBeVisible();
+            await publicMarker.click();
+            const panel = page.getByTestId('place-details');
+            await expect(panel.getByRole('heading', { level: 4, name: 'Relación con los personajes' })).toBeVisible();
+            await expect(panel.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();
+            await expect(panel.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
+            await expect(panel.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
+
+            const popupPromise = page.waitForEvent('popup');
+            await panel
+              .getByRole('link', {
+                name: 'Abrir ficha completa de MAP-019 Character en una pestaña nueva',
+              })
+              .click();
+            const detailsPage = await popupPromise;
+            await expect(
+              detailsPage.getByRole('heading', { level: 2, name: 'Relación con los personajes' }),
+            ).toBeVisible();
+            await expect(detailsPage.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();
+            await expect(detailsPage.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
+            await expect(detailsPage.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
+            await detailsPage.close();
+          });
+
+          for (const width of [320, 390, 430]) {
+            test(`MAP-057 relation editor reflows at ${width} px with forced colors`, async ({ page }) => {
+              await page.setViewportSize({ width, height: 760 });
+              await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+              await configureBackend(page);
+              await page.goto('/');
+              await loginAndConnect(page);
+              await page.getByRole('button', { name: 'Editar Aster Guide' }).click();
+
+              const relations = page.getByRole('group', { name: 'Relación con los personajes' });
+              await expect(relations).toBeVisible();
+              await expect(page.getByTestId('admin-player-disposition-player-skade')).toBeVisible();
+              expect(
+                await page.evaluate(
+                  () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+                ),
+              ).toBe(false);
+              const selectBox = await page
+                .getByTestId('admin-player-disposition-player-skade')
+                .boundingBox();
+              expect(selectBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+            });
+          }
+
+          test('MAP-045 edits coordinates"""
+          )
+          admin.write_text(text)
+
+          full = Path('tests/e2e/full-entity-details.spec.ts')
+          text = full.read_text()
+          text = text.replace(
+          """  await expect(page.getByText('Neutral', { exact: true })).toBeVisible();
+            await expect(page.getByRole('heading', { level: 2, name: 'Notas públicas' })).toBeVisible();""",
+          """  await expect(page.getByText('Neutral', { exact: true })).toBeVisible();
+            await expect(
+              page.getByRole('heading', { level: 2, name: 'Relación con los personajes' }),
+            ).toBeVisible();
+            await expect(page.getByRole('listitem', { name: 'Alicia: Aliado' })).toBeVisible();
+            await expect(page.getByRole('listitem', { name: 'Borin: Neutral' })).toBeVisible();
+            await expect(page.getByRole('heading', { level: 2, name: 'Notas públicas' })).toBeVisible();"""
+          )
+          full.write_text(text)
+          PY
+      - name: Format patched tests
+        run: npx prettier --write tests/e2e/admin-map-entities.spec.ts tests/e2e/full-entity-details.spec.ts src/data/publicEntityPresentation.test.ts
+      - name: Commit patched tests
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/admin-map-entities.spec.ts tests/e2e/full-entity-details.spec.ts src/data/publicEntityPresentation.test.ts
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "test: cover MAP-057 player disposition flows"
+          git push origin HEAD:agent/map-057-editable-player-dispositions
