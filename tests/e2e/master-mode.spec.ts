@@ -13,6 +13,9 @@ const PUBLIC_PORTRAIT_AUTHORIZATION = 'Bearer sb_publishable_map044_public_key';
 const MASTER_ID = 'entity-master-e2e';
 const COINCIDENT_MASTER_ID = 'entity-master-coincident-e2e';
 const MASTER_NAME = 'MAP044 E2E SECRET';
+const MASTER_ASSOCIATION_PLAYER_ID = 'player-map044-e2e';
+const MASTER_ASSOCIATION_PLAYER_NAME = 'MAP044 E2E Player';
+const MASTER_ASSOCIATION_PLAYER_ACCENT = '#c2410c';
 const MASTER_PORTRAIT_PATH = 'portraits/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.png';
 const PORTRAIT_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
@@ -99,6 +102,16 @@ function projectRows(
   if (!query || !Array.isArray(fixtureRows)) return [];
 
   const entries = [...fixtureRows] as Record<string, unknown>[];
+  if (table === 'players') {
+    entries.push({
+      id: MASTER_ASSOCIATION_PLAYER_ID,
+      slug: 'map044-e2e-player',
+      display_name: MASTER_ASSOCIATION_PLAYER_NAME,
+      name_language: 'en',
+      accent_color: MASTER_ASSOCIATION_PLAYER_ACCENT,
+      publication_status: 'published',
+    });
+  }
   if (audience === 'public' && table === 'map_entities') {
     entries.push({ ...MASTER_ROW, audience: undefined });
   }
@@ -172,11 +185,19 @@ function masterCatalog(audience: 'public' | 'master', includeCoincidentMaster: b
     entity_tags: [],
     players:
       audience === 'master'
-        ? [{ id: 'player-skade', display_name: 'Skade', accent_color: '#c2410c' }]
+        ? [
+            {
+              id: MASTER_ASSOCIATION_PLAYER_ID,
+              display_name: MASTER_ASSOCIATION_PLAYER_NAME,
+              accent_color: MASTER_ASSOCIATION_PLAYER_ACCENT,
+            },
+          ]
         : [],
     dispositions: [],
     associations:
-      audience === 'master' ? [{ entity_id: MASTER_ID, player_id: 'player-skade' }] : [],
+      audience === 'master'
+        ? [{ entity_id: MASTER_ID, player_id: MASTER_ASSOCIATION_PLAYER_ID }]
+        : [],
     relations: [],
     relation_entities: [],
   };
@@ -382,10 +403,13 @@ test('visitor and admin OFF cannot see master data; ON loads it ephemerally and 
   await expect(privateMarker).toHaveAttribute('aria-label', /Contenido del Máster/);
   await expect(privateMarker).toHaveAttribute('data-portrait-marker', 'true');
   await expect(privateMarker).toHaveAttribute('data-association-count', '1');
-  await expect(privateMarker).toHaveAttribute('aria-description', /Relacionado con: Skade\./);
+  await expect(privateMarker).toHaveAttribute(
+    'aria-description',
+    new RegExp(`Relacionado con: ${MASTER_ASSOCIATION_PLAYER_NAME}\\.`),
+  );
   await expect(privateMarker.locator('.pin-player-association-ring')).toHaveCSS(
     '--pin-player-association-accent',
-    '#c2410c',
+    MASTER_ASSOCIATION_PLAYER_ACCENT,
   );
   await expect
     .poll(() =>
