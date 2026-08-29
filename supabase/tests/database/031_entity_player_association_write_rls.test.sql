@@ -49,13 +49,16 @@ select ok(
   'authenticated non-admin cannot INSERT an otherwise valid association'
 );
 
-select ok(
-  pg_temp.statement_fails($sql$
+select is(
+  (with deleted as (
     delete from public.entity_player_associations
     where entity_id = 'entity-aster-guide'
       and player_id = 'player-demo-one'
-  $sql$),
-  'authenticated non-admin cannot DELETE an existing public association'
+    returning 1
+  )
+  select count(*) from deleted),
+  0::bigint,
+  'authenticated non-admin DELETE is filtered to zero rows by RLS'
 );
 
 select is(
