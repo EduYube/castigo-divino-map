@@ -218,7 +218,7 @@ function describePin(marker: AtlasPinMarkerModel): string {
   const type = getPinTypeVisual(marker.entityType);
   const dispositions = describePlayerDispositions(marker.dispositions);
 
-  return `${marker.name}. ${type.label}. Disposición por jugador: ${dispositions}. Categoría: ${marker.categoryName}.`;
+  return `${marker.name}. ${type.label}. Relación con los personajes: ${dispositions}. Categoría: ${marker.categoryName}.`;
 }
 
 function describeLegacyMarkerName(marker: AtlasPinMarkerModel): string {
@@ -227,7 +227,7 @@ function describeLegacyMarkerName(marker: AtlasPinMarkerModel): string {
 
 function describePinSemantics(marker: AtlasPinMarkerModel): string {
   const type = getPinTypeVisual(marker.entityType);
-  return `${type.label}. Disposición por jugador: ${describePlayerDispositions(marker.dispositions)}.`;
+  return `${type.label}. Relación con los personajes: ${describePlayerDispositions(marker.dispositions)}.`;
 }
 
 function createCoincidentPopup(
