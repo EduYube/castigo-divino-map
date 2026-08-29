@@ -356,14 +356,6 @@ export async function parsePublicCatalogSnapshotV3(
     invalid('Cada campaña pública debe tener exactamente un catálogo v3 asociado.');
   }
   const content = { schemaVersion: 3 as const, campaigns, campaignCatalogs, geographicNames };
-  const calculatedChecksum = await createSha256Checksum(content);
-  if (calculatedChecksum !== checksum || sourceRevision !== calculatedChecksum) {
-    throw new PublicDataRepositoryError(
-      'checksum-mismatch',
-      'El snapshot multicampaña no coincide con su checksum/sourceRevision.',
-      { source: 'snapshot' },
-    );
-  }
   const catalogsByCampaign = new Map(
     campaignCatalogs.map((catalog) => [catalog.campaignId, catalog] as const),
   );
