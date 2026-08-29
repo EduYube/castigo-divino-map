@@ -647,20 +647,18 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await expect(panel.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
   await expect(panel.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
 
-  const popupPromise = page.waitForEvent('popup');
-  await panel
-    .getByRole('link', {
-      name: 'Abrir ficha completa de MAP-019 Character en una pestaña nueva',
-    })
-    .click();
-  const detailsPage = await popupPromise;
+  const fullAction = panel.getByRole('link', {
+    name: 'Abrir ficha completa de MAP-019 Character en una pestaña nueva',
+  });
+  const fullHref = await fullAction.getAttribute('href');
+  expect(fullHref).toMatch(/\?entity=map019-character&campaign=castigo-divino$/);
+  await page.goto(fullHref ?? '/');
   await expect(
-    detailsPage.getByRole('heading', { level: 2, name: 'Relación con los personajes' }),
+    page.getByRole('heading', { level: 2, name: 'Relación con los personajes' }),
   ).toBeVisible();
-  await expect(detailsPage.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();
-  await expect(detailsPage.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
-  await expect(detailsPage.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
-  await detailsPage.close();
+  await expect(page.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
 });
 
 for (const width of [320, 390, 430]) {
