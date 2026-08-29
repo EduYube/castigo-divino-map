@@ -181,7 +181,10 @@ describe('validateAdminMapEntityDraft', () => {
     const result = validateAdminMapEntityDraft(
       draft({
         dispositions: [
-          { playerId: 'player-one', disposition: '' as AdminMapEntityDraft['dispositions'][number]['disposition'] },
+          {
+            playerId: 'player-one',
+            disposition: '' as AdminMapEntityDraft['dispositions'][number]['disposition'],
+          },
           { playerId: 'player-two', disposition: 'enemy' },
         ],
       }),
