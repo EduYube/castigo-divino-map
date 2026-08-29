@@ -28,7 +28,12 @@ describe('historical Beta 0.2 cache compatibility', () => {
       schemaVersion: 2 as const,
       categories: projected.categories,
       tags: projected.tags,
-      players: projected.players.map(({ accentColor: _accentColor, ...player }) => player),
+      players: projected.players.map(({ id, slug, displayName, nameLanguage }) => ({
+        id,
+        slug,
+        displayName,
+        nameLanguage,
+      })),
       entities: projected.entities,
       dispositions: projected.dispositions,
       characterLocationRelations: projected.characterLocationRelations,
