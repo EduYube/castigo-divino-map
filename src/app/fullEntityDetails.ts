@@ -105,12 +105,16 @@ function appendTags(parent: HTMLElement, details: FullEntityDetailModel): void {
 }
 
 function appendDispositions(parent: HTMLElement, details: FullEntityDetailModel): void {
-  const section = appendSection(parent, 'Disposición por jugador');
+  const dispositions = createPlayerDispositionVisuals(details.dispositions);
+  if (dispositions.length === 0) return;
+
+  const section = appendSection(parent, 'Relación con los personajes');
   const list = document.createElement('ul');
   list.className = 'full-entity__dispositions';
 
-  createPlayerDispositionVisuals(details.dispositions).forEach((disposition) => {
+  dispositions.forEach((disposition) => {
     const item = document.createElement('li');
+    item.setAttribute('aria-label', `${disposition.playerName}: ${disposition.label}`);
     const symbol = appendTextElement(
       item,
       'span',
