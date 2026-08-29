@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   canPhysicallyDeleteMapEntity,
+  createEmptyMapEntityDraft,
+  detailToDraft,
   type AdminMapEntityDetail,
   type AdminMapEntityDraft,
   type AdminMapEntityReferences,
@@ -88,6 +90,41 @@ describe('MAP-019 coordinate contract', () => {
   });
 });
 
+describe('MAP-057 player relation contract', () => {
+  it('initializes every new entity-player combination as neutral', () => {
+    expect(createEmptyMapEntityDraft(references).dispositions).toEqual([
+      { playerId: 'player-one', disposition: 'neutral' },
+      { playerId: 'player-two', disposition: 'neutral' },
+    ]);
+  });
+
+  it('preserves historical disposition values when reopening an entity', () => {
+    const historical = detail();
+    const reopened = detailToDraft({
+      ...historical,
+      dispositions: [
+        {
+          playerId: 'player-one',
+          displayName: 'One',
+          disposition: 'enemy',
+          updatedAt: '2026-08-07T12:00:00.000Z',
+        },
+        {
+          playerId: 'player-two',
+          displayName: 'Two',
+          disposition: 'ally',
+          updatedAt: '2026-08-07T12:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(reopened.dispositions).toEqual([
+      { playerId: 'player-one', disposition: 'enemy' },
+      { playerId: 'player-two', disposition: 'ally' },
+    ]);
+  });
+});
+
 describe('validateAdminMapEntityDraft', () => {
   it('allows a valid draft with draft relations without making them public', () => {
     const result = validateAdminMapEntityDraft(
@@ -138,6 +175,21 @@ describe('validateAdminMapEntityDraft', () => {
     );
     expect(result.fieldErrors.coordinates).toMatch(/0–3600/);
     expect(result.fieldErrors.dispositions).toMatch(/Recarga/);
+  });
+
+  it('rejects incomplete or manipulated disposition values instead of inventing neutral', () => {
+    const result = validateAdminMapEntityDraft(
+      draft({
+        dispositions: [
+          { playerId: 'player-one', disposition: '' as AdminMapEntityDraft['dispositions'][number]['disposition'] },
+          { playerId: 'player-two', disposition: 'enemy' },
+        ],
+      }),
+      references,
+    );
+
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors.dispositions).toMatch(/Aliado, Neutral o Enemigo/);
   });
 
   it('protects entity type, historical slug and archived-to-published transition', () => {
