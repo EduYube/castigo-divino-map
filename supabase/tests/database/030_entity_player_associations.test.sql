@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(20);
+select plan(21);
 
 select has_table('public', 'entity_player_associations', 'MAP-058 association table exists');
 select has_column('public', 'entity_player_associations', 'campaign_id', 'associations carry campaign identity');
