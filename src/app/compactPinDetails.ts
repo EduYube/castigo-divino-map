@@ -121,12 +121,15 @@ function appendCategory(parent: HTMLElement, details: CompactPinDetailModel): vo
 }
 
 function appendDispositions(parent: HTMLElement, details: CompactPinDetailModel): void {
+  const dispositions = createPlayerDispositionVisuals(details.dispositions);
+  if (dispositions.length === 0) return;
+
   const section = document.createElement('section');
   const heading = appendTextElement(
     section,
     'h4',
     'compact-details__section-title',
-    'Disposición por jugador',
+    'Relación con los personajes',
   );
   const list = document.createElement('ul');
 
@@ -134,13 +137,14 @@ function appendDispositions(parent: HTMLElement, details: CompactPinDetailModel)
   section.setAttribute('aria-labelledby', heading.id);
   list.className = 'compact-details__dispositions';
 
-  for (const disposition of createPlayerDispositionVisuals(details.dispositions)) {
+  for (const disposition of dispositions) {
     const item = document.createElement('li');
     const symbol = document.createElement('span');
     const player = document.createElement('span');
     const state = document.createElement('span');
 
     item.className = 'compact-details__disposition';
+    item.setAttribute('aria-label', `${disposition.playerName}: ${disposition.label}`);
     symbol.className = `pin-disposition ${disposition.className}`;
     symbol.setAttribute('aria-hidden', 'true');
     symbol.textContent = disposition.symbol;
