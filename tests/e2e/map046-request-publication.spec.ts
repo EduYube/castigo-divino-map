@@ -344,7 +344,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v4')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v5')) {
       const body = requestInfo.postDataJSON() as { p_entity_id?: string };
       const entity = entities.find(({ id }) => id === body.p_entity_id);
       await route.fulfill({
@@ -355,7 +355,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v4')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v5')) {
       const body = requestInfo.postDataJSON() as Record<string, unknown>;
       const entity = entities.find(({ id }) => id === body.p_id);
       if (!entity) {

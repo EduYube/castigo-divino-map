@@ -172,6 +172,7 @@ function masterCatalog(audience: 'public' | 'master', includeCoincidentMaster: b
     entity_tags: [],
     players: [],
     dispositions: [],
+    associations: [],
     relations: [],
     relation_entities: [],
   };
@@ -256,7 +257,7 @@ async function configureMap044Backend(
       await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
       return;
     }
-    if (adminRequest && resource === 'rpc/admin_get_master_catalog_v3') {
+    if (adminRequest && resource === 'rpc/admin_get_master_catalog_v4') {
       if (masterCatalogStatus !== 200) {
         await route.fulfill({
           status: masterCatalogStatus,
@@ -272,7 +273,7 @@ async function configureMap044Backend(
       });
       return;
     }
-    if (adminRequest && resource === 'rpc/admin_get_map_entity_editor_v4') {
+    if (adminRequest && resource === 'rpc/admin_get_map_entity_editor_v5') {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -280,7 +281,7 @@ async function configureMap044Backend(
       });
       return;
     }
-    if (adminRequest && resource === 'rpc/admin_save_map_entity_v4') {
+    if (adminRequest && resource === 'rpc/admin_save_map_entity_v5') {
       saveCount += 1;
       const body = JSON.parse(request.postData() ?? '{}') as { p_audience?: unknown };
       audience = body.p_audience === 'master' ? 'master' : 'public';

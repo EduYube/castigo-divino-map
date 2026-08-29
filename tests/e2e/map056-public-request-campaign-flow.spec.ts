@@ -429,7 +429,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v4')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v5')) {
       const body = requestInfo.postDataJSON() as Record<string, unknown>;
       const entity = entities.find(
         (candidate) =>
@@ -443,7 +443,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v4')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v5')) {
       const body = requestInfo.postDataJSON() as Record<string, unknown>;
       const entity = entities.find(
         (candidate) => candidate.id === body.p_id && candidate.campaign_id === body.p_campaign_id,
