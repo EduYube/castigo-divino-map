@@ -1,0 +1,228 @@
+name: MAP-058 temporary coverage hardening
+
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  harden:
+    name: Harden MAP-058 acceptance and security coverage
+    if: github.head_ref == 'agent/map-058-player-associations'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout MAP-058 branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: agent/map-058-player-associations
+
+      - name: Add missing regression coverage
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # Full-details regression for the public MAP-058 fixture.
+          path = Path('tests/e2e/map058-player-associations.spec.ts')
+          source = path.read_text()
+          old = """  await expect(details).toContainText('Relacionado con');
+            await expect(details).toContainText('Skade');
+            await expect(details).toContainText('Relación con los personajes');
+          });
+          """
+          new = """  await expect(details).toContainText('Relacionado con');
+            await expect(details).toContainText('Skade');
+            await expect(details).toContainText('Relación con los personajes');
+
+            const fullAction = details.getByRole('link', { name: /Abrir ficha completa/ });
+            const fullHref = await fullAction.getAttribute('href');
+            await page.goto(fullHref ?? '/');
+            await expect(page.getByRole('heading', { level: 2, name: 'Relacionado con' })).toBeVisible();
+            await expect(page.locator('.full-entity__associations')).toContainText('Skade');
+          });
+          """
+          if old not in source:
+            raise SystemExit('MAP-058 compact-details anchor not found')
+          path.write_text(source.replace(old, new, 1))
+
+          # Make the existing Master Mode fixture explicitly carry one private association.
+          path = Path('tests/e2e/master-mode.spec.ts')
+          source = path.read_text()
+          old = """    players: [],
+              dispositions: [],
+              associations: [],
+          """
+          new = """    players:
+                audience === 'master'
+                  ? [{ id: 'player-skade', display_name: 'Skade', accent_color: '#c2410c' }]
+                  : [],
+              dispositions: [],
+              associations:
+                audience === 'master'
+                  ? [{ entity_id: MASTER_ID, player_id: 'player-skade' }]
+                  : [],
+          """
+          if old not in source:
+            raise SystemExit('Master catalog association fixture anchor not found')
+          source = source.replace(old, new, 1)
+          old = """  await expect(privateMarker).toHaveAttribute('aria-label', /Contenido del Máster/);
+            await expect(privateMarker).toHaveAttribute('data-portrait-marker', 'true');
+          """
+          new = """  await expect(privateMarker).toHaveAttribute('aria-label', /Contenido del Máster/);
+            await expect(privateMarker).toHaveAttribute('data-portrait-marker', 'true');
+            await expect(privateMarker).toHaveAttribute('data-association-count', '1');
+            await expect(privateMarker).toHaveAttribute('aria-description', /Relacionado con: Skade\\./);
+            await expect(privateMarker.locator('.pin-player-association-ring')).toHaveCSS(
+              '--pin-player-association-accent',
+              '#c2410c',
+            );
+          """
+          if old not in source:
+            raise SystemExit('Master marker assertion anchor not found')
+          path.write_text(source.replace(old, new, 1))
+
+          # Exercise the real admin multiselect -> save payload bridge.
+          path = Path('tests/e2e/admin-map-entities.spec.ts')
+          source = path.read_text()
+          source = source.replace(
+              """  getSaveCount(): number;
+            getStoredPortraits(): readonly string[];
+          """,
+              """  getSaveCount(): number;
+            getLastAssociationIds(): readonly string[];
+            getStoredPortraits(): readonly string[];
+          """,
+              1,
+          )
+          source = source.replace(
+              """  let counter = 10;
+            let saveCount = 0;
+            const storedPortraits = new Set<string>();
+          """,
+              """  let counter = 10;
+            let saveCount = 0;
+            let lastAssociationIds: string[] = [];
+            const storedPortraits = new Set<string>();
+          """,
+              1,
+          )
+          old = """      dispositions.set(id, nextDispositions);
+                saveCount += 1;
+          """
+          new = """      dispositions.set(id, nextDispositions);
+                lastAssociationIds = Array.isArray(body.p_player_association_ids)
+                  ? body.p_player_association_ids.map(String)
+                  : [];
+                saveCount += 1;
+          """
+          if old not in source:
+            raise SystemExit('Admin save payload anchor not found')
+          source = source.replace(old, new, 1)
+          old = """    getSaveCount(): number {
+                  return saveCount;
+                },
+                getStoredPortraits(): readonly string[] {
+          """
+          new = """    getSaveCount(): number {
+                  return saveCount;
+                },
+                getLastAssociationIds(): readonly string[] {
+                  return [...lastAssociationIds];
+                },
+                getStoredPortraits(): readonly string[] {
+          """
+          if old not in source:
+            raise SystemExit('BackendControl return anchor not found')
+          source = source.replace(old, new, 1)
+          old = """  await expect(veyra).toHaveAttribute('aria-label', 'Veyra: Neutral');
+            await skade.focus();
+          """
+          new = """  await expect(veyra).toHaveAttribute('aria-label', 'Veyra: Neutral');
+
+            const skadeAssociation = page.getByTestId('admin-player-association-player-skade');
+            const uraAssociation = page.getByTestId('admin-player-association-player-ura');
+            await expect(skadeAssociation).toBeVisible();
+            await expect(uraAssociation).toBeVisible();
+            await expect(page.getByRole('group', { name: 'Relacionado con' })).toBeVisible();
+            const skadeAccent = await skadeAssociation.evaluate((checkbox) =>
+              checkbox.parentElement
+                ?.querySelector<HTMLElement>('.admin-map-entity__association-accent')
+                ?.style.getPropertyValue('--player-association-accent'),
+            );
+            expect(skadeAccent).toBe('#c2410c');
+            await skadeAssociation.check();
+            await uraAssociation.check();
+
+            await skade.focus();
+          """
+          if old not in source:
+            raise SystemExit('Admin relation UI anchor not found')
+          source = source.replace(old, new, 1)
+          old = """  await expect(page.getByText('Borrador guardado correctamente.')).toBeVisible();
+            expect(backend.getEntity('entity-map019-character')?.publication_status).toBe('draft');
+          """
+          new = """  await expect(page.getByText('Borrador guardado correctamente.')).toBeVisible();
+            expect(backend.getEntity('entity-map019-character')?.publication_status).toBe('draft');
+            expect(backend.getLastAssociationIds()).toEqual(['player-skade', 'player-ura']);
+          """
+          if old not in source:
+            raise SystemExit('Admin save assertion anchor not found')
+          path.write_text(source.replace(old, new, 1))
+
+          # Extend pgTAP to prove authenticated non-admin cannot traverse the new private surface.
+          path = Path('supabase/tests/database/030_entity_player_associations.test.sql')
+          source = path.read_text()
+          if 'select plan(21);' not in source:
+            raise SystemExit('MAP-058 pgTAP plan anchor not found')
+          source = source.replace('select plan(21);', 'select plan(23);', 1)
+          old = """select ok(
+            pg_temp.statement_fails($sql$
+              select public.admin_get_map_entity_editor_v5(
+                '00000000-0000-4000-8000-000000000580', 'entity-map058-public-a'
+              )
+            $sql$),
+            'authenticated non-admin cannot inspect the association editor payload'
+          );
+          """
+          new = """select is(
+            (select count(*) from public.entity_player_associations where entity_id = 'entity-map058-master-a'),
+            0::bigint,
+            'authenticated non-admin cannot infer Master associations through direct table reads'
+          );
+          select ok(
+            pg_temp.statement_fails($sql$
+              select public.admin_get_map_entity_editor_v5(
+                '00000000-0000-4000-8000-000000000580', 'entity-map058-public-a'
+              )
+            $sql$),
+            'authenticated non-admin cannot inspect the association editor payload'
+          );
+          select ok(
+            pg_temp.statement_fails($sql$
+              select public.admin_get_master_catalog_v4('00000000-0000-4000-8000-000000000580')
+            $sql$),
+            'authenticated non-admin cannot inspect the private Master association catalog'
+          );
+          """
+          if old not in source:
+            raise SystemExit('MAP-058 non-admin security anchor not found')
+          path.write_text(source.replace(old, new, 1))
+          PY
+
+      - name: Commit regression coverage
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No coverage changes remain."
+            exit 0
+          fi
+          git config user.name "Eduardo Yubero Lavandeira"
+          git config user.email "33625448+EduYube@users.noreply.github.com"
+          git add tests/e2e/map058-player-associations.spec.ts tests/e2e/master-mode.spec.ts tests/e2e/admin-map-entities.spec.ts supabase/tests/database/030_entity_player_associations.test.sql
+          git commit -m "MAP-058 harden acceptance and security coverage"
+          git push origin HEAD:agent/map-058-player-associations
