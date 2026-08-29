@@ -214,7 +214,10 @@ test('renders zero, single and multiple player associations without changing pin
     [veyra, '#9d174d', 'Veyra'],
   ] as const) {
     await expect(pin).toHaveAttribute('data-association-count', '1');
-    await expect(pin).toHaveAttribute('aria-description', new RegExp(`Relacionado con: ${playerName}`));
+    await expect(pin).toHaveAttribute(
+      'aria-description',
+      new RegExp(`Relacionado con: ${playerName}`),
+    );
     await expect(pin.locator('.pin-player-association-ring')).toHaveCSS(
       '--pin-player-association-accent',
       color,
