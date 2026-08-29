@@ -16,6 +16,19 @@ exception
 end;
 $$;
 
+create function pg_temp.affected_rows(statement text)
+returns bigint
+language plpgsql
+as $$
+declare
+  row_count bigint;
+begin
+  execute statement;
+  get diagnostics row_count = row_count;
+  return row_count;
+end;
+$$;
+
 select plan(3);
 
 -- Seed one valid association as the real admin so DELETE can be probed directly.
@@ -50,13 +63,11 @@ select ok(
 );
 
 select is(
-  (with deleted as (
+  pg_temp.affected_rows($sql$
     delete from public.entity_player_associations
     where entity_id = 'entity-aster-guide'
       and player_id = 'player-demo-one'
-    returning 1
-  )
-  select count(*) from deleted),
+  $sql$),
   0::bigint,
   'authenticated non-admin DELETE is filtered to zero rows by RLS'
 );
