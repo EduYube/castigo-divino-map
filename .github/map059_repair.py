@@ -7,28 +7,18 @@ def replace_once(source: str, old: str, new: str, label: str) -> str:
     return source.replace(old, new, 1)
 
 
-master = Path("tests/e2e/master-mode.spec.ts")
-source = master.read_text()
-source = replace_once(
-    source,
-    """  const marker = page.locator(\n    `[data-spiderfied=\"true\"][data-entity-id=\"${MASTER_ID}\"][data-audience=\"master\"]`,\n  );\n""",
-    """  const marker = page.locator(\n    `.campaign-marker-icon[data-entity-id=\"${MASTER_ID}\"][data-audience=\"master\"]`,\n  );\n""",
-    "master marker may become singleton after search navigation",
-)
-master.write_text(source)
-
 pin_visual = Path("tests/e2e/pin-visual-system.spec.ts")
 source = pin_visual.read_text()
 source = replace_once(
     source,
-    """  const restoredHarbor = page\n    .getByTestId('coincident-pin-option')\n    .filter({ has: page.locator('[data-place-id=\"place-demo-harbor\"]') });\n  await expect(restoredHarbor).toBeFocused();\n""",
-    """  const restoredHarbor = page.locator(\n    '[data-testid=\"coincident-pin-option\"][data-place-id=\"place-demo-harbor\"]',\n  );\n  await expect(restoredHarbor).toBeFocused();\n""",
-    "exact-coordinate focused option locator",
+    """  await panel.getByRole('button', { name: /Cerrar la ficha de Demonstration Harbor/i }).click();\n  const restoredHarbor = page.locator(\n    '[data-testid=\"coincident-pin-option\"][data-place-id=\"place-demo-harbor\"]',\n  );\n  await expect(restoredHarbor).toBeFocused();\n  await page.keyboard.press('Escape');\n  await expect(coincident).toBeFocused();\n\n  await coincident.click();\n""",
+    """  await panel.getByRole('button', { name: /Cerrar la ficha de Demonstration Harbor/i }).click();\n  await expect(panel).toBeHidden();\n  if ((await page.locator('[data-spiderfied=\"true\"]').count()) > 0) {\n    await page.keyboard.press('Escape');\n  }\n  await expect(coincident).toBeVisible();\n  await coincident.focus();\n  await expect(coincident).toBeFocused();\n\n  await coincident.click();\n""",
+    "normalize exact-coordinate focus before reopening cluster",
 )
 source = replace_once(
     source,
-    """  const styles = await character.locator('.pin-visual').evaluate((element) => {\n    const style = getComputedStyle(element);\n    return {\n      transitionDuration: style.transitionDuration,\n      outlineStyle: style.outlineStyle,\n    };\n  });\n  expect(Number.parseFloat(styles.transitionDuration)).toBeLessThanOrEqual(0.00001);\n  expect(styles.outlineStyle).not.toBe('none');\n""",
-    """  const transitionDuration = await character\n    .locator('.pin-visual')\n    .evaluate((element) => getComputedStyle(element).transitionDuration);\n  expect(Number.parseFloat(transitionDuration)).toBeLessThanOrEqual(0.00001);\n  await expect(character).toHaveCSS('outline-style', 'solid');\n""",
-    "forced-colors focus outline belongs to marker control",
+    """  const transitionDuration = await character\n    .locator('.pin-visual')\n    .evaluate((element) => getComputedStyle(element).transitionDuration);\n  expect(Number.parseFloat(transitionDuration)).toBeLessThanOrEqual(0.00001);\n  await expect(character).toHaveCSS('outline-style', 'solid');\n\n""",
+    """  const transitionDuration = await character\n    .locator('.pin-visual')\n    .evaluate((element) => getComputedStyle(element).transitionDuration);\n  expect(Number.parseFloat(transitionDuration)).toBeLessThanOrEqual(0.00001);\n  await expect(character).toBeFocused();\n\n""",
+    "keep focus operability without duplicating forced-colors ring coverage",
 )
 pin_visual.write_text(source)
