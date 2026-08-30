@@ -2,6 +2,7 @@ import type {
   PublicCategory,
   PublicCharacterLocationEvent,
   PublicCharacterLocationRelation,
+  PublicEntityPlayerAssociation,
   PublicEntityPlayerDisposition,
   PublicGeographicName,
   PublicMapEntity,
@@ -37,6 +38,7 @@ export interface PublicCampaignCatalogV3 {
   readonly players: readonly PublicPlayer[];
   readonly entities: readonly PublicMapEntity[];
   readonly dispositions: readonly PublicEntityPlayerDisposition[];
+  readonly associations: readonly PublicEntityPlayerAssociation[];
   readonly characterLocationRelations: readonly PublicCharacterLocationRelation[];
   readonly notes: readonly PublicNote[];
   readonly characterLocationEvents: readonly PublicCharacterLocationEvent[];

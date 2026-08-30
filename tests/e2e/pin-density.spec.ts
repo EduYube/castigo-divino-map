@@ -52,6 +52,7 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
       slug: 'player-density',
       display_name: 'Alicia',
       name_language: 'en',
+      accent_color: '#047857',
     },
   ],
   map_entities: DENSE_ENTITIES,

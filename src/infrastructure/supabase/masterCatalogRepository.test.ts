@@ -31,7 +31,8 @@ const VALID_PAYLOAD = {
   aliases: [{ id: 'alias-master-test', entity_id: 'entity-master-test', value: 'Private alias' }],
   tags: [{ id: 'tag-master-test', name: 'Private tag' }],
   entity_tags: [{ entity_id: 'entity-master-test', tag_id: 'tag-master-test' }],
-  players: [{ id: 'player-master-test', display_name: 'Private player' }],
+  players: [{ id: 'player-master-test', display_name: 'Private player', accent_color: '#475569' }],
+  associations: [],
   dispositions: [
     {
       entity_id: 'entity-master-test',
@@ -118,7 +119,7 @@ function repositoryWith(
 }
 
 describe('SupabaseMasterCatalogRepository', () => {
-  test('uses only the campaign-scoped v3 RPC with the admin bearer session', async () => {
+  test('uses only the campaign-scoped v4 RPC with the admin bearer session', async () => {
     const capturedRequests: Request[] = [];
     const repository = repositoryWith(async (input, init) => {
       capturedRequests.push(new Request(input, init));
@@ -139,7 +140,7 @@ describe('SupabaseMasterCatalogRepository', () => {
     if (!request) return;
 
     expect(request.method).toBe('POST');
-    expect(new URL(request.url).pathname).toBe('/rest/v1/rpc/admin_get_master_catalog_v3');
+    expect(new URL(request.url).pathname).toBe('/rest/v1/rpc/admin_get_master_catalog_v4');
     expect(request.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
     expect(request.headers.get('authorization')).toBe(`Bearer ${ACCESS_TOKEN}`);
     expect(request.headers.get('content-type')).toBe('application/json');
@@ -211,7 +212,7 @@ describe('SupabaseMasterCatalogRepository', () => {
       }),
     ).rejects.toMatchObject({ code, status });
 
-    expect(requestedPaths).toEqual(['/rest/v1/rpc/admin_get_master_catalog_v3']);
+    expect(requestedPaths).toEqual(['/rest/v1/rpc/admin_get_master_catalog_v4']);
   });
 
   test('fails closed on malformed successful payloads', async () => {

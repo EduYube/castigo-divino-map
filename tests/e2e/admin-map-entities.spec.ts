@@ -43,6 +43,7 @@ interface EntityRow extends Record<string, unknown> {
 interface BackendControl {
   getEntity(id: string): EntityRow | undefined;
   getSaveCount(): number;
+  getLastAssociationIds(): readonly string[];
   getStoredPortraits(): readonly string[];
   failNextSave(): void;
   expireNextSave(): void;
@@ -67,6 +68,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
   let mode: 'normal' | 'network' | 'expired' | 'stale' | 'invalid-relation' = 'normal';
   let counter = 10;
   let saveCount = 0;
+  let lastAssociationIds: string[] = [];
   const storedPortraits = new Set<string>();
 
   const categories = [
@@ -79,9 +81,24 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     { id: 'draft-tag', name: 'Draft tag', publication_status: 'draft' },
   ];
   const players = [
-    { id: 'player-skade', display_name: 'Skade', publication_status: 'published' },
-    { id: 'player-ura', display_name: 'Ura', publication_status: 'published' },
-    { id: 'player-veyra', display_name: 'Veyra', publication_status: 'published' },
+    {
+      id: 'player-skade',
+      display_name: 'Skade',
+      publication_status: 'published',
+      accent_color: '#c2410c',
+    },
+    {
+      id: 'player-ura',
+      display_name: 'Ura',
+      publication_status: 'published',
+      accent_color: '#1e3a8a',
+    },
+    {
+      id: 'player-veyra',
+      display_name: 'Veyra',
+      publication_status: 'published',
+      accent_color: '#9d174d',
+    },
   ];
   const entities: EntityRow[] = [
     {
@@ -135,6 +152,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         disposition: currentDispositions[player.id] ?? 'neutral',
         updated_at: entity.updated_at,
       })),
+      associations: [],
       relations_revision: relationRevision(id),
       delete_blockers: {
         aliases: 0,
@@ -143,6 +161,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         notes: 0,
         location_events: 0,
         requests: 0,
+        player_associations: 0,
       },
     };
   };
@@ -277,11 +296,12 @@ async function configureBackend(page: Page): Promise<BackendControl> {
               : table === 'players'
                 ? players
                     .filter(({ publication_status }) => publication_status === 'published')
-                    .map(({ id, display_name }) => ({
+                    .map(({ id, display_name, accent_color }) => ({
                       id,
                       slug: id,
                       display_name,
                       name_language: 'en',
+                      accent_color,
                     }))
                 : table === 'map_entities'
                   ? publishedEntities.map((entity) => ({
@@ -334,7 +354,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v4')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v5')) {
       const body = request.postDataJSON() as { p_entity_id?: string };
       await route.fulfill({
         status: 200,
@@ -344,7 +364,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v4')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v5')) {
       if (mode === 'network') {
         mode = 'normal';
         await route.abort('failed');
@@ -429,6 +449,9 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         }
       }
       dispositions.set(id, nextDispositions);
+      lastAssociationIds = Array.isArray(body.p_player_association_ids)
+        ? body.p_player_association_ids.map(String)
+        : [];
       saveCount += 1;
       await route.fulfill({
         status: 200,
@@ -485,6 +508,9 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     },
     getSaveCount(): number {
       return saveCount;
+    },
+    getLastAssociationIds(): readonly string[] {
+      return [...lastAssociationIds];
     },
     getStoredPortraits(): readonly string[] {
       return [...storedPortraits];
@@ -557,6 +583,21 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await expect(skade).toHaveAttribute('aria-label', 'Skade: Neutral');
   await expect(ura).toHaveAttribute('aria-label', 'Ura: Neutral');
   await expect(veyra).toHaveAttribute('aria-label', 'Veyra: Neutral');
+
+  const skadeAssociation = page.getByTestId('admin-player-association-player-skade');
+  const uraAssociation = page.getByTestId('admin-player-association-player-ura');
+  await expect(skadeAssociation).toBeVisible();
+  await expect(uraAssociation).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Relacionado con' })).toBeVisible();
+  const skadeAccent = await skadeAssociation.evaluate((checkbox) =>
+    checkbox.parentElement
+      ?.querySelector<HTMLElement>('.admin-map-entity__association-accent')
+      ?.style.getPropertyValue('--player-association-accent'),
+  );
+  expect(skadeAccent).toBe('#c2410c');
+  await skadeAssociation.check();
+  await uraAssociation.check();
+
   await skade.focus();
   await page.keyboard.press('ArrowDown');
   await expect(skade).toHaveValue('enemy');
@@ -611,6 +652,7 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await page.getByRole('button', { name: 'Guardar borrador' }).click();
   await expect(page.getByText('Borrador guardado correctamente.')).toBeVisible();
   expect(backend.getEntity('entity-map019-character')?.publication_status).toBe('draft');
+  expect(backend.getLastAssociationIds()).toEqual(['player-skade', 'player-ura']);
 
   await page.reload();
   const adminEntry = page.getByRole('button', { name: 'Administración' });

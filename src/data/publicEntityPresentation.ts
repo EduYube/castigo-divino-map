@@ -31,6 +31,12 @@ export interface PublicEntityPresentationRelation {
   readonly relationLabel: string;
 }
 
+export interface PublicEntityPresentationAssociatedPlayer {
+  readonly id: string;
+  readonly name: string;
+  readonly accentColor: string;
+}
+
 export interface PublicEntityPresentationNote {
   readonly id: PublicNote['id'];
   readonly slug: PublicNote['slug'];
@@ -44,6 +50,7 @@ export interface PublicEntityPresentation {
   readonly category: PublicEntityPresentationCategory;
   readonly tags: readonly PublicEntityPresentationTag[];
   readonly dispositions: readonly PinPlayerDispositionInput[];
+  readonly associatedPlayers: readonly PublicEntityPresentationAssociatedPlayer[];
   readonly notes: readonly PublicEntityPresentationNote[];
   readonly importantCharacters: readonly PublicEntityPresentationRelation[];
   readonly relatedLocations: readonly PublicEntityPresentationRelation[];
@@ -64,6 +71,7 @@ export function buildPublicEntityPresentation(
   }
 
   const tagsById = new Map(catalog.tags.map((tag) => [tag.id, tag] as const));
+  const playersById = new Map(catalog.players.map((player) => [player.id, player] as const));
   const tags = entity.tagIds
     .map((tagId) => tagsById.get(tagId))
     .filter((tag): tag is PublicTag => Boolean(tag))
@@ -75,6 +83,21 @@ export function buildPublicEntityPresentation(
       (candidate) => candidate.entityId === entity.id && candidate.playerId === player.id,
     )?.disposition,
   }));
+  const associatedPlayers = (catalog.associations ?? [])
+    .filter(({ entityId }) => entityId === entity.id)
+    .map(({ playerId }) => playersById.get(playerId))
+    .filter((player): player is NonNullable<typeof player> => Boolean(player))
+    .map((player) => {
+      const accentColor = player.accentColor;
+      if (!accentColor) {
+        throw new Error(`Missing persisted accent for associated player "${player.id}".`);
+      }
+      return {
+        id: player.id,
+        name: player.displayName,
+        accentColor,
+      };
+    });
   const notes = catalog.notes
     .filter(({ entityId }) => entityId === entity.id)
     .sort((left, right) => left.sortOrder - right.sortOrder || left.id.localeCompare(right.id))
@@ -114,6 +137,7 @@ export function buildPublicEntityPresentation(
     category: { id: category.id, name: category.name, description: category.description },
     tags,
     dispositions,
+    associatedPlayers,
     notes,
     importantCharacters,
     relatedLocations,

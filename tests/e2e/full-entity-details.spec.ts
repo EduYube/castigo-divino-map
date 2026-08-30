@@ -30,8 +30,20 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
     { id: 'watch', name: 'Vigilancia', description: 'Puesto vigilado.' },
   ],
   players: [
-    { id: 'player-a', slug: 'player-a', display_name: 'Alicia', name_language: 'en' },
-    { id: 'player-b', slug: 'player-b', display_name: 'Borin', name_language: 'en' },
+    {
+      id: 'player-a',
+      slug: 'player-a',
+      display_name: 'Alicia',
+      name_language: 'en',
+      accent_color: '#2563eb',
+    },
+    {
+      id: 'player-b',
+      slug: 'player-b',
+      display_name: 'Borin',
+      name_language: 'en',
+      accent_color: '#b45309',
+    },
   ],
   map_entities: [
     {

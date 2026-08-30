@@ -32,11 +32,7 @@ const MOBILE_SHEET_MEDIA_QUERY = '(max-width: 48rem)';
 
 function getRequiredElement<T extends HTMLElement>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector);
-
-  if (!element) {
-    throw new Error(`Missing required compact pin details element: ${selector}`);
-  }
-
+  if (!element) throw new Error(`Missing required compact pin details element: ${selector}`);
   return element;
 }
 
@@ -53,7 +49,6 @@ function createReturnButton(closeButton: HTMLButtonElement): HTMLButtonElement {
 
 function resolveElements(root: ParentNode): CompactPinDetailsElements {
   const closeButton = getRequiredElement<HTMLButtonElement>(root, '[data-place-details-close]');
-
   return {
     workspace: getRequiredElement(root, '[data-map-workspace]'),
     panel: getRequiredElement(root, '[data-place-details]'),
@@ -72,7 +67,6 @@ function isMobileSheet(): boolean {
 function restoreViewportPosition(scrollX: number, scrollY: number): void {
   const root = document.documentElement;
   const previousScrollBehavior = root.style.scrollBehavior;
-
   root.style.scrollBehavior = 'auto';
   window.scrollTo(scrollX, scrollY);
   root.style.scrollBehavior = previousScrollBehavior;
@@ -96,7 +90,6 @@ function appendType(parent: HTMLElement, details: CompactPinDetailModel): void {
   const row = document.createElement('p');
   const shape = document.createElement('span');
   const label = document.createElement('span');
-
   row.className = 'compact-details__type';
   shape.className = `compact-details__type-shape compact-details__type-shape--${details.entityType}`;
   shape.setAttribute('aria-hidden', 'true');
@@ -110,7 +103,6 @@ function appendCategory(parent: HTMLElement, details: CompactPinDetailModel): vo
   const row = document.createElement('p');
   const label = document.createElement('span');
   const value = document.createElement('span');
-
   row.className = 'compact-details__category';
   label.className = 'compact-details__meta-label';
   label.textContent = 'Categoría';
@@ -120,10 +112,38 @@ function appendCategory(parent: HTMLElement, details: CompactPinDetailModel): vo
   parent.append(row);
 }
 
+function appendAssociations(parent: HTMLElement, details: CompactPinDetailModel): void {
+  if (details.associatedPlayers.length === 0) return;
+  const section = document.createElement('section');
+  const heading = appendTextElement(
+    section,
+    'h4',
+    'compact-details__section-title',
+    'Relacionado con',
+  );
+  heading.id = 'compact-details-associations-title';
+  section.setAttribute('aria-labelledby', heading.id);
+  const list = document.createElement('ul');
+  list.className = 'compact-details__associations';
+  for (const player of details.associatedPlayers) {
+    const item = document.createElement('li');
+    item.className = 'compact-details__association';
+    const accent = document.createElement('span');
+    accent.className = 'player-association-accent';
+    accent.style.setProperty('--player-association-accent', player.accentColor);
+    accent.setAttribute('aria-hidden', 'true');
+    const name = document.createElement('span');
+    name.textContent = player.name;
+    item.append(accent, name);
+    list.append(item);
+  }
+  section.append(list);
+  parent.append(section);
+}
+
 function appendDispositions(parent: HTMLElement, details: CompactPinDetailModel): void {
   const dispositions = createPlayerDispositionVisuals(details.dispositions);
   if (dispositions.length === 0) return;
-
   const section = document.createElement('section');
   const heading = appendTextElement(
     section,
@@ -132,17 +152,14 @@ function appendDispositions(parent: HTMLElement, details: CompactPinDetailModel)
     'Relación con los personajes',
   );
   const list = document.createElement('ul');
-
   heading.id = 'compact-details-dispositions-title';
   section.setAttribute('aria-labelledby', heading.id);
   list.className = 'compact-details__dispositions';
-
   for (const disposition of dispositions) {
     const item = document.createElement('li');
     const symbol = document.createElement('span');
     const player = document.createElement('span');
     const state = document.createElement('span');
-
     item.className = 'compact-details__disposition';
     item.setAttribute('aria-label', `${disposition.playerName}: ${disposition.label}`);
     symbol.className = `pin-disposition ${disposition.className}`;
@@ -155,7 +172,6 @@ function appendDispositions(parent: HTMLElement, details: CompactPinDetailModel)
     item.append(symbol, player, state);
     list.append(item);
   }
-
   section.append(list);
   parent.append(section);
 }
@@ -163,16 +179,13 @@ function appendDispositions(parent: HTMLElement, details: CompactPinDetailModel)
 function appendTags(parent: HTMLElement, details: CompactPinDetailModel): void {
   const section = document.createElement('section');
   const heading = appendTextElement(section, 'h4', 'compact-details__section-title', 'Etiquetas');
-
   heading.id = 'compact-details-tags-title';
   section.setAttribute('aria-labelledby', heading.id);
-
   if (details.tags.length === 0) {
     appendTextElement(section, 'p', 'compact-details__empty', 'Sin etiquetas públicas.');
     parent.append(section);
     return;
   }
-
   const list = document.createElement('ul');
   list.className = 'compact-details__tags';
   details.tags.forEach((tag) => appendTextElement(list, 'li', 'compact-details__tag', tag.name));
@@ -181,10 +194,7 @@ function appendTags(parent: HTMLElement, details: CompactPinDetailModel): void {
 }
 
 function appendImportantCharacters(parent: HTMLElement, details: CompactPinDetailModel): void {
-  if (details.entityType !== 'location' || details.importantCharacters.length === 0) {
-    return;
-  }
-
+  if (details.entityType !== 'location' || details.importantCharacters.length === 0) return;
   const section = document.createElement('section');
   const heading = appendTextElement(
     section,
@@ -193,11 +203,9 @@ function appendImportantCharacters(parent: HTMLElement, details: CompactPinDetai
     'Personajes importantes aquí',
   );
   const list = document.createElement('ul');
-
   heading.id = 'compact-details-important-characters-title';
   section.setAttribute('aria-labelledby', heading.id);
   list.className = 'compact-details__important-characters';
-
   details.importantCharacters.forEach((character) => {
     const item = document.createElement('li');
     const name = appendTextElement(item, 'span', 'compact-details__character-name', character.name);
@@ -207,12 +215,10 @@ function appendImportantCharacters(parent: HTMLElement, details: CompactPinDetai
       'compact-details__relation-status',
       character.relationLabel,
     );
-
     name.dataset.entityId = character.id;
     status.dataset.relationStatus = character.relationStatus;
     list.append(item);
   });
-
   section.append(list);
   parent.append(section);
 }
@@ -224,11 +230,9 @@ function appendFullDetailsAction(
 ): void {
   const section = document.createElement('section');
   const note = document.createElement('p');
-
   section.className = 'compact-details__full-boundary';
   note.className = 'compact-details__future-note';
   note.id = 'compact-details-full-note';
-
   if (url) {
     const link = document.createElement('a');
     link.className = 'compact-details__full-action';
@@ -250,14 +254,12 @@ function appendFullDetailsAction(
     note.textContent = 'Esta entidad no dispone de una ficha completa pública en Beta 0.2.';
     section.append(button, note);
   }
-
   parent.append(section);
 }
 
 function appendPortrait(content: HTMLElement, details: CompactPinDetailModel, url: string): void {
   const title = content.querySelector<HTMLElement>('#place-details-title');
   if (!title || content.querySelector('[data-character-portrait]')) return;
-
   const figure = document.createElement('figure');
   const image = document.createElement('img');
   figure.className = 'compact-details__portrait';
@@ -282,6 +284,7 @@ function createDetailsSignature(details: CompactPinDetailModel): string {
     category: details.category,
     tags: details.tags,
     dispositions: details.dispositions,
+    associatedPlayers: details.associatedPlayers,
     importantCharacters: details.importantCharacters,
     entitySlug: details.entitySlug,
   });
@@ -294,7 +297,6 @@ function renderDetails(
 ): HTMLElement {
   content.replaceChildren();
   appendType(content, details);
-
   const title = appendTextElement(
     content,
     'h3',
@@ -303,8 +305,8 @@ function renderDetails(
   );
   title.id = 'place-details-title';
   title.tabIndex = -1;
-
   appendCategory(content, details);
+  appendAssociations(content, details);
   appendDispositions(content, details);
   appendTags(content, details);
   appendImportantCharacters(content, details);
@@ -322,13 +324,8 @@ export function mountCompactPinDetails(
     const preserveViewport = isMobileSheet();
     const scrollX = preserveViewport ? window.scrollX : 0;
     const scrollY = preserveViewport ? window.scrollY : 0;
-
     options.onClose();
-
-    if (!preserveViewport) {
-      return;
-    }
-
+    if (!preserveViewport) return;
     restoreViewportPosition(scrollX, scrollY);
     window.requestAnimationFrame(() => restoreViewportPosition(scrollX, scrollY));
   };
@@ -337,35 +334,24 @@ export function mountCompactPinDetails(
     const marker = elements.workspace.querySelector<HTMLElement>(
       '.campaign-marker-icon[aria-pressed="true"]',
     );
-
-    if (!marker) {
-      return;
-    }
-
+    if (!marker) return;
     const preserveViewport = isMobileSheet();
     const scrollX = preserveViewport ? window.scrollX : 0;
     const scrollY = preserveViewport ? window.scrollY : 0;
-
     marker.focus({ preventScroll: preserveViewport });
-
     if (preserveViewport) {
       restoreViewportPosition(scrollX, scrollY);
       window.requestAnimationFrame(() => restoreViewportPosition(scrollX, scrollY));
     }
   };
   const handleKeyDown = (event: KeyboardEvent): void => {
-    if (event.key !== 'Escape' || elements.panel.hidden || !isMobileSheet()) {
-      return;
-    }
-
+    if (event.key !== 'Escape' || elements.panel.hidden || !isMobileSheet()) return;
     event.preventDefault();
     closePreservingViewport();
   };
-
   elements.closeButton.addEventListener('click', handleClose);
   elements.returnButton.addEventListener('click', handleReturnToPin);
   elements.workspace.addEventListener('keydown', handleKeyDown);
-
   return {
     show(details, showOptions = {}): void {
       const existingTitle = elements.content.querySelector<HTMLElement>('#place-details-title');
@@ -378,7 +364,6 @@ export function mountCompactPinDetails(
       const title = canReuseContent
         ? existingTitle
         : renderDetails(elements.content, details, options.createFullDetailsUrl(details));
-
       elements.panel.hidden = false;
       elements.panel.dataset.activePinId = details.id;
       elements.panel.dataset.entityType = details.entityType;
@@ -392,7 +377,6 @@ export function mountCompactPinDetails(
       elements.closeButton.setAttribute('aria-label', `Cerrar la ficha de ${details.name}`);
       elements.closeButton.setAttribute('aria-keyshortcuts', 'Escape');
       elements.returnButton.setAttribute('aria-label', `Volver al pin de ${details.name}`);
-
       if (!canReuseContent) {
         elements.panel.scrollTop = 0;
         portraitAbort?.abort();
@@ -406,17 +390,13 @@ export function mountCompactPinDetails(
               request.signal.aborted ||
               elements.panel.hidden ||
               elements.panel.dataset.activePinId !== details.id
-            ) {
+            )
               return;
-            }
             appendPortrait(elements.content, details, url);
           });
         }
       }
-
-      if (showOptions.focus !== false) {
-        title.focus({ preventScroll: isMobileSheet() });
-      }
+      if (showOptions.focus !== false) title.focus({ preventScroll: isMobileSheet() });
     },
     hide(): void {
       portraitAbort?.abort();
@@ -424,7 +404,6 @@ export function mountCompactPinDetails(
       const preserveViewport = isMobileSheet();
       const scrollX = preserveViewport ? window.scrollX : 0;
       const scrollY = preserveViewport ? window.scrollY : 0;
-
       elements.panel.hidden = true;
       delete elements.panel.dataset.activePinId;
       delete elements.panel.dataset.activePlaceId;
@@ -437,7 +416,6 @@ export function mountCompactPinDetails(
       elements.closeButton.removeAttribute('aria-keyshortcuts');
       elements.returnButton.setAttribute('aria-label', 'Volver al pin seleccionado');
       elements.content.replaceChildren();
-
       if (preserveViewport) {
         void elements.workspace.offsetHeight;
         restoreViewportPosition(scrollX, scrollY);

@@ -57,6 +57,7 @@ function masterCatalog(
     entityTags: [],
     players: [],
     dispositions: [],
+    associations: [],
     relations: [],
     relationEntities: [],
   };

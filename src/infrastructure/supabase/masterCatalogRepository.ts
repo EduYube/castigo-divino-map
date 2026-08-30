@@ -2,6 +2,7 @@ import {
   MasterCatalogRepositoryError,
   type AuthorizedMasterCatalog,
   type MasterCatalogAlias,
+  type MasterCatalogAssociation,
   type MasterCatalogCategory,
   type MasterCatalogDisposition,
   type MasterCatalogEntity,
@@ -122,7 +123,13 @@ function mapEntityTag(row: Record<string, unknown>): MasterCatalogEntityTag {
 }
 
 function mapPlayer(row: Record<string, unknown>): MasterCatalogPlayer {
-  return { id: stringField(row, 'id'), displayName: stringField(row, 'display_name') };
+  const accentColor = stringField(row, 'accent_color');
+  if (!/^#[0-9a-f]{6}$/.test(accentColor)) throwInvalid();
+  return {
+    id: stringField(row, 'id'),
+    displayName: stringField(row, 'display_name'),
+    accentColor,
+  };
 }
 
 function mapDisposition(row: Record<string, unknown>): MasterCatalogDisposition {
@@ -134,6 +141,13 @@ function mapDisposition(row: Record<string, unknown>): MasterCatalogDisposition 
     entityId: stringField(row, 'entity_id'),
     playerId: stringField(row, 'player_id'),
     disposition,
+  };
+}
+
+function mapAssociation(row: Record<string, unknown>): MasterCatalogAssociation {
+  return {
+    entityId: stringField(row, 'entity_id'),
+    playerId: stringField(row, 'player_id'),
   };
 }
 
@@ -176,6 +190,7 @@ function decodeCatalog(payload: unknown): AuthorizedMasterCatalog {
     entityTags: arrayField(payload, 'entity_tags').map(mapEntityTag),
     players: arrayField(payload, 'players').map(mapPlayer),
     dispositions: arrayField(payload, 'dispositions').map(mapDisposition),
+    associations: arrayField(payload, 'associations').map(mapAssociation),
     relations: arrayField(payload, 'relations').map(mapRelation),
     relationEntities: arrayField(payload, 'relation_entities').map(mapRelationEntity),
   };
@@ -238,7 +253,7 @@ export class SupabaseMasterCatalogRepository implements MasterCatalogRepository 
       let response: Response;
       try {
         response = await this.#fetchImplementation(
-          new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_master_catalog_v3`),
+          new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_master_catalog_v4`),
           {
             method: 'POST',
             headers: {

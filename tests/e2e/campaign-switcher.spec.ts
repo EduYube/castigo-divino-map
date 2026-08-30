@@ -152,6 +152,7 @@ function snapshotCatalog(campaignId: string): PublicCampaignCatalogV3 {
       },
     ],
     dispositions: [],
+    associations: [],
     characterLocationRelations: [],
     notes: [],
     characterLocationEvents: [],

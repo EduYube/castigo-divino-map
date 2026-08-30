@@ -45,6 +45,8 @@ export interface PublicPlayer {
   readonly slug: Slug;
   readonly displayName: string;
   readonly nameLanguage: LanguageCode;
+  /** MAP-054 persisted roster accent. Historic Beta 0.2 snapshots may omit it. */
+  readonly accentColor?: string;
 }
 
 export interface PublicMapEntity {
@@ -75,6 +77,12 @@ export interface PublicEntityPlayerDisposition {
   readonly entityId: EntityId;
   readonly playerId: PlayerId;
   readonly disposition: PlayerDisposition;
+}
+
+/** MAP-058 narrative association. Deliberately independent from disposition. */
+export interface PublicEntityPlayerAssociation {
+  readonly entityId: EntityId;
+  readonly playerId: PlayerId;
 }
 
 export interface PublicCharacterLocationRelation {
@@ -162,6 +170,8 @@ export interface PublicCatalogSnapshotV2 {
   readonly players: readonly PublicPlayer[];
   readonly entities: readonly PublicMapEntity[];
   readonly dispositions: readonly PublicEntityPlayerDisposition[];
+  /** Historic Beta 0.2 snapshots predate MAP-058 and may omit associations. */
+  readonly associations?: readonly PublicEntityPlayerAssociation[];
   readonly characterLocationRelations: readonly PublicCharacterLocationRelation[];
   readonly notes: readonly PublicNote[];
   readonly geographicNames: readonly PublicGeographicName[];

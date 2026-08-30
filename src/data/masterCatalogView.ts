@@ -4,6 +4,7 @@ import type {
   PlayerId,
   PublicCatalogSnapshotV2,
   PublicCharacterLocationRelation,
+  PublicEntityPlayerAssociation,
   PublicEntityPlayerDisposition,
   PublicMapEntity,
   TagId,
@@ -122,6 +123,25 @@ function buildMasterDispositions(
   });
 }
 
+function buildMasterAssociations(
+  publicCatalog: PublicCatalogSnapshotV2,
+  masterCatalog: AuthorizedMasterCatalog,
+  masterEntityIds: ReadonlySet<EntityId>,
+): readonly PublicEntityPlayerAssociation[] {
+  const publicPlayerIds = new Set(publicCatalog.players.map(({ id }) => id));
+  return masterCatalog.associations.map((relation) => {
+    const entityId = toEntityId(relation.entityId);
+    const playerId = toPlayerId(relation.playerId);
+    if (!masterEntityIds.has(entityId)) {
+      throw new Error('Una asociación privada referencia una entidad fuera del catálogo Máster.');
+    }
+    if (!publicPlayerIds.has(playerId)) {
+      throw new Error('Una asociación privada referencia un jugador no publicado.');
+    }
+    return { entityId, playerId };
+  });
+}
+
 function buildAuthorizedRelations(
   publicCatalog: PublicCatalogSnapshotV2,
   masterCatalog: AuthorizedMasterCatalog,
@@ -176,6 +196,10 @@ export function createAuthorizedMasterCatalogView(
       dispositions: [
         ...publicCatalog.dispositions,
         ...buildMasterDispositions(masterCatalog, masterEntityIds),
+      ],
+      associations: [
+        ...(publicCatalog.associations ?? []),
+        ...buildMasterAssociations(publicCatalog, masterCatalog, masterEntityIds),
       ],
       characterLocationRelations: buildAuthorizedRelations(
         publicCatalog,

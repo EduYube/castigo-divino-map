@@ -24,23 +24,17 @@ interface FullEntityDetailsElements {
 
 function getRequiredElement<T extends HTMLElement>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector);
-
-  if (!element) {
-    throw new Error(`Missing required full entity details element: ${selector}`);
-  }
-
+  if (!element) throw new Error(`Missing required full entity details element: ${selector}`);
   return element;
 }
 
 function ensureDescriptionMeta(): HTMLMetaElement {
   let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-
   if (!meta) {
     meta = document.createElement('meta');
     meta.name = 'description';
     document.head.append(meta);
   }
-
   return meta;
 }
 
@@ -67,7 +61,6 @@ function appendSection(parent: HTMLElement, title: string): HTMLElement {
 
 function appendAliases(parent: HTMLElement, details: FullEntityDetailModel): void {
   if (details.aliases.length === 0) return;
-
   const section = appendSection(parent, 'Nombres adicionales');
   const list = document.createElement('ul');
   list.className = 'full-entity__aliases';
@@ -78,40 +71,52 @@ function appendAliases(parent: HTMLElement, details: FullEntityDetailModel): voi
 function appendCategory(parent: HTMLElement, details: FullEntityDetailModel): void {
   const section = appendSection(parent, 'Categoría');
   appendTextElement(section, 'p', 'full-entity__category-name', details.category.name);
-  if (details.category.description) {
+  if (details.category.description)
     appendTextElement(section, 'p', 'full-entity__muted', details.category.description);
-  }
 }
 
 function appendTags(parent: HTMLElement, details: FullEntityDetailModel): void {
   const section = appendSection(parent, 'Etiquetas');
-
   if (details.tags.length === 0) {
     appendTextElement(section, 'p', 'full-entity__muted', 'Sin etiquetas públicas.');
     return;
   }
-
   const list = document.createElement('ul');
   list.className = 'full-entity__tags';
-
   details.tags.forEach((tag) => {
     const item = document.createElement('li');
     appendTextElement(item, 'strong', '', tag.name);
     if (tag.description) appendTextElement(item, 'span', '', tag.description);
     list.append(item);
   });
+  section.append(list);
+}
 
+function appendAssociations(parent: HTMLElement, details: FullEntityDetailModel): void {
+  if (details.associatedPlayers.length === 0) return;
+  const section = appendSection(parent, 'Relacionado con');
+  const list = document.createElement('ul');
+  list.className = 'full-entity__associations';
+  for (const player of details.associatedPlayers) {
+    const item = document.createElement('li');
+    const accent = document.createElement('span');
+    accent.className = 'player-association-accent';
+    accent.style.setProperty('--player-association-accent', player.accentColor);
+    accent.setAttribute('aria-hidden', 'true');
+    const name = document.createElement('span');
+    name.textContent = player.name;
+    item.append(accent, name);
+    list.append(item);
+  }
   section.append(list);
 }
 
 function appendDispositions(parent: HTMLElement, details: FullEntityDetailModel): void {
   const dispositions = createPlayerDispositionVisuals(details.dispositions);
   if (dispositions.length === 0) return;
-
   const section = appendSection(parent, 'Relación con los personajes');
   const list = document.createElement('ul');
   list.className = 'full-entity__dispositions';
-
   dispositions.forEach((disposition) => {
     const item = document.createElement('li');
     item.setAttribute('aria-label', `${disposition.playerName}: ${disposition.label}`);
@@ -126,24 +131,20 @@ function appendDispositions(parent: HTMLElement, details: FullEntityDetailModel)
     appendTextElement(item, 'span', '', disposition.label);
     list.append(item);
   });
-
   section.append(list);
 }
 
 function appendNotes(parent: HTMLElement, details: FullEntityDetailModel): void {
   const section = appendSection(parent, 'Notas públicas');
-
   if (details.notes.length === 0) {
     appendTextElement(section, 'p', 'full-entity__muted', 'Sin notas públicas.');
     return;
   }
-
   details.notes.forEach((note) => {
     const article = document.createElement('article');
     article.className = 'full-entity__note';
     appendTextElement(article, 'h3', 'full-entity__note-title', note.title);
     appendTextElement(article, 'p', 'full-entity__note-body', note.body);
-
     if (note.tags.length > 0) {
       const tags = document.createElement('ul');
       tags.className = 'full-entity__note-tags';
@@ -151,7 +152,6 @@ function appendNotes(parent: HTMLElement, details: FullEntityDetailModel): void 
       note.tags.forEach((tag) => appendTextElement(tags, 'li', '', tag.name));
       article.append(tags);
     }
-
     section.append(article);
   });
 }
@@ -179,12 +179,10 @@ function appendRelations(
     parent,
     details.entityType === 'location' ? 'Personajes importantes aquí' : 'Ubicaciones relacionadas',
   );
-
   if (relations.length === 0) {
     appendTextElement(section, 'p', 'full-entity__muted', 'Sin relaciones públicas disponibles.');
     return;
   }
-
   const list = document.createElement('ul');
   list.className = 'full-entity__relations';
   relations.forEach((relation) => {
@@ -204,9 +202,7 @@ function appendRelations(
 
 function formatDate(value: string): string {
   const date = new Date(value);
-
   if (!Number.isFinite(date.getTime())) return value;
-
   return new Intl.DateTimeFormat('es-ES', {
     day: 'numeric',
     month: 'long',
@@ -218,39 +214,30 @@ function formatDate(value: string): string {
 
 function appendHistory(parent: HTMLElement, details: FullEntityDetailModel, sourceUrl: URL): void {
   if (details.entityType !== 'character' || details.locationHistory.length === 0) return;
-
   const section = appendSection(parent, 'Historial público de localización');
   const list = document.createElement('ol');
   list.className = 'full-entity__history';
-
   details.locationHistory.forEach((entry) => {
     const item = document.createElement('li');
     const heading = appendTextElement(item, 'h3', 'full-entity__history-title', entry.eventLabel);
     const location = document.createElement('p');
     location.className = 'full-entity__history-location';
-
     if (entry.locationSlug) {
       const link = document.createElement('a');
       link.href = createFullEntityUrl(sourceUrl, entry.locationSlug).href;
       link.textContent = entry.locationName;
       location.append(link);
-    } else {
-      location.textContent = entry.locationName;
-    }
-
+    } else location.textContent = entry.locationName;
     item.append(location);
     if (entry.summary) appendTextElement(item, 'p', '', entry.summary);
-
     if (entry.observedAt) {
       const time = document.createElement('time');
       time.dateTime = entry.observedAt;
       time.textContent = formatDate(entry.observedAt);
       heading.append(' · ', time);
     }
-
     list.append(item);
   });
-
   section.append(list);
 }
 
@@ -280,7 +267,6 @@ function renderDetails(elements: FullEntityDetailsElements, details: FullEntityD
   const type = getPinTypeVisual(details.entityType);
   elements.body.replaceChildren();
   elements.type.replaceChildren();
-
   const shape = appendTextElement(
     elements.type,
     'span',
@@ -289,11 +275,9 @@ function renderDetails(elements: FullEntityDetailsElements, details: FullEntityD
   );
   shape.setAttribute('aria-hidden', 'true');
   appendTextElement(elements.type, 'span', '', type.label);
-
   elements.title.textContent = details.name;
   elements.status.hidden = true;
   elements.status.textContent = '';
-
   if (details.summary)
     appendTextElement(elements.body, 'p', 'full-entity__summary', details.summary);
   if (details.description)
@@ -301,11 +285,11 @@ function renderDetails(elements: FullEntityDetailsElements, details: FullEntityD
   appendAliases(elements.body, details);
   appendCategory(elements.body, details);
   appendTags(elements.body, details);
+  appendAssociations(elements.body, details);
   appendDispositions(elements.body, details);
   appendNotes(elements.body, details);
   appendRelations(elements.body, details, new URL(window.location.href));
   appendHistory(elements.body, details, new URL(window.location.href));
-
   const updateSection = appendSection(elements.body, 'Actualización pública');
   const updateText = document.createElement('p');
   updateText.append('Proyección pública generada el ');
@@ -314,7 +298,6 @@ function renderDetails(elements: FullEntityDetailsElements, details: FullEntityD
   time.textContent = formatDate(details.publicUpdatedAt);
   updateText.append(time, '.');
   updateSection.append(updateText);
-
   document.title = `${details.name} · El Atlas de los Nuevos Dioses`;
   ensureDescriptionMeta().content =
     details.summary ||
@@ -325,35 +308,19 @@ export function renderFullEntityDetailsShell(): string {
   return `
     <a class="skip-link" href="#full-entity-main">Saltar al contenido principal</a>
     <header class="site-header">
-      <a class="brand" data-full-entity-map-link href="">
-        <span class="brand__mark" aria-hidden="true">✦</span>
-        <span>Castigo Divino</span>
-      </a>
-      <div class="site-header__badges" aria-label="Estado de la aplicación">
-        <span class="release-badge">Beta 0.2</span>
-        <span class="fan-badge">Contenido de fans no oficial</span>
-      </div>
+      <a class="brand" data-full-entity-map-link href=""><span class="brand__mark" aria-hidden="true">✦</span><span>Castigo Divino</span></a>
+      <div class="site-header__badges" aria-label="Estado de la aplicación"><span class="release-badge">Beta 0.2</span><span class="fan-badge">Contenido de fans no oficial</span></div>
     </header>
     <main id="full-entity-main" class="full-entity" data-full-entity-page>
-      <nav class="full-entity__navigation" aria-label="Navegación de la ficha">
-        <a data-full-entity-map-link href="">← Volver al mapa</a>
-      </nav>
+      <nav class="full-entity__navigation" aria-label="Navegación de la ficha"><a data-full-entity-map-link href="">← Volver al mapa</a></nav>
       <article class="full-entity__card" aria-labelledby="full-entity-title">
         <p class="full-entity__type" data-full-entity-type>Ficha pública completa</p>
         <h1 id="full-entity-title" data-full-entity-title tabindex="-1">Cargando ficha completa…</h1>
-        <p class="full-entity__status" data-full-entity-status role="status" aria-live="polite">
-          Resolviendo la entidad desde la proyección pública segura…
-        </p>
+        <p class="full-entity__status" data-full-entity-status role="status" aria-live="polite">Resolviendo la entidad desde la proyección pública segura…</p>
         <div class="full-entity__body" data-full-entity-body></div>
       </article>
     </main>
-    <footer class="site-footer">
-      <p>
-        El Atlas de los Nuevos Dioses es contenido de fans no oficial permitido por la Política de
-        contenido de fans. No está aprobado ni respaldado por Wizards. Parte de los materiales
-        utilizados es propiedad de Wizards of the Coast. ©Wizards of the Coast LLC.
-      </p>
-    </footer>
+    <footer class="site-footer"><p>El Atlas de los Nuevos Dioses es contenido de fans no oficial permitido por la Política de contenido de fans. No está aprobado ni respaldado por Wizards. Parte de los materiales utilizados es propiedad de Wizards of the Coast. ©Wizards of the Coast LLC.</p></footer>
   `;
 }
 
@@ -370,15 +337,12 @@ export function mountFullEntityDetails(
     mapLink: getRequiredElement(root, '[data-full-entity-map-link]'),
   };
   let portraitAbort: AbortController | null = null;
-
   root.querySelectorAll<HTMLAnchorElement>('[data-full-entity-map-link]').forEach((link) => {
     link.href = mapUrl.href;
   });
-
   const focusTitle = (): void => {
     window.requestAnimationFrame(() => elements.title.focus({ preventScroll: true }));
   };
-
   return {
     show(details, showOptions = {}): void {
       portraitAbort?.abort();

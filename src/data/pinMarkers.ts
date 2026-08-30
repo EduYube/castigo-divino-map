@@ -1,7 +1,12 @@
+import { publishPinPlayerAssociations } from '../app/pinPlayerAssociationRegistry';
 import type { EntityId, PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
 import { toLeafletSimpleCoordinate, type LeafletSimpleCoordinate } from './coordinates';
 import type { CampaignCatalog, PlaceId } from './model';
-import type { PinEntityType, PinPlayerDispositionInput } from '../domain/pinVisualSystem';
+import type {
+  PinEntityType,
+  PinPlayerAssociationInput,
+  PinPlayerDispositionInput,
+} from '../domain/pinVisualSystem';
 
 export interface AtlasPinMarkerModel {
   readonly id: string;
@@ -14,6 +19,7 @@ export interface AtlasPinMarkerModel {
   readonly categoryName: string;
   readonly categorySlug: string;
   readonly dispositions: readonly PinPlayerDispositionInput[];
+  readonly associations: readonly PinPlayerAssociationInput[];
   /** MAP-045 opaque Storage reference; only characters may provide it. */
   readonly portraitPath: string | null;
   readonly source: 'beta01' | 'beta02';
@@ -31,6 +37,34 @@ function resolveBeta02Dispositions(
         (entry) => entry.entityId === entityId && entry.playerId === player.id,
       )?.disposition ?? null,
   }));
+}
+
+function resolveBeta02Associations(
+  catalog: PublicCatalogSnapshotV2,
+  entityId: EntityId,
+): readonly PinPlayerAssociationInput[] {
+  const playerById = new Map(catalog.players.map((player) => [player.id, player] as const));
+  return (catalog.associations ?? [])
+    .filter((association) => association.entityId === entityId)
+    .map((association) => {
+      const player = playerById.get(association.playerId);
+      if (!player) {
+        throw new Error(
+          `Missing player "${association.playerId}" for association with "${entityId}".`,
+        );
+      }
+      const accentColor = player.accentColor;
+      if (!accentColor) {
+        throw new Error(
+          `Missing persisted accent for player "${player.id}" associated with "${entityId}".`,
+        );
+      }
+      return {
+        playerId: player.id,
+        playerName: player.displayName,
+        accentColor,
+      };
+    });
 }
 
 function findStableBeta02Location(
@@ -76,6 +110,10 @@ export function createAtlasPinMarkerModels(
         beta02Catalog && beta02Entity
           ? resolveBeta02Dispositions(beta02Catalog, beta02Entity.id)
           : [],
+      associations:
+        beta02Catalog && beta02Entity
+          ? resolveBeta02Associations(beta02Catalog, beta02Entity.id)
+          : [],
       portraitPath:
         beta02Entity?.entityType === 'character' ? (beta02Entity.portraitPath ?? null) : null,
       source: beta02Entity ? 'beta02' : 'beta01',
@@ -98,10 +136,13 @@ export function createAtlasPinMarkerModels(
         categoryName: category?.name ?? entity.categoryId,
         categorySlug: category?.slug ?? entity.categoryId,
         dispositions: beta02Catalog ? resolveBeta02Dispositions(beta02Catalog, entity.id) : [],
+        associations: beta02Catalog ? resolveBeta02Associations(beta02Catalog, entity.id) : [],
         portraitPath: entity.entityType === 'character' ? (entity.portraitPath ?? null) : null,
         source: 'beta02',
       };
     });
 
-  return [...legacyPins, ...supplementalPins];
+  const markers = [...legacyPins, ...supplementalPins];
+  publishPinPlayerAssociations(markers);
+  return markers;
 }

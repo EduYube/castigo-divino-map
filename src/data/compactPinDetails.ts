@@ -21,6 +21,12 @@ export interface CompactImportantCharacter {
   readonly relationLabel: string;
 }
 
+export interface CompactAssociatedPlayer {
+  readonly id: string;
+  readonly name: string;
+  readonly accentColor: string;
+}
+
 export interface CompactPinDetailModel {
   readonly id: string;
   readonly legacyPlaceId: PlaceId | null;
@@ -31,6 +37,7 @@ export interface CompactPinDetailModel {
   readonly category: CompactDetailCategory;
   readonly tags: readonly CompactDetailTag[];
   readonly dispositions: readonly PinPlayerDispositionInput[];
+  readonly associatedPlayers: readonly CompactAssociatedPlayer[];
   readonly importantCharacters: readonly CompactImportantCharacter[];
   readonly portraitPath: string | null;
   readonly source: 'beta01' | 'beta02';
@@ -67,6 +74,7 @@ function buildBeta02Details(
     },
     tags: presentation.tags.map(({ id, name }) => ({ id, name })),
     dispositions: presentation.dispositions,
+    associatedPlayers: presentation.associatedPlayers,
     importantCharacters: presentation.importantCharacters.map(
       ({ id, name, relationStatus, relationLabel }) => ({
         id,
@@ -117,6 +125,7 @@ function buildLegacyDetails(
     category: { id: category.id, name: category.name },
     tags,
     dispositions: marker.dispositions,
+    associatedPlayers: [],
     importantCharacters: [],
     portraitPath: null,
     source: 'beta01',

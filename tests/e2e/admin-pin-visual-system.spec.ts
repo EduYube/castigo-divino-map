@@ -16,8 +16,18 @@ const categories = [
 ];
 const tags = [{ id: 'notable', name: 'Notable', publication_status: 'published' }];
 const players = [
-  { id: 'player-demo-one', display_name: 'Demo Player One', publication_status: 'published' },
-  { id: 'player-demo-two', display_name: 'Demo Player Two', publication_status: 'published' },
+  {
+    id: 'player-demo-one',
+    display_name: 'Demo Player One',
+    publication_status: 'published',
+    accent_color: '#c2410c',
+  },
+  {
+    id: 'player-demo-two',
+    display_name: 'Demo Player Two',
+    publication_status: 'published',
+    accent_color: '#1e3a8a',
+  },
 ];
 const entity = {
   id: 'entity-aster-guide',
@@ -95,7 +105,7 @@ async function configureAdminBackend(page: Page): Promise<void> {
       return;
     }
 
-    if (authenticated && url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v4')) {
+    if (authenticated && url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v5')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -124,6 +134,7 @@ async function configureAdminBackend(page: Page): Promise<void> {
               updated_at: entity.updated_at,
             },
           ],
+          associations: [],
           relations_revision: 'map022-revision',
           delete_blockers: {
             aliases: 0,
@@ -132,6 +143,7 @@ async function configureAdminBackend(page: Page): Promise<void> {
             notes: 0,
             location_events: 0,
             requests: 0,
+            player_associations: 0,
           },
         }),
       });

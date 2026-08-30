@@ -185,7 +185,7 @@ async function configureBackend(page: Page, options: BackendOptions = {}): Promi
         await new Promise((resolve) => setTimeout(resolve, options.campaignBPlayerDelayMs));
       }
       const players = rosters.get(campaignId) ?? [];
-      const publicPlayerSelect = 'id,slug,display_name,name_language';
+      const publicPlayerSelect = 'id,slug,display_name,name_language,accent_color';
       const responsePlayers =
         url.searchParams.get('select') === publicPlayerSelect
           ? players.map((player) => ({
@@ -193,6 +193,7 @@ async function configureBackend(page: Page, options: BackendOptions = {}): Promi
               slug: player.slug,
               display_name: player.display_name,
               name_language: player.name_language,
+              accent_color: player.accent_color,
             }))
           : players;
       await route.fulfill({

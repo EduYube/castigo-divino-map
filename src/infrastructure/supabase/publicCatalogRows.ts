@@ -3,6 +3,7 @@ import type {
   PublicCategory,
   PublicCharacterLocationEvent,
   PublicEntityAlias,
+  PublicEntityPlayerAssociation,
   PublicEntityPlayerDisposition,
   PublicGeographicName,
   PublicGeographicNameAlias,
@@ -31,6 +32,7 @@ export interface PublicCatalogTablePayloads {
   readonly entityAliases: readonly Record<string, unknown>[];
   readonly entityTags: readonly Record<string, unknown>[];
   readonly dispositions: readonly Record<string, unknown>[];
+  readonly associations: readonly Record<string, unknown>[];
   readonly notes: readonly Record<string, unknown>[];
   readonly noteTags: readonly Record<string, unknown>[];
   readonly geographicNames: readonly Record<string, unknown>[];
@@ -193,15 +195,22 @@ export function parseTag(row: Record<string, unknown>, index: number): PublicTag
   };
 }
 
-export function parsePlayer(row: Record<string, unknown>, index: number): PublicPlayer {
+export type ParsedPublicPlayer = PublicPlayer & { readonly accentColor: string };
+
+export function parsePlayer(row: Record<string, unknown>, index: number): ParsedPublicPlayer {
   const path = `players[${index}]`;
-  assertAllowedProperties(row, ['id', 'slug', 'display_name', 'name_language'], path);
+  assertAllowedProperties(
+    row,
+    ['id', 'slug', 'display_name', 'name_language', 'accent_color'],
+    path,
+  );
 
   return {
     id: expectString(row.id, `${path}.id`, IDENTIFIER_PATTERNS.player) as PublicPlayer['id'],
     slug: expectString(row.slug, `${path}.slug`, IDENTIFIER_PATTERNS.slug),
     displayName: expectString(row.display_name, `${path}.display_name`),
     nameLanguage: expectEnum(row.name_language, `${path}.name_language`, ['en'] as const),
+    accentColor: expectString(row.accent_color, `${path}.accent_color`, /^#[0-9a-f]{6}$/),
   };
 }
 
@@ -263,6 +272,27 @@ export function parseDisposition(
       'enemy',
       'neutral',
     ] as const),
+  };
+}
+
+export function parseAssociation(
+  row: Record<string, unknown>,
+  index: number,
+): PublicEntityPlayerAssociation {
+  const path = `entity_player_associations[${index}]`;
+  assertAllowedProperties(row, ['entity_id', 'player_id'], path);
+
+  return {
+    entityId: expectString(
+      row.entity_id,
+      `${path}.entity_id`,
+      IDENTIFIER_PATTERNS.entity,
+    ) as PublicEntityPlayerAssociation['entityId'],
+    playerId: expectString(
+      row.player_id,
+      `${path}.player_id`,
+      IDENTIFIER_PATTERNS.player,
+    ) as PublicEntityPlayerAssociation['playerId'],
   };
 }
 
