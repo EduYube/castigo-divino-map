@@ -4,7 +4,7 @@ const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
 const CAMPAIGN_ID = '00000000-0000-4000-8000-000000000053';
-const PORTRAIT_PATH = 'portraits/map059-character.png';
+const PORTRAIT_PATH = 'portraits/59000000-0000-4000-8000-000000000001.png';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -167,7 +167,7 @@ const ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
       entity_type: 'location',
       visibility: 'pin',
       name: 'Puerto de demostración',
-      name_language: 'es',
+      name_language: 'en',
       summary: '',
       description: '',
       portrait_path: null,
@@ -181,7 +181,7 @@ const ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> = {
       entity_type: 'location',
       visibility: 'pin',
       name: 'Paso de demostración',
-      name_language: 'es',
+      name_language: 'en',
       summary: '',
       description: '',
       portrait_path: null,

@@ -900,13 +900,6 @@ export function mountFaerunMap(
     return eager;
   };
 
-  const reclusterAtCurrentZoom = (): void => {
-    if (destroyed) return;
-    const eagerPortraitPinIds = preserveVisiblePortraitPinIds();
-    renderMarkers(renderedMarkers, eagerPortraitPinIds);
-    refreshMarkerPresentation();
-  };
-
   const revealPin = (pinId: string, focus: boolean): void => {
     const group = renderedGroupByPinId.get(pinId);
     if (!group) return;
@@ -918,6 +911,20 @@ export function mountFaerunMap(
 
     const marker = group.marker;
     if (focus) marker.getElement()?.focus({ preventScroll: true });
+  };
+
+  const reclusterAtCurrentZoom = (): void => {
+    if (destroyed) return;
+    const activeElement = document.activeElement;
+    const focusedPinId =
+      activeElement instanceof HTMLElement &&
+      activeElement.matches('.campaign-marker-icon[data-pin-id]')
+        ? (activeElement.dataset.pinId ?? null)
+        : null;
+    const eagerPortraitPinIds = preserveVisiblePortraitPinIds();
+    renderMarkers(renderedMarkers, eagerPortraitPinIds);
+    refreshMarkerPresentation();
+    if (focusedPinId) revealPin(focusedPinId, true);
   };
 
   locatePin = (pinId: string, revealGrouped = true): void => {
@@ -1076,7 +1083,7 @@ export function mountFaerunMap(
             candidate.coordinate[0] === target.coordinates.y &&
             candidate.coordinate[1] === target.coordinates.x,
         );
-      if (pin) revealPin(pin.id, true);
+      if (pin) revealPin(pin.id, false);
       refreshPortraitMarkers();
     },
     clearSearchFocus(): void {
@@ -1084,7 +1091,11 @@ export function mountFaerunMap(
     },
     focusMarker(placeId: PlaceId): void {
       const pinId = pinIdByLegacyPlaceId.get(placeId);
-      if (pinId) revealPin(pinId, true);
+      if (!pinId) return;
+      revealPin(pinId, true);
+      window.requestAnimationFrame(() => {
+        if (!destroyed) revealPin(pinId, true);
+      });
     },
     destroy(): void {
       if (destroyed) return;
