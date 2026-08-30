@@ -400,9 +400,7 @@ function parseEntityGeometry(
   }
   const first = vertices[0]!;
   if (
-    vertices.some(
-      (vertex) => vertex.x < first.x || (vertex.x === first.x && vertex.y < first.y),
-    )
+    vertices.some((vertex) => vertex.x < first.x || (vertex.x === first.x && vertex.y < first.y))
   ) {
     invalidResponse(`${path} no comienza en su vértice canónico.`);
   }
