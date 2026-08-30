@@ -315,13 +315,20 @@ test('clusters near pins, keeps exact-coordinate legacy integrated, and separate
     );
   await expect.poll(zoomPairIsGrouped).toBe(true);
 
+  const mapShell = page.getByTestId('map-shell');
   for (let attempt = 0; attempt < 8 && (await zoomPairIsGrouped()); attempt += 1) {
     const zoomIn = page.getByTitle('Acercar');
     if (await zoomIn.isDisabled()) break;
+    const previousZoom = Number(await mapShell.getAttribute('data-map-zoom'));
     await zoomIn.click();
+    await expect
+      .poll(async () => Number(await mapShell.getAttribute('data-map-zoom')))
+      .toBeGreaterThan(previousZoom);
   }
 
   await expect.poll(zoomPairIsGrouped).toBe(false);
+  await expect(page.locator(`[data-pin-id="${ZOOM_A_ID}"]`)).toBeVisible();
+  await expect(page.locator(`[data-pin-id="${ZOOM_B_ID}"]`)).toBeVisible();
   await expect(cluster(page, 3)).toBeVisible();
 });
 
