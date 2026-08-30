@@ -83,13 +83,13 @@ describe('MAP-054 administrative campaign scoping', () => {
     });
   });
 
-  it('rewrites save through the geometry-aware compatibility RPC', () => {
+  it('rewrites save through the geometry-aware RPC', () => {
     const save = scopeAdminRpcRequest(
       new URL('https://example.supabase.co/rest/v1/rpc/admin_save_map_entity_v3'),
       { method: 'POST', body: JSON.stringify({ p_id: 'entity-test' }) },
       SELECTED_CAMPAIGN,
     );
-    expect(save.url.pathname.endsWith('/rpc/admin_save_map_entity_v7')).toBe(true);
+    expect(save.url.pathname.endsWith('/rpc/admin_save_map_entity_v6')).toBe(true);
     expect(jsonBody(save.init).p_campaign_id).toBe(SELECTED_CAMPAIGN);
   });
 
