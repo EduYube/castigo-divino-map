@@ -171,13 +171,14 @@ select ok(
 );
 select ok(
   pg_temp.statement_fails($sql$
-    select public.admin_save_map_entity_v7(
+    select public.admin_save_map_entity_v6(
       '00000000-0000-4000-8000-000000000601',
       'place-map060-public',
       (select updated_at from public.map_entities where id = 'place-map060-public'),
       (public.admin_get_map_entity_editor_v5('00000000-0000-4000-8000-000000000600', 'place-map060-public') ->> 'relations_revision'),
       'map060-public', 'location', 'pin', 'public', null, 'MAP060 Public', '', '',
-      200, 200, 'category-map060-a', 'published', '{}'::text[], '[]'::jsonb, '{}'::text[], null
+      '{"kind":"polygon","vertices":[{"x":100,"y":100},{"x":300,"y":100},{"x":300,"y":300},{"x":100,"y":300}]}'::jsonb,
+      'category-map060-a', 'published', '{}'::text[], '[]'::jsonb, '{}'::text[]
     )
   $sql$),
   'geometry-aware save cannot cross campaign A/B boundaries'
@@ -190,7 +191,7 @@ select ok(
 select ok(
   not has_function_privilege(
     'anon',
-    'public.admin_save_map_entity_v7(uuid,text,timestamptz,text,text,entity_type,map_visibility,entity_audience,text,text,text,text,double precision,double precision,text,publication_status,text[],jsonb,text[],jsonb)',
+    'public.admin_save_map_entity_v6(uuid,text,timestamptz,text,text,entity_type,map_visibility,entity_audience,text,text,text,text,jsonb,text,publication_status,text[],jsonb,text[])',
     'EXECUTE'
   ),
   'anon cannot execute geometry-aware save RPC'
