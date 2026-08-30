@@ -53,23 +53,23 @@ begin
   end if;
 
   if pg_catalog.abs(ab_c) <= epsilon
-     and cx between pg_catalog.least(ax, bx) - epsilon and pg_catalog.greatest(ax, bx) + epsilon
-     and cy between pg_catalog.least(ay, by) - epsilon and pg_catalog.greatest(ay, by) + epsilon then
+     and cx between least(ax, bx) - epsilon and greatest(ax, bx) + epsilon
+     and cy between least(ay, by) - epsilon and greatest(ay, by) + epsilon then
     return true;
   end if;
   if pg_catalog.abs(ab_d) <= epsilon
-     and dx between pg_catalog.least(ax, bx) - epsilon and pg_catalog.greatest(ax, bx) + epsilon
-     and dy between pg_catalog.least(ay, by) - epsilon and pg_catalog.greatest(ay, by) + epsilon then
+     and dx between least(ax, bx) - epsilon and greatest(ax, bx) + epsilon
+     and dy between least(ay, by) - epsilon and greatest(ay, by) + epsilon then
     return true;
   end if;
   if pg_catalog.abs(cd_a) <= epsilon
-     and ax between pg_catalog.least(cx, dx) - epsilon and pg_catalog.greatest(cx, dx) + epsilon
-     and ay between pg_catalog.least(cy, dy) - epsilon and pg_catalog.greatest(cy, dy) + epsilon then
+     and ax between least(cx, dx) - epsilon and greatest(cx, dx) + epsilon
+     and ay between least(cy, dy) - epsilon and greatest(cy, dy) + epsilon then
     return true;
   end if;
   if pg_catalog.abs(cd_b) <= epsilon
-     and bx between pg_catalog.least(cx, dx) - epsilon and pg_catalog.greatest(cx, dx) + epsilon
-     and by between pg_catalog.least(cy, dy) - epsilon and pg_catalog.greatest(cy, dy) + epsilon then
+     and bx between least(cx, dx) - epsilon and greatest(cx, dx) + epsilon
+     and by between least(cy, dy) - epsilon and greatest(cy, dy) + epsilon then
     return true;
   end if;
 
@@ -83,7 +83,7 @@ create function private.normalize_map_entity_geometry(
 )
 returns jsonb
 language plpgsql
-immutable
+stable
 security invoker
 set search_path = ''
 as $$
@@ -101,8 +101,6 @@ declare
   area_twice double precision := 0;
   first_index integer := 1;
   next_index integer;
-  i integer;
-  j integer;
   output_index integer;
   epsilon constant double precision := 1e-9;
 begin
@@ -269,10 +267,10 @@ begin
   end if;
 
   for vertex in select value from pg_catalog.jsonb_array_elements(p_geometry -> 'vertices') loop
-    min_x := pg_catalog.least(min_x, (vertex ->> 'x')::double precision);
-    max_x := pg_catalog.greatest(max_x, (vertex ->> 'x')::double precision);
-    min_y := pg_catalog.least(min_y, (vertex ->> 'y')::double precision);
-    max_y := pg_catalog.greatest(max_y, (vertex ->> 'y')::double precision);
+    min_x := least(min_x, (vertex ->> 'x')::double precision);
+    max_x := greatest(max_x, (vertex ->> 'x')::double precision);
+    min_y := least(min_y, (vertex ->> 'y')::double precision);
+    max_y := greatest(max_y, (vertex ->> 'y')::double precision);
   end loop;
 
   x := (min_x + max_x) / 2;
