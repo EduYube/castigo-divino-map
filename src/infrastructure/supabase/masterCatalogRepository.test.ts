@@ -21,7 +21,32 @@ const VALID_PAYLOAD = {
       summary: 'Private summary',
       description: 'Private description',
       portrait_path: 'portraits/11111111-1111-4111-8111-111111111111.jpg',
+      geometry: { kind: 'point', coordinates: { x: 100, y: 200 } },
       x: 100,
+      y: 200,
+      category_id: 'category-master-test',
+      updated_at: '2026-08-28T00:00:00.000Z',
+    },
+    {
+      id: 'location-master-area',
+      slug: 'master-area',
+      entity_type: 'location',
+      visibility: 'pin',
+      audience: 'master',
+      name: 'Master Area',
+      summary: 'Private area',
+      description: 'Private polygon',
+      portrait_path: null,
+      geometry: {
+        kind: 'polygon',
+        vertices: [
+          { x: 100, y: 100 },
+          { x: 300, y: 100 },
+          { x: 300, y: 300 },
+          { x: 100, y: 300 },
+        ],
+      },
+      x: 200,
       y: 200,
       category_id: 'category-master-test',
       updated_at: '2026-08-28T00:00:00.000Z',
@@ -119,7 +144,7 @@ function repositoryWith(
 }
 
 describe('SupabaseMasterCatalogRepository', () => {
-  test('uses only the campaign-scoped v4 RPC with the admin bearer session', async () => {
+  test('uses only the campaign-scoped geometry-aware v5 RPC with the admin bearer session', async () => {
     const capturedRequests: Request[] = [];
     const repository = repositoryWith(async (input, init) => {
       capturedRequests.push(new Request(input, init));
@@ -140,7 +165,7 @@ describe('SupabaseMasterCatalogRepository', () => {
     if (!request) return;
 
     expect(request.method).toBe('POST');
-    expect(new URL(request.url).pathname).toBe('/rest/v1/rpc/admin_get_master_catalog_v4');
+    expect(new URL(request.url).pathname).toBe('/rest/v1/rpc/admin_get_master_catalog_v5');
     expect(request.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
     expect(request.headers.get('authorization')).toBe(`Bearer ${ACCESS_TOKEN}`);
     expect(request.headers.get('content-type')).toBe('application/json');
@@ -149,14 +174,32 @@ describe('SupabaseMasterCatalogRepository', () => {
     expect(request.url).not.toContain('admin_get_master_catalog_v2');
     expect(request.url).not.toMatch(/admin_get_master_catalog(?:\?|$)/);
 
-    expect(result).toMatchObject({
-      entities: [
-        {
+    expect(result.entities).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
           id: 'entity-master-test',
           audience: 'master',
           portraitPath: 'portraits/11111111-1111-4111-8111-111111111111.jpg',
-        },
-      ],
+          geometry: { kind: 'point', coordinates: { x: 100, y: 200 } },
+        }),
+        expect.objectContaining({
+          id: 'location-master-area',
+          audience: 'master',
+          geometry: {
+            kind: 'polygon',
+            vertices: [
+              { x: 100, y: 100 },
+              { x: 300, y: 100 },
+              { x: 300, y: 300 },
+              { x: 100, y: 300 },
+            ],
+          },
+          x: 200,
+          y: 200,
+        }),
+      ]),
+    );
+    expect(result).toMatchObject({
       entityTags: [{ entityId: 'entity-master-test', tagId: 'tag-master-test' }],
       dispositions: [
         {
@@ -212,7 +255,7 @@ describe('SupabaseMasterCatalogRepository', () => {
       }),
     ).rejects.toMatchObject({ code, status });
 
-    expect(requestedPaths).toEqual(['/rest/v1/rpc/admin_get_master_catalog_v4']);
+    expect(requestedPaths).toEqual(['/rest/v1/rpc/admin_get_master_catalog_v5']);
   });
 
   test('fails closed on malformed successful payloads', async () => {
