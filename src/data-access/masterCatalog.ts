@@ -4,6 +4,7 @@ import type {
   MapVisibility,
   PlayerDisposition,
 } from '../domain/adminMapEntities';
+import type { MapEntityGeometry } from '../domain/mapGeometry';
 
 export interface MasterCatalogEntity {
   readonly id: string;
@@ -15,6 +16,7 @@ export interface MasterCatalogEntity {
   readonly summary: string;
   readonly description: string;
   readonly portraitPath?: string | null;
+  readonly geometry: MapEntityGeometry;
   readonly x: number;
   readonly y: number;
   readonly categoryId: string;
