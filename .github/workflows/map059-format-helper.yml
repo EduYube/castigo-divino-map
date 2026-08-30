@@ -6,20 +6,33 @@ on:
       - master
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   format:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/map-059-proximity-spiderfy'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Format MAP-059 sources
-        run: npx prettier --write src/domain/pinProximity.ts src/map/leaflet.ts
-      - name: Print formatting diff
-        run: git diff -- src/domain/pinProximity.ts src/map/leaflet.ts
+      - name: Apply and format MAP-059 runtime
+        run: |
+          python .github/map059-runtime-patch.py
+          npx prettier --write src/domain/pinProximity.ts src/map/leaflet.ts
+      - name: Commit formatted runtime
+        run: |
+          if git diff --quiet -- src/domain/pinProximity.ts src/map/leaflet.ts; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/domain/pinProximity.ts src/map/leaflet.ts
+          git commit -m 'MAP-059: finalize spiderfy runtime lifecycle'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
