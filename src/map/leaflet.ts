@@ -917,9 +917,7 @@ export function mountFaerunMap(
     }
 
     const marker = group.marker;
-    if (focus) {
-      window.requestAnimationFrame(() => marker.getElement()?.focus({ preventScroll: true }));
-    }
+    if (focus) marker.getElement()?.focus({ preventScroll: true });
   };
 
   locatePin = (pinId: string, revealGrouped = true): void => {
