@@ -2,6 +2,7 @@ import { publishPinPlayerAssociations } from '../app/pinPlayerAssociationRegistr
 import type { EntityId, PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
 import { toLeafletSimpleCoordinate, type LeafletSimpleCoordinate } from './coordinates';
 import type { CampaignCatalog, PlaceId } from './model';
+import { mapEntityUsesPointGeometry } from '../domain/mapGeometry';
 import type {
   PinEntityType,
   PinPlayerAssociationInput,
@@ -84,7 +85,7 @@ export function createAtlasPinMarkerModels(
   beta02Catalog: PublicCatalogSnapshotV2 | null,
 ): readonly AtlasPinMarkerModel[] {
   const consumedEntityIds = new Set<EntityId>();
-  const legacyPins = legacyCatalog.places.map((place): AtlasPinMarkerModel => {
+  const legacyPins = legacyCatalog.places.flatMap((place): readonly AtlasPinMarkerModel[] => {
     const legacyCategory = legacyCatalog.categories.find(({ id }) => id === place.categoryId);
     if (!legacyCategory) {
       throw new Error(`Missing category "${place.categoryId}" for place "${place.id}".`);
@@ -92,36 +93,48 @@ export function createAtlasPinMarkerModels(
 
     const beta02Entity = findStableBeta02Location(beta02Catalog, place);
     if (beta02Entity) consumedEntityIds.add(beta02Entity.id);
+    // MAP-060 polygons are map-visible areas, not point markers. Suppress the
+    // historical Beta 0.1 fallback as well, otherwise a migrated location would
+    // accidentally reappear as a clusterable pin at its representative point.
+    if (beta02Entity && !mapEntityUsesPointGeometry(beta02Entity)) return [];
+
     const beta02Category = beta02Entity
       ? beta02Catalog?.categories.find(({ id }) => id === beta02Entity.categoryId)
       : undefined;
 
-    return {
-      id: place.id,
-      legacyPlaceId: place.id,
-      entityId: beta02Entity?.id ?? null,
-      name: beta02Entity?.name ?? place.name,
-      entityType: beta02Entity?.entityType ?? 'location',
-      coordinate: toLeafletSimpleCoordinate(beta02Entity?.coordinates ?? place.coordinates),
-      categoryId: beta02Entity?.categoryId ?? legacyCategory.id,
-      categoryName: beta02Category?.name ?? legacyCategory.name,
-      categorySlug: beta02Category?.slug ?? legacyCategory.slug,
-      dispositions:
-        beta02Catalog && beta02Entity
-          ? resolveBeta02Dispositions(beta02Catalog, beta02Entity.id)
-          : [],
-      associations:
-        beta02Catalog && beta02Entity
-          ? resolveBeta02Associations(beta02Catalog, beta02Entity.id)
-          : [],
-      portraitPath:
-        beta02Entity?.entityType === 'character' ? (beta02Entity.portraitPath ?? null) : null,
-      source: beta02Entity ? 'beta02' : 'beta01',
-    };
+    return [
+      {
+        id: place.id,
+        legacyPlaceId: place.id,
+        entityId: beta02Entity?.id ?? null,
+        name: beta02Entity?.name ?? place.name,
+        entityType: beta02Entity?.entityType ?? 'location',
+        coordinate: toLeafletSimpleCoordinate(beta02Entity?.coordinates ?? place.coordinates),
+        categoryId: beta02Entity?.categoryId ?? legacyCategory.id,
+        categoryName: beta02Category?.name ?? legacyCategory.name,
+        categorySlug: beta02Category?.slug ?? legacyCategory.slug,
+        dispositions:
+          beta02Catalog && beta02Entity
+            ? resolveBeta02Dispositions(beta02Catalog, beta02Entity.id)
+            : [],
+        associations:
+          beta02Catalog && beta02Entity
+            ? resolveBeta02Associations(beta02Catalog, beta02Entity.id)
+            : [],
+        portraitPath:
+          beta02Entity?.entityType === 'character' ? (beta02Entity.portraitPath ?? null) : null,
+        source: beta02Entity ? 'beta02' : 'beta01',
+      },
+    ];
   });
 
   const supplementalPins = (beta02Catalog?.entities ?? [])
-    .filter((entity) => entity.visibility === 'pin' && !consumedEntityIds.has(entity.id))
+    .filter(
+      (entity) =>
+        entity.visibility === 'pin' &&
+        mapEntityUsesPointGeometry(entity) &&
+        !consumedEntityIds.has(entity.id),
+    )
     .map((entity): AtlasPinMarkerModel => {
       const category = beta02Catalog?.categories.find(({ id }) => id === entity.categoryId);
 
