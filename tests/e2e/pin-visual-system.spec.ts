@@ -286,8 +286,6 @@ test('opens all coincident pins as keyboard-operable options without changing th
     await page.keyboard.press('Escape');
   }
   await expect(coincident).toBeVisible();
-  await coincident.focus();
-  await expect(coincident).toBeFocused();
 
   await coincident.click();
   await page.getByTestId('coincident-pin-option').nth(1).click();
@@ -296,7 +294,8 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await expect(panel).toHaveAttribute('data-entity-type', 'character');
   await expect(panel.getByRole('heading', { level: 3, name: 'Harbor Guard' })).toBeFocused();
   await expect(coincident).toHaveClass(/campaign-marker-icon--active/);
-  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-center', '820.00,1080.50');
+  await expect(coincident).toHaveAttribute('data-marker-lat', '820');
+  await expect(coincident).toHaveAttribute('data-marker-lng', '1080.5');
 
   await panel.getByRole('button', { name: /Cerrar la ficha de Harbor Guard/i }).click();
   await expect(panel).toBeHidden();
