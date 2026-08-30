@@ -233,6 +233,7 @@ for (const viewport of MOBILE_VIEWPORTS) {
     await page.setViewportSize(viewport);
     await openReadyMap(page);
 
+    await page.locator('[data-map-canvas]').scrollIntoViewIfNeeded();
     const marker = page.locator('[data-testid="entity-pin"][data-pin-id="entity-scout"]');
     await expect(marker).toBeVisible();
     const scrollBeforeOpen = await pageScrollY(page);
@@ -313,6 +314,7 @@ test('changes the active pin without leaving the mobile map workspace', async ({
   const scrollBeforeClose = await pageScrollY(page);
   await panel.getByRole('button', { name: 'Cerrar la ficha de Demonstration Harbor' }).click();
   await expect(panel).toBeHidden();
-  await expect(group).toBeFocused();
+  await expect(harborOption).toBeFocused();
+  await expect(group).toHaveAttribute('aria-hidden', 'true');
   expect(Math.abs((await pageScrollY(page)) - scrollBeforeClose)).toBeLessThanOrEqual(1);
 });
