@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
 
+# Temporary MAP-059 iteration workflow; removed before Ready/merge.
 jobs:
   repair-and-targeted-test:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/map-059-proximity-spiderfy'
@@ -31,19 +32,17 @@ jobs:
           source = leaflet.read_text()
           old = """  const reclusterAtCurrentZoom = (): void => {\n    if (destroyed) return;\n    const eagerPortraitPinIds = preserveVisiblePortraitPinIds();\n    renderMarkers(renderedMarkers, eagerPortraitPinIds);\n    refreshMarkerPresentation();\n  };\n\n  const revealPin = (pinId: string, focus: boolean): void => {\n    const group = renderedGroupByPinId.get(pinId);\n    if (!group) return;\n\n    if (group.pins.length > 1) {\n      openSpiderfy(group, pinId, focus);\n      return;\n    }\n\n    const marker = group.marker;\n    if (focus) marker.getElement()?.focus({ preventScroll: true });\n  };\n"""
           new = """  const revealPin = (pinId: string, focus: boolean): void => {\n    const group = renderedGroupByPinId.get(pinId);\n    if (!group) return;\n\n    if (group.pins.length > 1) {\n      openSpiderfy(group, pinId, focus);\n      return;\n    }\n\n    const marker = group.marker;\n    if (focus) marker.getElement()?.focus({ preventScroll: true });\n  };\n\n  const reclusterAtCurrentZoom = (): void => {\n    if (destroyed) return;\n    const activeElement = document.activeElement;\n    const focusedPinId =\n      activeElement instanceof HTMLElement &&\n      activeElement.matches('.campaign-marker-icon[data-pin-id]')\n        ? (activeElement.dataset.pinId ?? null)\n        : null;\n    const eagerPortraitPinIds = preserveVisiblePortraitPinIds();\n    renderMarkers(renderedMarkers, eagerPortraitPinIds);\n    refreshMarkerPresentation();\n    if (focusedPinId) revealPin(focusedPinId, true);\n  };\n"""
-          if old not in source:
-              raise SystemExit('expected recluster/reveal block not found')
-          source = source.replace(old, new, 1)
+          if old in source:
+              source = source.replace(old, new, 1)
           old_search = """      if (pin) revealPin(pin.id, true);\n"""
           new_search = """      if (pin) revealPin(pin.id, false);\n"""
-          if old_search not in source:
-              raise SystemExit('expected search reveal block not found')
-          source = source.replace(old_search, new_search, 1)
+          if old_search in source:
+              source = source.replace(old_search, new_search, 1)
           old_focus = """    focusMarker(placeId: PlaceId): void {\n      const pinId = pinIdByLegacyPlaceId.get(placeId);\n      if (pinId) revealPin(pinId, true);\n    },\n"""
           new_focus = """    focusMarker(placeId: PlaceId): void {\n      const pinId = pinIdByLegacyPlaceId.get(placeId);\n      if (!pinId) return;\n      revealPin(pinId, true);\n      window.requestAnimationFrame(() => {\n        if (!destroyed) revealPin(pinId, true);\n      });\n    },\n"""
-          if old_focus not in source:
-              raise SystemExit('expected focusMarker block not found')
-          leaflet.write_text(source.replace(old_focus, new_focus, 1))
+          if old_focus in source:
+              source = source.replace(old_focus, new_focus, 1)
+          leaflet.write_text(source)
 
           proximity = Path('tests/e2e/map059-proximity-spiderfy.spec.ts')
           source = proximity.read_text()
