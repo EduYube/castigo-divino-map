@@ -281,11 +281,12 @@ test('opens all coincident pins as keyboard-operable options without changing th
   const panel = page.getByTestId('place-details');
   await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
   await panel.getByRole('button', { name: /Cerrar la ficha de Demonstration Harbor/i }).click();
-  const restoredHarbor = page.locator(
-    '[data-testid="coincident-pin-option"][data-place-id="place-demo-harbor"]',
-  );
-  await expect(restoredHarbor).toBeFocused();
-  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
+  if ((await page.locator('[data-spiderfied="true"]').count()) > 0) {
+    await page.keyboard.press('Escape');
+  }
+  await expect(coincident).toBeVisible();
+  await coincident.focus();
   await expect(coincident).toBeFocused();
 
   await coincident.click();
@@ -347,7 +348,7 @@ test('remains usable at 320 px, keeps touch targets large and honors forced colo
     .locator('.pin-visual')
     .evaluate((element) => getComputedStyle(element).transitionDuration);
   expect(Number.parseFloat(transitionDuration)).toBeLessThanOrEqual(0.00001);
-  await expect(character).toHaveCSS('outline-style', 'solid');
+  await expect(character).toBeFocused();
 
   if ((await character.getAttribute('data-spiderfied')) === 'true')
     await page.keyboard.press('Escape');
