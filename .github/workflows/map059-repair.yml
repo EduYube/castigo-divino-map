@@ -74,7 +74,7 @@ jobs:
       - name: Run targeted Chromium regressions
         if: steps.commit.outputs.changed == 'false'
         run: >-
-          npx playwright test
+          CI= npx playwright test
           tests/e2e/app.spec.ts
           tests/e2e/compact-pin-details.spec.ts
           tests/e2e/geographic-search.spec.ts
@@ -87,3 +87,6 @@ jobs:
           tests/e2e/map059-master-isolation.spec.ts
           tests/e2e/map059-proximity-spiderfy.spec.ts
           --project=chromium
+          --workers=4
+          --retries=0
+          --max-failures=20
