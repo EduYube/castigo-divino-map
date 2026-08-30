@@ -48,6 +48,17 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
     root.querySelectorAll<HTMLElement>('.campaign-marker-icon').forEach((element) => {
       const pinId = element.dataset.pinId;
       const inner = element.querySelector<HTMLElement>('.pin-visual');
+
+      // MAP-059 clusters intentionally carry only authorized quantity. They must not inherit
+      // the Máster badge/style from any member because that would turn the aggregate marker
+      // into a side channel about nearby private content. Individual spiderfied pins still use
+      // data-pin-id and therefore receive their normal non-colour Máster signal below.
+      if (element.dataset.proximityCluster === 'true') {
+        delete element.dataset.audience;
+        inner?.classList.remove('pin-visual--master');
+        return;
+      }
+
       if (pinId) {
         const marker = byId.get(pinId);
         const master = Boolean(marker && isMaster(marker));
