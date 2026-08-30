@@ -146,10 +146,7 @@ function geometryValue(
   y: number,
 ): MapEntityGeometry {
   try {
-    return normalizeMapEntityGeometry(
-      recordEntityType,
-      value ?? createPointMapGeometry({ x, y }),
-    );
+    return normalizeMapEntityGeometry(recordEntityType, value ?? createPointMapGeometry({ x, y }));
   } catch (error) {
     throw new AdminMapEntityRepositoryError(
       'invalid-response',
