@@ -30,10 +30,10 @@ function distanceSquared(left: ScreenPoint, right: ScreenPoint): number {
 }
 
 function averagePoint(points: readonly ScreenPoint[]): ScreenPoint {
-  const total = points.reduce(
-    (sum, point) => ({ x: sum.x + point.x, y: sum.y + point.y }),
-    { x: 0, y: 0 },
-  );
+  const total = points.reduce((sum, point) => ({ x: sum.x + point.x, y: sum.y + point.y }), {
+    x: 0,
+    y: 0,
+  });
   return { x: total.x / points.length, y: total.y / points.length };
 }
 
@@ -49,9 +49,7 @@ export function groupPinsByScreenDistance<T>(
 ): readonly ProximityPinGroup<T>[] {
   if (pins.length === 0) return [];
   if (!(thresholdPx > 0) || !Number.isFinite(thresholdPx)) {
-    throw new Error(
-      'Pin clustering threshold must be a finite positive number.',
-    );
+    throw new Error('Pin clustering threshold must be a finite positive number.');
   }
 
   const points = pins.map(project);
@@ -91,8 +89,7 @@ export function groupPinsByScreenDistance<T>(
 
     for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
       for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
-        const candidates =
-          buckets.get(`${cellX + offsetX}:${cellY + offsetY}`) ?? [];
+        const candidates = buckets.get(`${cellX + offsetX}:${cellY + offsetY}`) ?? [];
         for (const candidate of candidates) {
           // At exactly one target width, the interaction boxes can meet without
           // obscuring one another, so only strictly closer centers are grouped.
@@ -156,10 +153,7 @@ export function createSpiderfyPoints(
   let radius = minRadius;
 
   while (remaining > 0) {
-    const capacity = Math.max(
-      6,
-      Math.floor((2 * Math.PI * radius) / (targetPx * 1.08)),
-    );
+    const capacity = Math.max(6, Math.floor((2 * Math.PI * radius) / (targetPx * 1.08)));
     const ringCount = Math.min(remaining, capacity);
     rings.push({ count: ringCount, radius });
     remaining -= ringCount;
@@ -167,40 +161,20 @@ export function createSpiderfyPoints(
   }
 
   const desiredRadius = rings.at(-1)?.radius ?? minRadius;
-  const availableRadiusX = Math.max(
-    0,
-    (viewport.width - edgeInset * 2) / 2,
-  );
-  const availableRadiusY = Math.max(
-    0,
-    (viewport.height - edgeInset * 2) / 2,
-  );
-  const fittedRadius = Math.min(
-    desiredRadius,
-    availableRadiusX,
-    availableRadiusY,
-  );
-  const scale =
-    desiredRadius > 0 ? Math.min(1, fittedRadius / desiredRadius) : 1;
+  const availableRadiusX = Math.max(0, (viewport.width - edgeInset * 2) / 2);
+  const availableRadiusY = Math.max(0, (viewport.height - edgeInset * 2) / 2);
+  const fittedRadius = Math.min(desiredRadius, availableRadiusX, availableRadiusY);
+  const scale = desiredRadius > 0 ? Math.min(1, fittedRadius / desiredRadius) : 1;
   const maxRadius = desiredRadius * scale;
   const center = {
-    x: clamp(
-      origin.x,
-      edgeInset + maxRadius,
-      viewport.width - edgeInset - maxRadius,
-    ),
-    y: clamp(
-      origin.y,
-      edgeInset + maxRadius,
-      viewport.height - edgeInset - maxRadius,
-    ),
+    x: clamp(origin.x, edgeInset + maxRadius, viewport.width - edgeInset - maxRadius),
+    y: clamp(origin.y, edgeInset + maxRadius, viewport.height - edgeInset - maxRadius),
   };
 
   const points: ScreenPoint[] = [];
   for (const [ringIndex, ring] of rings.entries()) {
     const fittedRingRadius = ring.radius * scale;
-    const phase =
-      -Math.PI / 2 + (ringIndex % 2 === 0 ? 0 : Math.PI / ring.count);
+    const phase = -Math.PI / 2 + (ringIndex % 2 === 0 ? 0 : Math.PI / ring.count);
     for (let index = 0; index < ring.count; index += 1) {
       const angle = phase + (2 * Math.PI * index) / ring.count;
       points.push({
