@@ -299,8 +299,11 @@ test('opens all coincident pins as keyboard-operable options without changing th
 
   await panel.getByRole('button', { name: /Cerrar la ficha de Harbor Guard/i }).click();
   await expect(panel).toBeHidden();
-  await expect(options.nth(1)).toBeFocused();
-  await expect(coincident).toHaveAttribute('aria-hidden', 'true');
+  await expect(options).toHaveCount(0);
+  await expect(coincident).toBeVisible();
+  await expect(coincident).not.toHaveAttribute('aria-hidden', 'true');
+  await expect(coincident).toHaveAttribute('data-marker-lat', '820');
+  await expect(coincident).toHaveAttribute('data-marker-lng', '1080.5');
 });
 
 test('preserves legacy filter dimming while keeping type semantics and pins operable', async ({
