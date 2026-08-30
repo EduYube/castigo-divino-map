@@ -236,7 +236,9 @@ describe('parsePublicCatalogSnapshotV2', () => {
 
     const parsed = await parsePublicCatalogSnapshotV2(snapshot);
     if (parsed.data.contract !== 'beta02') throw new Error('Expected Beta 0.2 cache projection.');
-    expect(parsed.data.catalog.entities.every((entity) => entity.geometry === undefined)).toBe(true);
+    expect(parsed.data.catalog.entities.every((entity) => entity.geometry === undefined)).toBe(
+      true,
+    );
   });
 
   test('rejects duplicate identifiers even when the checksum is coherent', async () => {
