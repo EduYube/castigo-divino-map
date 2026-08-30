@@ -595,7 +595,7 @@ test('master pin remains distinguishable on mobile with reduced motion and force
   await searchbox.fill(MASTER_NAME);
   await page.locator(`[data-search-result-id="${MASTER_ID}"]`).click();
   const marker = page.locator(
-    `[data-spiderfied="true"][data-entity-id="${MASTER_ID}"][data-audience="master"]`,
+    `.campaign-marker-icon[data-entity-id="${MASTER_ID}"][data-audience="master"]`,
   );
   await expect(marker).toHaveCount(1);
   await expect(marker).toHaveAttribute('aria-label', /Contenido del Máster/);

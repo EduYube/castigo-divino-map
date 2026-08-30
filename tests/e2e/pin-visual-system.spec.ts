@@ -281,9 +281,9 @@ test('opens all coincident pins as keyboard-operable options without changing th
   const panel = page.getByTestId('place-details');
   await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
   await panel.getByRole('button', { name: /Cerrar la ficha de Demonstration Harbor/i }).click();
-  const restoredHarbor = page
-    .getByTestId('coincident-pin-option')
-    .filter({ has: page.locator('[data-place-id="place-demo-harbor"]') });
+  const restoredHarbor = page.locator(
+    '[data-testid="coincident-pin-option"][data-place-id="place-demo-harbor"]',
+  );
   await expect(restoredHarbor).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(coincident).toBeFocused();
@@ -343,15 +343,11 @@ test('remains usable at 320 px, keeps touch targets large and honors forced colo
   expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
   await character.focus();
 
-  const styles = await character.locator('.pin-visual').evaluate((element) => {
-    const style = getComputedStyle(element);
-    return {
-      transitionDuration: style.transitionDuration,
-      outlineStyle: style.outlineStyle,
-    };
-  });
-  expect(Number.parseFloat(styles.transitionDuration)).toBeLessThanOrEqual(0.00001);
-  expect(styles.outlineStyle).not.toBe('none');
+  const transitionDuration = await character
+    .locator('.pin-visual')
+    .evaluate((element) => getComputedStyle(element).transitionDuration);
+  expect(Number.parseFloat(transitionDuration)).toBeLessThanOrEqual(0.00001);
+  await expect(character).toHaveCSS('outline-style', 'solid');
 
   if ((await character.getAttribute('data-spiderfied')) === 'true')
     await page.keyboard.press('Escape');
