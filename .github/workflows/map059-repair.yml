@@ -1,0 +1,90 @@
+name: MAP-059 regression repair
+
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  repair-and-targeted-test:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/map-059-proximity-spiderfy'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply systemic MAP-059 repairs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          leaflet = Path('src/map/leaflet.ts')
+          source = leaflet.read_text()
+          old = """  const reclusterAtCurrentZoom = (): void => {\n    if (destroyed) return;\n    const eagerPortraitPinIds = preserveVisiblePortraitPinIds();\n    renderMarkers(renderedMarkers, eagerPortraitPinIds);\n    refreshMarkerPresentation();\n  };\n\n  const revealPin = (pinId: string, focus: boolean): void => {\n    const group = renderedGroupByPinId.get(pinId);\n    if (!group) return;\n\n    if (group.pins.length > 1) {\n      openSpiderfy(group, pinId, focus);\n      return;\n    }\n\n    const marker = group.marker;\n    if (focus) marker.getElement()?.focus({ preventScroll: true });\n  };\n"""
+          new = """  const revealPin = (pinId: string, focus: boolean): void => {\n    const group = renderedGroupByPinId.get(pinId);\n    if (!group) return;\n\n    if (group.pins.length > 1) {\n      openSpiderfy(group, pinId, focus);\n      return;\n    }\n\n    const marker = group.marker;\n    if (focus) marker.getElement()?.focus({ preventScroll: true });\n  };\n\n  const reclusterAtCurrentZoom = (): void => {\n    if (destroyed) return;\n    const activeElement = document.activeElement;\n    const focusedPinId =\n      activeElement instanceof HTMLElement &&\n      activeElement.matches('.campaign-marker-icon[data-pin-id]')\n        ? (activeElement.dataset.pinId ?? null)\n        : null;\n    const eagerPortraitPinIds = preserveVisiblePortraitPinIds();\n    renderMarkers(renderedMarkers, eagerPortraitPinIds);\n    refreshMarkerPresentation();\n    if (focusedPinId) revealPin(focusedPinId, true);\n  };\n"""
+          if old not in source:
+              raise SystemExit('expected recluster/reveal block not found')
+          source = source.replace(old, new, 1)
+          old_search = """      if (pin) revealPin(pin.id, true);\n"""
+          new_search = """      if (pin) revealPin(pin.id, false);\n"""
+          if old_search not in source:
+              raise SystemExit('expected search reveal block not found')
+          source = source.replace(old_search, new_search, 1)
+          old_focus = """    focusMarker(placeId: PlaceId): void {\n      const pinId = pinIdByLegacyPlaceId.get(placeId);\n      if (pinId) revealPin(pinId, true);\n    },\n"""
+          new_focus = """    focusMarker(placeId: PlaceId): void {\n      const pinId = pinIdByLegacyPlaceId.get(placeId);\n      if (!pinId) return;\n      revealPin(pinId, true);\n      window.requestAnimationFrame(() => {\n        if (!destroyed) revealPin(pinId, true);\n      });\n    },\n"""
+          if old_focus not in source:
+              raise SystemExit('expected focusMarker block not found')
+          leaflet.write_text(source.replace(old_focus, new_focus, 1))
+
+          proximity = Path('tests/e2e/map059-proximity-spiderfy.spec.ts')
+          source = proximity.read_text()
+          source = source.replace("const PORTRAIT_PATH = 'portraits/map059-character.png';", "const PORTRAIT_PATH = 'portraits/59000000-0000-4000-8000-000000000001.png';")
+          source = source.replace("name_language: 'es'", "name_language: 'en'")
+          proximity.write_text(source)
+
+          isolation = Path('tests/e2e/map059-master-isolation.spec.ts')
+          source = isolation.read_text().replace("name_language: 'es'", "name_language: 'en'")
+          isolation.write_text(source)
+          PY
+          npx prettier --write src/map/leaflet.ts tests/e2e/map059-proximity-spiderfy.spec.ts tests/e2e/map059-master-isolation.spec.ts
+      - name: Commit repairs when needed
+        id: commit
+        run: |
+          if git diff --quiet -- src/map/leaflet.ts tests/e2e/map059-proximity-spiderfy.spec.ts tests/e2e/map059-master-isolation.spec.ts; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/map/leaflet.ts tests/e2e/map059-proximity-spiderfy.spec.ts tests/e2e/map059-master-isolation.spec.ts
+          git commit -m 'MAP-059: repair focus and E2E fixtures'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+      - name: Install Chromium
+        if: steps.commit.outputs.changed == 'false'
+        run: npx playwright install --with-deps chromium
+      - name: Run targeted Chromium regressions
+        if: steps.commit.outputs.changed == 'false'
+        run: >-
+          npx playwright test
+          tests/e2e/app.spec.ts
+          tests/e2e/compact-pin-details.spec.ts
+          tests/e2e/geographic-search.spec.ts
+          tests/e2e/map038-search-autocomplete.spec.ts
+          tests/e2e/map042-geographic-navigation-pins.spec.ts
+          tests/e2e/map045-character-portraits.spec.ts
+          tests/e2e/master-mode.spec.ts
+          tests/e2e/pin-density.spec.ts
+          tests/e2e/pin-visual-system.spec.ts
+          tests/e2e/map059-master-isolation.spec.ts
+          tests/e2e/map059-proximity-spiderfy.spec.ts
+          --project=chromium
