@@ -21,13 +21,5 @@ jobs:
       - run: npm ci
       - name: Format MAP-059 sources
         run: npx prettier --write src/domain/pinProximity.ts src/map/leaflet.ts
-      - name: Print formatted sources
-        run: |
-          echo '===PIN_PROXIMITY_BEGIN==='
-          base64 -w 0 src/domain/pinProximity.ts
-          echo
-          echo '===PIN_PROXIMITY_END==='
-          echo '===LEAFLET_BEGIN==='
-          base64 -w 0 src/map/leaflet.ts
-          echo
-          echo '===LEAFLET_END==='
+      - name: Print formatting diff
+        run: git diff -- src/domain/pinProximity.ts src/map/leaflet.ts
