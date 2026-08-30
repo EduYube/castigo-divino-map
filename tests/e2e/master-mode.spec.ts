@@ -589,6 +589,8 @@ test('master pin remains distinguishable on mobile with reduced motion and force
 
   const toggle = page.locator('[data-master-mode-toggle]');
   await expect(toggle).toBeVisible();
+  const searchToggle = page.locator('[data-place-search-toggle]');
+  if ((await searchToggle.getAttribute('aria-expanded')) === 'false') await searchToggle.click();
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   await searchbox.fill(MASTER_NAME);
   await page.locator(`[data-search-result-id="${MASTER_ID}"]`).click();

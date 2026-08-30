@@ -242,6 +242,8 @@ async function revealCharacterMarker(page: Page, id: string, name: string): Prom
   const direct = page.locator(`.campaign-marker-icon[data-entity-id="${id}"]`);
   if ((await direct.count()) > 0) return direct;
 
+  const searchToggle = page.locator('[data-place-search-toggle]');
+  if ((await searchToggle.getAttribute('aria-expanded')) === 'false') await searchToggle.click();
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   await searchbox.fill(name);
   const result = page.locator(`[data-search-result-id="${id}"]`);

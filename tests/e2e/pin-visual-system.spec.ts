@@ -281,6 +281,11 @@ test('opens all coincident pins as keyboard-operable options without changing th
   const panel = page.getByTestId('place-details');
   await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
   await panel.getByRole('button', { name: /Cerrar la ficha de Demonstration Harbor/i }).click();
+  const restoredHarbor = page
+    .getByTestId('coincident-pin-option')
+    .filter({ has: page.locator('[data-place-id="place-demo-harbor"]') });
+  await expect(restoredHarbor).toBeFocused();
+  await page.keyboard.press('Escape');
   await expect(coincident).toBeFocused();
 
   await coincident.click();
@@ -326,6 +331,8 @@ test('remains usable at 320 px, keeps touch targets large and honors forced colo
 
   await expect(page.locator('[data-pin-legend]')).toBeHidden();
 
+  const searchToggle = page.locator('[data-place-search-toggle]');
+  if ((await searchToggle.getAttribute('aria-expanded')) === 'false') await searchToggle.click();
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
   await searchbox.fill('Scout');
   await page.locator('[data-search-result-id="entity-scout"]').click();

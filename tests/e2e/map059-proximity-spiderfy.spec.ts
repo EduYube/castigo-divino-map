@@ -304,14 +304,24 @@ test('clusters near pins, keeps exact-coordinate legacy integrated, and separate
   await expect(cluster(page, 3)).toBeVisible();
   await expect(cluster(page, 3)).toHaveAttribute('aria-label', '3 pines agrupados');
 
-  for (let attempt = 0; attempt < 8 && (await cluster(page, 2).count()) > 0; attempt += 1) {
+  const zoomPairIsGrouped = async (): Promise<boolean> =>
+    page.locator('[data-proximity-cluster="true"]').evaluateAll((elements) =>
+      elements.some((element) => {
+        const marker = element as HTMLElement;
+        const lat = Number(marker.dataset.markerLat);
+        const lng = Number(marker.dataset.markerLng);
+        return Math.abs(lat - 1000) < 80 && Math.abs(lng - 1550) < 80;
+      }),
+    );
+  await expect.poll(zoomPairIsGrouped).toBe(true);
+
+  for (let attempt = 0; attempt < 8 && (await zoomPairIsGrouped()); attempt += 1) {
     const zoomIn = page.getByTitle('Acercar');
     if (await zoomIn.isDisabled()) break;
     await zoomIn.click();
   }
 
-  await expect(page.locator(`[data-pin-id="${ZOOM_A_ID}"]`)).toBeVisible();
-  await expect(page.locator(`[data-pin-id="${ZOOM_B_ID}"]`)).toBeVisible();
+  await expect.poll(zoomPairIsGrouped).toBe(false);
   await expect(cluster(page, 3)).toBeVisible();
 });
 
