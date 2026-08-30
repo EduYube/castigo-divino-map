@@ -146,8 +146,8 @@ export function createSpiderfyPoints(
 
   const halfTarget = targetPx / 2;
   const edgeInset = halfTarget + SPIDERFY_EDGE_GUTTER_PX;
-  const minRadius = targetPx * 0.88;
-  const ringGap = targetPx * 0.92;
+  const minRadius = targetPx * 1.08;
+  const ringGap = targetPx * 1.08;
   const rings: Array<{ readonly count: number; readonly radius: number }> = [];
   let remaining = count;
   let radius = minRadius;
