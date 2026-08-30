@@ -168,9 +168,10 @@ export function mapGeometryRepresentativePoint(geometry: MapEntityGeometry): Map
   };
 }
 
-export function mapEntityUsesPointGeometry(
-  value: { readonly geometry?: MapEntityGeometry; readonly coordinates?: MapCoordinate },
-): boolean {
+export function mapEntityUsesPointGeometry(value: {
+  readonly geometry?: MapEntityGeometry;
+  readonly coordinates?: MapCoordinate;
+}): boolean {
   // Historical snapshots before MAP-060 have no explicit geometry and are points.
   return value.geometry?.kind !== 'polygon';
 }
