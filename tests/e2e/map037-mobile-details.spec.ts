@@ -234,7 +234,7 @@ for (const viewport of MOBILE_VIEWPORTS) {
     await openReadyMap(page);
 
     const marker = page.locator('[data-testid="entity-pin"][data-pin-id="entity-scout"]');
-    await marker.scrollIntoViewIfNeeded();
+    await expect(marker).toBeVisible();
     const scrollBeforeOpen = await pageScrollY(page);
 
     await marker.click();
@@ -290,12 +290,14 @@ test('changes the active pin without leaving the mobile map workspace', async ({
 
   const group = page.getByTestId('coincident-pin');
   await expect(group).toBeVisible();
-  await group.click();
+  await group.focus();
+  await page.keyboard.press('Enter');
   const harborOption = page.locator(
     '[data-testid="coincident-pin-option"][data-pin-id="place-demo-harbor"]',
   );
   await expect(harborOption).toBeVisible();
-  await harborOption.click();
+  await harborOption.focus();
+  await page.keyboard.press('Enter');
 
   await expect(panel).toBeVisible();
   await expect(
