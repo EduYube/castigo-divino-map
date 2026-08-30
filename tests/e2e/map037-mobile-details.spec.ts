@@ -89,7 +89,7 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
       name_language: 'en',
       summary: 'Resumen del explorador.',
       description: 'Descripción del explorador.',
-      x: 1500,
+      x: 2600,
       y: 1000,
       category_id: 'category-landmark',
     },
