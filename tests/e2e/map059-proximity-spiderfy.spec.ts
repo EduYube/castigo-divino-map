@@ -280,20 +280,18 @@ async function openMap(page: Page): Promise<void> {
 }
 
 function cluster(page: Page, count: number): Locator {
-  return page.locator(
-    `[data-proximity-cluster="true"][data-pin-count="${count}"]`,
-  );
+  return page.locator(`[data-proximity-cluster="true"][data-pin-count="${count}"]`);
 }
 
 function spiderPin(page: Page, id: string): Locator {
-  return page.locator(
-    `[data-spiderfied="true"][data-pin-id="${id}"]`,
-  );
+  return page.locator(`[data-spiderfied="true"][data-pin-id="${id}"]`);
 }
 
 async function closeDetails(page: Page, name: string): Promise<void> {
   const details = page.getByTestId('place-details');
-  await details.getByRole('button', { name: new RegExp(`Cerrar la ficha de ${name}`, 'i') }).click();
+  await details
+    .getByRole('button', { name: new RegExp(`Cerrar la ficha de ${name}`, 'i') })
+    .click();
   await expect(details).toBeHidden();
 }
 
@@ -420,7 +418,9 @@ test('outside pointer, pan and zoom collapse spiderfy without stale members', as
   await expect(page.locator('[data-spiderfied="true"]')).toHaveCount(0);
 });
 
-test('search automatically reveals and focuses a pin that is currently grouped', async ({ page }) => {
+test('search automatically reveals and focuses a pin that is currently grouped', async ({
+  page,
+}) => {
   await openMap(page);
 
   await page.getByRole('searchbox', { name: 'Buscar lugares' }).fill('Torre MAP059');
@@ -492,7 +492,14 @@ for (const width of [320, 390, 430]) {
     const boxes = await page.locator('[data-spiderfied="true"]').evaluateAll((elements) =>
       elements.map((element) => {
         const rect = element.getBoundingClientRect();
-        return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height };
+        return {
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        };
       }),
     );
 
