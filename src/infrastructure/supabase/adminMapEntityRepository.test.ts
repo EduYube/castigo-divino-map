@@ -212,6 +212,56 @@ describe('SupabaseAdminMapEntityRepository', () => {
     ).resolves.toMatchObject({ record: { id: 'entity-map019', audience: 'master' } });
   });
 
+  it('transports polygon geometry without legacy x/y save parameters', async () => {
+    const polygon = {
+      kind: 'polygon',
+      vertices: [
+        { x: 100, y: 100 },
+        { x: 300, y: 100 },
+        { x: 300, y: 300 },
+        { x: 100, y: 300 },
+      ],
+    } as const;
+    const locationDraft: AdminMapEntityDraft = {
+      ...draft(),
+      entityType: 'location',
+      geometry: polygon,
+      x: 200,
+      y: 200,
+    };
+    const locationPayload = {
+      ...detailPayload,
+      record: {
+        ...detailPayload.record,
+        entity_type: 'location',
+        geometry: polygon,
+        x: 200,
+        y: 200,
+      },
+    };
+    const fetchImplementation = vi.fn<typeof fetch>(async (input, init) => {
+      expect(new URL(String(input)).pathname).toMatch(/\/rpc\/admin_save_map_entity_v3$/);
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      expect(body.p_geometry).toEqual(polygon);
+      expect(body).not.toHaveProperty('p_x');
+      expect(body).not.toHaveProperty('p_y');
+      return jsonResponse(locationPayload);
+    });
+    const repository = new SupabaseAdminMapEntityRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      storage: createStorage(),
+      fetchImplementation,
+      now: () => 1_700_000_000_000,
+    });
+
+    await expect(
+      repository.save(null, locationDraft, { signal: new AbortController().signal }),
+    ).resolves.toMatchObject({
+      record: { id: 'entity-map019', entityType: 'location', geometry: polygon, x: 200, y: 200 },
+    });
+  });
+
   it('normalizes stale writes and invalid relations without leaking PostgreSQL messages', async () => {
     for (const [databaseCode, expectedCode] of [
       ['40001', 'stale-write'],
