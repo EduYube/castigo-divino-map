@@ -20,6 +20,18 @@ export interface PublicCoordinate {
   readonly y: number;
 }
 
+export interface PublicPointGeometry {
+  readonly kind: 'point';
+  readonly coordinates: PublicCoordinate;
+}
+
+export interface PublicPolygonGeometry {
+  readonly kind: 'polygon';
+  readonly vertices: readonly PublicCoordinate[];
+}
+
+export type PublicMapGeometry = PublicPointGeometry | PublicPolygonGeometry;
+
 export interface PublicSearchExtent {
   readonly minX: number;
   readonly maxX: number;
@@ -61,6 +73,12 @@ export interface PublicMapEntity {
   readonly description: string;
   /** MAP-045 stable private Storage reference; absent/null means no portrait. */
   readonly portraitPath?: string | null;
+  /**
+   * Historical snapshots before MAP-060 omit geometry and are interpreted as the
+   * point at `coordinates`. New snapshots persist this canonical point/polygon.
+   */
+  readonly geometry?: PublicMapGeometry;
+  /** Deterministic representative point; derived from geometry for polygons. */
   readonly coordinates: PublicCoordinate;
   readonly categoryId: CategoryId;
   readonly tagIds: readonly TagId[];
