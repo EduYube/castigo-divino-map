@@ -89,7 +89,7 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
       name_language: 'en',
       summary: 'Resumen del explorador.',
       description: 'Descripción del explorador.',
-      x: 1500,
+      x: 2600,
       y: 1000,
       category_id: 'category-landmark',
     },
@@ -233,8 +233,9 @@ for (const viewport of MOBILE_VIEWPORTS) {
     await page.setViewportSize(viewport);
     await openReadyMap(page);
 
+    await page.locator('[data-map-canvas]').scrollIntoViewIfNeeded();
     const marker = page.locator('[data-testid="entity-pin"][data-pin-id="entity-scout"]');
-    await marker.scrollIntoViewIfNeeded();
+    await expect(marker).toBeVisible();
     const scrollBeforeOpen = await pageScrollY(page);
 
     await marker.click();
@@ -290,12 +291,14 @@ test('changes the active pin without leaving the mobile map workspace', async ({
 
   const group = page.getByTestId('coincident-pin');
   await expect(group).toBeVisible();
-  await group.click();
+  await group.focus();
+  await page.keyboard.press('Enter');
   const harborOption = page.locator(
     '[data-testid="coincident-pin-option"][data-pin-id="place-demo-harbor"]',
   );
   await expect(harborOption).toBeVisible();
-  await harborOption.click();
+  await harborOption.focus();
+  await page.keyboard.press('Enter');
 
   await expect(panel).toBeVisible();
   await expect(
@@ -311,6 +314,7 @@ test('changes the active pin without leaving the mobile map workspace', async ({
   const scrollBeforeClose = await pageScrollY(page);
   await panel.getByRole('button', { name: 'Cerrar la ficha de Demonstration Harbor' }).click();
   await expect(panel).toBeHidden();
-  await expect(group).toBeFocused();
+  await expect(harborOption).toBeFocused();
+  await expect(group).toHaveAttribute('aria-hidden', 'true');
   expect(Math.abs((await pageScrollY(page)) - scrollBeforeClose)).toBeLessThanOrEqual(1);
 });

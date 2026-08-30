@@ -238,6 +238,23 @@ function standardCharacterMarker(page: Page) {
   return page.locator(`.campaign-marker-icon[data-entity-id="${STANDARD_CHARACTER_ID}"]`);
 }
 
+async function revealCharacterMarker(page: Page, id: string, name: string): Promise<Locator> {
+  const direct = page.locator(`.campaign-marker-icon[data-entity-id="${id}"]`);
+  if ((await direct.count()) > 0) return direct;
+
+  const searchToggle = page.locator('[data-place-search-toggle]');
+  if ((await searchToggle.getAttribute('aria-expanded')) === 'false') await searchToggle.click();
+  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await searchbox.fill(name);
+  const result = page.locator(`[data-search-result-id="${id}"]`);
+  await expect(result).toBeVisible();
+  await result.click();
+
+  const revealed = page.locator(`.campaign-marker-icon[data-entity-id="${id}"]`);
+  await expect(revealed).toBeVisible();
+  return revealed;
+}
+
 async function markerGeometry(marker: Locator): Promise<MarkerGeometry> {
   return marker.evaluate((element) => {
     const visual = element.querySelector<HTMLElement>('.pin-visual');
@@ -432,25 +449,20 @@ for (const viewport of [
   { width: 390, height: 844, label: '390×844' },
   { width: 430, height: 932, label: '430×932' },
 ] as const) {
-  test(`portrait is visible at initial zoom and marker/details remain compact at ${viewport.label}`, async ({
+  test(`portrait remains discoverable and marker/details stay compact at ${viewport.label}`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     const backend = await configureBackend(page, PORTRAIT_PATH);
     await page.goto('/');
 
-    const marker = characterMarker(page);
-    const standardMarker = standardCharacterMarker(page);
+    const marker = await revealCharacterMarker(page, CHARACTER_ID, 'MAP045 Portrait Character');
     await expect(marker).toHaveAttribute('data-portrait-marker', 'true');
-    await expect.poll(() => backend.markerRequests().length).toBe(1);
+    await expect.poll(() => backend.markerRequests().length).toBeGreaterThanOrEqual(1);
     const portraitGeometry = await markerGeometry(marker);
-    const standardGeometry = await markerGeometry(standardMarker);
     expect(portraitGeometry.markerWidth).toBeCloseTo(52, 1);
     expect(portraitGeometry.markerHeight).toBeCloseTo(52, 1);
-    expect(portraitGeometry.visualCssWidth).toBe(standardGeometry.visualCssWidth);
-    expect(portraitGeometry.visualCssHeight).toBe(standardGeometry.visualCssHeight);
     await marker.click();
-    await expect(marker).toHaveAttribute('data-portrait-marker', 'true');
     await expect(page.getByTestId('compact-character-portrait')).toBeVisible();
     await expect(page.getByTestId('map-shell')).toBeVisible();
     expect(

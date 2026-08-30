@@ -1,17 +1,24 @@
-import L, { type LatLngBounds, type Map as LeafletMap, type Marker } from 'leaflet';
+import L, { type LatLngBounds, type Map as LeafletMap, type Marker, type Polyline } from 'leaflet';
 
 import type { PlaceId } from '../data/model';
 import type { AtlasPinMarkerModel } from '../data/pinMarkers';
 import {
+  createSpiderfyPoints,
+  groupPinsByScreenDistance,
+  PIN_CLUSTER_DISTANCE_PX,
+  PIN_INTERACTION_TARGET_PX,
+  type ProximityPinGroup,
+  type ScreenPoint,
+} from '../domain/pinProximity';
+import {
   createPlayerDispositionVisuals,
   describePlayerDispositions,
   getPinTypeVisual,
-  groupPinsByCoordinate,
-  type CoordinatePinGroup,
 } from '../domain/pinVisualSystem';
 import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './config';
 import { mountExpandedMapLayout } from './expandedMapLayout';
 import { clearMapSearchFocus, locateMapSearchTarget } from './searchFocus';
+import '../styles/pin-proximity.css';
 
 export type MapLoadState = 'loading' | 'ready' | 'error';
 export type PinMatchingSemantics = 'search-and-filters' | 'filters-only';
@@ -66,6 +73,18 @@ interface MapElements {
 interface MarkerDomListener {
   readonly element: HTMLElement;
   readonly handler: (event: KeyboardEvent) => void;
+}
+
+interface RenderedPinGroup {
+  readonly pins: readonly [AtlasPinMarkerModel, ...AtlasPinMarkerModel[]];
+  readonly marker: Marker;
+  readonly center: ScreenPoint;
+}
+
+interface SpiderfyState {
+  readonly group: RenderedPinGroup;
+  readonly memberMarkers: readonly Marker[];
+  readonly legs: readonly Polyline[];
 }
 
 type FilterMatchState = 'true' | 'false' | 'mixed';
@@ -157,8 +176,17 @@ function createSinglePinIcon(marker: AtlasPinMarkerModel): L.DivIcon {
   return L.divIcon({
     className: 'campaign-marker-icon',
     html: createSinglePinMarkup(marker),
-    iconSize: [52, 52],
-    iconAnchor: [26, 26],
+    iconSize: [PIN_INTERACTION_TARGET_PX, PIN_INTERACTION_TARGET_PX],
+    iconAnchor: [PIN_INTERACTION_TARGET_PX / 2, PIN_INTERACTION_TARGET_PX / 2],
+  });
+}
+
+function createClusterIcon(count: number): L.DivIcon {
+  return L.divIcon({
+    className: 'campaign-marker-icon campaign-marker-icon--cluster',
+    html: `<span class="pin-visual pin-visual--cluster"><span class="pin-visual__type-symbol" aria-hidden="true"></span><span class="pin-visual__count" aria-hidden="true">${count}</span></span>`,
+    iconSize: [PIN_INTERACTION_TARGET_PX, PIN_INTERACTION_TARGET_PX],
+    iconAnchor: [PIN_INTERACTION_TARGET_PX / 2, PIN_INTERACTION_TARGET_PX / 2],
   });
 }
 
@@ -205,15 +233,6 @@ function applyPortraitPin(
   element.dataset.portraitMarker = 'true';
 }
 
-function createCoincidentPinIcon(count: number): L.DivIcon {
-  return L.divIcon({
-    className: 'campaign-marker-icon campaign-marker-icon--coincident',
-    html: `<span class="pin-visual pin-visual--coincident"><span class="pin-visual__type-symbol" aria-hidden="true">≡</span><span class="pin-visual__count" aria-hidden="true">${count}</span></span>`,
-    iconSize: [56, 56],
-    iconAnchor: [28, 28],
-  });
-}
-
 function describePin(marker: AtlasPinMarkerModel): string {
   const type = getPinTypeVisual(marker.entityType);
   const dispositions = describePlayerDispositions(marker.dispositions);
@@ -230,49 +249,6 @@ function describePinSemantics(marker: AtlasPinMarkerModel): string {
   return `${type.label}. Relación con los personajes: ${describePlayerDispositions(marker.dispositions)}.`;
 }
 
-function createCoincidentPopup(
-  markers: readonly AtlasPinMarkerModel[],
-  activatePin: (marker: AtlasPinMarkerModel) => void,
-): HTMLElement {
-  const container = document.createElement('section');
-  const heading = document.createElement('p');
-  const list = document.createElement('ul');
-
-  container.className = 'pin-coincident-popup';
-  container.setAttribute('aria-label', 'Pines coincidentes');
-  heading.textContent = `${markers.length} entidades comparten esta coordenada. Elige una:`;
-  list.className = 'pin-coincident-list';
-  list.setAttribute('role', 'list');
-
-  for (const marker of markers) {
-    const item = document.createElement('li');
-    const button = document.createElement('button');
-    const mini = document.createElement('span');
-    const miniSymbol = document.createElement('span');
-    const text = document.createElement('span');
-    const type = getPinTypeVisual(marker.entityType);
-
-    button.type = 'button';
-    button.className = 'pin-coincident-list__button';
-    button.setAttribute('data-testid', 'coincident-pin-option');
-    button.dataset.pinId = marker.id;
-    button.dataset.entityType = marker.entityType;
-    button.setAttribute('aria-label', describePin(marker));
-    mini.className = `pin-coincident-list__mini pin-coincident-list__mini--${marker.entityType}`;
-    mini.setAttribute('aria-hidden', 'true');
-    miniSymbol.textContent = type.symbol;
-    mini.append(miniSymbol);
-    text.textContent = `${marker.name} — ${type.label} — ${describePlayerDispositions(marker.dispositions)}`;
-    button.append(mini, text);
-    button.addEventListener('click', () => activatePin(marker));
-    item.append(button);
-    list.append(item);
-  }
-
-  container.append(heading, list);
-  return container;
-}
-
 function nameZoomControls(control: L.Control.Zoom): void {
   const container = control.getContainer();
 
@@ -283,6 +259,31 @@ function nameZoomControls(control: L.Control.Zoom): void {
       anchor.setAttribute('aria-label', title);
     }
   });
+}
+
+function searchTargetMatchesPin(target: MapSearchTarget, pin: AtlasPinMarkerModel): boolean {
+  const sameCoordinate =
+    pin.coordinate[0] === target.coordinates.y && pin.coordinate[1] === target.coordinates.x;
+  if (!sameCoordinate) return false;
+
+  const normalizedLabel = target.label.trim().toLocaleLowerCase('es');
+  const normalizedName = pin.name.trim().toLocaleLowerCase('es');
+
+  return (
+    normalizedLabel === normalizedName ||
+    normalizedLabel.startsWith(`${normalizedName},`) ||
+    normalizedLabel.startsWith(`${normalizedName}.`)
+  );
+}
+
+function targetIsEditable(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.isContentEditable ||
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement
+  );
 }
 
 export function mountFaerunMap(
@@ -329,7 +330,9 @@ export function mountFaerunMap(
   const expandedMapLayout = mountExpandedMapLayout(root, map, bounds, FAERUN_MAP_CONFIG.maxZoom);
 
   const groupMarkers = new Set<Marker>();
+  const renderedGroups = new Set<RenderedPinGroup>();
   const groupMarkerByPinId = new Map<string, Marker>();
+  const renderedGroupByPinId = new Map<string, RenderedPinGroup>();
   const pinIdByLegacyPlaceId = new Map<PlaceId, string>();
   const markerDomListeners: MarkerDomListener[] = [];
   const portraitAbortControllers = new Set<AbortController>();
@@ -343,6 +346,7 @@ export function mountFaerunMap(
   let activeSupplementalPinId: string | null = null;
   let matchingPinIds = new Set<string>();
   let matchingSemantics: PinMatchingSemantics = 'search-and-filters';
+  let activeSpiderfy: SpiderfyState | null = null;
   let destroyed = false;
 
   const isPinActive = (pin: AtlasPinMarkerModel): boolean =>
@@ -357,20 +361,6 @@ export function mountFaerunMap(
     if (matches.every(Boolean)) return 'true';
     if (matches.every((match) => !match)) return 'false';
     return 'mixed';
-  };
-
-  const locatePin = (pinId: string): void => {
-    const marker = groupMarkerByPinId.get(pinId);
-    if (!marker) return;
-
-    clearMapSearchFocus(map);
-    const targetZoom = Math.min(
-      FAERUN_MAP_CONFIG.maxZoom,
-      Math.max(map.getZoom(), map.getMinZoom() + 1),
-    );
-    map.setView(marker.getLatLng(), targetZoom, { animate: false });
-    map.panInsideBounds(bounds, { animate: false });
-    synchronizeViewDataset(map, elements.shell);
   };
 
   const describeFilterState = (filterState: FilterMatchState): string => {
@@ -391,7 +381,7 @@ export function mountFaerunMap(
       case 'false':
         return 'No coincide con la búsqueda y los filtros actuales, pero sigue disponible.';
       case 'mixed':
-        return 'Contiene pines coincidentes con estados de filtro distintos; todos siguen disponibles.';
+        return 'Contiene pines coincidentes y atenuados; todos siguen disponibles.';
     }
   };
 
@@ -410,13 +400,21 @@ export function mountFaerunMap(
     const semanticDescription =
       pins.length === 1
         ? `${describePinSemantics(firstPin)} `
-        : `${pins.length} entidades comparten esta coordenada. `;
+        : `${pins.length} pines agrupados por proximidad visual. `;
     const activeDescription = isActive
       ? isLegacySingle
         ? 'Lugar activo. '
-        : 'Contiene el pin activo. '
+        : pins.length === 1
+          ? 'Pin activo. '
+          : 'Contiene el pin activo. '
       : '';
-    const accessibleState = `${semanticDescription}${activeDescription}${describeFilterState(filterState)}`;
+    const expandedDescription =
+      pins.length > 1 && activeSpiderfy?.group.marker === leafletMarker
+        ? 'Opciones desplegadas alrededor del grupo. '
+        : pins.length > 1
+          ? 'Activa el grupo para desplegar sus opciones. '
+          : '';
+    const accessibleState = `${semanticDescription}${activeDescription}${expandedDescription}${describeFilterState(filterState)}`;
 
     element.classList.toggle('campaign-marker-icon--active', isActive);
     element.classList.toggle('campaign-marker-icon--matching', filterState !== 'false');
@@ -431,32 +429,52 @@ export function mountFaerunMap(
     leafletMarker.setZIndexOffset(isActive ? 1000 : filterState === 'false' ? 0 : 200);
   };
 
+  const removeMarkerDomListener = (element: HTMLElement): void => {
+    for (let index = markerDomListeners.length - 1; index >= 0; index -= 1) {
+      const listener = markerDomListeners[index];
+      if (listener?.element !== element) continue;
+      listener.element.removeEventListener('keydown', listener.handler);
+      markerDomListeners.splice(index, 1);
+    }
+  };
+
   let refreshPortraitMarkers: (eagerPortraitPinIds?: ReadonlySet<string>) => void = () => undefined;
+  let openSpiderfy: (
+    group: RenderedPinGroup,
+    focusPinId?: string,
+    focusFirst?: boolean,
+  ) => void = () => undefined;
+  let collapseSpiderfy: (restoreFocus?: boolean) => void = () => undefined;
+  let renderMarkers: (
+    markers: readonly AtlasPinMarkerModel[],
+    eagerPortraitPinIds?: ReadonlySet<string>,
+  ) => void = () => undefined;
+  let locatePin: (pinId: string, revealGrouped?: boolean) => void = () => undefined;
 
   const activatePin = (pin: AtlasPinMarkerModel): void => {
+    const originGroup = renderedGroupByPinId.get(pin.id);
+    collapseSpiderfy(false);
     map.closePopup();
     options.onPinActivate?.(pin);
 
     if (pin.legacyPlaceId === null) {
       activeSupplementalPinId = pin.id;
       activePlaceId = null;
-      locatePin(pin.id);
-      elements.searchStatus.textContent = `${pin.name}, ${getPinTypeVisual(pin.entityType).label.toLocaleLowerCase('es')}, seleccionado en el mapa. No existe todavía una ficha de compatibilidad Beta 0.1.`;
-      groupMarkers.forEach((marker) => {
-        const pinsForMarker = renderedMarkers.filter(
-          ({ id }) => groupMarkerByPinId.get(id) === marker,
-        );
-        updateGroupPresentation(marker, pinsForMarker);
-      });
+      locatePin(pin.id, false);
+      if (originGroup && originGroup.pins.length > 1) {
+        const clusterElement = renderedGroupByPinId.get(pin.id)?.marker.getElement();
+        if (clusterElement) {
+          clusterElement.dataset.markerLat = String(pin.coordinate[0]);
+          clusterElement.dataset.markerLng = String(pin.coordinate[1]);
+        }
+      }
+      elements.searchStatus.textContent = `${pin.name}, ${getPinTypeVisual(pin.entityType).label.toLocaleLowerCase('es')}, seleccionado en el mapa.`;
+      renderedGroups.forEach(({ marker, pins }) => updateGroupPresentation(marker, pins));
       refreshPortraitMarkers();
     }
   };
 
-  const decorateGroupMarker = (
-    leafletMarker: Marker,
-    pins: CoordinatePinGroup<AtlasPinMarkerModel>,
-    openCoincidentList: () => void,
-  ): void => {
+  const decoratePinMarker = (leafletMarker: Marker, pin: AtlasPinMarkerModel): void => {
     const element = leafletMarker.getElement();
     if (!element) return;
 
@@ -464,44 +482,61 @@ export function mountFaerunMap(
     element.setAttribute('role', 'button');
     element.setAttribute('aria-pressed', 'false');
     element.setAttribute('aria-keyshortcuts', 'Enter Space');
-    element.dataset.markerLat = String(pins[0].coordinate[0]);
-    element.dataset.markerLng = String(pins[0].coordinate[1]);
-
-    if (pins.length === 1) {
-      const pin = pins[0];
-      element.setAttribute(
-        'aria-label',
-        pin.legacyPlaceId ? describeLegacyMarkerName(pin) : describePin(pin),
-      );
-      element.setAttribute('data-testid', pin.legacyPlaceId ? 'place-marker' : 'entity-pin');
-      element.dataset.pinId = pin.id;
-      element.dataset.entityType = pin.entityType;
-      element.dataset.categoryId = pin.categoryId;
-      element.dataset.categorySlug = pin.categorySlug;
-      if (pin.legacyPlaceId) element.dataset.placeId = pin.legacyPlaceId;
-      if (pin.entityId) element.dataset.entityId = pin.entityId;
-    } else {
-      element.setAttribute(
-        'aria-label',
-        `${pins.length} pines coincidentes. ${pins.map(describePin).join(' ')}`,
-      );
-      element.setAttribute('aria-haspopup', 'true');
-      element.setAttribute('aria-expanded', 'false');
-      element.setAttribute('data-testid', 'coincident-pin');
-      element.dataset.pinCount = String(pins.length);
-    }
+    element.setAttribute(
+      'aria-label',
+      pin.legacyPlaceId ? describeLegacyMarkerName(pin) : describePin(pin),
+    );
+    element.setAttribute('data-testid', pin.legacyPlaceId ? 'place-marker' : 'entity-pin');
+    element.dataset.pinId = pin.id;
+    element.dataset.entityType = pin.entityType;
+    element.dataset.categoryId = pin.categoryId;
+    element.dataset.categorySlug = pin.categorySlug;
+    element.dataset.markerLat = String(pin.coordinate[0]);
+    element.dataset.markerLng = String(pin.coordinate[1]);
+    if (pin.legacyPlaceId) element.dataset.placeId = pin.legacyPlaceId;
+    if (pin.entityId) element.dataset.entityId = pin.entityId;
 
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
       event.preventDefault();
       event.stopPropagation();
-      if (pins.length === 1) activatePin(pins[0]);
-      else openCoincidentList();
+      activatePin(pin);
     };
 
     element.addEventListener('keydown', handleKeyDown);
     markerDomListeners.push({ element, handler: handleKeyDown });
-    updateGroupPresentation(leafletMarker, pins);
+    updateGroupPresentation(leafletMarker, [pin]);
+  };
+
+  const decorateClusterMarker = (group: RenderedPinGroup): void => {
+    const element = group.marker.getElement();
+    if (!element) return;
+
+    const { pins } = group;
+    element.tabIndex = 0;
+    element.setAttribute('role', 'button');
+    element.setAttribute('aria-pressed', 'false');
+    element.setAttribute('aria-keyshortcuts', 'Enter Space');
+    element.setAttribute('aria-label', `${pins.length} pines agrupados`);
+    element.setAttribute('aria-haspopup', 'true');
+    element.setAttribute('aria-expanded', 'false');
+    element.setAttribute('data-testid', 'coincident-pin');
+    element.dataset.proximityCluster = 'true';
+    element.dataset.pinCount = String(pins.length);
+    element.dataset.clusterThresholdPx = String(PIN_CLUSTER_DISTANCE_PX);
+    element.dataset.markerLat = String(group.marker.getLatLng().lat);
+    element.dataset.markerLng = String(group.marker.getLatLng().lng);
+
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      event.stopPropagation();
+      openSpiderfy(group, undefined, true);
+    };
+
+    element.addEventListener('keydown', handleKeyDown);
+    markerDomListeners.push({ element, handler: handleKeyDown });
+    updateGroupPresentation(group.marker, pins);
   };
 
   const drainPortraitQueue = (): void => {
@@ -577,7 +612,189 @@ export function mountFaerunMap(
     }
   };
 
+  const mapControlRects = (): readonly DOMRect[] => {
+    const mapRect = elements.canvas.getBoundingClientRect();
+    return Array.from(elements.canvas.querySelectorAll<HTMLElement>('.leaflet-control'))
+      .filter((control) => {
+        const style = window.getComputedStyle(control);
+        return style.display !== 'none' && style.visibility !== 'hidden';
+      })
+      .map((control) => {
+        const rect = control.getBoundingClientRect();
+        return new DOMRect(
+          rect.left - mapRect.left,
+          rect.top - mapRect.top,
+          rect.width,
+          rect.height,
+        );
+      });
+  };
+
+  const keepSpiderPointClearOfControls = (point: ScreenPoint): ScreenPoint => {
+    const half = PIN_INTERACTION_TARGET_PX / 2;
+    const padding = 6;
+    const size = map.getSize();
+    let next = { ...point };
+
+    for (const control of mapControlRects()) {
+      const targetLeft = next.x - half;
+      const targetRight = next.x + half;
+      const targetTop = next.y - half;
+      const targetBottom = next.y + half;
+      const intersects =
+        targetRight > control.left - padding &&
+        targetLeft < control.right + padding &&
+        targetBottom > control.top - padding &&
+        targetTop < control.bottom + padding;
+      if (!intersects) continue;
+
+      const candidates = [
+        { x: control.left - padding - half, y: next.y },
+        { x: control.right + padding + half, y: next.y },
+        { x: next.x, y: control.top - padding - half },
+        { x: next.x, y: control.bottom + padding + half },
+      ].filter(
+        (candidate) =>
+          candidate.x >= half &&
+          candidate.x <= size.x - half &&
+          candidate.y >= half &&
+          candidate.y <= size.y - half,
+      );
+
+      const candidate = candidates.sort(
+        (left, right) =>
+          Math.hypot(left.x - next.x, left.y - next.y) -
+          Math.hypot(right.x - next.x, right.y - next.y),
+      )[0];
+      if (candidate) next = candidate;
+    }
+
+    return next;
+  };
+
+  collapseSpiderfy = (restoreFocus = false): void => {
+    const state = activeSpiderfy;
+    if (!state) return;
+    activeSpiderfy = null;
+
+    for (const [index, memberMarker] of state.memberMarkers.entries()) {
+      const pin = state.group.pins[index];
+      const element = memberMarker.getElement();
+      if (element) removeMarkerDomListener(element);
+      memberMarker.removeFrom(map);
+      if (pin) {
+        scheduledPortraitPinIds.delete(pin.id);
+        groupMarkerByPinId.set(pin.id, state.group.marker);
+      }
+    }
+    state.legs.forEach((leg) => leg.removeFrom(map));
+
+    const clusterElement = state.group.marker.getElement();
+    if (clusterElement) {
+      clusterElement.style.visibility = '';
+      clusterElement.style.pointerEvents = '';
+      clusterElement.removeAttribute('aria-hidden');
+      clusterElement.tabIndex = 0;
+      clusterElement.setAttribute('aria-expanded', 'false');
+    }
+    updateGroupPresentation(state.group.marker, state.group.pins);
+
+    if (restoreFocus && clusterElement?.isConnected) {
+      window.requestAnimationFrame(() => {
+        if (clusterElement.isConnected) {
+          clusterElement.focus({ preventScroll: true });
+        }
+      });
+    }
+  };
+
+  openSpiderfy = (group: RenderedPinGroup, focusPinId?: string, focusFirst = false): void => {
+    if (group.pins.length < 2 || destroyed) return;
+    if (activeSpiderfy?.group === group) {
+      const index = focusPinId
+        ? group.pins.findIndex(({ id }) => id === focusPinId)
+        : focusFirst
+          ? 0
+          : -1;
+      if (index >= 0) {
+        activeSpiderfy.memberMarkers[index]?.getElement()?.focus({ preventScroll: true });
+      }
+      return;
+    }
+
+    collapseSpiderfy(false);
+    clearMapSearchFocus(map);
+
+    const originLatLng = group.marker.getLatLng();
+    const originPoint = map.latLngToContainerPoint(originLatLng);
+    const size = map.getSize();
+    const spiderPoints = createSpiderfyPoints(
+      { x: originPoint.x, y: originPoint.y },
+      group.pins.length,
+      { width: size.x, height: size.y },
+    ).map(keepSpiderPointClearOfControls);
+    const memberMarkers: Marker[] = [];
+    const legs: Polyline[] = [];
+
+    for (const [index, pin] of group.pins.entries()) {
+      const point = spiderPoints[index];
+      if (!point) continue;
+      const targetLatLng = map.containerPointToLatLng(L.point(point.x, point.y));
+      const leg = L.polyline([originLatLng, targetLatLng], {
+        className: 'pin-spider-leg',
+        interactive: false,
+        bubblingMouseEvents: false,
+      }).addTo(map);
+      const memberMarker = L.marker(targetLatLng, {
+        icon: createSinglePinIcon(pin),
+        keyboard: true,
+        riseOnHover: true,
+        bubblingMouseEvents: false,
+        title: `${pin.name} — ${getPinTypeVisual(pin.entityType).label}`,
+        zIndexOffset: 900 + index,
+      });
+
+      memberMarker.on('click', () => activatePin(pin));
+      memberMarker.on('add', () => {
+        const element = memberMarker.getElement();
+        element?.classList.add('campaign-marker-icon--spiderfied');
+        if (element) element.dataset.spiderfied = 'true';
+        decoratePinMarker(memberMarker, pin);
+        element?.setAttribute('data-testid', 'coincident-pin-option');
+      });
+      memberMarker.addTo(map);
+      memberMarkers.push(memberMarker);
+      legs.push(leg);
+      groupMarkerByPinId.set(pin.id, memberMarker);
+    }
+
+    activeSpiderfy = { group, memberMarkers, legs };
+    const clusterElement = group.marker.getElement();
+    if (clusterElement) {
+      clusterElement.setAttribute('aria-expanded', 'true');
+      clusterElement.setAttribute('aria-hidden', 'true');
+      clusterElement.style.visibility = 'hidden';
+      clusterElement.style.pointerEvents = 'none';
+      clusterElement.tabIndex = -1;
+    }
+    updateGroupPresentation(group.marker, group.pins);
+    refreshPortraitMarkers(new Set(group.pins.map(({ id }) => id)));
+
+    const focusIndex = focusPinId
+      ? group.pins.findIndex(({ id }) => id === focusPinId)
+      : focusFirst
+        ? 0
+        : -1;
+    if (focusIndex >= 0) {
+      memberMarkers[focusIndex]?.getElement()?.focus({ preventScroll: true });
+      window.requestAnimationFrame(() => {
+        memberMarkers[focusIndex]?.getElement()?.focus({ preventScroll: true });
+      });
+    }
+  };
+
   const clearRenderedMarkers = (): void => {
+    collapseSpiderfy(false);
     portraitGeneration += 1;
     portraitQueue.splice(0);
     scheduledPortraitPinIds.clear();
@@ -588,11 +805,21 @@ export function mountFaerunMap(
     });
     groupMarkers.forEach((marker) => marker.removeFrom(map));
     groupMarkers.clear();
+    renderedGroups.clear();
     groupMarkerByPinId.clear();
+    renderedGroupByPinId.clear();
     pinIdByLegacyPlaceId.clear();
   };
 
-  const renderMarkers = (
+  const createScreenGroups = (
+    markers: readonly AtlasPinMarkerModel[],
+  ): readonly ProximityPinGroup<AtlasPinMarkerModel>[] =>
+    groupPinsByScreenDistance(markers, (pin) => {
+      const projected = map.latLngToLayerPoint(L.latLng(pin.coordinate[0], pin.coordinate[1]));
+      return { x: projected.x, y: projected.y };
+    });
+
+  renderMarkers = (
     markers: readonly AtlasPinMarkerModel[],
     eagerPortraitPinIds: ReadonlySet<string> = new Set(),
   ): void => {
@@ -603,62 +830,129 @@ export function mountFaerunMap(
     }
 
     for (const pin of markers) {
-      if (pin.legacyPlaceId) pinIdByLegacyPlaceId.set(pin.legacyPlaceId, pin.id);
+      if (pin.legacyPlaceId) {
+        pinIdByLegacyPlaceId.set(pin.legacyPlaceId, pin.id);
+      }
     }
 
-    for (const pins of groupPinsByCoordinate(markers)) {
-      const coordinate = pins[0].coordinate;
-      const leafletMarker = L.marker(L.latLng(coordinate[0], coordinate[1]), {
-        icon:
-          pins.length === 1 ? createSinglePinIcon(pins[0]) : createCoincidentPinIcon(pins.length),
+    for (const proximityGroup of createScreenGroups(markers)) {
+      const pins = proximityGroup.pins;
+      const singleton = pins.length === 1;
+      const firstPin = pins[0];
+      const exactCoordinateGroup =
+        !singleton &&
+        pins.every(
+          ({ coordinate }) =>
+            coordinate[0] === firstPin.coordinate[0] && coordinate[1] === firstPin.coordinate[1],
+        );
+      const markerLatLng =
+        singleton || exactCoordinateGroup
+          ? L.latLng(firstPin.coordinate[0], firstPin.coordinate[1])
+          : map.layerPointToLatLng(L.point(proximityGroup.center.x, proximityGroup.center.y));
+      const leafletMarker = L.marker(markerLatLng, {
+        icon: singleton ? createSinglePinIcon(firstPin) : createClusterIcon(pins.length),
         keyboard: true,
         riseOnHover: true,
-        title:
-          pins.length === 1
-            ? `${pins[0].name} — ${getPinTypeVisual(pins[0].entityType).label}`
-            : `${pins.length} pines coincidentes`,
+        bubblingMouseEvents: false,
+        title: singleton
+          ? `${firstPin.name} — ${getPinTypeVisual(firstPin.entityType).label}`
+          : `${pins.length} pines agrupados`,
       });
-
-      const openCoincidentList = (): void => {
-        if (pins.length === 1) return;
-        const content = createCoincidentPopup(pins, activatePin);
-        L.popup({
-          closeButton: true,
-          autoPan: true,
-          className: 'pin-coincident-leaflet-popup',
-          minWidth: 220,
-        })
-          .setLatLng(leafletMarker.getLatLng())
-          .setContent(content)
-          .openOn(map);
-        const element = leafletMarker.getElement();
-        element?.setAttribute('aria-expanded', 'true');
-        window.requestAnimationFrame(() => {
-          content.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
-        });
+      const group: RenderedPinGroup = {
+        pins,
+        marker: leafletMarker,
+        center: proximityGroup.center,
       };
 
       const handleClick = (): void => {
-        if (pins.length === 1) activatePin(pins[0]);
-        else openCoincidentList();
-      };
-      const handlePopupClose = (): void => {
-        leafletMarker.getElement()?.setAttribute('aria-expanded', 'false');
+        if (singleton) activatePin(firstPin);
+        else openSpiderfy(group, undefined, false);
       };
 
       leafletMarker.on('click', handleClick);
-      leafletMarker.on('add', () => decorateGroupMarker(leafletMarker, pins, openCoincidentList));
-      map.on('popupclose', handlePopupClose);
+      leafletMarker.on('add', () => {
+        if (singleton) decoratePinMarker(leafletMarker, firstPin);
+        else decorateClusterMarker(group);
+      });
       leafletMarker.on('remove', () => {
         leafletMarker.off('click', handleClick);
-        map.off('popupclose', handlePopupClose);
       });
       leafletMarker.addTo(map);
       groupMarkers.add(leafletMarker);
-      for (const pin of pins) groupMarkerByPinId.set(pin.id, leafletMarker);
+      renderedGroups.add(group);
+      for (const pin of pins) {
+        groupMarkerByPinId.set(pin.id, leafletMarker);
+        renderedGroupByPinId.set(pin.id, group);
+      }
     }
 
     refreshPortraitMarkers(eagerPortraitPinIds);
+  };
+
+  const refreshMarkerPresentation = (): void => {
+    renderedGroups.forEach(({ marker, pins }) => updateGroupPresentation(marker, pins));
+    const spiderfy = activeSpiderfy;
+    if (spiderfy) {
+      spiderfy.memberMarkers.forEach((memberMarker, index) => {
+        const pin = spiderfy.group.pins[index];
+        if (pin) updateGroupPresentation(memberMarker, [pin]);
+      });
+    }
+  };
+
+  const preserveVisiblePortraitPinIds = (): ReadonlySet<string> => {
+    const eager = new Set<string>();
+    for (const pin of renderedMarkers) {
+      const element = groupMarkerByPinId.get(pin.id)?.getElement();
+      if (element?.dataset.portraitMarker === 'true') eager.add(pin.id);
+    }
+    return eager;
+  };
+
+  const revealPin = (pinId: string, focus: boolean): void => {
+    const group = renderedGroupByPinId.get(pinId);
+    if (!group) return;
+
+    if (group.pins.length > 1) {
+      openSpiderfy(group, pinId, focus);
+      return;
+    }
+
+    const marker = group.marker;
+    if (focus) marker.getElement()?.focus({ preventScroll: true });
+  };
+
+  const reclusterAtCurrentZoom = (): void => {
+    if (destroyed) return;
+    const activeElement = document.activeElement;
+    const focusedPinId =
+      activeElement instanceof HTMLElement &&
+      activeElement.matches('.campaign-marker-icon[data-pin-id]')
+        ? (activeElement.dataset.pinId ?? null)
+        : null;
+    const eagerPortraitPinIds = preserveVisiblePortraitPinIds();
+    renderMarkers(renderedMarkers, eagerPortraitPinIds);
+    refreshMarkerPresentation();
+    if (focusedPinId) revealPin(focusedPinId, true);
+  };
+
+  locatePin = (pinId: string, revealGrouped = true): void => {
+    const pin = renderedMarkers.find(({ id }) => id === pinId);
+    if (!pin) return;
+
+    collapseSpiderfy(false);
+    clearMapSearchFocus(map);
+    const targetZoom = Math.min(
+      FAERUN_MAP_CONFIG.maxZoom,
+      Math.max(map.getZoom(), map.getMinZoom() + 1),
+    );
+    map.setView(L.latLng(pin.coordinate[0], pin.coordinate[1]), targetZoom, {
+      animate: false,
+    });
+    map.panInsideBounds(bounds, { animate: false });
+    synchronizeViewDataset(map, elements.shell);
+    reclusterAtCurrentZoom();
+    if (revealGrouped) revealPin(pinId, false);
   };
 
   matchingPinIds = new Set((options.markers ?? []).map(({ id }) => id));
@@ -685,13 +979,39 @@ export function mountFaerunMap(
   imageOverlay.addTo(map);
 
   const synchronizeView = (): void => synchronizeViewDataset(map, elements.shell);
-  const handleViewSettled = (): void => {
+  const handleZoomStart = (): void => collapseSpiderfy(false);
+  const handleMoveStart = (): void => collapseSpiderfy(false);
+  const handleZoomEnd = (): void => {
+    synchronizeView();
+    reclusterAtCurrentZoom();
+  };
+  const handleMoveEnd = (): void => {
     synchronizeView();
     refreshPortraitMarkers();
   };
-  map.on('zoomend', handleViewSettled);
-  map.on('moveend', handleViewSettled);
+  const handleMapClick = (): void => collapseSpiderfy(false);
+  const interactionRoot = root instanceof HTMLElement ? root : null;
+  const handleRootPointerDown = (event: PointerEvent): void => {
+    if (!activeSpiderfy || !(event.target instanceof Element)) return;
+    if (event.target.closest('[data-spiderfied="true"]')) return;
+    collapseSpiderfy(false);
+  };
+  interactionRoot?.addEventListener('pointerdown', handleRootPointerDown);
+
+  map.on('zoomstart', handleZoomStart);
+  map.on('movestart', handleMoveStart);
+  map.on('zoomend', handleZoomEnd);
+  map.on('moveend', handleMoveEnd);
+  map.on('click', handleMapClick);
   synchronizeView();
+
+  const handleMapKeyDown = (event: KeyboardEvent): void => {
+    if (event.key !== 'Escape' || !activeSpiderfy || targetIsEditable(event.target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    collapseSpiderfy(true);
+  };
+  elements.canvas.addEventListener('keydown', handleMapKeyDown);
 
   let resizeFrame: number | undefined;
   const handleResize = (): void => {
@@ -700,11 +1020,12 @@ export function mountFaerunMap(
     resizeFrame = window.requestAnimationFrame(() => {
       resizeFrame = undefined;
       if (destroyed) return;
+      collapseSpiderfy(false);
       const wasAtMinimumZoom = Math.abs(map.getZoom() - map.getMinZoom()) < 0.01;
       map.invalidateSize({ animate: false, pan: false });
       constrainViewport(map, bounds, wasAtMinimumZoom);
       synchronizeView();
-      refreshPortraitMarkers();
+      reclusterAtCurrentZoom();
     });
   };
   const resizeObserver =
@@ -712,31 +1033,40 @@ export function mountFaerunMap(
   if (resizeObserver) resizeObserver.observe(elements.canvas);
   else window.addEventListener('resize', handleResize);
 
-  const refreshMarkerPresentation = (): void => {
-    groupMarkers.forEach((marker) => {
-      const pins = renderedMarkers.filter(({ id }) => groupMarkerByPinId.get(id) === marker);
-      updateGroupPresentation(marker, pins);
-    });
-  };
-
   return {
     map,
     setMarkers(markers, updateOptions = {}): void {
       const eagerPortraitPinIds = new Set(updateOptions.eagerPortraitPinIds ?? []);
       for (const pin of renderedMarkers) {
         const element = groupMarkerByPinId.get(pin.id)?.getElement();
-        if (element?.dataset.portraitMarker === 'true') eagerPortraitPinIds.add(pin.id);
+        if (element?.dataset.portraitMarker === 'true') {
+          eagerPortraitPinIds.add(pin.id);
+        }
       }
       renderMarkers(markers, eagerPortraitPinIds);
       refreshMarkerPresentation();
     },
     setActivePlace(placeId: PlaceId | null): void {
+      const selectedPinId = placeId === null ? null : pinIdByLegacyPlaceId.get(placeId);
+      if (
+        activeSpiderfy &&
+        (!selectedPinId || !activeSpiderfy.group.pins.some(({ id }) => id === selectedPinId))
+      ) {
+        collapseSpiderfy(false);
+      }
       activePlaceId = placeId;
       if (placeId !== null) activeSupplementalPinId = null;
       refreshMarkerPresentation();
       refreshPortraitMarkers();
     },
     clearSupplementalPinSelection(): void {
+      if (
+        activeSpiderfy &&
+        activeSupplementalPinId &&
+        activeSpiderfy.group.pins.some(({ id }) => id === activeSupplementalPinId)
+      ) {
+        collapseSpiderfy(false);
+      }
       activeSupplementalPinId = null;
       refreshMarkerPresentation();
     },
@@ -750,8 +1080,19 @@ export function mountFaerunMap(
       if (pinId) locatePin(pinId);
     },
     locateSearchTarget(target: MapSearchTarget): void {
+      collapseSpiderfy(false);
       locateMapSearchTarget(map, root, target);
       synchronizeView();
+      reclusterAtCurrentZoom();
+
+      const pin =
+        renderedMarkers.find((candidate) => searchTargetMatchesPin(target, candidate)) ??
+        renderedMarkers.find(
+          (candidate) =>
+            candidate.coordinate[0] === target.coordinates.y &&
+            candidate.coordinate[1] === target.coordinates.x,
+        );
+      if (pin) revealPin(pin.id, false);
       refreshPortraitMarkers();
     },
     clearSearchFocus(): void {
@@ -759,7 +1100,11 @@ export function mountFaerunMap(
     },
     focusMarker(placeId: PlaceId): void {
       const pinId = pinIdByLegacyPlaceId.get(placeId);
-      if (pinId) groupMarkerByPinId.get(pinId)?.getElement()?.focus({ preventScroll: true });
+      if (!pinId) return;
+      revealPin(pinId, true);
+      window.requestAnimationFrame(() => {
+        if (!destroyed) revealPin(pinId, true);
+      });
     },
     destroy(): void {
       if (destroyed) return;
@@ -768,8 +1113,13 @@ export function mountFaerunMap(
       clearRenderedMarkers();
       imageOverlay.off('load', handleImageLoad);
       imageOverlay.off('error', handleImageError);
-      map.off('zoomend', handleViewSettled);
-      map.off('moveend', handleViewSettled);
+      map.off('zoomstart', handleZoomStart);
+      map.off('movestart', handleMoveStart);
+      map.off('zoomend', handleZoomEnd);
+      map.off('moveend', handleMoveEnd);
+      map.off('click', handleMapClick);
+      elements.canvas.removeEventListener('keydown', handleMapKeyDown);
+      interactionRoot?.removeEventListener('pointerdown', handleRootPointerDown);
       resizeObserver?.disconnect();
       window.removeEventListener('resize', handleResize);
       if (resizeFrame !== undefined) window.cancelAnimationFrame(resizeFrame);

@@ -315,7 +315,13 @@ for (const width of [320, 390, 430]) {
     await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
     await openMap(page);
 
-    const character = page.locator('[data-testid="entity-pin"][data-pin-id="entity-scout"]');
+    const searchToggle = page.locator('[data-place-search-toggle]');
+    if ((await searchToggle.getAttribute('aria-expanded')) === 'false') await searchToggle.click();
+    const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+    await searchbox.fill('Scout');
+    await page.locator('[data-search-result-id="entity-scout"]').click();
+    const character = page.locator('[data-pin-id="entity-scout"]');
+    await expect(character).toBeVisible();
     await character.click();
 
     const panel = page.getByTestId('place-details');

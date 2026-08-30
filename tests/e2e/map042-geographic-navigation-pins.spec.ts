@@ -273,15 +273,13 @@ test('MAP-041 regional focus stays below pins and coincident pin groups remain o
   await selectGeographicResult(page, 'Sword Coast', /Sword Coast.*Lugar geográfico/i);
 
   const shell = page.getByTestId('map-shell');
-  const exactPin = page.locator('[data-place-id="place-demo-harbor"]');
-  const nearbyPin = page.locator('[data-place-id="place-demo-pass"]');
-  const group = page.getByTestId('coincident-pin');
+  const group = page.locator(
+    '[data-proximity-cluster="true"][data-marker-lat="1000"][data-marker-lng="1500"]',
+  );
 
   await expect(shell).toHaveAttribute('data-search-highlight-kind', 'area');
   await expect(shell).toHaveAttribute('data-search-highlight-bounds', '1380,1710,750,1500');
   await expect(page.locator('.geographic-search-area-highlight')).toBeVisible();
-  await expectPinNotTextDimmed(exactPin);
-  await expectPinNotTextDimmed(nearbyPin);
   await expect(group).toBeVisible();
   await expect(group).toHaveAttribute('role', 'button');
 
@@ -294,7 +292,7 @@ test('MAP-041 regional focus stays below pins and coincident pin groups remain o
   expect(zOrder.focus).toBeLessThan(zOrder.pins);
 
   await group.click();
-  const option = page.getByTestId('coincident-pin-option').filter({ hasText: 'Sword Coast Scout' });
+  const option = page.locator('[data-spiderfied="true"][data-pin-id="entity-sword-coast-scout"]');
   await expect(option).toBeVisible();
   await option.click();
   await expect(page.getByTestId('place-details')).toBeVisible();

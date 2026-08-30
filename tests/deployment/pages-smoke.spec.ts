@@ -165,9 +165,6 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
 
   await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'error');
-  await expect(
-    page.locator(`[data-testid="entity-pin"][data-entity-id="${VEYRA_ENTITY_ID}"]`),
-  ).toHaveCount(1);
   await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(filtersToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(searchbox).toHaveValue('veyra');
@@ -190,6 +187,7 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
 
   await searchToggle.click();
   await expect(searchToggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator(`[data-search-result-id="${VEYRA_ENTITY_ID}"]`)).toBeVisible();
   await searchbox.focus();
   await expect(searchbox).toBeFocused();
   await searchbox.press('Tab');
