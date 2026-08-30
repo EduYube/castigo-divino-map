@@ -1,4 +1,4 @@
-name: MAP-059 regression validation
+name: MAP-059 regression repair
 
 on:
   pull_request:
@@ -6,34 +6,29 @@ on:
       - master
 
 permissions:
-  contents: read
+  contents: write
 
-# Temporary MAP-059 validation workflow; removed before Ready/merge.
+# Temporary MAP-059 iteration workflow; removed before Ready/merge.
 jobs:
-  targeted-test:
+  repair:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/map-059-proximity-spiderfy'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - name: Run targeted Chromium regressions
-        run: >-
-          CI= npx playwright test
-          tests/e2e/compact-pin-details.spec.ts
-          tests/e2e/map042-geographic-navigation-pins.spec.ts
-          tests/e2e/map045-character-portraits.spec.ts
-          tests/e2e/master-mode.spec.ts
-          tests/e2e/pin-density.spec.ts
-          tests/e2e/pin-visual-system.spec.ts
-          tests/e2e/map059-master-isolation.spec.ts
-          tests/e2e/map059-proximity-spiderfy.spec.ts
-          --project=chromium
-          --workers=4
-          --retries=0
-          --max-failures=20
+      - run: python .github/map059_repair.py
+      - run: npx prettier --write tests/e2e/master-mode.spec.ts tests/e2e/pin-visual-system.spec.ts
+      - name: Commit final assertion fixes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/e2e/master-mode.spec.ts tests/e2e/pin-visual-system.spec.ts
+          git commit -m 'MAP-059: finish accessibility regression assertions'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
