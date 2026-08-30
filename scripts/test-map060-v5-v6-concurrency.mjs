@@ -343,7 +343,8 @@ async function verifyV5V6LockOrdering(containerName) {
 
     v5Session.child.stdin.end('\\q\n');
     const v5Exit = await waitForExit(v5Session, 'queued v5 stale rejection');
-    if (v5Exit.code === 0) fail('Queued legacy v5 writer unexpectedly succeeded after v6 committed.');
+    if (v5Exit.code === 0)
+      fail('Queued legacy v5 writer unexpectedly succeeded after v6 committed.');
     if (!v5Session.output.includes('the entity changed while it was being edited')) {
       fail(`Queued v5 writer failed for an unexpected reason: ${v5Session.output || 'no output'}`);
     }
