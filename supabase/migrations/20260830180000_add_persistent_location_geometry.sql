@@ -8,11 +8,18 @@ begin;
 alter table public.map_entities
   add column geometry jsonb;
 
+-- Backfilling an already published/edited entity must not rewrite its editorial
+-- history or stale-write token. Geometry is derived mechanically from the
+-- existing x/y coordinates during this migration only.
+alter table public.map_entities disable trigger "90_map_entity_updated_at";
+
 update public.map_entities
 set geometry = pg_catalog.jsonb_build_object(
   'kind', 'point',
   'coordinates', pg_catalog.jsonb_build_object('x', x, 'y', y)
 );
+
+alter table public.map_entities enable trigger "90_map_entity_updated_at";
 
 alter table public.map_entities
   alter column geometry set not null;
