@@ -76,6 +76,15 @@ const beta02Catalog = {
       summary: '',
       description: '',
       coordinates: { x: 1690, y: 1020 },
+      geometry: {
+        kind: 'polygon',
+        vertices: [
+          { x: 1680, y: 1010 },
+          { x: 1700, y: 1010 },
+          { x: 1700, y: 1030 },
+          { x: 1680, y: 1030 },
+        ],
+      },
       categoryId: 'category-demo',
       tagIds: [],
     },
@@ -279,6 +288,18 @@ describe('public atlas search', () => {
         linkedEntityId: 'entity-waterdeep',
       }),
     ]);
+  });
+
+  it('keeps a polygon location as one campaign search identity rather than one result per vertex', () => {
+    const locationResults = searchPublicAtlas(campaignCatalog, beta02Catalog, 'Waterdeep').filter(
+      ({ type }) => type === 'location',
+    );
+
+    expect(locationResults).toHaveLength(1);
+    expect(locationResults[0]).toMatchObject({
+      id: 'entity-waterdeep',
+      linkedEntityId: 'entity-waterdeep',
+    });
   });
 
   it('matches English geographic aliases without creating campaign entities', () => {
