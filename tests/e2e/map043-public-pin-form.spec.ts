@@ -243,10 +243,8 @@ test('uses the full map-experience width on desktop without compressing the form
   expect(privacyBox.width).toBeGreaterThan(formBox.width * 0.95);
   expect(senderBox.width).toBeGreaterThan(formBox.width * 0.4);
   expect(proposedBox.width).toBeGreaterThan(formBox.width * 0.4);
-  const verticalOverlap =
-    Math.min(senderBox.y + senderBox.height, proposedBox.y + proposedBox.height) -
-    Math.max(senderBox.y, proposedBox.y);
-  expect(verticalOverlap).toBeGreaterThan(Math.min(senderBox.height, proposedBox.height) * 0.8);
+  expect(proposedBox.x).toBeGreaterThan(senderBox.x + senderBox.width * 0.9);
+  expect(proposedBox.x + proposedBox.width).toBeLessThanOrEqual(formBox.x + formBox.width + 1);
   expect(typeBox.width).toBeGreaterThan(formBox.width * 0.95);
   await expectNoHorizontalOverflow(page);
 });
