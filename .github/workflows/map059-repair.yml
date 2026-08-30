@@ -1,4 +1,4 @@
-name: MAP-059 regression repair
+name: MAP-059 regression validation
 
 on:
   pull_request:
@@ -6,54 +6,23 @@ on:
       - master
 
 permissions:
-  contents: write
+  contents: read
 
-# Temporary MAP-059 iteration workflow; removed before Ready/merge. Final targeted validation pass.
+# Temporary MAP-059 validation workflow; removed before Ready/merge.
 jobs:
-  repair-and-targeted-test:
+  targeted-test:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/map-059-proximity-spiderfy'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply final MAP-059 repairs
-        run: python .github/map059_repair.py
-      - name: Format repaired files
-        run: >-
-          npx prettier --write
-          src/map/leaflet.ts
-          tests/e2e/map059-proximity-spiderfy.spec.ts
-          tests/e2e/map042-geographic-navigation-pins.spec.ts
-          tests/e2e/map045-character-portraits.spec.ts
-          tests/e2e/master-mode.spec.ts
-          tests/e2e/pin-density.spec.ts
-          tests/e2e/pin-visual-system.spec.ts
-          tests/e2e/compact-pin-details.spec.ts
-      - name: Commit repairs when needed
-        id: commit
-        run: |
-          if git diff --quiet -- src/map/leaflet.ts tests/e2e; then
-            echo 'changed=false' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/map/leaflet.ts tests/e2e
-          git commit -m 'MAP-059: align regressions with proximity clustering'
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
-          echo 'changed=true' >> "$GITHUB_OUTPUT"
-      - name: Install Chromium
-        if: steps.commit.outputs.changed == 'false'
-        run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium
       - name: Run targeted Chromium regressions
-        if: steps.commit.outputs.changed == 'false'
         run: >-
           CI= npx playwright test
           tests/e2e/compact-pin-details.spec.ts
