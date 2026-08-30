@@ -143,7 +143,7 @@ export function normalizeMapEntityGeometry(
 ): MapEntityGeometry {
   if (!isRecord(value)) throw new Error('Map geometry must be an object.');
   if (value.kind === 'point') {
-    return createPointMapGeometry(value.coordinates);
+    return { kind: 'point', coordinates: coordinateFromUnknown(value.coordinates) };
   }
   if (value.kind !== 'polygon') throw new Error('Map geometry kind must be point or polygon.');
   if (entityType !== 'location') throw new Error('Characters must use point geometry.');
