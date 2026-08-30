@@ -5,6 +5,11 @@ import {
   type MapEntityPublicationStatus,
 } from './adminMapEntities';
 import { isMapCoordinateWithinBounds } from './mapCoordinates';
+import {
+  createPointMapGeometry,
+  mapGeometryRepresentativePoint,
+  normalizeMapEntityGeometry,
+} from './mapGeometry';
 
 export interface AdminMapEntityValidationResult {
   readonly valid: boolean;
@@ -56,6 +61,31 @@ export function validateAdminMapEntityDraft(
   if (description.length > 5000) {
     setError(errors, 'description', 'La descripción no puede superar 5000 caracteres.');
   }
+
+  try {
+    const geometry = normalizeMapEntityGeometry(
+      draft.entityType,
+      draft.geometry ?? createPointMapGeometry(draft),
+    );
+    const representative = mapGeometryRepresentativePoint(geometry);
+    if (
+      geometry.kind === 'polygon' &&
+      (draft.x !== representative.x || draft.y !== representative.y)
+    ) {
+      setError(
+        errors,
+        'coordinates',
+        'Las coordenadas representativas de un área se derivan de su geometría.',
+      );
+    }
+  } catch (error) {
+    setError(
+      errors,
+      'geometry',
+      error instanceof Error ? error.message : 'La geometría del mapa no es válida.',
+    );
+  }
+
   if (!isMapCoordinateWithinBounds(draft)) {
     setError(errors, 'coordinates', 'Las coordenadas deben estar dentro de X 0–3600 e Y 0–2329.');
   }
