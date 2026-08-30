@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  mapGeometryRepresentativePoint,
-  normalizeMapEntityGeometry,
-} from './mapGeometry';
+import { mapGeometryRepresentativePoint, normalizeMapEntityGeometry } from './mapGeometry';
 
 describe('MAP-060 map geometry', () => {
   it('canonicalizes equivalent polygons deterministically', () => {
