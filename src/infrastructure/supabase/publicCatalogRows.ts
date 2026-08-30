@@ -336,7 +336,10 @@ export function parseGeographicAlias(
   };
 }
 
-function parseGeometryCoordinate(value: unknown, path: string): { readonly x: number; readonly y: number } {
+function parseGeometryCoordinate(
+  value: unknown,
+  path: string,
+): { readonly x: number; readonly y: number } {
   const coordinate = expectRecord(value, path);
   assertAllowedProperties(coordinate, ['x', 'y'], path);
   return {
@@ -351,6 +354,10 @@ function parseEntityGeometry(
   entityType: PublicMapEntity['entityType'],
   representative: { readonly x: number; readonly y: number },
 ): PublicMapGeometry {
+  if (value === undefined) {
+    return { kind: 'point', coordinates: representative };
+  }
+
   const geometry = expectRecord(value, path);
   const kind = expectEnum(geometry.kind, `${path}.kind`, ['point', 'polygon'] as const);
   if (kind === 'point') {
@@ -366,7 +373,11 @@ function parseEntityGeometry(
   if (entityType !== 'location') {
     invalidResponse(`${path} solo permite polígonos para emplazamientos.`);
   }
-  if (!Array.isArray(geometry.vertices) || geometry.vertices.length < 3 || geometry.vertices.length > 64) {
+  if (
+    !Array.isArray(geometry.vertices) ||
+    geometry.vertices.length < 3 ||
+    geometry.vertices.length > 64
+  ) {
     invalidResponse(`${path}.vertices debe contener entre 3 y 64 vértices.`);
   }
   const vertices = geometry.vertices.map((vertex, vertexIndex) =>
@@ -463,7 +474,12 @@ export function parseEntity(
     x: expectNumber(row.x, `${path}.x`, 0, 3600),
     y: expectNumber(row.y, `${path}.y`, 0, 2329),
   };
-  const geometry = parseEntityGeometry(row.geometry, `${path}.geometry`, parsedEntityType, coordinates);
+  const geometry = parseEntityGeometry(
+    row.geometry,
+    `${path}.geometry`,
+    parsedEntityType,
+    coordinates,
+  );
 
   return {
     id,
@@ -482,7 +498,7 @@ export function parseEntity(
         ? row.description
         : invalidResponse(`${path}.description debe ser texto.`),
     ...(hasPortraitPath ? { portraitPath } : {}),
-    geometry,
+    ...(geometry.kind === 'polygon' ? { geometry } : {}),
     coordinates,
     categoryId: expectString(
       row.category_id,
