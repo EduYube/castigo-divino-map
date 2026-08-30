@@ -85,6 +85,27 @@ describe('spiderfy geometry', () => {
     expect(origin).toEqual({ x: 160, y: 180 });
   });
 
+  it('keeps a full two-ring spiderfy above the 52px target spacing when space is available', () => {
+    const points = createSpiderfyPoints({ x: 300, y: 300 }, 18, {
+      width: 600,
+      height: 600,
+    });
+    let minimumDistance = Number.POSITIVE_INFINITY;
+
+    for (let left = 0; left < points.length; left += 1) {
+      for (let right = left + 1; right < points.length; right += 1) {
+        const leftPoint = points[left]!;
+        const rightPoint = points[right]!;
+        minimumDistance = Math.min(
+          minimumDistance,
+          Math.hypot(leftPoint.x - rightPoint.x, leftPoint.y - rightPoint.y),
+        );
+      }
+    }
+
+    expect(minimumDistance).toBeGreaterThan(PIN_INTERACTION_TARGET_PX);
+  });
+
   it.each([320, 390, 430])('keeps spiderfied targets inside a %ipx mobile viewport', (width) => {
     const points = createSpiderfyPoints({ x: width - 8, y: 8 }, 4, {
       width,
