@@ -760,6 +760,7 @@ export function mountFaerunMap(
         element?.classList.add('campaign-marker-icon--spiderfied');
         if (element) element.dataset.spiderfied = 'true';
         decoratePinMarker(memberMarker, pin);
+        element?.setAttribute('data-testid', 'coincident-pin-option');
       });
       memberMarker.addTo(map);
       memberMarkers.push(memberMarker);
@@ -785,6 +786,7 @@ export function mountFaerunMap(
         ? 0
         : -1;
     if (focusIndex >= 0) {
+      memberMarkers[focusIndex]?.getElement()?.focus({ preventScroll: true });
       window.requestAnimationFrame(() => {
         memberMarkers[focusIndex]?.getElement()?.focus({ preventScroll: true });
       });
@@ -837,9 +839,16 @@ export function mountFaerunMap(
       const pins = proximityGroup.pins;
       const singleton = pins.length === 1;
       const firstPin = pins[0];
-      const markerLatLng = singleton
-        ? L.latLng(firstPin.coordinate[0], firstPin.coordinate[1])
-        : map.layerPointToLatLng(L.point(proximityGroup.center.x, proximityGroup.center.y));
+      const exactCoordinateGroup =
+        !singleton &&
+        pins.every(
+          ({ coordinate }) =>
+            coordinate[0] === firstPin.coordinate[0] && coordinate[1] === firstPin.coordinate[1],
+        );
+      const markerLatLng =
+        singleton || exactCoordinateGroup
+          ? L.latLng(firstPin.coordinate[0], firstPin.coordinate[1])
+          : map.layerPointToLatLng(L.point(proximityGroup.center.x, proximityGroup.center.y));
       const leafletMarker = L.marker(markerLatLng, {
         icon: singleton ? createSinglePinIcon(firstPin) : createClusterIcon(pins.length),
         keyboard: true,

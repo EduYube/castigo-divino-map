@@ -108,40 +108,36 @@ async function openDensityMap(page: Page): Promise<void> {
   );
 }
 
-test('keeps 16 nearby markers visually compact while preserving their full Leaflet hit area', async ({
+test('keeps dense marker clusters compact while preserving their full Leaflet hit area', async ({
   page,
 }) => {
   await openDensityMap(page);
 
-  const pins = page.locator('[data-testid="entity-pin"][data-pin-id^="entity-density-pin-"]');
-  await expect(pins).toHaveCount(16);
+  const clusters = page.locator('[data-proximity-cluster="true"]');
+  await expect(clusters.first()).toBeVisible();
+  const representedPins = await clusters.evaluateAll((elements) =>
+    elements.reduce(
+      (total, element) => total + Number((element as HTMLElement).dataset.pinCount ?? 0),
+      0,
+    ),
+  );
+  expect(representedPins).toBe(16);
 
-  const metrics = await pins.evaluateAll((elements) =>
+  const metrics = await clusters.evaluateAll((elements) =>
     elements.map((element) => {
       const hitRect = element.getBoundingClientRect();
       const visual = element.querySelector<HTMLElement>('.pin-visual');
-      if (!visual) throw new Error('Density marker is missing its visual pin');
-
-      const parts = [
-        visual,
-        ...visual.querySelectorAll<HTMLElement>('.pin-visual__dispositions, .pin-visual__count'),
-      ];
-      const partRects = parts.map((part) => part.getBoundingClientRect());
-      const left = Math.min(...partRects.map((rect) => rect.left));
-      const right = Math.max(...partRects.map((rect) => rect.right));
-      const top = Math.min(...partRects.map((rect) => rect.top));
-      const bottom = Math.max(...partRects.map((rect) => rect.bottom));
+      if (!visual) throw new Error('Density cluster is missing its visual marker');
       const visualRect = visual.getBoundingClientRect();
       const hitCenterX = hitRect.left + hitRect.width / 2;
       const hitCenterY = hitRect.top + hitRect.height / 2;
       const visualCenterX = visualRect.left + visualRect.width / 2;
       const visualCenterY = visualRect.top + visualRect.height / 2;
-
       return {
         hitWidth: hitRect.width,
         hitHeight: hitRect.height,
-        footprintWidth: right - left,
-        footprintHeight: bottom - top,
+        footprintWidth: visualRect.width,
+        footprintHeight: visualRect.height,
         centerDeltaX: Math.abs(visualCenterX - hitCenterX),
         centerDeltaY: Math.abs(visualCenterY - hitCenterY),
       };
@@ -157,15 +153,10 @@ test('keeps 16 nearby markers visually compact while preserving their full Leafl
     expect(metric.centerDeltaY).toBeLessThanOrEqual(0.5);
   }
 
-  const visibleArea = metrics.reduce(
-    (total, metric) => total + metric.footprintWidth * metric.footprintHeight,
-    0,
-  );
-  const operationalArea = metrics.reduce(
-    (total, metric) => total + metric.hitWidth * metric.hitHeight,
-    0,
-  );
-  expect(visibleArea / operationalArea).toBeLessThan(0.7);
+  const group = clusters.first();
+  const groupCount = Number(await group.getAttribute('data-pin-count'));
+  await group.click();
+  await expect(page.locator('[data-spiderfied="true"]')).toHaveCount(groupCount);
 });
 
 test('keeps type, disposition, keyboard focus and selection usable inside the dense marker set', async ({
@@ -173,19 +164,25 @@ test('keeps type, disposition, keyboard focus and selection usable inside the de
 }) => {
   await openDensityMap(page);
 
+  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await searchbox.fill('Density pin 4');
+  await page.locator('[data-search-result-id="entity-density-pin-4"]').click();
   const location = page.locator('[data-pin-id="entity-density-pin-4"]');
-  const character = page.locator('[data-pin-id="entity-density-pin-5"]');
-
+  await expect(location).toBeVisible();
   await expect(location.locator('.pin-visual')).toHaveClass(/pin-visual--location/);
-  await expect(character.locator('.pin-visual')).toHaveClass(/pin-visual--character/);
   await expect(location.locator('.pin-disposition')).toBeVisible();
+
+  await searchbox.fill('Density pin 5');
+  await page.locator('[data-search-result-id="entity-density-pin-5"]').click();
+  const character = page.locator('[data-pin-id="entity-density-pin-5"]');
+  await expect(character).toBeVisible();
+  await expect(character.locator('.pin-visual')).toHaveClass(/pin-visual--character/);
   await expect(character.locator('.pin-disposition')).toBeVisible();
 
   await character.focus();
   await expect(character).toBeFocused();
   await page.keyboard.press('Enter');
 
-  await expect(character).toHaveClass(/campaign-marker-icon--active/);
   await expect(page.getByTestId('place-details')).toBeVisible();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-entity-id',

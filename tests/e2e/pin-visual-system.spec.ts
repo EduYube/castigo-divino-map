@@ -326,7 +326,11 @@ test('remains usable at 320 px, keeps touch targets large and honors forced colo
 
   await expect(page.locator('[data-pin-legend]')).toBeHidden();
 
-  const character = page.locator('[data-testid="entity-pin"][data-pin-id="entity-scout"]');
+  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await searchbox.fill('Scout');
+  await page.locator('[data-search-result-id="entity-scout"]').click();
+  const character = page.locator('[data-pin-id="entity-scout"]');
+  await expect(character).toBeVisible();
   const box = await character.boundingBox();
   expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
   expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
@@ -342,7 +346,11 @@ test('remains usable at 320 px, keeps touch targets large and honors forced colo
   expect(Number.parseFloat(styles.transitionDuration)).toBeLessThanOrEqual(0.00001);
   expect(styles.outlineStyle).not.toBe('none');
 
-  await page.getByTestId('coincident-pin').click();
+  if ((await character.getAttribute('data-spiderfied')) === 'true')
+    await page.keyboard.press('Escape');
+  const group = page.locator('[data-proximity-cluster="true"]').first();
+  await expect(group).toBeVisible();
+  await group.click();
   const optionBox = await page.getByTestId('coincident-pin-option').first().boundingBox();
   expect(optionBox?.height ?? 0).toBeGreaterThanOrEqual(44);
 

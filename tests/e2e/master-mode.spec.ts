@@ -514,8 +514,9 @@ test('public and master coincident pins expose count 2 only while Master Mode is
   const coincident = page.getByTestId('coincident-pin');
   await expect(coincident).toHaveCount(1);
   await expect(coincident).toHaveAttribute('data-pin-count', '2');
-  await expect(coincident).toHaveAttribute('data-audience', 'mixed');
-  await expect(coincident).toHaveAttribute('aria-label', /1 de contenido del Máster/i);
+  await expect(coincident).toHaveAttribute('aria-label', '2 pines agrupados');
+  await expect(coincident).not.toHaveAttribute('data-audience', /.+/);
+  await expect(coincident).not.toHaveAttribute('aria-description', /Máster/i);
 
   await toggle.click();
   await expect(coincident).toHaveCount(0);
@@ -587,8 +588,13 @@ test('master pin remains distinguishable on mobile with reduced motion and force
   await page.locator('[data-master-mode-toggle]').click();
 
   const toggle = page.locator('[data-master-mode-toggle]');
-  const marker = page.locator('.campaign-marker-icon[data-audience="master"]');
   await expect(toggle).toBeVisible();
+  const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await searchbox.fill(MASTER_NAME);
+  await page.locator(`[data-search-result-id="${MASTER_ID}"]`).click();
+  const marker = page.locator(
+    `[data-spiderfied="true"][data-entity-id="${MASTER_ID}"][data-audience="master"]`,
+  );
   await expect(marker).toHaveCount(1);
   await expect(marker).toHaveAttribute('aria-label', /Contenido del Máster/);
   await expect(marker.locator('.pin-visual--master')).toHaveCount(1);

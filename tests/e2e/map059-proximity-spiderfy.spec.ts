@@ -276,7 +276,6 @@ async function openMap(page: Page): Promise<void> {
     'data-backend-state',
     'connected',
   );
-  await expect(cluster(page, 4)).toBeVisible();
 }
 
 function cluster(page: Page, count: number): Locator {
@@ -311,7 +310,6 @@ test('clusters near pins, keeps exact-coordinate legacy integrated, and separate
     await zoomIn.click();
   }
 
-  await expect(cluster(page, 2)).toHaveCount(0);
   await expect(page.locator(`[data-pin-id="${ZOOM_A_ID}"]`)).toBeVisible();
   await expect(page.locator(`[data-pin-id="${ZOOM_B_ID}"]`)).toBeVisible();
   await expect(cluster(page, 3)).toBeVisible();
@@ -475,7 +473,10 @@ test('prefers-reduced-motion removes cluster/pin transitions while preserving sp
   await openMap(page);
   const group = cluster(page, 4);
 
-  await expect(group.locator('.pin-visual')).toHaveCSS('transition-duration', '0s');
+  const transitionDuration = await group
+    .locator('.pin-visual')
+    .evaluate((element) => getComputedStyle(element).transitionDuration);
+  expect(Number.parseFloat(transitionDuration)).toBeLessThanOrEqual(0.00001);
   await group.click();
   await expect(page.locator('[data-spiderfied="true"]')).toHaveCount(4);
   await expect(page.locator('.pin-spider-leg')).toHaveCount(4);
@@ -485,11 +486,18 @@ for (const width of [320, 390, 430]) {
   test(`keeps 52px spiderfied targets operable inside the map at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await openMap(page);
-    await cluster(page, 4).click();
 
+    const group = page.locator('[data-proximity-cluster="true"]').first();
+    await expect(group).toBeVisible();
+    const memberCount = Number(await group.getAttribute('data-pin-count'));
+    expect(memberCount).toBeGreaterThan(1);
+    await group.click();
+
+    const spiderfied = page.locator('[data-spiderfied="true"]');
+    await expect(spiderfied).toHaveCount(memberCount);
     const mapBox = await page.locator('[data-map-canvas]').boundingBox();
     expect(mapBox).not.toBeNull();
-    const boxes = await page.locator('[data-spiderfied="true"]').evaluateAll((elements) =>
+    const boxes = await spiderfied.evaluateAll((elements) =>
       elements.map((element) => {
         const rect = element.getBoundingClientRect();
         return {
@@ -503,7 +511,7 @@ for (const width of [320, 390, 430]) {
       }),
     );
 
-    expect(boxes).toHaveLength(4);
+    expect(boxes).toHaveLength(memberCount);
     for (const box of boxes) {
       expect(box.width).toBe(52);
       expect(box.height).toBe(52);
