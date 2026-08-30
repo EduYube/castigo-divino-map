@@ -39,6 +39,21 @@ describe('pin proximity clustering', () => {
     ).toEqual([['a'], ['b']]);
   });
 
+  it('separates the same world-space pair after zoom doubles its screen distance', () => {
+    const pins = [
+      { id: 'a', world: { x: 100, y: 100 } },
+      { id: 'b', world: { x: 140, y: 100 } },
+    ] as const;
+    const idsAtScale = (scale: number) =>
+      groupPinsByScreenDistance(pins, (pin) => ({
+        x: pin.world.x * scale,
+        y: pin.world.y * scale,
+      })).map((group) => group.pins.map(({ id }) => id));
+
+    expect(idsAtScale(1)).toEqual([['a', 'b']]);
+    expect(idsAtScale(2)).toEqual([['a'], ['b']]);
+  });
+
   it('treats exact coordinates as the zero-distance case of the same algorithm', () => {
     expect(
       groupIds([
