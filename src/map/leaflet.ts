@@ -93,9 +93,7 @@ export function mountFaerunMap(
       }
       options.onPinActivate?.(region);
       synchronizeRegionPresentation();
-      const status = root.querySelector<HTMLElement>('[data-map-search-status]');
-      if (status)
-        status.textContent = `${region.name}, región de campaña, seleccionada en el mapa.`;
+      announceActiveRegion(region, `${region.name}, región de campaña, seleccionada en el mapa.`);
     },
   });
 
@@ -108,6 +106,14 @@ export function mountFaerunMap(
           : marker.id === activeSupplementalPinId),
     );
     return active?.id ?? null;
+  }
+
+  function announceActiveRegion(region: AtlasRegionMarkerModel, message: string): void {
+    window.requestAnimationFrame(() => {
+      if (activeRegionId() !== region.id) return;
+      const status = root.querySelector<HTMLElement>('[data-map-search-status]');
+      if (status) status.textContent = message;
+    });
   }
 
   function synchronizeRegionPresentation(): void {
@@ -206,6 +212,7 @@ export function mountFaerunMap(
         synchronizeRegionPresentation();
         pointController.clearSearchFocus();
         regionController.locateRegion(region.id, target.label);
+        announceActiveRegion(region, `Mapa encuadrado en ${target.label}; región de campaña.`);
         return;
       }
       clearRegionFocusMetadata();
