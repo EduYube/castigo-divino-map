@@ -182,6 +182,19 @@ async function main() {
   const updatedAt = runPsql(
     `select updated_at::text from public.map_entities where id = ${sqlLiteral(ENTITY_ID)};`,
   );
+  const dispositions = runPsql(`
+    select coalesce(
+      pg_catalog.jsonb_agg(
+        pg_catalog.jsonb_build_object(
+          'playerId', relation.player_id,
+          'disposition', relation.disposition::text
+        ) order by relation.player_id
+      ),
+      '[]'::jsonb
+    )::text
+    from public.entity_player_dispositions as relation
+    where relation.entity_id = ${sqlLiteral(ENTITY_ID)};
+  `);
   const v5Revision = runPsql(`${adminPreamble()}
     select public.admin_get_map_entity_editor_v5(${sqlLiteral(campaignId)}::uuid, ${sqlLiteral(ENTITY_ID)}) ->> 'relations_revision';`);
   const v6Revision = runPsql(`${adminPreamble()}
@@ -196,14 +209,14 @@ async function main() {
     /* map060-v5-first-lock-order */
     ${common}, ${sqlLiteral(v5Revision)}, 'map060-lock-order-regression', 'location',
     'pin', 'public', null, 'MAP060 lock order regression', 'legacy v5 writer', '',
-    640, 640, ${sqlLiteral(categoryId)}, 'draft', '{}'::text[], '[]'::jsonb, '{}'::text[]
+    640, 640, ${sqlLiteral(categoryId)}, 'draft', '{}'::text[], ${sqlLiteral(dispositions)}::jsonb, '{}'::text[]
   );`;
   const v6Call = `select public.admin_save_map_entity_v6(
     /* map060-v6-second-lock-order */
     ${common}, ${sqlLiteral(v6Revision)}, 'map060-lock-order-regression', 'location',
     'pin', 'public', null, 'MAP060 lock order regression', 'geometry v6 writer', '',
     '{"kind":"polygon","vertices":[{"x":620,"y":620},{"x":660,"y":620},{"x":660,"y":660},{"x":620,"y":660}]}'::jsonb,
-    ${sqlLiteral(categoryId)}, 'draft', '{}'::text[], '[]'::jsonb, '{}'::text[]
+    ${sqlLiteral(categoryId)}, 'draft', '{}'::text[], ${sqlLiteral(dispositions)}::jsonb, '{}'::text[]
   );`;
 
   try {
