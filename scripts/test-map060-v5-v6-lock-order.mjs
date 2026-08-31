@@ -223,9 +223,9 @@ ${v5Call}
 `);
     await waitForMarker(v5, 'MAP060_V5_STARTED');
 
-    -- v5 must already own the per-entity advisory lock before it reaches the
-    -- relation read blocked by the barrier. This is the exact ordering that was
-    -- missing in the vulnerable implementation.
+    // v5 must already own the per-entity advisory lock before it reaches the
+    // relation read blocked by the barrier. This is the exact ordering that was
+    // missing in the vulnerable implementation.
     await waitForLock('/* map060-v5-first-lock-order */', 'advisory', true);
     console.log('ok - v5 owns the advisory entity lock before its blocked relation read');
 
@@ -256,7 +256,9 @@ ${v6Call}
     if (/deadlock detected/iu.test(v6.output) || /deadlock detected/iu.test(v5.output)) {
       fail(`deadlock detected despite advisory ordering: ${v5.output}\n${v6.output}`);
     }
-    if (!/changed while it was being edited|changed while geometry was being saved/iu.test(v6.output)) {
+    if (
+      !/changed while it was being edited|changed while geometry was being saved/iu.test(v6.output)
+    ) {
       fail(`v6 failed for an unexpected reason: ${v6.output || 'no output'}`);
     }
     console.log('ok - queued v6 resumes without deadlock and rejects its stale write');
