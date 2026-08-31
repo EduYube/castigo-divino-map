@@ -196,6 +196,7 @@ async function clickRegionInterior(
 ): Promise<void> {
   const target = region(page, id);
   await expect(target).toBeVisible();
+  await page.locator('[data-map-canvas]').scrollIntoViewIfNeeded();
 
   const hitRegionAtPosition = async (): Promise<string | null> => {
     const box = await target.boundingBox();
