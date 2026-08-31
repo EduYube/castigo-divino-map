@@ -125,11 +125,7 @@ async function configureBackend(page: Page): Promise<void> {
 
     if (isAdmin) {
       const rows: Record<string, unknown>[] =
-        resource === 'map_entities'
-          ? [ENTITY]
-          : resource === 'categories'
-            ? [CATEGORY]
-            : [];
+        resource === 'map_entities' ? [ENTITY] : resource === 'categories' ? [CATEGORY] : [];
       await route.fulfill({ status: 200, headers: range(rows), body: JSON.stringify(rows) });
       return;
     }
