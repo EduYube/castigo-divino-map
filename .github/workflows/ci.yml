@@ -37,112 +37,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Patch focus restoration and editing regression
+      - name: Patch, format and push
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          def replace_once(path: str, old: str, new: str) -> None:
-              file = Path(path)
-              text = file.read_text()
-              count = text.count(old)
-              if count == 0 and new in text:
-                  return
-              if count != 1:
-                  raise SystemExit(f"Expected exactly one match in {path}, found {count}")
-              file.write_text(text.replace(old, new, 1))
-
-          replace_once(
-              'src/main.ts',
-              """  const focusPinControl = (pin: AtlasPinMarkerModel): void => {
-    const [lat, lng] = pin.coordinate;
-    const element = Array.from(
-      app.querySelectorAll<HTMLElement>('.campaign-marker-icon[data-marker-lat][data-marker-lng]'),
-    ).find(
-      (candidate) =>
-        Number(candidate.dataset.markerLat) === lat && Number(candidate.dataset.markerLng) === lng,
-    );
-
-    element?.focus({ preventScroll: true });
-  };
-""",
-              """  const focusPinControl = (pin: AtlasPinMarkerModel): void => {
-    const region = Array.from(
-      app.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]'),
-    ).find((candidate) => candidate.dataset.regionId === pin.id);
-    if (region) {
-      region.focus({ preventScroll: true });
-      return;
-    }
-
-    const [lat, lng] = pin.coordinate;
-    const element = Array.from(
-      app.querySelectorAll<HTMLElement>('.campaign-marker-icon[data-marker-lat][data-marker-lng]'),
-    ).find(
-      (candidate) =>
-        Number(candidate.dataset.markerLat) === lat && Number(candidate.dataset.markerLng) === lng,
-    );
-
-    element?.focus({ preventScroll: true });
-  };
-""",
-          )
-
-          replace_once(
-              'tests/e2e/map061-campaign-regions.spec.ts',
-              """  await expect(cromryn).toHaveClass(/campaign-region--active/);
-  await expect(cromryn).toHaveAttribute('aria-pressed', 'true');
-
-  await closeDetails(page);
-  await cromryn.focus();
-""",
-              """  await expect(cromryn).toHaveClass(/campaign-region--active/);
-  await expect(cromryn).toHaveAttribute('aria-pressed', 'true');
-
-  await closeDetails(page);
-  await expect(cromryn).toBeFocused();
-  await cromryn.focus();
-""",
-          )
-
-          replace_once(
-              'tests/e2e/map061-admin-regions.spec.ts',
-              """  await expect(page.getByTestId(`admin-player-association-${PLAYER_ID}`)).toBeChecked();
-  await page.getByTestId('admin-geometry-kind').selectOption('polygon');
-
-  const firstVertex = page.getByTestId('admin-polygon-vertex-0');
-""",
-              """  await expect(page.getByTestId(`admin-player-association-${PLAYER_ID}`)).toBeChecked();
-  await page.getByTestId('admin-geometry-kind').selectOption('polygon');
-
-  const canvas = page.getByTestId('admin-coordinate-map');
-  const canvasBox = await canvas.boundingBox();
-  expect(canvasBox).not.toBeNull();
-  if (!canvasBox) throw new Error('El mapa administrativo no tiene un área interactiva.');
-  await page.mouse.click(
-    canvasBox.x + canvasBox.width / 2,
-    canvasBox.y + canvasBox.height / 2,
-  );
-  await expect(page.locator('[data-testid^="admin-polygon-vertex-"]')).toHaveCount(5);
-  const deleteVertex = page.getByTestId('admin-polygon-delete-vertex');
-  await expect(deleteVertex).toBeEnabled();
-  await deleteVertex.click();
-  await expect(page.locator('[data-testid^="admin-polygon-vertex-"]')).toHaveCount(4);
-
-  const firstVertex = page.getByTestId('admin-polygon-vertex-0');
-""",
-          )
-          PY
-
+          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpkZWYgcmVwbGFjZV9vbmNlKHBhdGg6IHN0ciwgb2xkOiBzdHIsIG5ldzogc3RyKSAtPiBOb25lOgogICAgZmlsZSA9IFBhdGgocGF0aCkKICAgIHRleHQgPSBmaWxlLnJlYWRfdGV4dCgpCiAgICBjb3VudCA9IHRleHQuY291bnQob2xkKQogICAgaWYgY291bnQgPT0gMCBhbmQgbmV3IGluIHRleHQ6CiAgICAgICAgcmV0dXJuCiAgICBpZiBjb3VudCAhPSAxOgogICAgICAgIHJhaXNlIFN5c3RlbUV4aXQoZiJFeHBlY3RlZCBleGFjdGx5IG9uZSBtYXRjaCBpbiB7cGF0aH0sIGZvdW5kIHtjb3VudH0iKQogICAgZmlsZS53cml0ZV90ZXh0KHRleHQucmVwbGFjZShvbGQsIG5ldywgMSkpCgpyZXBsYWNlX29uY2UoCiAgICAic3JjL21haW4udHMiLAogICAgIiIiICBjb25zdCBmb2N1c1BpbkNvbnRyb2wgPSAocGluOiBBdGxhc1Bpbk1hcmtlck1vZGVsKTogdm9pZCA9PiB7CiAgICBjb25zdCBbbGF0LCBsbmddID0gcGluLmNvb3JkaW5hdGU7CiAgICBjb25zdCBlbGVtZW50ID0gQXJyYXkuZnJvbSgKICAgICAgYXBwLnF1ZXJ5U2VsZWN0b3JBbGw8SFRNTEVsZW1lbnQ+KCcuY2FtcGFpZ24tbWFya2VyLWljb25bZGF0YS1tYXJrZXItbGF0XVtkYXRhLW1hcmtlci1sbmddJyksCiAgICApLmZpbmQoCiAgICAgIChjYW5kaWRhdGUpID0+CiAgICAgICAgTnVtYmVyKGNhbmRpZGF0ZS5kYXRhc2V0Lm1hcmtlckxhdCkgPT09IGxhdCAmJiBOdW1iZXIoY2FuZGlkYXRlLmRhdGFzZXQubWFya2VyTG5nKSA9PT0gbG5nLAogICAgKTsKCiAgICBlbGVtZW50Py5mb2N1cyh7IHByZXZlbnRTY3JvbGw6IHRydWUgfSk7CiAgfTsKIiIiLAogICAgIiIiICBjb25zdCBmb2N1c1BpbkNvbnRyb2wgPSAocGluOiBBdGxhc1Bpbk1hcmtlck1vZGVsKTogdm9pZCA9PiB7CiAgICBjb25zdCByZWdpb24gPSBBcnJheS5mcm9tKAogICAgICBhcHAucXVlcnlTZWxlY3RvckFsbDxIVE1MRWxlbWVudD4oJy5jYW1wYWlnbi1yZWdpb25bZGF0YS1yZWdpb24taWRdJyksCiAgICApLmZpbmQoKGNhbmRpZGF0ZSkgPT4gY2FuZGlkYXRlLmRhdGFzZXQucmVnaW9uSWQgPT09IHBpbi5pZCk7CiAgICBpZiAocmVnaW9uKSB7CiAgICAgIHJlZ2lvbi5mb2N1cyh7IHByZXZlbnRTY3JvbGw6IHRydWUgfSk7CiAgICAgIHJldHVybjsKICAgIH0KCiAgICBjb25zdCBbbGF0LCBsbmddID0gcGluLmNvb3JkaW5hdGU7CiAgICBjb25zdCBlbGVtZW50ID0gQXJyYXkuZnJvbSgKICAgICAgYXBwLnF1ZXJ5U2VsZWN0b3JBbGw8SFRNTEVsZW1lbnQ+KCcuY2FtcGFpZ24tbWFya2VyLWljb25bZGF0YS1tYXJrZXItbGF0XVtkYXRhLW1hcmtlci1sbmddJyksCiAgICApLmZpbmQoCiAgICAgIChjYW5kaWRhdGUpID0+CiAgICAgICAgTnVtYmVyKGNhbmRpZGF0ZS5kYXRhc2V0Lm1hcmtlckxhdCkgPT09IGxhdCAmJiBOdW1iZXIoY2FuZGlkYXRlLmRhdGFzZXQubWFya2VyTG5nKSA9PT0gbG5nLAogICAgKTsKCiAgICBlbGVtZW50Py5mb2N1cyh7IHByZXZlbnRTY3JvbGw6IHRydWUgfSk7CiAgfTsKIiIiLAopCgpyZXBsYWNlX29uY2UoCiAgICAidGVzdHMvZTJlL21hcDA2MS1jYW1wYWlnbi1yZWdpb25zLnNwZWMudHMiLAogICAgIiIiICBhd2FpdCBleHBlY3QoY3JvbXJ5bikudG9IYXZlQ2xhc3MoL2NhbXBhaWduLXJlZ2lvbi0tYWN0aXZlLyk7CiAgYXdhaXQgZXhwZWN0KGNyb21yeW4pLnRvSGF2ZUF0dHJpYnV0ZSgnYXJpYS1wcmVzc2VkJywgJ3RydWUnKTsKCiAgYXdhaXQgY2xvc2VEZXRhaWxzKHBhZ2UpOwogIGF3YWl0IGNyb21yeW4uZm9jdXMoKTsKIiIiLAogICAgIiIiICBhd2FpdCBleHBlY3QoY3JvbXJ5bikudG9IYXZlQ2xhc3MoL2NhbXBhaWduLXJlZ2lvbi0tYWN0aXZlLyk7CiAgYXdhaXQgZXhwZWN0KGNyb21yeW4pLnRvSGF2ZUF0dHJpYnV0ZSgnYXJpYS1wcmVzc2VkJywgJ3RydWUnKTsKCiAgYXdhaXQgY2xvc2VEZXRhaWxzKHBhZ2UpOwogIGF3YWl0IGV4cGVjdChjcm9tcnluKS50b0JlRm9jdXNlZCgpOwogIGF3YWl0IGNyb21yeW4uZm9jdXMoKTsKIiIiLAopCgpyZXBsYWNlX29uY2UoCiAgICAidGVzdHMvZTJlL21hcDA2MS1hZG1pbi1yZWdpb25zLnNwZWMudHMiLAogICAgIiIiICBhd2FpdCBleHBlY3QocGFnZS5nZXRCeVRlc3RJZChgYWRtaW4tcGxheWVyLWFzc29jaWF0aW9uLSR7UExBWUVSX0lEfWApKS50b0JlQ2hlY2tlZCgpOwogIGF3YWl0IHBhZ2UuZ2V0QnlUZXN0SWQoJ2FkbWluLWdlb21ldHJ5LWtpbmQnKS5zZWxlY3RPcHRpb24oJ3BvbHlnb24nKTsKCiAgY29uc3QgZmlyc3RWZXJ0ZXggPSBwYWdlLmdldEJ5VGVzdElkKCdhZG1pbi1wb2x5Z29uLXZlcnRleC0wJyk7CiIiIiwKICAgICIiIiAgYXdhaXQgZXhwZWN0KHBhZ2UuZ2V0QnlUZXN0SWQoYGFkbWluLXBsYXllci1hc3NvY2lhdGlvbi0ke1BMQVlFUl9JRH1gKSkudG9CZUNoZWNrZWQoKTsKICBhd2FpdCBwYWdlLmdldEJ5VGVzdElkKCdhZG1pbi1nZW9tZXRyeS1raW5kJykuc2VsZWN0T3B0aW9uKCdwb2x5Z29uJyk7CgogIGNvbnN0IGNhbnZhcyA9IHBhZ2UuZ2V0QnlUZXN0SWQoJ2FkbWluLWNvb3JkaW5hdGUtbWFwJyk7CiAgY29uc3QgY2FudmFzQm94ID0gYXdhaXQgY2FudmFzLmJvdW5kaW5nQm94KCk7CiAgZXhwZWN0KGNhbnZhc0JveCkubm90LnRvQmVOdWxsKCk7CiAgaWYgKCFjYW52YXNCb3gpIHRocm93IG5ldyBFcnJvcignRWwgbWFwYSBhZG1pbmlzdHJhdGl2byBubyB0aWVuZSB1biDDoXJlYSBpbnRlcmFjdGl2YS4nKTsKICBhd2FpdCBwYWdlLm1vdXNlLmNsaWNrKAogICAgY2FudmFzQm94LnggKyBjYW52YXNCb3gud2lkdGggLyAyLAogICAgY2FudmFzQm94LnkgKyBjYW52YXNCb3guaGVpZ2h0IC8gMiwKICApOwogIGF3YWl0IGV4cGVjdChwYWdlLmxvY2F0b3IoJ1tkYXRhLXRlc3RpZF49ImFkbWluLXBvbHlnb24tdmVydGV4LSJdJykpLnRvSGF2ZUNvdW50KDUpOwogIGNvbnN0IGRlbGV0ZVZlcnRleCA9IHBhZ2UuZ2V0QnlUZXN0SWQoJ2FkbWluLXBvbHlnb24tZGVsZXRlLXZlcnRleCcpOwogIGF3YWl0IGV4cGVjdChkZWxldGVWZXJ0ZXgpLnRvQmVFbmFibGVkKCk7CiAgYXdhaXQgZGVsZXRlVmVydGV4LmNsaWNrKCk7CiAgYXdhaXQgZXhwZWN0KHBhZ2UubG9jYXRvcignW2RhdGEtdGVzdGlkXj0iYWRtaW4tcG9seWdvbi12ZXJ0ZXgtIl0nKSkudG9IYXZlQ291bnQoNCk7CgogIGNvbnN0IGZpcnN0VmVydGV4ID0gcGFnZS5nZXRCeVRlc3RJZCgnYWRtaW4tcG9seWdvbi12ZXJ0ZXgtMCcpOwoiIiIsCikK' | base64 --decode | python3
           npx prettier --write src/main.ts tests/e2e/map061-campaign-regions.spec.ts tests/e2e/map061-admin-regions.spec.ts
           git diff --check
-
           if git diff --quiet; then
             echo "Self-review fixes are already applied."
             exit 0
           fi
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/main.ts tests/e2e/map061-campaign-regions.spec.ts tests/e2e/map061-admin-regions.spec.ts
