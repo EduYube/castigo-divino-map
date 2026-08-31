@@ -23,52 +23,17 @@ jobs:
         shell: bash
         run: |
           python - <<'PY'
+          import base64
           from pathlib import Path
 
           path = Path('tests/e2e/map061-campaign-regions.spec.ts')
           text = path.read_text()
-          old = '''  const target = region(page, id);
-          const box = await target.boundingBox();
-          expect(box).not.toBeNull();
-          if (!box) throw new Error(`La región ${id} no tiene un área interactiva visible.`);
-          await target.click({
-            position: {
-              x: box.width * position.xRatio,
-              y: box.height * position.yRatio,
-            },
-          });'''
-          new = '''  const target = region(page, id);
-          await expect(target).toBeVisible();
-
-          const hitRegionAtPosition = async (): Promise<string | null> => {
-            const box = await target.boundingBox();
-            if (!box) return null;
-            const point = {
-              x: box.x + box.width * position.xRatio,
-              y: box.y + box.height * position.yRatio,
-            };
-            return page.evaluate(({ x, y }) => {
-              const hit = document.elementFromPoint(x, y);
-              return hit instanceof Element
-                ? (hit.closest('.campaign-region') as HTMLElement | null)?.dataset.regionId ?? null
-                : null;
-            }, point);
-          };
-
-          await expect.poll(hitRegionAtPosition).toBe(id);
-          const box = await target.boundingBox();
-          expect(box).not.toBeNull();
-          if (!box) throw new Error(`La región ${id} no tiene un área interactiva visible.`);
-          const point = {
-            x: box.x + box.width * position.xRatio,
-            y: box.y + box.height * position.yRatio,
-          };
-          expect(await hitRegionAtPosition()).toBe(id);
-          await page.mouse.click(point.x, point.y);'''
-          count = text.count(old)
-          if count != 1:
-              raise SystemExit(f'expected one clickRegionInterior body, found {count}')
-          path.write_text(text.replace(old, new))
+          signature = text.index('async function clickRegionInterior(')
+          start = text.index('  const target = region(page, id);', signature)
+          end = text.index('\n}\n\nfunction insidePin', start)
+          encoded = 'ICBjb25zdCB0YXJnZXQgPSByZWdpb24ocGFnZSwgaWQpOwogIGF3YWl0IGV4cGVjdCh0YXJnZXQpLnRvQmVWaXNpYmxlKCk7CgogIGNvbnN0IGhpdFJlZ2lvbkF0UG9zaXRpb24gPSBhc3luYyAoKTogUHJvbWlzZTxzdHJpbmcgfCBudWxsPiA9PiB7CiAgICBjb25zdCBib3ggPSBhd2FpdCB0YXJnZXQuYm91bmRpbmdCb3goKTsKICAgIGlmICghYm94KSByZXR1cm4gbnVsbDsKICAgIGNvbnN0IHBvaW50ID0gewogICAgICB4OiBib3gueCArIGJveC53aWR0aCAqIHBvc2l0aW9uLnhSYXRpbywKICAgICAgeTogYm94LnkgKyBib3guaGVpZ2h0ICogcG9zaXRpb24ueVJhdGlvLAogICAgfTsKICAgIHJldHVybiBwYWdlLmV2YWx1YXRlKCh7IHgsIHkgfSkgPT4gewogICAgICBjb25zdCBoaXQgPSBkb2N1bWVudC5lbGVtZW50RnJvbVBvaW50KHgsIHkpOwogICAgICByZXR1cm4gaGl0IGluc3RhbmNlb2YgRWxlbWVudAogICAgICAgID8gKGhpdC5jbG9zZXN0KCcuY2FtcGFpZ24tcmVnaW9uJykgYXMgSFRNTEVsZW1lbnQgfCBudWxsKT8uZGF0YXNldC5yZWdpb25JZCA/PyBudWxsCiAgICAgICAgOiBudWxsOwogICAgfSwgcG9pbnQpOwogIH07CgogIGF3YWl0IGV4cGVjdC5wb2xsKGhpdFJlZ2lvbkF0UG9zaXRpb24pLnRvQmUoaWQpOwogIGNvbnN0IGJveCA9IGF3YWl0IHRhcmdldC5ib3VuZGluZ0JveCgpOwogIGV4cGVjdChib3gpLm5vdC50b0JlTnVsbCgpOwogIGlmICghYm94KSB0aHJvdyBuZXcgRXJyb3IoYExhIHJlZ2nDs24gJHtpZH0gbm8gdGllbmUgdW4gw6FyZWEgaW50ZXJhY3RpdmEgdmlzaWJsZS5gKTsKICBjb25zdCBwb2ludCA9IHsKICAgIHg6IGJveC54ICsgYm94LndpZHRoICogcG9zaXRpb24ueFJhdGlvLAogICAgeTogYm94LnkgKyBib3guaGVpZ2h0ICogcG9zaXRpb24ueVJhdGlvLAogIH07CiAgZXhwZWN0KGF3YWl0IGhpdFJlZ2lvbkF0UG9zaXRpb24oKSkudG9CZShpZCk7CiAgYXdhaXQgcGFnZS5tb3VzZS5jbGljayhwb2ludC54LCBwb2ludC55KTsK'
+          replacement = base64.b64decode(encoded).decode().rstrip('\n')
+          path.write_text(text[:start] + replacement + text[end:])
           PY
           npx prettier --check tests/e2e/map061-campaign-regions.spec.ts
           git diff --check
