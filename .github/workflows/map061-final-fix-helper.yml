@@ -44,8 +44,8 @@ jobs:
 
           replace(
               'src/styles/campaign-regions.css',
-              "  cursor: pointer;\n  pointer-events: auto;",
-              "  cursor: pointer;\n  pointer-events: all;",
+              ".campaign-region {\n  stroke: currentColor;",
+              ".campaign-region {\n  pointer-events: all;\n  stroke: currentColor;",
           )
 
           replace(
