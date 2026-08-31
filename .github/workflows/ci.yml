@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - master
+  push:
+    branches:
+      - agent/map-061-campaign-regions
   workflow_dispatch:
 
 permissions:
