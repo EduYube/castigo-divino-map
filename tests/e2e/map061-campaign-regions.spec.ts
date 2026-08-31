@@ -235,6 +235,7 @@ test('renders translucent overlapping regions below an operable inner pin withou
   await expect(cromryn).toHaveAttribute('aria-pressed', 'true');
 
   await closeDetails(page);
+  await expect(cromryn).toBeFocused();
   await cromryn.focus();
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('place-details')).toHaveAttribute(

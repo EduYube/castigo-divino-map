@@ -456,6 +456,17 @@ test('saving a valid polygon preserves stable identity, audience, tags, disposit
   await expect(page.getByTestId(`admin-player-association-${PLAYER_ID}`)).toBeChecked();
   await page.getByTestId('admin-geometry-kind').selectOption('polygon');
 
+  const canvas = page.getByTestId('admin-coordinate-map');
+  const canvasBox = await canvas.boundingBox();
+  expect(canvasBox).not.toBeNull();
+  if (!canvasBox) throw new Error('El mapa administrativo no tiene un área interactiva.');
+  await page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
+  await expect(page.locator('[data-testid^="admin-polygon-vertex-"]')).toHaveCount(5);
+  const deleteVertex = page.getByTestId('admin-polygon-delete-vertex');
+  await expect(deleteVertex).toBeEnabled();
+  await deleteVertex.click();
+  await expect(page.locator('[data-testid^="admin-polygon-vertex-"]')).toHaveCount(4);
+
   const firstVertex = page.getByTestId('admin-polygon-vertex-0');
   await firstVertex.focus();
   await page.keyboard.press('ArrowRight');

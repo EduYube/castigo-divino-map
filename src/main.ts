@@ -144,6 +144,14 @@ function mountPublicExperience(
   const mapSearchStatus = app.querySelector<HTMLElement>('[data-map-search-status]');
 
   const focusPinControl = (pin: AtlasPinMarkerModel): void => {
+    const region = Array.from(
+      app.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]'),
+    ).find((candidate) => candidate.dataset.regionId === pin.id);
+    if (region) {
+      region.focus({ preventScroll: true });
+      return;
+    }
+
     const [lat, lng] = pin.coordinate;
     const element = Array.from(
       app.querySelectorAll<HTMLElement>('.campaign-marker-icon[data-marker-lat][data-marker-lng]'),
