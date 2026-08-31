@@ -24,6 +24,21 @@ function synchronizePopupBadge(button: HTMLButtonElement, master: boolean): void
   button.append(badge);
 }
 
+function synchronizeMasterRegionDescription(element: HTMLElement, master: boolean): void {
+  const current = element.getAttribute('aria-description') ?? '';
+  const publicDescription = current.replace(/^Contenido del Máster\.\s*/u, '').trim();
+  if (master) {
+    element.setAttribute(
+      'aria-description',
+      `Contenido del Máster.${publicDescription ? ` ${publicDescription}` : ''}`,
+    );
+  } else if (publicDescription) {
+    element.setAttribute('aria-description', publicDescription);
+  } else {
+    element.removeAttribute('aria-description');
+  }
+}
+
 export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualController {
   let markers: readonly AtlasPinMarkerModel[] = [];
   let masterEntityIds: ReadonlySet<EntityId> = new Set();
@@ -106,14 +121,7 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
       const master = Boolean(marker && isMaster(marker));
       element.dataset.audience = master ? 'master' : 'public';
       element.classList.toggle('campaign-region--master', master);
-      if (!marker) return;
-      const matchingDescription = element.getAttribute('aria-label') ?? `${marker.name}. Región de campaña.`;
-      if (master && !matchingDescription.includes('Contenido del Máster.')) {
-        element.setAttribute(
-          'aria-label',
-          `${marker.name}. Región de campaña. Contenido del Máster. Categoría: ${marker.categoryName}. Pulsa Intro o Espacio para abrir su ficha.`,
-        );
-      }
+      synchronizeMasterRegionDescription(element, master);
     });
 
     root
@@ -159,6 +167,7 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
       root.querySelectorAll<HTMLElement>('.campaign-region').forEach((element) => {
         delete element.dataset.audience;
         element.classList.remove('campaign-region--master');
+        synchronizeMasterRegionDescription(element, false);
       });
       root
         .querySelectorAll<HTMLElement>('[data-master-pin-badge]')
