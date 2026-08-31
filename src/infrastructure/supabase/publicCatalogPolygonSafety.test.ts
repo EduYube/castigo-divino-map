@@ -3,11 +3,11 @@ import { describe, expect, test } from 'vitest';
 import { buildPublicCatalogEnvelopeV2 } from './publicCatalogCodec';
 import type { PublicCatalogTablePayloadsWithCharacterLocations } from './publicCharacterLocationRelations';
 
-function payloadsWithGeometry(geometry: Record<string, unknown>): PublicCatalogTablePayloadsWithCharacterLocations {
+function payloadsWithGeometry(
+  geometry: Record<string, unknown>,
+): PublicCatalogTablePayloadsWithCharacterLocations {
   return {
-    categories: [
-      { id: 'category-places', slug: 'places', name: 'Places', description: '' },
-    ],
+    categories: [{ id: 'category-places', slug: 'places', name: 'Places', description: '' }],
     tags: [],
     players: [],
     entities: [
@@ -51,7 +51,9 @@ describe('public polygon geometry boundary', () => {
       ],
     };
 
-    await expect(buildPublicCatalogEnvelopeV2(payloadsWithGeometry(geometry))).rejects.toMatchObject({
+    await expect(
+      buildPublicCatalogEnvelopeV2(payloadsWithGeometry(geometry)),
+    ).rejects.toMatchObject({
       code: 'invalid-response',
       source: 'supabase',
     });

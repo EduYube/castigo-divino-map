@@ -134,7 +134,10 @@ function distanceSquaredToSegment(
   return (point.x - x) ** 2 + (point.y - y) ** 2;
 }
 
-function insertionIndex(vertices: readonly CampaignCoordinate[], point: CampaignCoordinate): number {
+function insertionIndex(
+  vertices: readonly CampaignCoordinate[],
+  point: CampaignCoordinate,
+): number {
   if (vertices.length < 2) return vertices.length;
   let bestIndex = vertices.length;
   let bestDistance = Number.POSITIVE_INFINITY;
@@ -293,7 +296,8 @@ export function mountAdminEntityEditorMap(
     vertexMarkers.forEach((vertex, vertexIndex) => {
       vertex.setIcon(createVertexIcon(vertexIndex, vertexIndex === selectedVertexIndex));
       const element = vertex.getElement();
-      if (element) element.setAttribute('aria-pressed', String(vertexIndex === selectedVertexIndex));
+      if (element)
+        element.setAttribute('aria-pressed', String(vertexIndex === selectedVertexIndex));
     });
     synchronizeVertexAction();
   };

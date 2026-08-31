@@ -5,16 +5,16 @@ import '../styles/campaign-regions.css';
 
 export type RegionMatchingSemantics = 'search-and-filters' | 'filters-only';
 export type AtlasRegionMarkerModel = AtlasPinMarkerModel & {
-  readonly mapPresentation: Extract<AtlasPinMarkerModel['mapPresentation'], { readonly kind: 'polygon' }>;
+  readonly mapPresentation: Extract<
+    AtlasPinMarkerModel['mapPresentation'],
+    { readonly kind: 'polygon' }
+  >;
 };
 
 export interface CampaignRegionController {
   setRegions(regions: readonly AtlasRegionMarkerModel[]): void;
   setActiveRegion(regionId: string | null): void;
-  setMatchingRegions(
-    regionIds: ReadonlySet<string>,
-    semantics?: RegionMatchingSemantics,
-  ): void;
+  setMatchingRegions(regionIds: ReadonlySet<string>, semantics?: RegionMatchingSemantics): void;
   locateRegion(regionId: string, label?: string): boolean;
   focusRegion(regionId: string): void;
   destroy(): void;

@@ -94,7 +94,8 @@ export function mountFaerunMap(
       options.onPinActivate?.(region);
       synchronizeRegionPresentation();
       const status = root.querySelector<HTMLElement>('[data-map-search-status]');
-      if (status) status.textContent = `${region.name}, región de campaña, seleccionada en el mapa.`;
+      if (status)
+        status.textContent = `${region.name}, región de campaña, seleccionada en el mapa.`;
     },
   });
 

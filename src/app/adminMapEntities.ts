@@ -402,9 +402,7 @@ export function mountAdminMapEntities(
       })
       .join(' · ');
     const polygon = draft.geometry?.kind === 'polygon' ? draft.geometry : null;
-    const geometryLabel = polygon
-      ? `Área/Región · ${polygon.vertices.length} vértices`
-      : 'Punto';
+    const geometryLabel = polygon ? `Área/Región · ${polygon.vertices.length} vértices` : 'Punto';
     previewMarker.textContent = polygon ? '◇' : draft.visibility === 'pin' ? '◆' : '';
     previewMarker.hidden = draft.visibility !== 'pin';
     previewName.textContent = draft.name.trim() || 'Sin nombre';
@@ -414,7 +412,10 @@ export function mountAdminMapEntities(
     preview.hidden = false;
   }
 
-  function synchronizeCoordinateInputs(coordinate: { readonly x: number; readonly y: number }): void {
+  function synchronizeCoordinateInputs(coordinate: {
+    readonly x: number;
+    readonly y: number;
+  }): void {
     const xControl = controls.get('x')?.input;
     const yControl = controls.get('y')?.input;
     if (!(xControl instanceof HTMLInputElement) || !(yControl instanceof HTMLInputElement)) return;
