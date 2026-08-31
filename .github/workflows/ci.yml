@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -18,15 +18,13 @@ concurrency:
 
 jobs:
   validate:
-    name: Format MAP-061 specs and restore CI
+    name: Build, quality and tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 35
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          ref: agent/map-061-campaign-regions
 
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
@@ -37,143 +35,96 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Format specs and restore read-only workflow
-        run: |
-          npx prettier --write tests/e2e/map061-admin-regions.spec.ts tests/e2e/map061-campaign-regions.spec.ts
-          cat > .github/workflows/ci.yml <<'EOF'
-          name: CI
+      - name: Check formatting
+        run: npm run format:check
 
-          on:
-            pull_request:
-              branches:
-                - master
-            push:
-              branches:
-                - master
-            workflow_dispatch:
+      - name: Audit tracked files for privileged credentials
+        run: npm run verify:security
 
-          permissions:
-            contents: read
+      - name: Verify accessibility invariants
+        run: npm run verify:accessibility
 
-          concurrency:
-            group: ci-${{ github.workflow }}-${{ github.ref }}
-            cancel-in-progress: true
+      - name: Lint
+        run: npm run lint
 
-          jobs:
-            validate:
-              name: Build, quality and tests
-              runs-on: ubuntu-latest
-              timeout-minutes: 35
+      - name: Run unit tests
+        run: npm run test
 
-              steps:
-                - name: Checkout repository
-                  uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Build application for GitHub Pages
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
+        run: npm run build:pages
 
-                - name: Set up Node.js
-                  uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
-                  with:
-                    node-version: 22
-                    cache: npm
+      - name: Audit production artifact
+        run: npm run verify:build
 
-                - name: Install dependencies
-                  run: npm ci
+      - name: Report production build metrics
+        run: npm run report:build
 
-                - name: Check formatting
-                  run: npm run format:check
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
 
-                - name: Audit tracked files for privileged credentials
-                  run: npm run verify:security
+      - name: Run end-to-end tests
+        run: npm run test:e2e
 
-                - name: Verify accessibility invariants
-                  run: npm run verify:accessibility
+      - name: Upload Playwright failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-failure-${{ github.run_id }}
+          path: test-results/**
+          if-no-files-found: warn
+          retention-days: 14
 
-                - name: Lint
-                  run: npm run lint
+      - name: Upload MAP-033 mobile visual references
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: map-033-mobile-references-${{ github.run_id }}
+          path: test-results/**/*.png
+          if-no-files-found: warn
+          retention-days: 14
 
-                - name: Run unit tests
-                  run: npm run test
+      - name: Upload MAP-037 mobile sheet references
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: map-037-mobile-sheet-references-${{ github.run_id }}
+          path: test-results/**/attachments/MAP-037-*.png
+          if-no-files-found: warn
+          retention-days: 14
 
-                - name: Build application for GitHub Pages
-                  env:
-                    VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
-                    VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
-                  run: npm run build:pages
+      - name: Smoke test the Pages build locally
+        run: npm run test:e2e:pages
 
-                - name: Audit production artifact
-                  run: npm run verify:build
+  database:
+    name: Supabase migrations, lint and RLS tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
-                - name: Report production build metrics
-                  run: npm run report:build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
-                - name: Install Playwright browsers
-                  run: npx playwright install --with-deps chromium firefox webkit
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
 
-                - name: Run end-to-end tests
-                  run: npm run test:e2e
+      - name: Install dependencies
+        run: npm ci
 
-                - name: Upload Playwright failure diagnostics
-                  if: failure()
-                  uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-                  with:
-                    name: playwright-failure-${{ github.run_id }}
-                    path: test-results/**
-                    if-no-files-found: warn
-                    retention-days: 14
+      - name: Record pinned Supabase CLI version
+        run: npx supabase --version
 
-                - name: Upload MAP-033 mobile visual references
-                  if: always()
-                  uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-                  with:
-                    name: map-033-mobile-references-${{ github.run_id }}
-                    path: test-results/**/*.png
-                    if-no-files-found: warn
-                    retention-days: 14
+      - name: Start local Supabase stack
+        run: npx supabase start
 
-                - name: Upload MAP-037 mobile sheet references
-                  if: always()
-                  uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-                  with:
-                    name: map-037-mobile-sheet-references-${{ github.run_id }}
-                    path: test-results/**/attachments/MAP-037-*.png
-                    if-no-files-found: warn
-                    retention-days: 14
+      - name: Rebuild, lint and test database
+        run: npm run supabase:db:validate
 
-                - name: Smoke test the Pages build locally
-                  run: npm run test:e2e:pages
-
-            database:
-              name: Supabase migrations, lint and RLS tests
-              runs-on: ubuntu-latest
-              timeout-minutes: 30
-
-              steps:
-                - name: Checkout repository
-                  uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-
-                - name: Set up Node.js
-                  uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
-                  with:
-                    node-version: 22
-                    cache: npm
-
-                - name: Install dependencies
-                  run: npm ci
-
-                - name: Record pinned Supabase CLI version
-                  run: npx supabase --version
-
-                - name: Start local Supabase stack
-                  run: npx supabase start
-
-                - name: Rebuild, lint and test database
-                  run: npm run supabase:db:validate
-
-                - name: Stop local Supabase stack
-                  if: always()
-                  run: npx supabase stop --no-backup
-          EOF
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tests/e2e/map061-admin-regions.spec.ts tests/e2e/map061-campaign-regions.spec.ts .github/workflows/ci.yml
-          git commit -m "style: format MAP-061 region specs"
-          git push origin HEAD:agent/map-061-campaign-regions
+      - name: Stop local Supabase stack
+        if: always()
+        run: npx supabase stop --no-backup
