@@ -155,4 +155,32 @@ describe('createAtlasPinMarkerModels', () => {
       'entity-hero',
     ]);
   });
+
+  it('consumes a legacy fallback even when its Beta 0.2 polygon is search_only', () => {
+    const searchOnlyPolygonCatalog: PublicCatalogSnapshotV2 = {
+      ...beta02Catalog,
+      entities: beta02Catalog.entities.map((entity) =>
+        entity.id === 'place-harbor'
+          ? {
+              ...entity,
+              visibility: 'search_only' as const,
+              geometry: {
+                kind: 'polygon' as const,
+                vertices: [
+                  { x: 50, y: 150 },
+                  { x: 150, y: 150 },
+                  { x: 150, y: 250 },
+                  { x: 50, y: 250 },
+                ],
+              },
+              coordinates: { x: 100, y: 200 },
+            }
+          : entity,
+      ),
+    };
+
+    expect(
+      createAtlasPinMarkerModels(legacyCatalog, searchOnlyPolygonCatalog).map(({ id }) => id),
+    ).toEqual(['entity-hero']);
+  });
 });
