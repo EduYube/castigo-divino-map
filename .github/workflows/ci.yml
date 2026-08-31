@@ -6,27 +6,25 @@ on:
       - master
   push:
     branches:
-      - agent/map-061-campaign-regions
+      - master
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  patch:
-    name: Apply MAP-061 self-review fixes
+  validate:
+    name: Build, quality and tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 35
 
     steps:
-      - name: Checkout branch
+      - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          ref: agent/map-061-campaign-regions
 
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
@@ -37,18 +35,96 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Patch, format and push
-        shell: bash
-        run: |
-          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpkZWYgcmVwbGFjZV9vbmNlKHBhdGg6IHN0ciwgb2xkOiBzdHIsIG5ldzogc3RyKSAtPiBOb25lOgogICAgZmlsZSA9IFBhdGgocGF0aCkKICAgIHRleHQgPSBmaWxlLnJlYWRfdGV4dCgpCiAgICBjb3VudCA9IHRleHQuY291bnQob2xkKQogICAgaWYgY291bnQgPT0gMCBhbmQgbmV3IGluIHRleHQ6CiAgICAgICAgcmV0dXJuCiAgICBpZiBjb3VudCAhPSAxOgogICAgICAgIHJhaXNlIFN5c3RlbUV4aXQoZiJFeHBlY3RlZCBleGFjdGx5IG9uZSBtYXRjaCBpbiB7cGF0aH0sIGZvdW5kIHtjb3VudH0iKQogICAgZmlsZS53cml0ZV90ZXh0KHRleHQucmVwbGFjZShvbGQsIG5ldywgMSkpCgpyZXBsYWNlX29uY2UoCiAgICAic3JjL21haW4udHMiLAogICAgIiIiICBjb25zdCBmb2N1c1BpbkNvbnRyb2wgPSAocGluOiBBdGxhc1Bpbk1hcmtlck1vZGVsKTogdm9pZCA9PiB7CiAgICBjb25zdCBbbGF0LCBsbmddID0gcGluLmNvb3JkaW5hdGU7CiAgICBjb25zdCBlbGVtZW50ID0gQXJyYXkuZnJvbSgKICAgICAgYXBwLnF1ZXJ5U2VsZWN0b3JBbGw8SFRNTEVsZW1lbnQ+KCcuY2FtcGFpZ24tbWFya2VyLWljb25bZGF0YS1tYXJrZXItbGF0XVtkYXRhLW1hcmtlci1sbmddJyksCiAgICApLmZpbmQoCiAgICAgIChjYW5kaWRhdGUpID0+CiAgICAgICAgTnVtYmVyKGNhbmRpZGF0ZS5kYXRhc2V0Lm1hcmtlckxhdCkgPT09IGxhdCAmJiBOdW1iZXIoY2FuZGlkYXRlLmRhdGFzZXQubWFya2VyTG5nKSA9PT0gbG5nLAogICAgKTsKCiAgICBlbGVtZW50Py5mb2N1cyh7IHByZXZlbnRTY3JvbGw6IHRydWUgfSk7CiAgfTsKIiIiLAogICAgIiIiICBjb25zdCBmb2N1c1BpbkNvbnRyb2wgPSAocGluOiBBdGxhc1Bpbk1hcmtlck1vZGVsKTogdm9pZCA9PiB7CiAgICBjb25zdCByZWdpb24gPSBBcnJheS5mcm9tKAogICAgICBhcHAucXVlcnlTZWxlY3RvckFsbDxIVE1MRWxlbWVudD4oJy5jYW1wYWlnbi1yZWdpb25bZGF0YS1yZWdpb24taWRdJyksCiAgICApLmZpbmQoKGNhbmRpZGF0ZSkgPT4gY2FuZGlkYXRlLmRhdGFzZXQucmVnaW9uSWQgPT09IHBpbi5pZCk7CiAgICBpZiAocmVnaW9uKSB7CiAgICAgIHJlZ2lvbi5mb2N1cyh7IHByZXZlbnRTY3JvbGw6IHRydWUgfSk7CiAgICAgIHJldHVybjsKICAgIH0KCiAgICBjb25zdCBbbGF0LCBsbmddID0gcGluLmNvb3JkaW5hdGU7CiAgICBjb25zdCBlbGVtZW50ID0gQXJyYXkuZnJvbSgKICAgICAgYXBwLnF1ZXJ5U2VsZWN0b3JBbGw8SFRNTEVsZW1lbnQ+KCcuY2FtcGFpZ24tbWFya2VyLWljb25bZGF0YS1tYXJrZXItbGF0XVtkYXRhLW1hcmtlci1sbmddJyksCiAgICApLmZpbmQoCiAgICAgIChjYW5kaWRhdGUpID0+CiAgICAgICAgTnVtYmVyKGNhbmRpZGF0ZS5kYXRhc2V0Lm1hcmtlckxhdCkgPT09IGxhdCAmJiBOdW1iZXIoY2FuZGlkYXRlLmRhdGFzZXQubWFya2VyTG5nKSA9PT0gbG5nLAogICAgKTsKCiAgICBlbGVtZW50Py5mb2N1cyh7IHByZXZlbnRTY3JvbGw6IHRydWUgfSk7CiAgfTsKIiIiLAopCgpyZXBsYWNlX29uY2UoCiAgICAidGVzdHMvZTJlL21hcDA2MS1jYW1wYWlnbi1yZWdpb25zLnNwZWMudHMiLAogICAgIiIiICBhd2FpdCBleHBlY3QoY3JvbXJ5bikudG9IYXZlQ2xhc3MoL2NhbXBhaWduLXJlZ2lvbi0tYWN0aXZlLyk7CiAgYXdhaXQgZXhwZWN0KGNyb21yeW4pLnRvSGF2ZUF0dHJpYnV0ZSgnYXJpYS1wcmVzc2VkJywgJ3RydWUnKTsKCiAgYXdhaXQgY2xvc2VEZXRhaWxzKHBhZ2UpOwogIGF3YWl0IGNyb21yeW4uZm9jdXMoKTsKIiIiLAogICAgIiIiICBhd2FpdCBleHBlY3QoY3JvbXJ5bikudG9IYXZlQ2xhc3MoL2NhbXBhaWduLXJlZ2lvbi0tYWN0aXZlLyk7CiAgYXdhaXQgZXhwZWN0KGNyb21yeW4pLnRvSGF2ZUF0dHJpYnV0ZSgnYXJpYS1wcmVzc2VkJywgJ3RydWUnKTsKCiAgYXdhaXQgY2xvc2VEZXRhaWxzKHBhZ2UpOwogIGF3YWl0IGV4cGVjdChjcm9tcnluKS50b0JlRm9jdXNlZCgpOwogIGF3YWl0IGNyb21yeW4uZm9jdXMoKTsKIiIiLAopCgpyZXBsYWNlX29uY2UoCiAgICAidGVzdHMvZTJlL21hcDA2MS1hZG1pbi1yZWdpb25zLnNwZWMudHMiLAogICAgIiIiICBhd2FpdCBleHBlY3QocGFnZS5nZXRCeVRlc3RJZChgYWRtaW4tcGxheWVyLWFzc29jaWF0aW9uLSR7UExBWUVSX0lEfWApKS50b0JlQ2hlY2tlZCgpOwogIGF3YWl0IHBhZ2UuZ2V0QnlUZXN0SWQoJ2FkbWluLWdlb21ldHJ5LWtpbmQnKS5zZWxlY3RPcHRpb24oJ3BvbHlnb24nKTsKCiAgY29uc3QgZmlyc3RWZXJ0ZXggPSBwYWdlLmdldEJ5VGVzdElkKCdhZG1pbi1wb2x5Z29uLXZlcnRleC0wJyk7CiIiIiwKICAgICIiIiAgYXdhaXQgZXhwZWN0KHBhZ2UuZ2V0QnlUZXN0SWQoYGFkbWluLXBsYXllci1hc3NvY2lhdGlvbi0ke1BMQVlFUl9JRH1gKSkudG9CZUNoZWNrZWQoKTsKICBhd2FpdCBwYWdlLmdldEJ5VGVzdElkKCdhZG1pbi1nZW9tZXRyeS1raW5kJykuc2VsZWN0T3B0aW9uKCdwb2x5Z29uJyk7CgogIGNvbnN0IGNhbnZhcyA9IHBhZ2UuZ2V0QnlUZXN0SWQoJ2FkbWluLWNvb3JkaW5hdGUtbWFwJyk7CiAgY29uc3QgY2FudmFzQm94ID0gYXdhaXQgY2FudmFzLmJvdW5kaW5nQm94KCk7CiAgZXhwZWN0KGNhbnZhc0JveCkubm90LnRvQmVOdWxsKCk7CiAgaWYgKCFjYW52YXNCb3gpIHRocm93IG5ldyBFcnJvcignRWwgbWFwYSBhZG1pbmlzdHJhdGl2byBubyB0aWVuZSB1biDDoXJlYSBpbnRlcmFjdGl2YS4nKTsKICBhd2FpdCBwYWdlLm1vdXNlLmNsaWNrKAogICAgY2FudmFzQm94LnggKyBjYW52YXNCb3gud2lkdGggLyAyLAogICAgY2FudmFzQm94LnkgKyBjYW52YXNCb3guaGVpZ2h0IC8gMiwKICApOwogIGF3YWl0IGV4cGVjdChwYWdlLmxvY2F0b3IoJ1tkYXRhLXRlc3RpZF49ImFkbWluLXBvbHlnb24tdmVydGV4LSJdJykpLnRvSGF2ZUNvdW50KDUpOwogIGNvbnN0IGRlbGV0ZVZlcnRleCA9IHBhZ2UuZ2V0QnlUZXN0SWQoJ2FkbWluLXBvbHlnb24tZGVsZXRlLXZlcnRleCcpOwogIGF3YWl0IGV4cGVjdChkZWxldGVWZXJ0ZXgpLnRvQmVFbmFibGVkKCk7CiAgYXdhaXQgZGVsZXRlVmVydGV4LmNsaWNrKCk7CiAgYXdhaXQgZXhwZWN0KHBhZ2UubG9jYXRvcignW2RhdGEtdGVzdGlkXj0iYWRtaW4tcG9seWdvbi12ZXJ0ZXgtIl0nKSkudG9IYXZlQ291bnQoNCk7CgogIGNvbnN0IGZpcnN0VmVydGV4ID0gcGFnZS5nZXRCeVRlc3RJZCgnYWRtaW4tcG9seWdvbi12ZXJ0ZXgtMCcpOwoiIiIsCikK' | base64 --decode | python3
-          npx prettier --write src/main.ts tests/e2e/map061-campaign-regions.spec.ts tests/e2e/map061-admin-regions.spec.ts
-          git diff --check
-          if git diff --quiet; then
-            echo "Self-review fixes are already applied."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/main.ts tests/e2e/map061-campaign-regions.spec.ts tests/e2e/map061-admin-regions.spec.ts
-          git commit -m "fix: restore region focus and cover vertex deletion"
-          git push origin HEAD:agent/map-061-campaign-regions
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Audit tracked files for privileged credentials
+        run: npm run verify:security
+
+      - name: Verify accessibility invariants
+        run: npm run verify:accessibility
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Build application for GitHub Pages
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
+        run: npm run build:pages
+
+      - name: Audit production artifact
+        run: npm run verify:build
+
+      - name: Report production build metrics
+        run: npm run report:build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-failure-${{ github.run_id }}
+          path: test-results/**
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload MAP-033 mobile visual references
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: map-033-mobile-references-${{ github.run_id }}
+          path: test-results/**/*.png
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload MAP-037 mobile sheet references
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: map-037-mobile-sheet-references-${{ github.run_id }}
+          path: test-results/**/attachments/MAP-037-*.png
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Smoke test the Pages build locally
+        run: npm run test:e2e:pages
+
+  database:
+    name: Supabase migrations, lint and RLS tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Record pinned Supabase CLI version
+        run: npx supabase --version
+
+      - name: Start local Supabase stack
+        run: npx supabase start
+
+      - name: Rebuild, lint and test database
+        run: npm run supabase:db:validate
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: npx supabase stop --no-backup
