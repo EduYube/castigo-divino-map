@@ -131,7 +131,11 @@ const PUBLIC_ROWS: Readonly<Record<string, readonly Record<string, unknown>[]>> 
   campaign_geographic_entity_links: [],
 };
 
-async function configureBackend(page: Page): Promise<void> {
+async function configureBackend(
+  page: Page,
+  options: { readonly includeInnerPin?: boolean } = {},
+): Promise<void> {
+  const includeInnerPin = options.includeInnerPin ?? true;
   await page.addInitScript((projectUrl) => {
     window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
       projectUrl,
@@ -148,7 +152,11 @@ async function configureBackend(page: Page): Promise<void> {
   await page.route('**/rest/v1/**', async (route: Route) => {
     const match = /\/rest\/v1\/([^?]+)/.exec(route.request().url());
     const table = match?.[1] ?? '';
-    const rows = PUBLIC_ROWS[table] ?? [];
+    const sourceRows = PUBLIC_ROWS[table] ?? [];
+    const rows =
+      table === 'map_entities' && !includeInnerPin
+        ? sourceRows.filter(({ id }) => id !== INNER_PIN_ID)
+        : sourceRows;
     const contentRange = rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
     await route.fulfill({
       status: 200,
@@ -159,8 +167,11 @@ async function configureBackend(page: Page): Promise<void> {
   });
 }
 
-async function openMap(page: Page): Promise<void> {
-  await configureBackend(page);
+async function openMap(
+  page: Page,
+  options: { readonly includeInnerPin?: boolean } = {},
+): Promise<void> {
+  await configureBackend(page, options);
   await page.goto('/');
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
   await expect(page.locator('[data-backend-status]')).toHaveAttribute(
@@ -173,6 +184,26 @@ async function openMap(page: Page): Promise<void> {
 
 function region(page: Page, id: string) {
   return page.locator(`.campaign-region[data-region-id="${id}"]`);
+}
+
+async function clickRegionInterior(
+  page: Page,
+  id: string,
+  position: { readonly xRatio: number; readonly yRatio: number } = {
+    xRatio: 0.5,
+    yRatio: 0.5,
+  },
+): Promise<void> {
+  const target = region(page, id);
+  const box = await target.boundingBox();
+  expect(box).not.toBeNull();
+  if (!box) throw new Error(`La región ${id} no tiene un área interactiva visible.`);
+  await target.click({
+    position: {
+      x: box.width * position.xRatio,
+      y: box.height * position.yRatio,
+    },
+  });
 }
 
 function insidePin(page: Page) {
@@ -222,7 +253,7 @@ test('renders translucent overlapping regions below an operable inner pin withou
   await expect(page.getByTestId('place-details')).toContainText('Witness Inside MAP061');
   await closeDetails(page);
 
-  await cromryn.click({ position: { x: 6, y: 6 } });
+  await clickRegionInterior(page, REGION_A_ID, { xRatio: 0.25, yRatio: 0.25 });
   await expect(page.getByTestId('place-details')).toHaveAttribute('data-entity-id', REGION_A_ID);
   await expect(page.getByTestId('place-details')).toContainText('Cromryn Region MAP061');
   await expect(cromryn).toHaveClass(/campaign-region--active/);
@@ -282,7 +313,7 @@ test('explicit filters dim non-matching regions without removing their selection
   await expect(insidePin(page)).toHaveAttribute('data-filter-match', 'false');
   await expect(overlap).toHaveAttribute('aria-label', /No coincide con .*filtros actuales/i);
 
-  await overlap.click({ position: { x: 6, y: 6 } });
+  await clickRegionInterior(page, REGION_B_ID, { xRatio: 0.75, yRatio: 0.25 });
   await expect(page.getByTestId('place-details')).toHaveAttribute('data-entity-id', REGION_B_ID);
   await expect(overlap).toHaveClass(/campaign-region--active/);
   await expect(overlap).toHaveClass(/campaign-region--dimmed/);
@@ -293,10 +324,11 @@ for (const width of [320, 390, 430]) {
     page,
   }) => {
     await page.setViewportSize({ width, height: 780 });
-    await openMap(page);
+    await openMap(page, { includeInnerPin: false });
     const cromryn = region(page, REGION_A_ID);
+    await expect(insidePin(page)).toHaveCount(0);
 
-    await cromryn.click({ position: { x: 6, y: 6 } });
+    await clickRegionInterior(page, REGION_A_ID);
     await expect(page.getByTestId('place-details')).toHaveAttribute('data-entity-id', REGION_A_ID);
     await expect(page.getByTestId('place-details')).toBeVisible();
     await expect(cromryn).toHaveAttribute('aria-pressed', 'true');
