@@ -180,6 +180,14 @@ export function mountAdminEntityEditorMap(
   const vertexPane = map.createPane(VERTEX_PANE);
   vertexPane.style.zIndex = '620';
 
+  const removeVertexButton = document.createElement('button');
+  removeVertexButton.type = 'button';
+  removeVertexButton.className = 'admin-map-entity__button admin-map-entity__vertex-delete';
+  removeVertexButton.textContent = 'Eliminar vértice seleccionado';
+  removeVertexButton.setAttribute('data-testid', 'admin-polygon-delete-vertex');
+  removeVertexButton.hidden = true;
+  canvas.insertAdjacentElement('afterend', removeVertexButton);
+
   map.fitBounds(bounds, { animate: false });
   constrainViewport(map, bounds, true);
 
@@ -195,6 +203,21 @@ export function mountAdminEntityEditorMap(
     (options.coordinate && isMapCoordinateWithinBounds(options.coordinate)
       ? createPointMapGeometry(options.coordinate)
       : null);
+
+  const synchronizeVertexAction = (): void => {
+    const isPolygon = currentGeometry?.kind === 'polygon';
+    const vertexCount = isPolygon ? currentGeometry.vertices.length : 0;
+    removeVertexButton.hidden = !isPolygon;
+    removeVertexButton.disabled = selectedVertexIndex === null || vertexCount <= 3;
+    removeVertexButton.setAttribute(
+      'aria-label',
+      selectedVertexIndex === null
+        ? 'Selecciona un vértice para poder eliminarlo'
+        : vertexCount <= 3
+          ? 'La región necesita al menos tres vértices'
+          : `Eliminar vértice ${selectedVertexIndex + 1} de ${vertexCount}`,
+    );
+  };
 
   const emitGeometry = (): void => {
     if (!currentGeometry) return;
@@ -257,12 +280,12 @@ export function mountAdminEntityEditorMap(
     marker = null;
   };
 
-  const removePolygonLayers = (): void => {
+  const removePolygonLayers = (clearSelection = true): void => {
     polygon?.removeFrom(map);
     polygon = null;
     vertexMarkers.forEach((vertex) => vertex.removeFrom(map));
     vertexMarkers = [];
-    selectedVertexIndex = null;
+    if (clearSelection) selectedVertexIndex = null;
   };
 
   const setSelectedVertex = (index: number | null): void => {
@@ -272,6 +295,7 @@ export function mountAdminEntityEditorMap(
       const element = vertex.getElement();
       if (element) element.setAttribute('aria-pressed', String(vertexIndex === selectedVertexIndex));
     });
+    synchronizeVertexAction();
   };
 
   const removeVertex = (index: number): void => {
@@ -293,6 +317,7 @@ export function mountAdminEntityEditorMap(
         vertexIndex === index ? coordinate : vertex,
       ),
     };
+    selectedVertexIndex = index;
     renderGeometry();
     emitGeometry();
   };
@@ -313,6 +338,8 @@ export function mountAdminEntityEditorMap(
     if (!currentGeometry) {
       removePointMarker();
       removePolygonLayers();
+      delete canvas.dataset.geometryKind;
+      synchronizeVertexAction();
       return;
     }
 
@@ -320,11 +347,17 @@ export function mountAdminEntityEditorMap(
       removePolygonLayers();
       ensureMarker(currentGeometry.coordinates);
       canvas.dataset.geometryKind = 'point';
+      synchronizeVertexAction();
       return;
     }
 
     removePointMarker();
-    removePolygonLayers();
+    const preservedSelection = selectedVertexIndex;
+    removePolygonLayers(false);
+    selectedVertexIndex =
+      preservedSelection === null
+        ? null
+        : Math.min(preservedSelection, Math.max(0, currentGeometry.vertices.length - 1));
     canvas.dataset.geometryKind = 'polygon';
     if (currentGeometry.vertices.length >= 2) {
       polygon = L.polygon(currentGeometry.vertices.map(toLeafletSimpleCoordinate), {
@@ -396,6 +429,13 @@ export function mountAdminEntityEditorMap(
     setSelectedVertex(selectedVertexIndex);
   }
 
+  const handleRemoveSelectedVertex = (): void => {
+    if (selectedVertexIndex === null) return;
+    removeVertex(selectedVertexIndex);
+    window.requestAnimationFrame(() => removeVertexButton.focus());
+  };
+  removeVertexButton.addEventListener('click', handleRemoveSelectedVertex);
+
   const handleMapClick = (event: L.LeafletMouseEvent): void => {
     const next = fromLeafletSimpleCoordinate([event.latlng.lat, event.latlng.lng]);
     if (!isMapCoordinateWithinBounds(next)) return;
@@ -450,10 +490,12 @@ export function mountAdminEntityEditorMap(
       if (!isMapCoordinateWithinBounds(coordinate)) return;
       currentGeometry = createPointMapGeometry(coordinate);
       renderGeometry();
+      emitGeometry();
     },
     setGeometry(geometry): void {
       currentGeometry = geometry;
       renderGeometry();
+      emitGeometry();
     },
     setGeometryKind(kind): void {
       if (kind === 'point') {
@@ -462,7 +504,10 @@ export function mountAdminEntityEditorMap(
           currentGeometry = representative ? createPointMapGeometry(representative) : null;
         }
       } else if (currentGeometry?.kind !== 'polygon') {
-        currentGeometry = currentGeometry?.kind === 'point' ? starterPolygon(currentGeometry.coordinates) : { kind: 'polygon', vertices: [] };
+        currentGeometry =
+          currentGeometry?.kind === 'point'
+            ? starterPolygon(currentGeometry.coordinates)
+            : { kind: 'polygon', vertices: [] };
       }
       renderGeometry();
       emitGeometry();
@@ -491,6 +536,8 @@ export function mountAdminEntityEditorMap(
       map.off('click', handleMapClick);
       imageOverlay.off('load', handleImageLoad);
       imageOverlay.off('error', handleImageError);
+      removeVertexButton.removeEventListener('click', handleRemoveSelectedVertex);
+      removeVertexButton.remove();
       resizeObserver?.disconnect();
       window.removeEventListener('resize', handleResize);
       if (resizeFrame !== undefined) window.cancelAnimationFrame(resizeFrame);
