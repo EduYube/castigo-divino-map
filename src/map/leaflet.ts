@@ -191,6 +191,15 @@ export function mountFaerunMap(
     locateSearchTarget(target): void {
       const region = findRegionBySearchTarget(target);
       if (region) {
+        if (region.legacyPlaceId) {
+          activePlaceId = region.legacyPlaceId;
+          activeSupplementalPinId = null;
+        } else {
+          activePlaceId = null;
+          activeSupplementalPinId = region.id;
+        }
+        options.onPinActivate?.(region);
+        synchronizeRegionPresentation();
         pointController.clearSearchFocus();
         regionController.locateRegion(region.id, target.label);
         return;
