@@ -426,7 +426,9 @@ test('point → polygon is local until save, cancel restores persisted point, an
   expect(backend.getGeometry().kind).toBe('point');
 });
 
-test('keyboard vertex editing exposes invalid geometry and blocks any partial save', async ({ page }) => {
+test('keyboard vertex editing exposes invalid geometry and blocks any partial save', async ({
+  page,
+}) => {
   const backend = await openAdmin(page);
   await page.getByTestId('admin-geometry-kind').selectOption('polygon');
   const firstVertex = page.getByTestId('admin-polygon-vertex-0');
