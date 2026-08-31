@@ -187,6 +187,29 @@ describe('validateAdminMapEntityDraft', () => {
     expect(result.fieldErrors.dispositions).toMatch(/Recarga/);
   });
 
+  it('accepts two-decimal display rounding for derived polygon coordinates but rejects stale values', () => {
+    const geometry = {
+      kind: 'polygon' as const,
+      vertices: [
+        { x: 800.004, y: 600.004 },
+        { x: 1200.004, y: 600.004 },
+        { x: 1200.004, y: 1000.004 },
+        { x: 800.004, y: 1000.004 },
+      ],
+    };
+    const rounded = validateAdminMapEntityDraft(
+      draft({ entityType: 'location', geometry, x: 1000, y: 800 }),
+      references,
+    );
+    expect(rounded.fieldErrors.coordinates).toBeUndefined();
+
+    const stale = validateAdminMapEntityDraft(
+      draft({ entityType: 'location', geometry, x: 999.98, y: 800 }),
+      references,
+    );
+    expect(stale.fieldErrors.coordinates).toMatch(/derivan de su geometría/);
+  });
+
   it('rejects incomplete or manipulated disposition values instead of inventing neutral', () => {
     const result = validateAdminMapEntityDraft(
       draft({
