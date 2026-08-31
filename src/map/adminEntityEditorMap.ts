@@ -117,6 +117,13 @@ function polygonRepresentative(vertices: readonly CampaignCoordinate[]): Campaig
   };
 }
 
+function polygonLatLngs(vertices: readonly CampaignCoordinate[]): L.LatLng[] {
+  return vertices.map((coordinate) => {
+    const [lat, lng] = toLeafletSimpleCoordinate(coordinate);
+    return L.latLng(lat, lng);
+  });
+}
+
 function distanceSquaredToSegment(
   point: CampaignCoordinate,
   start: CampaignCoordinate,
@@ -208,9 +215,9 @@ export function mountAdminEntityEditorMap(
       : null);
 
   const synchronizeVertexAction = (): void => {
-    const isPolygon = currentGeometry?.kind === 'polygon';
-    const vertexCount = isPolygon ? currentGeometry.vertices.length : 0;
-    removeVertexButton.hidden = !isPolygon;
+    const polygonGeometry = currentGeometry?.kind === 'polygon' ? currentGeometry : null;
+    const vertexCount = polygonGeometry?.vertices.length ?? 0;
+    removeVertexButton.hidden = polygonGeometry === null;
     removeVertexButton.disabled = selectedVertexIndex === null || vertexCount <= 3;
     removeVertexButton.setAttribute(
       'aria-label',
@@ -364,7 +371,7 @@ export function mountAdminEntityEditorMap(
         : Math.min(preservedSelection, Math.max(0, currentGeometry.vertices.length - 1));
     canvas.dataset.geometryKind = 'polygon';
     if (currentGeometry.vertices.length >= 2) {
-      polygon = L.polygon(currentGeometry.vertices.map(toLeafletSimpleCoordinate), {
+      polygon = L.polygon(polygonLatLngs(currentGeometry.vertices), {
         pane: POLYGON_PANE,
         className: 'admin-map-entity__polygon-preview',
         interactive: false,
