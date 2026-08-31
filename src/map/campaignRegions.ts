@@ -197,7 +197,9 @@ export function mountCampaignRegions(
       return true;
     },
     focusRegion(regionId): void {
-      polygonElement(rendered.get(regionId)?.polygon as Polygon)?.focus({ preventScroll: true });
+      const entry = rendered.get(regionId);
+      if (!entry) return;
+      polygonElement(entry.polygon)?.focus({ preventScroll: true });
     },
     destroy(): void {
       if (destroyed) return;
