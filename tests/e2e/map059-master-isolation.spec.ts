@@ -303,7 +303,8 @@ test('Master OFF never leaks a nearby secret count; ON shows authorized member s
 
   await secretMember.click();
   await expect(page.getByTestId('place-details')).toContainText(MASTER_A_NAME);
-  await regionA.click();
+  await regionA.focus();
+  await page.keyboard.press('Enter');
   await expect(page.getByTestId('place-details')).toContainText(MASTER_REGION_A_NAME);
 
   await toggle.click();

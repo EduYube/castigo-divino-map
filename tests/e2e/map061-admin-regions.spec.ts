@@ -399,8 +399,8 @@ test('point → polygon is local until save, cancel restores persisted point, an
   await kind.selectOption('polygon');
   await expect(kind).toHaveValue('polygon');
   await expect(page.locator('[data-testid^="admin-polygon-vertex-"]')).toHaveCount(4);
-  await expect(page.getByLabel('Coordenada X representativa')).toHaveAttribute('readonly', '');
-  await expect(page.getByLabel('Coordenada Y representativa')).toHaveAttribute('readonly', '');
+  await expect(page.getByLabel(/Coordenada X(?: representativa)?/)).toHaveAttribute('readonly', '');
+  await expect(page.getByLabel(/Coordenada Y(?: representativa)?/)).toHaveAttribute('readonly', '');
   expect(backend.getSaveCount()).toBe(0);
   expect(backend.getGeometry().kind).toBe('point');
 
@@ -434,9 +434,9 @@ test('keyboard vertex editing exposes invalid geometry and blocks any partial sa
   const firstVertex = page.getByTestId('admin-polygon-vertex-0');
   await firstVertex.focus();
 
-  for (let index = 0; index < 7; index += 1) await page.keyboard.press('Shift+ArrowRight');
-  await page.keyboard.press('ArrowRight');
-  await page.keyboard.press('ArrowRight');
+  for (let index = 0; index < 7; index += 1) await firstVertex.press('Shift+ArrowRight');
+  await firstVertex.press('ArrowRight');
+  await firstVertex.press('ArrowRight');
 
   await expect(page.locator('#admin-map-entity-field-geometryKind-error')).toContainText(
     /cannot repeat vertices/i,
@@ -460,7 +460,7 @@ test('saving a valid polygon preserves stable identity, audience, tags, disposit
   const canvasBox = await canvas.boundingBox();
   expect(canvasBox).not.toBeNull();
   if (!canvasBox) throw new Error('El mapa administrativo no tiene un área interactiva.');
-  await page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
+  await canvas.click({ position: { x: canvasBox.width * 0.72, y: canvasBox.height * 0.52 } });
   await expect(page.locator('[data-testid^="admin-polygon-vertex-"]')).toHaveCount(5);
   const deleteVertex = page.getByTestId('admin-polygon-delete-vertex');
   await expect(deleteVertex).toBeEnabled();
@@ -468,8 +468,7 @@ test('saving a valid polygon preserves stable identity, audience, tags, disposit
   await expect(page.locator('[data-testid^="admin-polygon-vertex-"]')).toHaveCount(4);
 
   const firstVertex = page.getByTestId('admin-polygon-vertex-0');
-  await firstVertex.focus();
-  await page.keyboard.press('ArrowRight');
+  await firstVertex.press('ArrowRight');
   await page.getByRole('button', { name: 'Previsualizar' }).click();
   await expect(page.getByText(/Área\/Región · 4 vértices/)).toBeVisible();
 

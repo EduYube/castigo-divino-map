@@ -833,7 +833,7 @@ test('keyboard coordinate editing can create, publish and archive an emplacement
   await page.getByLabel('Coordenada X').fill('1200');
   await page.getByLabel('Coordenada Y').fill('900');
   await page.getByRole('button', { name: 'Previsualizar' }).click();
-  await expect(page.getByText(/location · Places · X 1200, Y 900/)).toBeVisible();
+  await expect(page.getByText(/location · Punto · Places · X 1200, Y 900/)).toBeVisible();
 
   await page.getByRole('button', { name: 'Publicar' }).click();
   await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();

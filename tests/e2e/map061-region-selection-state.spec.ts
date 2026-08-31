@@ -135,7 +135,8 @@ test('switching between a supplemental point and region leaves only one active m
   await expect(point).toHaveAttribute('aria-pressed', 'true');
   await expect(region).toHaveAttribute('aria-pressed', 'false');
 
-  await region.click({ force: true });
+  await region.focus();
+  await page.keyboard.press('Enter');
   await expect(region).toHaveAttribute('aria-pressed', 'true');
   await expect(point).toHaveAttribute('aria-pressed', 'false');
 

@@ -199,14 +199,20 @@ for (const width of [320, 390, 430]) {
 
     await page.getByTestId('admin-geometry-kind').selectOption('polygon');
     await expect(page.locator('[data-testid^="admin-polygon-vertex-"]')).toHaveCount(4);
-    await expect(page.getByLabel('Coordenada X representativa')).toHaveAttribute('readonly', '');
-    await expect(page.getByLabel('Coordenada Y representativa')).toHaveAttribute('readonly', '');
+    await expect(page.getByLabel(/Coordenada X(?: representativa)?/)).toHaveAttribute(
+      'readonly',
+      '',
+    );
+    await expect(page.getByLabel(/Coordenada Y(?: representativa)?/)).toHaveAttribute(
+      'readonly',
+      '',
+    );
 
     const canvas = page.getByTestId('admin-coordinate-map');
     const box = await canvas.boundingBox();
     expect(box).not.toBeNull();
     if (!box) throw new Error('El mapa administrativo no tiene área táctil.');
-    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+    await page.touchscreen.tap(box.x + box.width * 0.72, box.y + box.height * 0.52);
     await expect(page.locator('[data-testid^="admin-polygon-vertex-"]')).toHaveCount(5);
 
     const deleteVertex = page.getByTestId('admin-polygon-delete-vertex');

@@ -66,6 +66,7 @@
     stroke: Highlight;
     stroke-width: 5;
     stroke-dasharray: 3 4;
+    fill-opacity: 0.01;
   }
 
   .campaign-region--active {
