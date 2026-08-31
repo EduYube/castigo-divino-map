@@ -103,17 +103,6 @@ jobs:
           )
 
           replace(
-              "  await cromryn.click({ position: { x: 6, y: 6 } });",
-              "  await clickRegionInterior(page, REGION_A_ID, { xRatio: 0.25, yRatio: 0.25 });",
-              expected=1,
-          )
-
-          replace(
-              "  await overlap.click({ position: { x: 6, y: 6 } });",
-              "  await clickRegionInterior(page, REGION_B_ID, { xRatio: 0.75, yRatio: 0.25 });",
-          )
-
-          replace(
               """    await page.setViewportSize({ width, height: 780 });
             await openMap(page);
             const cromryn = region(page, REGION_A_ID);
@@ -125,6 +114,16 @@ jobs:
             await expect(insidePin(page)).toHaveCount(0);
 
             await clickRegionInterior(page, REGION_A_ID);""",
+          )
+
+          replace(
+              "  await cromryn.click({ position: { x: 6, y: 6 } });",
+              "  await clickRegionInterior(page, REGION_A_ID, { xRatio: 0.25, yRatio: 0.25 });",
+          )
+
+          replace(
+              "  await overlap.click({ position: { x: 6, y: 6 } });",
+              "  await clickRegionInterior(page, REGION_B_ID, { xRatio: 0.75, yRatio: 0.25 });",
           )
 
           path.write_text(text)
