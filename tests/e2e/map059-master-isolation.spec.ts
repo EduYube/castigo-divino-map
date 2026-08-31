@@ -11,8 +11,12 @@ const PUBLIC_A_ID = 'entity-map059-public-a';
 const PUBLIC_B_ID = 'entity-map059-public-b';
 const MASTER_A_ID = 'entity-map059-master-a';
 const MASTER_B_ID = 'entity-map059-master-b';
+const MASTER_REGION_A_ID = 'entity-map059-master-region-a';
+const MASTER_REGION_B_ID = 'entity-map059-master-region-b';
 const MASTER_A_NAME = 'Secreto MAP059 A';
 const MASTER_B_NAME = 'Secreto MAP059 B';
+const MASTER_REGION_A_NAME = 'Región secreta MAP061 A';
+const MASTER_REGION_B_NAME = 'Región secreta MAP061 B';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -68,6 +72,20 @@ function masterCatalog(campaignId: string): Record<string, unknown> {
   const isB = campaignId === CAMPAIGN_B_ID;
   const suffix = isB ? 'b' : 'a';
   const categoryId = `category-map059-${suffix}`;
+  const regionCenter = { x: isB ? 2300 : 1000, y: isB ? 1300 : 800 };
+  const regionVertices = isB
+    ? [
+        { x: 2200, y: 1200 },
+        { x: 2400, y: 1200 },
+        { x: 2400, y: 1400 },
+        { x: 2200, y: 1400 },
+      ]
+    : [
+        { x: 900, y: 700 },
+        { x: 1100, y: 700 },
+        { x: 1100, y: 900 },
+        { x: 900, y: 900 },
+      ];
 
   return {
     entities: [
@@ -87,6 +105,22 @@ function masterCatalog(campaignId: string): Record<string, unknown> {
         },
         x: isB ? 2320 : 1020,
         y: isB ? 1300 : 800,
+        category_id: categoryId,
+        updated_at: '2026-08-30T10:00:00.000Z',
+      },
+      {
+        id: isB ? MASTER_REGION_B_ID : MASTER_REGION_A_ID,
+        slug: `map059-master-region-${suffix}`,
+        entity_type: 'location',
+        visibility: 'pin',
+        audience: 'master',
+        name: isB ? MASTER_REGION_B_NAME : MASTER_REGION_A_NAME,
+        summary: '',
+        description: '',
+        portrait_path: null,
+        geometry: { kind: 'polygon', vertices: regionVertices },
+        x: regionCenter.x,
+        y: regionCenter.y,
         category_id: categoryId,
         updated_at: '2026-08-30T10:00:00.000Z',
       },
@@ -230,17 +264,24 @@ function spiderPin(page: Page, id: string) {
   return page.locator(`[data-spiderfied="true"][data-pin-id="${id}"]`);
 }
 
+function masterRegion(page: Page, id: string) {
+  return page.locator(`[data-region-entity-id="${id}"]`);
+}
+
 test('Master OFF never leaks a nearby secret count; ON shows authorized member semantics and ON to OFF purges every trace immediately', async ({
   page,
 }) => {
   await openAuthorizedMap(page);
   const toggle = page.locator('[data-master-mode-toggle]');
+  const regionA = masterRegion(page, MASTER_REGION_A_ID);
 
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await expect(clusterTwo(page)).toHaveCount(0);
   await expect(page.locator(`[data-pin-id="${PUBLIC_A_ID}"]`)).toBeVisible();
   await expect(page.locator(`[data-entity-id="${MASTER_A_ID}"]`)).toHaveCount(0);
+  await expect(regionA).toHaveCount(0);
   await expect(page.getByText(MASTER_A_NAME, { exact: true })).toHaveCount(0);
+  await expect(page.getByText(MASTER_REGION_A_NAME, { exact: true })).toHaveCount(0);
 
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
@@ -248,6 +289,10 @@ test('Master OFF never leaks a nearby secret count; ON shows authorized member s
   await expect(clusterTwo(page)).not.toHaveAttribute('data-audience', 'master');
   await expect(clusterTwo(page)).not.toHaveAttribute('data-audience', 'mixed');
   await expect(clusterTwo(page).locator('.pin-visual--master')).toHaveCount(0);
+  await expect(regionA).toBeVisible();
+  await expect(regionA).toHaveAttribute('data-audience', 'master');
+  await expect(regionA).toHaveClass(/campaign-region--master/);
+  await expect(regionA).toHaveAttribute('aria-description', /Contenido del Máster/i);
 
   await clusterTwo(page).click();
   const publicMember = spiderPin(page, PUBLIC_A_ID);
@@ -258,18 +303,23 @@ test('Master OFF never leaks a nearby secret count; ON shows authorized member s
 
   await secretMember.click();
   await expect(page.getByTestId('place-details')).toContainText(MASTER_A_NAME);
+  await regionA.click();
+  await expect(page.getByTestId('place-details')).toContainText(MASTER_REGION_A_NAME);
 
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('[data-spiderfied="true"]')).toHaveCount(0);
   await expect(clusterTwo(page)).toHaveCount(0);
   await expect(page.locator(`[data-entity-id="${MASTER_A_ID}"]`)).toHaveCount(0);
+  await expect(regionA).toHaveCount(0);
   await expect(page.getByText(MASTER_A_NAME, { exact: true })).toHaveCount(0);
+  await expect(page.getByText(MASTER_REGION_A_NAME, { exact: true })).toHaveCount(0);
   await expect(page.getByTestId('place-details')).not.toContainText(MASTER_A_NAME);
+  await expect(page.getByTestId('place-details')).not.toContainText(MASTER_REGION_A_NAME);
   await expect(page.locator(`[data-pin-id="${PUBLIC_A_ID}"]`)).toBeVisible();
 });
 
-test('campaign A to B destroys the open A spiderfy, rebuilds only B, and keeps the admin session alive', async ({
+test('campaign A to B destroys A master geometry, rebuilds only B, and keeps the admin session alive', async ({
   page,
 }) => {
   await openAuthorizedMap(page);
@@ -279,6 +329,8 @@ test('campaign A to B destroys the open A spiderfy, rebuilds only B, and keeps t
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
   await expect(clusterTwo(page)).toBeVisible();
+  await expect(masterRegion(page, MASTER_REGION_A_ID)).toBeVisible();
+  await expect(masterRegion(page, MASTER_REGION_A_ID)).toHaveAttribute('data-audience', 'master');
   await clusterTwo(page).click();
   await expect(spiderPin(page, MASTER_A_ID)).toBeVisible();
   await expect(spiderPin(page, PUBLIC_A_ID)).toBeVisible();
@@ -287,10 +339,16 @@ test('campaign A to B destroys the open A spiderfy, rebuilds only B, and keeps t
   await expect(selector).toHaveValue('campaign-b');
   await expect(page.locator(`[data-pin-id="${PUBLIC_A_ID}"]`)).toHaveCount(0);
   await expect(page.locator(`[data-pin-id="${MASTER_A_ID}"]`)).toHaveCount(0);
+  await expect(masterRegion(page, MASTER_REGION_A_ID)).toHaveCount(0);
   await expect(page.getByText(MASTER_A_NAME, { exact: true })).toHaveCount(0);
+  await expect(page.getByText(MASTER_REGION_A_NAME, { exact: true })).toHaveCount(0);
   await expect(page.locator('[data-spiderfied="true"]')).toHaveCount(0);
 
   await expect(clusterTwo(page)).toBeVisible();
+  await expect(masterRegion(page, MASTER_REGION_B_ID)).toBeVisible();
+  await expect(masterRegion(page, MASTER_REGION_B_ID)).toHaveAttribute('data-audience', 'master');
+  await expect(masterRegion(page, MASTER_REGION_B_ID)).toHaveClass(/campaign-region--master/);
+  await expect(masterRegion(page, MASTER_REGION_A_ID)).toHaveCount(0);
   await clusterTwo(page).click();
   await expect(spiderPin(page, PUBLIC_B_ID)).toBeVisible();
   await expect(spiderPin(page, MASTER_B_ID)).toBeVisible();
