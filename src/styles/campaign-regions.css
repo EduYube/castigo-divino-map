@@ -2,6 +2,14 @@
   pointer-events: auto;
 }
 
+/* The app globally constrains svg to max-width: 100%. Leaflet neutralizes that
+ * only for its default overlay pane, so custom renderers need the same reset or
+ * their SVG can collapse to the zero-sized pane and lose paint/hit-testing. */
+.leaflet-container .campaign-regions-pane > svg {
+  max-width: none !important;
+  max-height: none !important;
+}
+
 .campaign-region {
   pointer-events: all;
   stroke: currentColor;
