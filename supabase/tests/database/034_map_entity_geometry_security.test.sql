@@ -16,11 +16,25 @@ exception
 end;
 $$;
 
-select plan(3);
+select plan(6);
+
+select ok(
+  has_column_privilege('authenticated', 'public.map_entities', 'geometry', 'UPDATE'),
+  'authenticated receives only the column capability required by the SECURITY INVOKER v6 save path'
+);
+
+select ok(
+  not has_column_privilege('anon', 'public.map_entities', 'geometry', 'UPDATE'),
+  'anon cannot update persistent entity geometry'
+);
 
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000002","role":"authenticated"}';
 set local role authenticated;
+
+update public.map_entities
+set geometry = '{"kind":"point","coordinates":{"x":321,"y":654}}'::jsonb
+where id = 'place-demo-harbor';
 
 select ok(
   pg_temp.statement_fails_with_sqlstate($sql$
@@ -68,5 +82,17 @@ select ok(
 );
 
 reset role;
+
+select is(
+  (
+    select pg_catalog.count(*)::bigint
+    from public.map_entities
+    where id = 'place-demo-harbor'
+      and geometry = '{"kind":"point","coordinates":{"x":321,"y":654}}'::jsonb
+  ),
+  0::bigint,
+  'map_entities RLS still prevents a non-admin direct geometry update despite the narrow column grant'
+);
+
 select * from finish();
 rollback;
