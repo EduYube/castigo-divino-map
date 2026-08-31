@@ -131,8 +131,14 @@ select ok(
 
 insert into public.tags (campaign_id, id, name, description, publication_status)
 values ('00000000-0000-4000-8000-000000000600', 'map060-tag', 'MAP060 tag', '', 'published');
-insert into public.entity_tags (campaign_id, entity_id, tag_id, publication_status)
-values ('00000000-0000-4000-8000-000000000600', 'place-map060-public', 'map060-tag', 'published');
+insert into public.entity_tags (campaign_id, id, entity_id, tag_id, publication_status)
+values (
+  '00000000-0000-4000-8000-000000000600',
+  'entity-tag-map060-public-map060-tag',
+  'place-map060-public',
+  'map060-tag',
+  'published'
+);
 
 update public.map_entities
 set geometry = '{"kind":"point","coordinates":{"x":250,"y":260}}'::jsonb
