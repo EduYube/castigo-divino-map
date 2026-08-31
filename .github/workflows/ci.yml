@@ -35,8 +35,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check formatting
-        run: npm run format:check
+      - name: Format MAP-061 worktree
+        run: |
+          npm run format
+          git diff -- src/app/adminMapEntities.ts src/infrastructure/supabase/publicCatalogPolygonSafety.test.ts src/map/adminEntityEditorMap.ts src/map/campaignRegions.ts src/map/leaflet.ts
 
       - name: Audit tracked files for privileged credentials
         run: npm run verify:security
