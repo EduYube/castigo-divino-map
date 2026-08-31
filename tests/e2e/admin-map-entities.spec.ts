@@ -354,7 +354,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v5')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v6')) {
       const body = request.postDataJSON() as { p_entity_id?: string };
       await route.fulfill({
         status: 200,
@@ -364,7 +364,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v5')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v6')) {
       if (mode === 'network') {
         mode = 'normal';
         await route.abort('failed');
@@ -401,6 +401,9 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       }
 
       const body = request.postDataJSON() as Record<string, unknown>;
+      const geometry = body.p_geometry as {
+        coordinates?: { x?: unknown; y?: unknown };
+      };
       const id = String(body.p_id);
       const existing = entities.find((candidate) => candidate.id === id);
       if (
@@ -428,8 +431,8 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         name: String(body.p_name),
         summary: String(body.p_summary),
         description: String(body.p_description),
-        x: Number(body.p_x),
-        y: Number(body.p_y),
+        x: Number(geometry.coordinates?.x),
+        y: Number(geometry.coordinates?.y),
         category_id: String(body.p_category_id),
         publication_status: nextStatus,
         published_at: existing?.published_at ?? (nextStatus === 'published' ? updatedAt : null),

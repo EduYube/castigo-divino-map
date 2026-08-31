@@ -429,7 +429,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v5')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v6')) {
       const body = requestInfo.postDataJSON() as Record<string, unknown>;
       const entity = entities.find(
         (candidate) =>
@@ -443,8 +443,11 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v5')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v6')) {
       const body = requestInfo.postDataJSON() as Record<string, unknown>;
+      const geometry = body.p_geometry as {
+        coordinates?: { x?: unknown; y?: unknown };
+      };
       const entity = entities.find(
         (candidate) => candidate.id === body.p_id && candidate.campaign_id === body.p_campaign_id,
       );
@@ -457,8 +460,8 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       entity.name = String(body.p_name);
       entity.summary = String(body.p_summary);
       entity.description = String(body.p_description);
-      entity.x = Number(body.p_x);
-      entity.y = Number(body.p_y);
+      entity.x = Number(geometry.coordinates?.x);
+      entity.y = Number(geometry.coordinates?.y);
       entity.category_id = body.p_category_id == null ? null : String(body.p_category_id);
       entity.publication_status = body.p_publication_status as PublicationStatus;
       entity.published_at =

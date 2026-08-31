@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-create function pg_temp.statement_fails(statement text)
+create function pg_temp.statement_fails_with_sqlstate(statement text, expected_state text)
 returns boolean
 language plpgsql
 as $$
@@ -12,7 +12,7 @@ begin
   return false;
 exception
   when others then
-    return true;
+    return sqlstate = expected_state;
 end;
 $$;
 
@@ -38,10 +38,9 @@ select ok(
   'existing characters remain point geometries'
 );
 
-set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
-set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}';
-set local role authenticated;
-
+-- Fixture setup and direct constraint assertions intentionally run as the test owner.
+-- Switching to authenticated here would turn permission failures into false positives
+-- for the geometry guard checks below.
 insert into public.campaigns (id, slug, name, status, display_order)
 values
   ('00000000-0000-4000-8000-000000000600', 'map060-a', 'MAP060 A', 'active', 600),
@@ -84,49 +83,49 @@ select is(
 );
 
 select ok(
-  pg_temp.statement_fails($sql$
+  pg_temp.statement_fails_with_sqlstate($sql$
     update public.map_entities
     set geometry = '{"kind":"polygon","vertices":[{"x":10,"y":10},{"x":20,"y":20}]}'::jsonb
     where id = 'place-map060-public'
-  $sql$),
-  'polygons with fewer than three vertices are rejected'
+  $sql$, '23514'),
+  'polygons with fewer than three vertices are rejected by the geometry guard'
 );
 select ok(
-  pg_temp.statement_fails($sql$
+  pg_temp.statement_fails_with_sqlstate($sql$
     update public.map_entities
     set geometry = '{"kind":"polygon","vertices":[{"x":-1,"y":10},{"x":20,"y":10},{"x":20,"y":20}]}'::jsonb
     where id = 'place-map060-public'
-  $sql$),
-  'out-of-bounds polygon coordinates are rejected'
+  $sql$, '23514'),
+  'out-of-bounds polygon coordinates are rejected by the geometry guard'
 );
 select ok(
-  pg_temp.statement_fails($sql$
+  pg_temp.statement_fails_with_sqlstate($sql$
     update public.map_entities
     set geometry = '{"kind":"polygon","vertices":[{"x":10,"y":10},{"x":20,"y":20},{"x":30,"y":30}]}'::jsonb
     where id = 'place-map060-public'
-  $sql$),
-  'degenerate zero-area polygons are rejected'
+  $sql$, '23514'),
+  'degenerate zero-area polygons are rejected by the geometry guard'
 );
 select ok(
-  pg_temp.statement_fails($sql$
+  pg_temp.statement_fails_with_sqlstate($sql$
     update public.map_entities
     set geometry = '{"kind":"polygon","vertices":[{"x":10,"y":10},{"x":30,"y":30},{"x":10,"y":30},{"x":30,"y":10}]}'::jsonb
     where id = 'place-map060-public'
-  $sql$),
-  'self-intersecting polygons are rejected'
+  $sql$, '23514'),
+  'self-intersecting polygons are rejected by the geometry guard'
 );
 select ok(
-  pg_temp.statement_fails($sql$
+  pg_temp.statement_fails_with_sqlstate($sql$
     update public.map_entities
     set geometry = '{"kind":"polygon","vertices":[{"x":800,"y":800},{"x":1000,"y":800},{"x":900,"y":1000}]}'::jsonb
     where id = 'entity-map060-character'
-  $sql$),
-  'character plus polygon is rejected by the backend'
+  $sql$, '23514'),
+  'character plus polygon is rejected by the backend geometry guard'
 );
 select ok(
-  pg_temp.statement_fails($sql$
+  pg_temp.statement_fails_with_sqlstate($sql$
     update public.map_entities set x = 201 where id = 'place-map060-public'
-  $sql$),
+  $sql$, '23514'),
   'polygon representative coordinates cannot become a second editable position'
 );
 
@@ -157,6 +156,13 @@ select is(
 update public.map_entities
 set geometry = '{"kind":"polygon","vertices":[{"x":100,"y":100},{"x":300,"y":100},{"x":300,"y":300},{"x":100,"y":300}]}'::jsonb
 where id = 'place-map060-public';
+
+-- From this point on, exercise the same authenticated role/JWT boundary used by
+-- the admin application instead of relying on owner privileges.
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}';
+set local role authenticated;
+
 select ok(
   (public.admin_get_map_entity_editor_v6(
     '00000000-0000-4000-8000-000000000600', 'place-map060-public'
@@ -170,7 +176,7 @@ select ok(
   'authorized Master catalog exposes canonical Master geometry'
 );
 select ok(
-  pg_temp.statement_fails($sql$
+  pg_temp.statement_fails_with_sqlstate($sql$
     select public.admin_save_map_entity_v6(
       '00000000-0000-4000-8000-000000000601',
       'place-map060-public',
@@ -180,7 +186,7 @@ select ok(
       '{"kind":"polygon","vertices":[{"x":100,"y":100},{"x":300,"y":100},{"x":300,"y":300},{"x":100,"y":300}]}'::jsonb,
       'category-map060-a', 'published', '{}'::text[], '[]'::jsonb, '{}'::text[]
     )
-  $sql$),
+  $sql$, '42501'),
   'geometry-aware save cannot cross campaign A/B boundaries'
 );
 
@@ -220,9 +226,9 @@ select is(
   'anon cannot infer the existence, vertices, bounds, centre, extent or vertex count of a Master polygon'
 );
 select ok(
-  pg_temp.statement_fails($sql$
+  pg_temp.statement_fails_with_sqlstate($sql$
     select public.admin_get_master_catalog_v5('00000000-0000-4000-8000-000000000600')
-  $sql$),
+  $sql$, '42501'),
   'anon cannot bypass row filtering through the Master geometry RPC'
 );
 
