@@ -101,6 +101,21 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
       );
     });
 
+    root.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]').forEach((element) => {
+      const marker = byId.get(element.dataset.regionId ?? '');
+      const master = Boolean(marker && isMaster(marker));
+      element.dataset.audience = master ? 'master' : 'public';
+      element.classList.toggle('campaign-region--master', master);
+      if (!marker) return;
+      const matchingDescription = element.getAttribute('aria-label') ?? `${marker.name}. Región de campaña.`;
+      if (master && !matchingDescription.includes('Contenido del Máster.')) {
+        element.setAttribute(
+          'aria-label',
+          `${marker.name}. Región de campaña. Contenido del Máster. Categoría: ${marker.categoryName}. Pulsa Intro o Espacio para abrir su ficha.`,
+        );
+      }
+    });
+
     root
       .querySelectorAll<HTMLButtonElement>('.pin-coincident-list__button[data-pin-id]')
       .forEach((button) => {
@@ -140,6 +155,10 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
       root.querySelectorAll<HTMLElement>('.campaign-marker-icon').forEach((element) => {
         delete element.dataset.audience;
         element.querySelector<HTMLElement>('.pin-visual')?.classList.remove('pin-visual--master');
+      });
+      root.querySelectorAll<HTMLElement>('.campaign-region').forEach((element) => {
+        delete element.dataset.audience;
+        element.classList.remove('campaign-region--master');
       });
       root
         .querySelectorAll<HTMLElement>('[data-master-pin-badge]')
