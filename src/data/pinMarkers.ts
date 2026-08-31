@@ -2,12 +2,26 @@ import { publishPinPlayerAssociations } from '../app/pinPlayerAssociationRegistr
 import type { EntityId, PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
 import { toLeafletSimpleCoordinate, type LeafletSimpleCoordinate } from './coordinates';
 import type { CampaignCatalog, PlaceId } from './model';
-import { mapEntityUsesPointGeometry } from '../domain/mapGeometry';
 import type {
   PinEntityType,
   PinPlayerAssociationInput,
   PinPlayerDispositionInput,
 } from '../domain/pinVisualSystem';
+
+export interface AtlasRegionBounds {
+  readonly minX: number;
+  readonly maxX: number;
+  readonly minY: number;
+  readonly maxY: number;
+}
+
+export type AtlasMapPresentation =
+  | { readonly kind: 'point' }
+  | {
+      readonly kind: 'polygon';
+      readonly vertices: readonly LeafletSimpleCoordinate[];
+      readonly bounds: AtlasRegionBounds;
+    };
 
 export interface AtlasPinMarkerModel {
   readonly id: string;
@@ -15,7 +29,9 @@ export interface AtlasPinMarkerModel {
   readonly entityId: EntityId | null;
   readonly name: string;
   readonly entityType: PinEntityType;
+  /** Representative point. Polygon regions use it only for existing search/detail contracts. */
   readonly coordinate: LeafletSimpleCoordinate;
+  readonly mapPresentation: AtlasMapPresentation;
   readonly categoryId: string;
   readonly categoryName: string;
   readonly categorySlug: string;
@@ -78,6 +94,28 @@ function findStableBeta02Location(
   );
 }
 
+function polygonBounds(
+  vertices: readonly { readonly x: number; readonly y: number }[],
+): AtlasRegionBounds {
+  const xs = vertices.map(({ x }) => x);
+  const ys = vertices.map(({ y }) => y);
+  return {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minY: Math.min(...ys),
+    maxY: Math.max(...ys),
+  };
+}
+
+function mapPresentation(entity: PublicMapEntity | undefined): AtlasMapPresentation {
+  if (entity?.geometry?.kind !== 'polygon') return { kind: 'point' };
+  return {
+    kind: 'polygon',
+    vertices: entity.geometry.vertices.map(toLeafletSimpleCoordinate),
+    bounds: polygonBounds(entity.geometry.vertices),
+  };
+}
+
 export function createAtlasPinMarkerModels(
   legacyCatalog: CampaignCatalog,
   beta02Catalog: PublicCatalogSnapshotV2 | null,
@@ -92,14 +130,9 @@ export function createAtlasPinMarkerModels(
     const beta02Entity = findStableBeta02Location(beta02Catalog, place);
     if (beta02Entity) consumedEntityIds.add(beta02Entity.id);
     // A stable Beta 0.2 entity owns the legacy identity even when it deliberately
-    // has no permanent marker. Never resurrect the Beta 0.1 fallback for
-    // search_only locations or polygons at the representative point.
-    if (
-      beta02Entity &&
-      (beta02Entity.visibility !== 'pin' || !mapEntityUsesPointGeometry(beta02Entity))
-    ) {
-      return [];
-    }
+    // has no permanent presentation. Never resurrect the Beta 0.1 fallback for
+    // search_only locations. Published polygons are represented as regions below.
+    if (beta02Entity && beta02Entity.visibility !== 'pin') return [];
 
     const beta02Category = beta02Entity
       ? beta02Catalog?.categories.find(({ id }) => id === beta02Entity.categoryId)
@@ -113,6 +146,7 @@ export function createAtlasPinMarkerModels(
         name: beta02Entity?.name ?? place.name,
         entityType: beta02Entity?.entityType ?? 'location',
         coordinate: toLeafletSimpleCoordinate(beta02Entity?.coordinates ?? place.coordinates),
+        mapPresentation: mapPresentation(beta02Entity),
         categoryId: beta02Entity?.categoryId ?? legacyCategory.id,
         categoryName: beta02Category?.name ?? legacyCategory.name,
         categorySlug: beta02Category?.slug ?? legacyCategory.slug,
@@ -132,12 +166,7 @@ export function createAtlasPinMarkerModels(
   });
 
   const supplementalPins = (beta02Catalog?.entities ?? [])
-    .filter(
-      (entity) =>
-        entity.visibility === 'pin' &&
-        mapEntityUsesPointGeometry(entity) &&
-        !consumedEntityIds.has(entity.id),
-    )
+    .filter((entity) => entity.visibility === 'pin' && !consumedEntityIds.has(entity.id))
     .map((entity): AtlasPinMarkerModel => {
       const category = beta02Catalog?.categories.find(({ id }) => id === entity.categoryId);
 
@@ -148,6 +177,7 @@ export function createAtlasPinMarkerModels(
         name: entity.name,
         entityType: entity.entityType,
         coordinate: toLeafletSimpleCoordinate(entity.coordinates),
+        mapPresentation: mapPresentation(entity),
         categoryId: entity.categoryId,
         categoryName: category?.name ?? entity.categoryId,
         categorySlug: category?.slug ?? entity.categoryId,
