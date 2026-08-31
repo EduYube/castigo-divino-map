@@ -74,9 +74,7 @@ function findStableBeta02Location(
 ): PublicMapEntity | undefined {
   return catalog?.entities.find(
     (entity) =>
-      entity.entityType === 'location' &&
-      entity.visibility === 'pin' &&
-      (entity.id === place.id || entity.slug === place.slug),
+      entity.entityType === 'location' && (entity.id === place.id || entity.slug === place.slug),
   );
 }
 
@@ -93,10 +91,15 @@ export function createAtlasPinMarkerModels(
 
     const beta02Entity = findStableBeta02Location(beta02Catalog, place);
     if (beta02Entity) consumedEntityIds.add(beta02Entity.id);
-    // MAP-060 polygons are map-visible areas, not point markers. Suppress the
-    // historical Beta 0.1 fallback as well, otherwise a migrated location would
-    // accidentally reappear as a clusterable pin at its representative point.
-    if (beta02Entity && !mapEntityUsesPointGeometry(beta02Entity)) return [];
+    // A stable Beta 0.2 entity owns the legacy identity even when it deliberately
+    // has no permanent marker. Never resurrect the Beta 0.1 fallback for
+    // search_only locations or polygons at the representative point.
+    if (
+      beta02Entity &&
+      (beta02Entity.visibility !== 'pin' || !mapEntityUsesPointGeometry(beta02Entity))
+    ) {
+      return [];
+    }
 
     const beta02Category = beta02Entity
       ? beta02Catalog?.categories.find(({ id }) => id === beta02Entity.categoryId)
