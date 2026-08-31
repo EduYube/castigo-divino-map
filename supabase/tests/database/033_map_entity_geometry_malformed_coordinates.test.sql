@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(2);
+select plan(3);
 
 select ok(
   pg_temp.statement_fails_with_sqlstate($sql$
@@ -36,6 +36,25 @@ select ok(
     )
   $sql$, '23514'),
   'polygon geometry with a missing vertex coordinate is rejected explicitly as malformed'
+);
+
+select ok(
+  pg_temp.statement_fails_with_sqlstate($sql$
+    select private.normalize_map_entity_geometry(
+      'location'::public.entity_type,
+      pg_catalog.jsonb_build_object(
+        'kind', 'polygon',
+        'vertices', (
+          select pg_catalog.jsonb_agg(
+            pg_catalog.jsonb_build_object('x', vertex_index, 'y', 100)
+            order by vertex_index
+          )
+          from pg_catalog.generate_series(0, 64) as vertex(vertex_index)
+        )
+      )
+    )
+  $sql$, '23514'),
+  'polygon geometry above the 64-vertex contract is rejected by the backend'
 );
 
 select * from finish();
