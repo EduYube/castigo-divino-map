@@ -84,6 +84,7 @@ export function mountFaerunMap(
     regions: initial.regions,
     onActivate(region): void {
       pointController.clearSearchFocus();
+      synchronizePointSelectionForRegion(region);
       if (region.legacyPlaceId) {
         activePlaceId = region.legacyPlaceId;
         activeSupplementalPinId = null;
@@ -114,6 +115,15 @@ export function mountFaerunMap(
       const status = root.querySelector<HTMLElement>('[data-map-search-status]');
       if (status) status.textContent = message;
     });
+  }
+
+  function synchronizePointSelectionForRegion(region: AtlasRegionMarkerModel): void {
+    if (region.legacyPlaceId) {
+      pointController.setActivePlace(region.legacyPlaceId);
+      return;
+    }
+    pointController.setActivePlace(null);
+    pointController.clearSupplementalPinSelection();
   }
 
   function synchronizeRegionPresentation(): void {
@@ -201,6 +211,7 @@ export function mountFaerunMap(
     locateSearchTarget(target): void {
       const region = findRegionBySearchTarget(target);
       if (region) {
+        synchronizePointSelectionForRegion(region);
         if (region.legacyPlaceId) {
           activePlaceId = region.legacyPlaceId;
           activeSupplementalPinId = null;
