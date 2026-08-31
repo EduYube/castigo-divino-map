@@ -410,6 +410,7 @@ function snapshotPayloads(
         'description',
         'portraitPath',
         'coordinates',
+        'geometry',
         'categoryId',
         'tagIds',
       ],
@@ -450,6 +451,9 @@ function snapshotPayloads(
         : {}),
       x: coordinates.x,
       y: coordinates.y,
+      ...(Object.prototype.hasOwnProperty.call(entity, 'geometry')
+        ? { geometry: entity.geometry }
+        : {}),
       category_id: entity.categoryId,
     };
   });

@@ -1,4 +1,5 @@
 import type { MapCoordinate } from './mapCoordinates';
+import type { MapEntityGeometry } from './mapGeometry';
 
 export type MapEntityType = 'character' | 'location';
 export type MapVisibility = 'pin' | 'search_only';
@@ -18,6 +19,11 @@ export interface AdminMapEntityRecord extends MapCoordinate {
   readonly audience?: MapEntityAudience;
   /** MAP-045 opaque private Storage reference; null/missing means no portrait. */
   readonly portraitPath?: string | null;
+  /**
+   * MAP-060 persistent geometry. Older fixtures/snapshots omit it and therefore
+   * represent the historical point at x/y.
+   */
+  readonly geometry?: MapEntityGeometry;
   readonly name: string;
   readonly summary: string;
   readonly description: string;
@@ -110,6 +116,8 @@ export interface AdminMapEntityDraft extends MapCoordinate {
   /** See AdminMapEntityRecord.audience. Missing means the safe migration default. */
   readonly audience?: MapEntityAudience;
   readonly portraitPath?: string | null;
+  /** Missing means the historical point represented by x/y. */
+  readonly geometry?: MapEntityGeometry;
   readonly name: string;
   readonly summary: string;
   readonly description: string;
@@ -140,6 +148,7 @@ export function detailToDraft(detail: AdminMapEntityDetail): AdminMapEntityDraft
     visibility: detail.record.visibility,
     audience: getMapEntityAudience(detail.record),
     portraitPath: detail.record.portraitPath ?? null,
+    geometry: detail.record.geometry,
     name: detail.record.name,
     summary: detail.record.summary,
     description: detail.record.description,

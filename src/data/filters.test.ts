@@ -144,6 +144,15 @@ const beta02FilterCatalog = {
       summary: 'Public harbor.',
       description: 'Public harbor description.',
       coordinates: { x: 1, y: 1 },
+      geometry: {
+        kind: 'polygon',
+        vertices: [
+          { x: 0, y: 0 },
+          { x: 2, y: 0 },
+          { x: 2, y: 2 },
+          { x: 0, y: 2 },
+        ],
+      },
       categoryId: 'category-settlement',
       tagIds: ['coastal', 'trade'],
     },
@@ -343,6 +352,16 @@ describe('Beta 0.2 public entity filters', () => {
         selectedTagIds: ['archive'],
       }),
     ).toEqual(['entity-archivist']);
+  });
+
+  it('keeps a polygon location as one filter identity rather than one result per vertex', () => {
+    const results = filterPublicEntities(beta02FilterCatalog, {
+      selectedCategoryIds: [],
+      selectedTagIds: ['coastal'],
+    });
+
+    expect(results).toEqual(['place-harbor']);
+    expect(new Set(results).size).toBe(1);
   });
 
   it('combines categories with OR, tags with OR and both dimensions with AND', () => {

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import type { PublicCatalogSnapshotV2 } from './beta02-model';
-import { createAtlasPinMarkerModels } from './pinMarkers';
 import type { CampaignCatalog } from './model';
+import { createAtlasPinMarkerModels } from './pinMarkers';
 
 const legacyCatalog: CampaignCatalog = {
   categories: [{ id: 'category-demo', slug: 'demo', name: 'Demo', description: '' }],
@@ -127,5 +127,32 @@ describe('createAtlasPinMarkerModels', () => {
       dispositions: [],
       portraitPath: null,
     });
+  });
+
+  it('does not expose polygon locations to MAP-059 clustering or resurrect their legacy pin', () => {
+    const polygonCatalog: PublicCatalogSnapshotV2 = {
+      ...beta02Catalog,
+      entities: beta02Catalog.entities.map((entity) =>
+        entity.id === 'place-harbor'
+          ? {
+              ...entity,
+              geometry: {
+                kind: 'polygon' as const,
+                vertices: [
+                  { x: 50, y: 150 },
+                  { x: 150, y: 150 },
+                  { x: 150, y: 250 },
+                  { x: 50, y: 250 },
+                ],
+              },
+              coordinates: { x: 100, y: 200 },
+            }
+          : entity,
+      ),
+    };
+
+    expect(createAtlasPinMarkerModels(legacyCatalog, polygonCatalog).map(({ id }) => id)).toEqual([
+      'entity-hero',
+    ]);
   });
 });

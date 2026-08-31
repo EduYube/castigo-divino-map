@@ -22,6 +22,11 @@ import {
   type PlayerDisposition,
 } from '../../domain/adminMapEntities';
 import { validateCharacterPortraitFile } from '../../domain/characterPortrait';
+import {
+  createPointMapGeometry,
+  normalizeMapEntityGeometry,
+  type MapEntityGeometry,
+} from '../../domain/mapGeometry';
 import { AUTH_SESSION_STORAGE_KEY, BrowserAuthSessionStorage } from './authSessionStorage';
 
 const HOSTED_PROJECT_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
@@ -134,19 +139,40 @@ function disposition(value: unknown): PlayerDisposition {
   );
 }
 
+function geometryValue(
+  value: unknown,
+  recordEntityType: MapEntityType,
+  x: number,
+  y: number,
+): MapEntityGeometry {
+  try {
+    return normalizeMapEntityGeometry(recordEntityType, value ?? createPointMapGeometry({ x, y }));
+  } catch (error) {
+    throw new AdminMapEntityRepositoryError(
+      'invalid-response',
+      'Supabase devolvió una geometría de entidad no válida.',
+      { cause: error },
+    );
+  }
+}
+
 function mapRecord(row: Record<string, unknown>): AdminMapEntityRecord {
+  const recordEntityType = entityType(row.entity_type);
+  const x = numberValue(row, 'x');
+  const y = numberValue(row, 'y');
   return {
     id: requiredString(row, 'id'),
     slug: requiredString(row, 'slug'),
-    entityType: entityType(row.entity_type),
+    entityType: recordEntityType,
     visibility: visibility(row.visibility),
     audience: audience(row.audience),
     portraitPath: row.portrait_path == null ? null : nullableString(row, 'portrait_path'),
+    geometry: geometryValue(row.geometry, recordEntityType, x, y),
     name: requiredString(row, 'name'),
     summary: typeof row.summary === 'string' ? row.summary : '',
     description: typeof row.description === 'string' ? row.description : '',
-    x: numberValue(row, 'x'),
-    y: numberValue(row, 'y'),
+    x,
+    y,
     categoryId: nullableString(row, 'category_id') ?? '',
     publicationStatus: publicationStatus(row.publication_status),
     publishedAt: nullableString(row, 'published_at'),
@@ -298,7 +324,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
   async list(options: { readonly signal: AbortSignal }): Promise<readonly AdminMapEntityRecord[]> {
     const rows = await this.#listRows(
       'map_entities',
-      'id,slug,entity_type,visibility,audience,portrait_path,name,summary,description,x,y,category_id,publication_status,published_at,archived_at,updated_at',
+      'id,slug,entity_type,visibility,audience,portrait_path,name,summary,description,x,y,geometry,category_id,publication_status,published_at,archived_at,updated_at',
       'name.asc,id.asc',
       options.signal,
     );
@@ -404,6 +430,10 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
     draft: AdminMapEntityDraft,
     options: { readonly signal: AbortSignal },
   ): Promise<AdminMapEntityDetail> {
+    const geometry = normalizeMapEntityGeometry(
+      draft.entityType,
+      draft.geometry ?? createPointMapGeometry({ x: draft.x, y: draft.y }),
+    );
     const response = await this.#request(
       new URL(`${this.#projectUrl}/rest/v1/rpc/admin_save_map_entity_v3`),
       {
@@ -420,8 +450,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
           p_name: draft.name.trim(),
           p_summary: draft.summary.trim(),
           p_description: draft.description.trim(),
-          p_x: draft.x,
-          p_y: draft.y,
+          p_geometry: geometry,
           p_category_id: draft.categoryId,
           p_publication_status: draft.publicationStatus,
           p_tag_ids: [...draft.tagIds],

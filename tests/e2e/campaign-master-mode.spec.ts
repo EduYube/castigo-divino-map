@@ -75,6 +75,8 @@ function masterCatalog(campaignId: string): Record<string, unknown> {
   const entityId = isB ? MASTER_B_ID : MASTER_A_ID;
   const name = isB ? MASTER_B_NAME : MASTER_A_NAME;
   const categoryId = `category-master-campaign-${suffix}`;
+  const x = isB ? 2150 : 1150;
+  const y = isB ? 1250 : 850;
 
   return {
     entities: [
@@ -88,8 +90,9 @@ function masterCatalog(campaignId: string): Record<string, unknown> {
         summary: `Resumen privado ${suffix.toUpperCase()}`,
         description: `Descripción privada ${suffix.toUpperCase()}`,
         portrait_path: null,
-        x: isB ? 2150 : 1150,
-        y: isB ? 1250 : 850,
+        geometry: { kind: 'point', coordinates: { x, y } },
+        x,
+        y,
         category_id: categoryId,
         updated_at: '2026-08-27T12:00:00.000Z',
       },
@@ -170,7 +173,7 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
       return;
     }
 
-    if (isAdmin && resource === 'rpc/admin_get_master_catalog_v4') {
+    if (isAdmin && resource === 'rpc/admin_get_master_catalog_v5') {
       const body = JSON.parse(request.postData() ?? '{}') as { p_campaign_id?: unknown };
       const campaignId =
         typeof body.p_campaign_id === 'string' ? body.p_campaign_id : CAMPAIGN_A_ID;

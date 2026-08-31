@@ -8,6 +8,7 @@ import type {
   PublicGeographicName,
   PublicGeographicNameAlias,
   PublicMapEntity,
+  PublicMapGeometry,
   PublicNote,
   PublicPlayer,
   PublicTag,
@@ -23,6 +24,7 @@ const IDENTIFIER_PATTERNS = {
   locationEvent: /^(?:location-event|relation)-[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?$/,
   slug: /^[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?$/,
 } as const;
+const GEOMETRY_EPSILON = 1e-9;
 
 export interface PublicCatalogTablePayloads {
   readonly categories: readonly Record<string, unknown>[];
@@ -334,6 +336,90 @@ export function parseGeographicAlias(
   };
 }
 
+function parseGeometryCoordinate(
+  value: unknown,
+  path: string,
+): { readonly x: number; readonly y: number } {
+  const coordinate = expectRecord(value, path);
+  assertAllowedProperties(coordinate, ['x', 'y'], path);
+  return {
+    x: expectNumber(coordinate.x, `${path}.x`, 0, 3600),
+    y: expectNumber(coordinate.y, `${path}.y`, 0, 2329),
+  };
+}
+
+function parseEntityGeometry(
+  value: unknown,
+  path: string,
+  entityType: PublicMapEntity['entityType'],
+  representative: { readonly x: number; readonly y: number },
+): PublicMapGeometry {
+  if (value === undefined) {
+    return { kind: 'point', coordinates: representative };
+  }
+
+  const geometry = expectRecord(value, path);
+  const kind = expectEnum(geometry.kind, `${path}.kind`, ['point', 'polygon'] as const);
+  if (kind === 'point') {
+    assertAllowedProperties(geometry, ['kind', 'coordinates'], path);
+    const coordinates = parseGeometryCoordinate(geometry.coordinates, `${path}.coordinates`);
+    if (coordinates.x !== representative.x || coordinates.y !== representative.y) {
+      invalidResponse(`${path} no coincide con las coordenadas representativas.`);
+    }
+    return { kind, coordinates };
+  }
+
+  assertAllowedProperties(geometry, ['kind', 'vertices'], path);
+  if (entityType !== 'location') {
+    invalidResponse(`${path} solo permite polígonos para emplazamientos.`);
+  }
+  if (
+    !Array.isArray(geometry.vertices) ||
+    geometry.vertices.length < 3 ||
+    geometry.vertices.length > 64
+  ) {
+    invalidResponse(`${path}.vertices debe contener entre 3 y 64 vértices.`);
+  }
+  const vertices = geometry.vertices.map((vertex, vertexIndex) =>
+    parseGeometryCoordinate(vertex, `${path}.vertices[${vertexIndex}]`),
+  );
+  const duplicate = vertices.some((vertex, vertexIndex) =>
+    vertices.some(
+      (candidate, candidateIndex) =>
+        candidateIndex > vertexIndex && candidate.x === vertex.x && candidate.y === vertex.y,
+    ),
+  );
+  if (duplicate) invalidResponse(`${path}.vertices no puede repetir vértices.`);
+
+  const areaTwice = vertices.reduce((area, vertex, vertexIndex) => {
+    const next = vertices[(vertexIndex + 1) % vertices.length]!;
+    return area + vertex.x * next.y - next.x * vertex.y;
+  }, 0);
+  if (areaTwice <= GEOMETRY_EPSILON) {
+    invalidResponse(`${path} debe estar serializado canónicamente y tener área positiva.`);
+  }
+  const first = vertices[0]!;
+  if (
+    vertices.some((vertex) => vertex.x < first.x || (vertex.x === first.x && vertex.y < first.y))
+  ) {
+    invalidResponse(`${path} no comienza en su vértice canónico.`);
+  }
+
+  const xs = vertices.map(({ x }) => x);
+  const ys = vertices.map(({ y }) => y);
+  const expectedRepresentative = {
+    x: (Math.min(...xs) + Math.max(...xs)) / 2,
+    y: (Math.min(...ys) + Math.max(...ys)) / 2,
+  };
+  if (
+    Math.abs(expectedRepresentative.x - representative.x) > GEOMETRY_EPSILON ||
+    Math.abs(expectedRepresentative.y - representative.y) > GEOMETRY_EPSILON
+  ) {
+    invalidResponse(`${path} no coincide con su punto representativo derivado.`);
+  }
+  return { kind, vertices };
+}
+
 export function parseEntity(
   row: Record<string, unknown>,
   index: number,
@@ -355,6 +441,7 @@ export function parseEntity(
       'portrait_path',
       'x',
       'y',
+      'geometry',
       'category_id',
     ],
     path,
@@ -381,6 +468,16 @@ export function parseEntity(
   if (portraitPath !== null && parsedEntityType !== 'character') {
     invalidResponse(`${path}.portrait_path solo puede pertenecer a un personaje.`);
   }
+  const coordinates = {
+    x: expectNumber(row.x, `${path}.x`, 0, 3600),
+    y: expectNumber(row.y, `${path}.y`, 0, 2329),
+  };
+  const geometry = parseEntityGeometry(
+    row.geometry,
+    `${path}.geometry`,
+    parsedEntityType,
+    coordinates,
+  );
 
   return {
     id,
@@ -399,10 +496,8 @@ export function parseEntity(
         ? row.description
         : invalidResponse(`${path}.description debe ser texto.`),
     ...(hasPortraitPath ? { portraitPath } : {}),
-    coordinates: {
-      x: expectNumber(row.x, `${path}.x`, 0, 3600),
-      y: expectNumber(row.y, `${path}.y`, 0, 2329),
-    },
+    ...(geometry.kind === 'polygon' ? { geometry } : {}),
+    coordinates,
     categoryId: expectString(
       row.category_id,
       `${path}.category_id`,

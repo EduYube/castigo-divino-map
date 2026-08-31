@@ -191,6 +191,56 @@ describe('parsePublicCatalogSnapshotV2', () => {
     expect(result.data.contract).toBe('beta02');
   });
 
+  test('round-trips canonical public polygon geometry without changing entity identity', async () => {
+    const payloads = validPayloads();
+    const polygon = {
+      kind: 'polygon',
+      vertices: [
+        { x: 100, y: 100 },
+        { x: 300, y: 100 },
+        { x: 300, y: 300 },
+        { x: 100, y: 300 },
+      ],
+    } as const;
+    const envelope = await buildPublicCatalogEnvelopeV2(
+      {
+        ...payloads,
+        entities: payloads.entities.map((entity) =>
+          entity.id === 'entity-city' ? { ...entity, geometry: polygon } : entity,
+        ),
+      },
+      () => Date.parse('2026-08-06T00:00:00.000Z'),
+    );
+
+    if (envelope.data.contract !== 'beta02') throw new Error('Expected Beta 0.2 projection.');
+    const city = envelope.data.catalog.entities.find(({ id }) => id === 'entity-city');
+    expect(city).toMatchObject({
+      id: 'entity-city',
+      slug: 'city',
+      coordinates: { x: 200, y: 200 },
+      geometry: polygon,
+    });
+
+    const parsed = await parsePublicCatalogSnapshotV2(envelope.data.catalog);
+    if (parsed.data.contract !== 'beta02') throw new Error('Expected Beta 0.2 cache projection.');
+    expect(parsed.data.catalog.entities.find(({ id }) => id === 'entity-city')).toMatchObject({
+      id: 'entity-city',
+      slug: 'city',
+      geometry: polygon,
+    });
+  });
+
+  test('keeps historic point-only snapshots free of synthetic geometry fields', async () => {
+    const snapshot = await validSnapshot();
+    expect(snapshot.entities.every((entity) => entity.geometry === undefined)).toBe(true);
+
+    const parsed = await parsePublicCatalogSnapshotV2(snapshot);
+    if (parsed.data.contract !== 'beta02') throw new Error('Expected Beta 0.2 cache projection.');
+    expect(parsed.data.catalog.entities.every((entity) => entity.geometry === undefined)).toBe(
+      true,
+    );
+  });
+
   test('rejects duplicate identifiers even when the checksum is coherent', async () => {
     const snapshot = await tamperedSnapshot((value) => {
       value.categories.push(structuredClone(value.categories[0] ?? {}));

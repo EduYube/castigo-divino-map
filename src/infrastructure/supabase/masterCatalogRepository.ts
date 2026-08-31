@@ -12,6 +12,10 @@ import {
   type MasterCatalogRelationEntity,
   type MasterCatalogRepository,
 } from '../../data-access/masterCatalog';
+import {
+  mapGeometryRepresentativePoint,
+  normalizeMapEntityGeometry,
+} from '../../domain/mapGeometry';
 import { AUTH_SESSION_STORAGE_KEY, BrowserAuthSessionStorage } from './authSessionStorage';
 
 const HOSTED_PROJECT_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
@@ -85,6 +89,16 @@ function mapEntity(row: Record<string, unknown>): MasterCatalogEntity {
   if (entityType !== 'character' && entityType !== 'location') throwInvalid();
   if (visibility !== 'pin' && visibility !== 'search_only') throwInvalid();
   if (row.audience !== 'master') throwInvalid();
+  const x = numberField(row, 'x');
+  const y = numberField(row, 'y');
+  let geometry: MasterCatalogEntity['geometry'];
+  try {
+    geometry = normalizeMapEntityGeometry(entityType, row.geometry);
+  } catch {
+    return throwInvalid();
+  }
+  const representative = mapGeometryRepresentativePoint(geometry);
+  if (representative.x !== x || representative.y !== y) throwInvalid();
   return {
     id: stringField(row, 'id'),
     slug: stringField(row, 'slug'),
@@ -95,8 +109,9 @@ function mapEntity(row: Record<string, unknown>): MasterCatalogEntity {
     summary: typeof row.summary === 'string' ? row.summary : '',
     description: typeof row.description === 'string' ? row.description : '',
     portraitPath: row.portrait_path == null ? null : stringField(row, 'portrait_path'),
-    x: numberField(row, 'x'),
-    y: numberField(row, 'y'),
+    geometry,
+    x,
+    y,
     categoryId: stringField(row, 'category_id'),
     updatedAt: stringField(row, 'updated_at'),
   };
@@ -253,7 +268,7 @@ export class SupabaseMasterCatalogRepository implements MasterCatalogRepository 
       let response: Response;
       try {
         response = await this.#fetchImplementation(
-          new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_master_catalog_v4`),
+          new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_master_catalog_v5`),
           {
             method: 'POST',
             headers: {

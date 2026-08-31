@@ -99,6 +99,7 @@ function buildMasterEntities(
       summary: entity.summary,
       description: entity.description,
       portraitPath: entity.portraitPath ?? null,
+      geometry: entity.geometry,
       coordinates: { x: entity.x, y: entity.y },
       categoryId,
       tagIds,

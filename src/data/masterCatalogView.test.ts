@@ -39,6 +39,7 @@ function masterCatalog(
         name: 'MAP044 MASTER UNIT CANARY',
         summary: 'Private summary',
         description: 'Private description',
+        geometry: { kind: 'point', coordinates: { x: 123, y: 456 } },
         x: 123,
         y: 456,
         categoryId,
@@ -77,9 +78,47 @@ describe('createAuthorizedMasterCatalogView', () => {
     expect(view.catalog.entities.at(-1)).toMatchObject({
       id: 'entity-master-unit',
       name: 'MAP044 MASTER UNIT CANARY',
+      geometry: { kind: 'point', coordinates: { x: 123, y: 456 } },
     });
     expect(publicSnapshot.entities.map(({ id }) => id)).toEqual(originalEntityIds);
     expect(publicSnapshot.entities.some(({ id }) => id === 'entity-master-unit')).toBe(false);
+  });
+
+  test('preserves a private polygon instead of degrading it to its representative point', async () => {
+    const publicSnapshot = await publicCatalog();
+    const category = publicSnapshot.categories[0];
+    if (!category) throw new Error('Expected at least one public category.');
+    const base = masterCatalog(category.id, 'entity-master-area');
+    const entity = base.entities[0];
+    if (!entity) throw new Error('Expected a Master entity fixture.');
+    const polygon = {
+      kind: 'polygon',
+      vertices: [
+        { x: 100, y: 100 },
+        { x: 300, y: 100 },
+        { x: 300, y: 300 },
+        { x: 100, y: 300 },
+      ],
+    } as const;
+    const view = createAuthorizedMasterCatalogView(publicSnapshot, {
+      ...base,
+      entities: [
+        {
+          ...entity,
+          entityType: 'location',
+          geometry: polygon,
+          x: 200,
+          y: 200,
+        },
+      ],
+    });
+
+    expect(view.catalog.entities.find(({ id }) => id === 'entity-master-area')).toMatchObject({
+      id: 'entity-master-area',
+      entityType: 'location',
+      geometry: polygon,
+      coordinates: { x: 200, y: 200 },
+    });
   });
 
   test('fails closed if a private id is ever present in the public snapshot', async () => {

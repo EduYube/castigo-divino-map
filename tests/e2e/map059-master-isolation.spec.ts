@@ -81,6 +81,10 @@ function masterCatalog(campaignId: string): Record<string, unknown> {
         summary: '',
         description: '',
         portrait_path: null,
+        geometry: {
+          kind: 'point',
+          coordinates: { x: isB ? 2320 : 1020, y: isB ? 1300 : 800 },
+        },
         x: isB ? 2320 : 1020,
         y: isB ? 1300 : 800,
         category_id: categoryId,
@@ -147,7 +151,7 @@ async function configureBackend(page: Page): Promise<void> {
       return;
     }
 
-    if (isAdmin && resource === 'rpc/admin_get_master_catalog_v4') {
+    if (isAdmin && resource === 'rpc/admin_get_master_catalog_v5') {
       const body = JSON.parse(request.postData() ?? '{}') as { p_campaign_id?: unknown };
       const campaignId =
         typeof body.p_campaign_id === 'string' ? body.p_campaign_id : CAMPAIGN_A_ID;

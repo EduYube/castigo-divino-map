@@ -71,7 +71,7 @@ export function scopeAdminRpcRequest(
   if (url.pathname.endsWith('/rest/v1/rpc/admin_get_map_entity_editor_v3')) {
     url.pathname = url.pathname.replace(
       '/admin_get_map_entity_editor_v3',
-      '/admin_get_map_entity_editor_v5',
+      '/admin_get_map_entity_editor_v6',
     );
     return {
       url,
@@ -80,7 +80,7 @@ export function scopeAdminRpcRequest(
   }
 
   if (url.pathname.endsWith('/rest/v1/rpc/admin_save_map_entity_v3')) {
-    url.pathname = url.pathname.replace('/admin_save_map_entity_v3', '/admin_save_map_entity_v5');
+    url.pathname = url.pathname.replace('/admin_save_map_entity_v3', '/admin_save_map_entity_v6');
     return {
       url,
       init: { ...init, body: JSON.stringify({ ...body, p_campaign_id: campaignId }) },
