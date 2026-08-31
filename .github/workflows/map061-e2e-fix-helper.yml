@@ -102,30 +102,54 @@ jobs:
           """,
           )
 
-          replace(
-              """    await page.setViewportSize({ width, height: 780 });
-            await openMap(page);
-            const cromryn = region(page, REGION_A_ID);
+          responsive_marker = 'for (const width of [320, 390, 430]) {'
+          if text.count(responsive_marker) != 1:
+              raise SystemExit('responsive MAP-061 section changed unexpectedly')
+          before_responsive, responsive = text.split(responsive_marker, 1)
 
-            await cromryn.click({ position: { x: 6, y: 6 } });""",
-              """    await page.setViewportSize({ width, height: 780 });
-            await openMap(page, { includeInnerPin: false });
-            const cromryn = region(page, REGION_A_ID);
-            await expect(insidePin(page)).toHaveCount(0);
-
-            await clickRegionInterior(page, REGION_A_ID);""",
-          )
-
-          replace(
-              "  await cromryn.click({ position: { x: 6, y: 6 } });",
+          desktop_click = "  await cromryn.click({ position: { x: 6, y: 6 } });"
+          if before_responsive.count(desktop_click) != 1:
+              raise SystemExit('desktop Cromryn click changed unexpectedly')
+          before_responsive = before_responsive.replace(
+              desktop_click,
               "  await clickRegionInterior(page, REGION_A_ID, { xRatio: 0.25, yRatio: 0.25 });",
           )
 
-          replace(
-              "  await overlap.click({ position: { x: 6, y: 6 } });",
+          overlap_click = "  await overlap.click({ position: { x: 6, y: 6 } });"
+          if before_responsive.count(overlap_click) != 1:
+              raise SystemExit('overlap region click changed unexpectedly')
+          before_responsive = before_responsive.replace(
+              overlap_click,
               "  await clickRegionInterior(page, REGION_B_ID, { xRatio: 0.75, yRatio: 0.25 });",
           )
 
+          mobile_open = '    await openMap(page);'
+          if responsive.count(mobile_open) < 1:
+              raise SystemExit('responsive openMap call changed unexpectedly')
+          responsive = responsive.replace(
+              mobile_open,
+              '    await openMap(page, { includeInnerPin: false });',
+              1,
+          )
+
+          mobile_locator = '    const cromryn = region(page, REGION_A_ID);'
+          if responsive.count(mobile_locator) < 1:
+              raise SystemExit('responsive Cromryn locator changed unexpectedly')
+          responsive = responsive.replace(
+              mobile_locator,
+              mobile_locator + '\n    await expect(insidePin(page)).toHaveCount(0);',
+              1,
+          )
+
+          mobile_click = '    await cromryn.click({ position: { x: 6, y: 6 } });'
+          if responsive.count(mobile_click) != 1:
+              raise SystemExit(f'expected one responsive Cromryn click, found {responsive.count(mobile_click)}')
+          responsive = responsive.replace(
+              mobile_click,
+              '    await clickRegionInterior(page, REGION_A_ID);',
+          )
+
+          text = before_responsive + responsive_marker + responsive
           path.write_text(text)
           PY
 
