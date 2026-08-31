@@ -35,6 +35,7 @@ jobs:
           replacement = base64.b64decode(encoded).decode().rstrip('\n')
           path.write_text(text[:start] + replacement + text[end:])
           PY
+          npx prettier --write tests/e2e/map061-campaign-regions.spec.ts
           npx prettier --check tests/e2e/map061-campaign-regions.spec.ts
           git diff --check
 
