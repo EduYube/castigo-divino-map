@@ -222,7 +222,7 @@ test('renders translucent overlapping regions below an operable inner pin withou
   await expect(page.getByTestId('place-details')).toContainText('Witness Inside MAP061');
   await closeDetails(page);
 
-  await cromryn.click();
+  await cromryn.click({ position: { x: 6, y: 6 } });
   await expect(page.getByTestId('place-details')).toHaveAttribute('data-entity-id', REGION_A_ID);
   await expect(page.getByTestId('place-details')).toContainText('Cromryn Region MAP061');
   await expect(cromryn).toHaveClass(/campaign-region--active/);
@@ -260,7 +260,10 @@ test('searching the region frames persistent polygon bounds and opens the same e
   );
   await expect(page.locator('[data-map-search-status]')).toContainText('región de campaña');
   await expect(page.getByTestId('place-details')).toHaveAttribute('data-entity-id', REGION_A_ID);
-  await expect(page.getByTestId('place-details')).toContainText('Cromryn remains the same entity');
+  await expect(page.getByTestId('place-details')).toHaveAttribute(
+    'data-active-pin-id',
+    REGION_A_ID,
+  );
   await expect(region(page, REGION_A_ID)).toHaveAttribute('aria-pressed', 'true');
 });
 
@@ -279,7 +282,7 @@ test('explicit filters dim non-matching regions without removing their selection
   await expect(insidePin(page)).toHaveAttribute('data-filter-match', 'false');
   await expect(overlap).toHaveAttribute('aria-label', /No coincide con .*filtros actuales/i);
 
-  await overlap.click();
+  await overlap.click({ position: { x: 6, y: 6 } });
   await expect(page.getByTestId('place-details')).toHaveAttribute('data-entity-id', REGION_B_ID);
   await expect(overlap).toHaveClass(/campaign-region--active/);
   await expect(overlap).toHaveClass(/campaign-region--dimmed/);
@@ -293,7 +296,7 @@ for (const width of [320, 390, 430]) {
     await openMap(page);
     const cromryn = region(page, REGION_A_ID);
 
-    await cromryn.click();
+    await cromryn.click({ position: { x: 6, y: 6 } });
     await expect(page.getByTestId('place-details')).toHaveAttribute('data-entity-id', REGION_A_ID);
     await expect(page.getByTestId('place-details')).toBeVisible();
     await expect(cromryn).toHaveAttribute('aria-pressed', 'true');

@@ -212,7 +212,7 @@ for (const width of [320, 390, 430]) {
     const box = await canvas.boundingBox();
     expect(box).not.toBeNull();
     if (!box) throw new Error('El mapa administrativo no tiene área táctil.');
-    await page.touchscreen.tap(box.x + box.width * 0.72, box.y + box.height * 0.52);
+    await canvas.tap({ position: { x: box.width * 0.72, y: box.height * 0.52 } });
     await expect(page.locator('[data-testid^="admin-polygon-vertex-"]')).toHaveCount(5);
 
     const deleteVertex = page.getByTestId('admin-polygon-delete-vertex');

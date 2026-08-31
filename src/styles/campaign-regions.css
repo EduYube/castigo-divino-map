@@ -3,6 +3,7 @@
 }
 
 .campaign-region {
+  pointer-events: all;
   stroke: currentColor;
   color: #4f3f31;
   fill: currentColor;

@@ -843,7 +843,7 @@ test('keyboard coordinate editing can create, publish and archive an emplacement
   await page.getByRole('button', { name: 'Archivar MAP-019 Harbor' }).click();
   await expect(page.getByRole('alertdialog')).toContainText('dejará de formar parte');
   await page.getByRole('button', { name: 'Archivar', exact: true }).click();
-  await expect(page.getByText(/place-map019-harbor · location · archived/)).toBeVisible();
+  await expect(page.getByText(/place-map019-harbor · location · punto · archived/)).toBeVisible();
   expect(backend.getEntity('place-map019-harbor')?.publication_status).toBe('archived');
 });
 

@@ -294,6 +294,26 @@ test('Master OFF never leaks a nearby secret count; ON shows authorized member s
   await expect(regionA).toHaveClass(/campaign-region--master/);
   await expect(regionA).toHaveAttribute('aria-description', /Contenido del Máster/i);
 
+  // The public point and the secret polygon deliberately share the polygon's representative
+  // coordinate. A point-like surface without a stable pin id must still remain purely public:
+  // polygon representative points are never members of point aggregation/audience semantics.
+  const coordinateSurface = page.getByTestId('map059-coordinate-surface');
+  await page.evaluate(() => {
+    const surface = document.createElement('div');
+    surface.className = 'campaign-marker-icon';
+    surface.setAttribute('data-testid', 'map059-coordinate-surface');
+    surface.dataset.markerLat = '800';
+    surface.dataset.markerLng = '1000';
+    const visual = document.createElement('span');
+    visual.className = 'pin-visual';
+    surface.append(visual);
+    document.querySelector('[data-map-shell]')?.append(surface);
+  });
+  await expect(coordinateSurface).toHaveAttribute('data-audience', 'public');
+  await expect(coordinateSurface.locator('.pin-visual')).not.toHaveClass(/pin-visual--master/);
+  await expect(coordinateSurface).not.toHaveAttribute('aria-label', /Máster|Región secreta/i);
+  await coordinateSurface.evaluate((element) => element.remove());
+
   await clusterTwo(page).click();
   const publicMember = spiderPin(page, PUBLIC_A_ID);
   const secretMember = spiderPin(page, MASTER_A_ID);

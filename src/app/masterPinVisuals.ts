@@ -54,6 +54,9 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
     const byId = new Map(markers.map((marker) => [marker.id, marker] as const));
     const byCoordinate = new Map<string, AtlasPinMarkerModel[]>();
     for (const marker of markers) {
+      // Polygon coordinates are representative points for search/detail compatibility only.
+      // They must never participate in point-marker audience aggregation or ARIA counts.
+      if (marker.mapPresentation?.kind === 'polygon') continue;
       const key = coordinateKey(marker);
       const group = byCoordinate.get(key) ?? [];
       group.push(marker);
