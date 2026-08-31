@@ -19,6 +19,7 @@ export interface AdminMapEntityValidationResult {
 const ENTITY_ID_PATTERN = /^(?:entity|place)-[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?$/;
 const SLUG_PATTERN = /^[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?$/;
 const PLAYER_DISPOSITIONS = new Set(['ally', 'neutral', 'enemy']);
+const REPRESENTATIVE_ROUNDING_TOLERANCE = 0.005 + Number.EPSILON;
 
 function setError(errors: Record<string, string>, field: string, message: string): void {
   if (!errors[field]) {
@@ -70,7 +71,8 @@ export function validateAdminMapEntityDraft(
     const representative = mapGeometryRepresentativePoint(geometry);
     if (
       geometry.kind === 'polygon' &&
-      (draft.x !== representative.x || draft.y !== representative.y)
+      (Math.abs(draft.x - representative.x) > REPRESENTATIVE_ROUNDING_TOLERANCE ||
+        Math.abs(draft.y - representative.y) > REPRESENTATIVE_ROUNDING_TOLERANCE)
     ) {
       setError(
         errors,
