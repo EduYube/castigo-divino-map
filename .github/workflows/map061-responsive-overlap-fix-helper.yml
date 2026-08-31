@@ -1,0 +1,46 @@
+name: MAP-061 Responsive Overlap Fix Helper
+
+on:
+  push:
+    branches:
+      - agent/map-061-campaign-regions
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: agent/map-061-campaign-regions
+
+      - name: Patch responsive region tap
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('tests/e2e/map061-campaign-regions.spec.ts')
+          text = path.read_text()
+          old = '    await clickRegionInterior(page, REGION_A_ID);'
+          new = '    await clickRegionInterior(page, REGION_A_ID, { xRatio: 0.25, yRatio: 0.5 });'
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'expected one responsive center tap, found {count}')
+          path.write_text(text.replace(old, new))
+          PY
+          git diff --check
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/map061-campaign-regions.spec.ts
+          git commit -m "test: avoid overlapping MAP-061 responsive tap"
+          git push origin HEAD:agent/map-061-campaign-regions
