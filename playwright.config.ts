@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const criticalAccessibilitySuite = /responsive-accessibility\.spec\.ts/;
-const mobileOnlySuite = /(map033-mobile|map037-mobile-details)\.spec\.ts/;
+const mobileOnlySuite = /(map033-mobile|map037-mobile-details|map061-admin-mobile)\.spec\.ts/;
 const criticalMobileSuite =
   /(responsive-accessibility|map033-mobile|map037-mobile-details|map038-search-autocomplete|map042-geographic-navigation-pins|map043-public-pin-form|map061-admin-mobile)\.spec\.ts/;
 
