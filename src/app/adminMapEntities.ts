@@ -21,6 +21,7 @@ import {
   validateCharacterPortraitFile,
 } from '../domain/characterPortrait';
 import { isMapCoordinateWithinBounds } from '../domain/mapCoordinates';
+import { createPointMapGeometry, type MapEntityGeometry } from '../domain/mapGeometry';
 import { getPinDispositionVisual } from '../domain/pinVisualSystem';
 import {
   mountAdminEntityEditorMap,
@@ -44,7 +45,8 @@ interface FieldControl {
 type PendingConfirmation =
   | { readonly action: 'archive-record'; readonly record: AdminMapEntityRecord }
   | { readonly action: 'archive-editor' }
-  | { readonly action: 'delete-editor' };
+  | { readonly action: 'delete-editor' }
+  | { readonly action: 'convert-to-point' };
 
 function createElement<K extends keyof HTMLElementTagNameMap>(
   tagName: K,
@@ -120,6 +122,8 @@ export function mountAdminMapEntities(
   let renderedEditorKey: string | null = null;
   let requestedEntityType: MapEntityType = 'character';
   let mapController: AdminEntityEditorMapController | null = null;
+  let draftGeometry: MapEntityGeometry | null = null;
+  let geometryKindSelect: HTMLSelectElement | null = null;
   let controls = new Map<string, FieldControl>();
   let tagCheckboxes: HTMLInputElement[] = [];
   let dispositionSelects: HTMLSelectElement[] = [];
@@ -139,7 +143,7 @@ export function mountAdminMapEntities(
   heading.id = 'admin-map-entity-heading';
   section.setAttribute('aria-labelledby', heading.id);
   intro.textContent =
-    'Edita la entidad completa, sus relaciones y su posición. La previsualización no publica contenido.';
+    'Edita la entidad completa, sus relaciones y su geometría. La previsualización no publica contenido.';
 
   searchLabel.htmlFor = 'admin-map-entity-search';
   searchLabel.textContent = 'Buscar entidades';
@@ -169,14 +173,14 @@ export function mountAdminMapEntities(
   form.noValidate = true;
   form.append(fields);
 
-  mapHeading.textContent = 'Coordenadas sobre el mapa';
+  mapHeading.textContent = 'Geometría sobre el mapa';
   mapHeading.id = 'admin-map-entity-map-heading';
   mapRegion.setAttribute('aria-labelledby', mapHeading.id);
   mapHelp.textContent =
     'Pulsa el mapa para seleccionar un punto o arrastra el marcador. Para teclado o tecnologías asistivas, edita directamente X e Y en el formulario.';
   mapStatus.setAttribute('role', 'status');
   mapStatus.setAttribute('aria-live', 'polite');
-  mapCanvas.setAttribute('aria-label', 'Editor visual de coordenadas de Faerûn');
+  mapCanvas.setAttribute('aria-label', 'Editor visual de geometría de Faerûn');
   mapCanvas.setAttribute('data-testid', 'admin-coordinate-map');
   mapRegion.append(mapHeading, mapHelp, mapStatus, mapCanvas);
   form.append(mapRegion);
@@ -311,17 +315,24 @@ export function mountAdminMapEntities(
     const input = (name: string): string => controls.get(name)?.input.value ?? '';
     const xInput = controls.get('x')?.input;
     const yInput = controls.get('y')?.input;
+    const x = xInput instanceof HTMLInputElement ? readNumber(xInput) : Number.NaN;
+    const y = yInput instanceof HTMLInputElement ? readNumber(yInput) : Number.NaN;
+    const coordinate = { x, y };
+    const pointFallback = isMapCoordinateWithinBounds(coordinate)
+      ? createPointMapGeometry(coordinate)
+      : undefined;
     return {
       id: input('id'),
       slug: input('slug'),
       entityType: input('entityType') as MapEntityType,
       visibility: input('visibility') as MapVisibility,
       portraitPath: state.editorDetail?.record.portraitPath ?? null,
+      geometry: draftGeometry ?? pointFallback,
       name: input('name'),
       summary: input('summary'),
       description: input('description'),
-      x: xInput instanceof HTMLInputElement ? readNumber(xInput) : Number.NaN,
-      y: yInput instanceof HTMLInputElement ? readNumber(yInput) : Number.NaN,
+      x,
+      y,
       categoryId: input('categoryId'),
       tagIds: tagCheckboxes
         .filter((checkbox) => checkbox.checked)
@@ -356,6 +367,13 @@ export function mountAdminMapEntities(
         if (!control.error.textContent) control.error.textContent = coordinateMessage;
       }
     }
+    const geometryMessage = validation.fieldErrors.geometry ?? '';
+    const geometryControl = controls.get('geometryKind');
+    if (geometryControl) {
+      geometryControl.error.textContent = geometryMessage;
+      geometryControl.input.setAttribute('aria-invalid', geometryMessage ? 'true' : 'false');
+    }
+    mapCanvas.setAttribute('aria-invalid', geometryMessage ? 'true' : 'false');
     if (tagError) tagError.textContent = validation.fieldErrors.tagIds ?? '';
     if (dispositionError) {
       const message = validation.fieldErrors.dispositions ?? '';
@@ -383,21 +401,49 @@ export function mountAdminMapEntities(
         return `${player?.displayName ?? playerId}: ${getPinDispositionVisual(value).label}`;
       })
       .join(' · ');
-    previewMarker.textContent = draft.visibility === 'pin' ? '◆' : '';
+    const polygon = draft.geometry?.kind === 'polygon' ? draft.geometry : null;
+    const geometryLabel = polygon
+      ? `Área/Región · ${polygon.vertices.length} vértices`
+      : 'Punto';
+    previewMarker.textContent = polygon ? '◇' : draft.visibility === 'pin' ? '◆' : '';
     previewMarker.hidden = draft.visibility !== 'pin';
     previewName.textContent = draft.name.trim() || 'Sin nombre';
-    previewMeta.textContent = `${draft.entityType} · ${category?.name ?? 'Sin categoría'} · X ${draft.x}, Y ${draft.y}${tagNames ? ` · ${tagNames}` : ''}${dispositions ? ` · ${dispositions}` : ''}`;
+    previewMeta.textContent = `${draft.entityType} · ${geometryLabel} · ${category?.name ?? 'Sin categoría'} · X ${draft.x}, Y ${draft.y}${tagNames ? ` · ${tagNames}` : ''}${dispositions ? ` · ${dispositions}` : ''}`;
     previewDescription.textContent =
       draft.summary.trim() || draft.description.trim() || 'Sin resumen.';
     preview.hidden = false;
   }
 
+  function synchronizeCoordinateInputs(coordinate: { readonly x: number; readonly y: number }): void {
+    const xControl = controls.get('x')?.input;
+    const yControl = controls.get('y')?.input;
+    if (!(xControl instanceof HTMLInputElement) || !(yControl instanceof HTMLInputElement)) return;
+    xControl.value = String(Number(coordinate.x.toFixed(2)));
+    yControl.value = String(Number(coordinate.y.toFixed(2)));
+  }
+
+  function synchronizeGeometryUi(): void {
+    const polygon = draftGeometry?.kind === 'polygon';
+    const x = controls.get('x')?.input;
+    const y = controls.get('y')?.input;
+    if (x instanceof HTMLInputElement) x.readOnly = polygon;
+    if (y instanceof HTMLInputElement) y.readOnly = polygon;
+    if (geometryKindSelect) geometryKindSelect.value = polygon ? 'polygon' : 'point';
+    mapCanvas.dataset.geometryKind = polygon ? 'polygon' : 'point';
+    mapHelp.textContent = polygon
+      ? 'Área/Región: pulsa el mapa para añadir un vértice, selecciona y arrastra un vértice para moverlo, o usa las flechas del teclado. El botón de borrar permite eliminar el vértice seleccionado también en touch. X e Y son el punto representativo derivado y no se editan manualmente.'
+      : 'Punto: pulsa el mapa para seleccionar la posición o arrastra el marcador. Para teclado o tecnologías asistivas, también puedes editar directamente X e Y.';
+  }
+
   function synchronizeMapFromInputs(): void {
+    if (draftGeometry?.kind === 'polygon') return;
     const x = controls.get('x')?.input;
     const y = controls.get('y')?.input;
     if (!(x instanceof HTMLInputElement) || !(y instanceof HTMLInputElement)) return;
     const coordinate = { x: readNumber(x), y: readNumber(y) };
-    if (isMapCoordinateWithinBounds(coordinate)) mapController?.setCoordinate(coordinate);
+    if (!isMapCoordinateWithinBounds(coordinate)) return;
+    draftGeometry = createPointMapGeometry(coordinate);
+    mapController?.setCoordinate(coordinate);
   }
 
   function clearPortraitPreviewUrl(): void {
@@ -414,6 +460,8 @@ export function mountAdminMapEntities(
     portraitError = null;
     mapController?.destroy();
     mapController = null;
+    draftGeometry = null;
+    geometryKindSelect = null;
     controls = new Map();
     tagCheckboxes = [];
     dispositionSelects = [];
@@ -428,6 +476,8 @@ export function mountAdminMapEntities(
     const draft = detail
       ? detailToDraft(detail)
       : createEmptyMapEntityDraft(state.references, requestedEntityType);
+    draftGeometry =
+      draft.geometry ?? (isMapCoordinateWithinBounds(draft) ? createPointMapGeometry(draft) : null);
     const existing = Boolean(detail);
     const activePlayers = state.references.players.filter(
       ({ publicationStatus }) => publicationStatus !== 'archived',
@@ -585,27 +635,44 @@ export function mountAdminMapEntities(
       label: 'Visibilidad cartográfica',
       value: draft.visibility,
       choices: [
-        { value: 'pin', label: 'Pin permanente' },
+        { value: 'pin', label: 'Visible en el mapa' },
         { value: 'search_only', label: 'Solo búsqueda' },
       ],
     });
 
+    if (draft.entityType === 'location') {
+      geometryKindSelect = addSelect({
+        name: 'geometryKind',
+        label: 'Representación del emplazamiento',
+        value: draftGeometry?.kind ?? 'point',
+        disabled: true,
+        choices: [
+          { value: 'point', label: 'Punto' },
+          { value: 'polygon', label: 'Área/Región' },
+        ],
+      });
+      geometryKindSelect.setAttribute('data-testid', 'admin-geometry-kind');
+    }
+
+    const polygon = draftGeometry?.kind === 'polygon';
     const x = addField({
       name: 'x',
-      label: 'Coordenada X',
+      label: polygon ? 'Coordenada X representativa' : 'Coordenada X',
       value: Number.isFinite(draft.x) ? String(draft.x) : '',
       type: 'number',
       required: true,
+      readOnly: polygon,
       min: 0,
       max: 3600,
       step: 'any',
     });
     const y = addField({
       name: 'y',
-      label: 'Coordenada Y',
+      label: polygon ? 'Coordenada Y representativa' : 'Coordenada Y',
       value: Number.isFinite(draft.y) ? String(draft.y) : '',
       type: 'number',
       required: true,
+      readOnly: polygon,
       min: 0,
       max: 2329,
       step: 'any',
@@ -715,8 +782,8 @@ export function mountAdminMapEntities(
     ];
     const refreshValidation = (): void => {
       const next = readDraft(currentTargetStatus());
-      showFieldErrors(next);
-      if (!preview.hidden && showFieldErrors(next)) renderPreview(next);
+      const valid = showFieldErrors(next);
+      if (!preview.hidden && valid) renderPreview(next);
     };
     allInputs.forEach((input) => {
       input.addEventListener('input', refreshValidation);
@@ -724,6 +791,16 @@ export function mountAdminMapEntities(
     });
     x.addEventListener('input', synchronizeMapFromInputs);
     y.addEventListener('input', synchronizeMapFromInputs);
+    geometryKindSelect?.addEventListener('change', () => {
+      if (!geometryKindSelect || !mapController) return;
+      const requestedKind = geometryKindSelect.value as MapEntityGeometry['kind'];
+      if (requestedKind === 'point' && draftGeometry?.kind === 'polygon') {
+        geometryKindSelect.value = 'polygon';
+        openConfirmation({ action: 'convert-to-point' }, geometryKindSelect);
+        return;
+      }
+      mapController.setGeometryKind(requestedKind);
+    });
 
     archiveButton.hidden = !existing || detail?.record.publicationStatus === 'archived';
     deleteButton.hidden = !detail || !canPhysicallyDeleteMapEntity(detail);
@@ -734,17 +811,30 @@ export function mountAdminMapEntities(
     editor.hidden = false;
     list.hidden = true;
     empty.hidden = true;
+    synchronizeGeometryUi();
     window.requestAnimationFrame(() => {
       mapController = mountAdminEntityEditorMap(mapCanvas, {
         coordinate: isMapCoordinateWithinBounds(draft) ? draft : null,
+        geometry: draftGeometry,
+        entityType: draft.entityType,
+        dispositions: draft.dispositions.map(({ playerId, disposition }) => ({
+          playerId,
+          playerName:
+            state.references.players.find(({ id }) => id === playerId)?.displayName ?? playerId,
+          disposition,
+        })),
+        onGeometryChange(geometry): void {
+          draftGeometry = geometry;
+          synchronizeGeometryUi();
+          const next = readDraft(currentTargetStatus());
+          const valid = showFieldErrors(next);
+          if (!preview.hidden && valid) renderPreview(next);
+        },
         onCoordinateChange(coordinate): void {
-          const xControl = controls.get('x')?.input;
-          const yControl = controls.get('y')?.input;
-          if (xControl instanceof HTMLInputElement && yControl instanceof HTMLInputElement) {
-            xControl.value = String(Number(coordinate.x.toFixed(2)));
-            yControl.value = String(Number(coordinate.y.toFixed(2)));
-            showFieldErrors(readDraft(currentTargetStatus()));
-          }
+          synchronizeCoordinateInputs(coordinate);
+          const next = readDraft(currentTargetStatus());
+          const valid = showFieldErrors(next);
+          if (!preview.hidden && valid) renderPreview(next);
         },
         onImageStateChange(next): void {
           mapStatus.textContent =
@@ -752,9 +842,11 @@ export function mountAdminMapEntities(
               ? 'Cargando cartografía oficial…'
               : next === 'ready'
                 ? 'Cartografía lista.'
-                : 'La imagen oficial no está disponible; las coordenadas siguen siendo editables.';
+                : 'La imagen oficial no está disponible; la geometría sigue siendo editable.';
         },
       });
+      if (geometryKindSelect) geometryKindSelect.disabled = false;
+      synchronizeGeometryUi();
       const first = Array.from(controls.values()).find(
         ({ input }) =>
           !input.disabled &&
@@ -765,13 +857,15 @@ export function mountAdminMapEntities(
         first?.input.focus();
       }
     });
-    showFieldErrors(draft);
+    showFieldErrors(readDraft(currentTargetStatus()));
   }
 
   function closeEditorUi(): void {
     clearPortraitPreviewUrl();
     mapController?.destroy();
     mapController = null;
+    draftGeometry = null;
+    geometryKindSelect = null;
     preservedDispositions = [];
     renderedEditorKey = null;
     editor.hidden = true;
@@ -784,14 +878,21 @@ export function mountAdminMapEntities(
   function openConfirmation(next: PendingConfirmation, trigger: HTMLElement): void {
     pendingConfirmation = next;
     restoreFocus = trigger;
-    confirmationHeading.textContent =
-      next.action === 'delete-editor' ? 'Confirmar eliminación física' : 'Confirmar archivado';
-    confirmationText.textContent =
-      next.action === 'delete-editor'
-        ? 'Se eliminará definitivamente este borrador nunca publicado. PostgreSQL bloqueará la operación si apareció cualquier relación mientras confirmabas.'
-        : 'Se archivará la entidad y dejará de formar parte de la proyección pública Beta 0.2. Puedes devolverla a borrador más adelante.';
-    confirmButton.textContent =
-      next.action === 'delete-editor' ? 'Eliminar definitivamente' : 'Archivar';
+    if (next.action === 'convert-to-point') {
+      confirmationHeading.textContent = 'Convertir la región en un punto';
+      confirmationText.textContent =
+        'Esta acción sustituirá el contorno y todos sus vértices por un único punto representativo. ID, slug, URL, nombre, etiquetas, relaciones, notas, audiencia, estado editorial y campaña no cambian. La conversión no se persiste hasta Guardar/Publicar.';
+      confirmButton.textContent = 'Convertir a punto';
+    } else {
+      confirmationHeading.textContent =
+        next.action === 'delete-editor' ? 'Confirmar eliminación física' : 'Confirmar archivado';
+      confirmationText.textContent =
+        next.action === 'delete-editor'
+          ? 'Se eliminará definitivamente este borrador nunca publicado. PostgreSQL bloqueará la operación si apareció cualquier relación mientras confirmabas.'
+          : 'Se archivará la entidad y dejará de formar parte de la proyección pública Beta 0.2. Puedes devolverla a borrador más adelante.';
+      confirmButton.textContent =
+        next.action === 'delete-editor' ? 'Eliminar definitivamente' : 'Archivar';
+    }
     confirmation.hidden = false;
     editor.hidden = true;
     list.hidden = true;
@@ -836,7 +937,8 @@ export function mountAdminMapEntities(
       const editButton = createElement('button', 'admin-map-entity__button');
       const itemArchiveButton = createElement('button', 'admin-map-entity__button');
       title.textContent = record.name;
-      meta.textContent = `${record.id} · ${record.entityType} · ${record.publicationStatus} · (${record.x}, ${record.y})`;
+      const geometryLabel = record.geometry?.kind === 'polygon' ? 'región' : 'punto';
+      meta.textContent = `${record.id} · ${record.entityType} · ${geometryLabel} · ${record.publicationStatus} · (${record.x}, ${record.y})`;
       content.append(title, meta);
       editButton.type = 'button';
       editButton.textContent = 'Editar';
@@ -983,6 +1085,15 @@ export function mountAdminMapEntities(
   const handleConfirm = (): void => {
     const pending = pendingConfirmation;
     if (!pending) return;
+    if (pending.action === 'convert-to-point') {
+      closeConfirmation();
+      mapController?.setGeometryKind('point');
+      if (geometryKindSelect) geometryKindSelect.value = 'point';
+      synchronizeGeometryUi();
+      editorStatus.textContent =
+        'Conversión preparada. El contorno no se eliminará de forma persistente hasta Guardar/Publicar.';
+      return;
+    }
     if (pending.action === 'archive-record') {
       void controller.archive(pending.record).then((saved) => {
         if (saved) closeConfirmation();
@@ -1000,11 +1111,16 @@ export function mountAdminMapEntities(
       if (deleted) closeConfirmation();
     });
   };
-  const handleDismiss = (): void => closeConfirmation();
+  const handleDismiss = (): void => {
+    if (pendingConfirmation?.action === 'convert-to-point' && geometryKindSelect) {
+      geometryKindSelect.value = 'polygon';
+    }
+    closeConfirmation();
+  };
   const handleKeydown = (event: KeyboardEvent): void => {
     if (event.key === 'Escape' && !confirmation.hidden) {
       event.preventDefault();
-      closeConfirmation();
+      handleDismiss();
     }
   };
   const handlePublicDataStatus = (event: Event): void => {
@@ -1057,6 +1173,8 @@ export function mountAdminMapEntities(
       document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('atlas:public-data-status', handlePublicDataStatus);
       clearPortraitPreviewUrl();
+      draftGeometry = null;
+      geometryKindSelect = null;
       preservedDispositions = [];
       section.remove();
     },
