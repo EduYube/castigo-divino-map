@@ -31,7 +31,8 @@ export interface AtlasPinMarkerModel {
   readonly entityType: PinEntityType;
   /** Representative point. Polygon regions use it only for existing search/detail contracts. */
   readonly coordinate: LeafletSimpleCoordinate;
-  readonly mapPresentation: AtlasMapPresentation;
+  /** Missing only in historical fixtures; runtime models always provide it and missing means point. */
+  readonly mapPresentation?: AtlasMapPresentation;
   readonly categoryId: string;
   readonly categoryName: string;
   readonly categorySlug: string;
