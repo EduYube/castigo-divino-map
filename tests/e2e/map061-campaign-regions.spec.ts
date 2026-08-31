@@ -195,15 +195,33 @@ async function clickRegionInterior(
   },
 ): Promise<void> {
   const target = region(page, id);
+  await expect(target).toBeVisible();
+
+  const hitRegionAtPosition = async (): Promise<string | null> => {
+    const box = await target.boundingBox();
+    if (!box) return null;
+    const point = {
+      x: box.x + box.width * position.xRatio,
+      y: box.y + box.height * position.yRatio,
+    };
+    return page.evaluate(({ x, y }) => {
+      const hit = document.elementFromPoint(x, y);
+      return hit instanceof Element
+        ? ((hit.closest('.campaign-region') as HTMLElement | null)?.dataset.regionId ?? null)
+        : null;
+    }, point);
+  };
+
+  await expect.poll(hitRegionAtPosition).toBe(id);
   const box = await target.boundingBox();
   expect(box).not.toBeNull();
   if (!box) throw new Error(`La región ${id} no tiene un área interactiva visible.`);
-  await target.click({
-    position: {
-      x: box.width * position.xRatio,
-      y: box.height * position.yRatio,
-    },
-  });
+  const point = {
+    x: box.x + box.width * position.xRatio,
+    y: box.y + box.height * position.yRatio,
+  };
+  expect(await hitRegionAtPosition()).toBe(id);
+  await page.mouse.click(point.x, point.y);
 }
 
 function insidePin(page: Page) {
