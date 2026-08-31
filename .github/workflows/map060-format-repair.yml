@@ -1,0 +1,53 @@
+name: MAP-060 format repair
+
+on:
+  push:
+    branches:
+      - agent/map-060-persistent-location-geometry
+    paths:
+      - .github/workflows/map060-format-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/map-060-persistent-location-geometry
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Repair and format MAP-060 regression test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/test-map060-v5-v6-lock-order.mjs')
+          text = path.read_text()
+          text = text.replace(
+              "    -- v5 must already own the per-entity advisory lock before it reaches the\n"
+              "    -- relation read blocked by the barrier. This is the exact ordering that was\n"
+              "    -- missing in the vulnerable implementation.\n",
+              "    // v5 must already own the per-entity advisory lock before it reaches the\n"
+              "    // relation read blocked by the barrier. This is the exact ordering that was\n"
+              "    // missing in the vulnerable implementation.\n",
+          )
+          path.write_text(text)
+          PY
+          npx prettier --write scripts/test-map060-v5-v6-lock-order.mjs package.json
+          npx prettier --check scripts/test-map060-v5-v6-lock-order.mjs package.json
+          node --check scripts/test-map060-v5-v6-lock-order.mjs
+          git rm .github/workflows/map060-format-repair.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'test: format MAP-060 lock-order regression'
+          git push origin HEAD:agent/map-060-persistent-location-geometry
