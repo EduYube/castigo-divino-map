@@ -46,6 +46,14 @@ function regionBounds(region: AtlasRegionMarkerModel): L.LatLngBounds {
   return L.latLngBounds([bounds.minY, bounds.minX], [bounds.maxY, bounds.maxX]);
 }
 
+function polygonLatLngs(region: AtlasRegionMarkerModel): L.LatLng[] {
+  return region.mapPresentation.vertices.map(([lat, lng]) => L.latLng(lat, lng));
+}
+
+function polygonElement(polygon: Polygon): HTMLElement | null {
+  return polygon.getElement() as HTMLElement | null;
+}
+
 function announce(root: ParentNode, message: string): void {
   const status = root.querySelector<HTMLElement>('[data-map-search-status]');
   if (status) status.textContent = message;
@@ -77,7 +85,7 @@ export function mountCampaignRegions(
   };
 
   const updatePresentation = (entry: RenderedRegion): void => {
-    const element = entry.polygon.getElement();
+    const element = polygonElement(entry.polygon);
     if (!element) return;
     const active = entry.model.id === activeRegionId;
     const matches = matchingRegionIds.has(entry.model.id);
@@ -98,7 +106,7 @@ export function mountCampaignRegions(
 
   const removeRendered = (): void => {
     for (const entry of rendered.values()) {
-      const element = entry.polygon.getElement();
+      const element = polygonElement(entry.polygon);
       if (element && entry.keydown) element.removeEventListener('keydown', entry.keydown);
       entry.polygon.removeFrom(map);
     }
@@ -110,7 +118,7 @@ export function mountCampaignRegions(
     if (destroyed) return;
 
     for (const model of regions) {
-      const polygon = L.polygon(model.mapPresentation.vertices, {
+      const polygon = L.polygon(polygonLatLngs(model), {
         pane: REGION_PANE,
         className: 'campaign-region',
         interactive: true,
@@ -127,7 +135,7 @@ export function mountCampaignRegions(
       const entry: RenderedRegion = { model, polygon };
       polygon.on('click', () => options.onActivate?.(model));
       polygon.on('add', () => {
-        const element = polygon.getElement();
+        const element = polygonElement(polygon);
         if (!element) return;
         const keydown = (event: KeyboardEvent): void => {
           if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -189,7 +197,7 @@ export function mountCampaignRegions(
       return true;
     },
     focusRegion(regionId): void {
-      rendered.get(regionId)?.polygon.getElement()?.focus({ preventScroll: true });
+      polygonElement(rendered.get(regionId)?.polygon as Polygon)?.focus({ preventScroll: true });
     },
     destroy(): void {
       if (destroyed) return;
