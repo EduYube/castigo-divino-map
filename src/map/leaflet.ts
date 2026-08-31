@@ -127,6 +127,10 @@ export function mountFaerunMap(
   }
 
   function findRegionBySearchTarget(target: MapSearchTarget): AtlasRegionMarkerModel | undefined {
+    // MAP-041 geographic navigation is an independent transient overlay. Even if a
+    // geographic label happens to share a name and representative coordinate with
+    // a persistent region, it must keep its own point/extent semantics.
+    if (target.label.toLocaleLowerCase('es').includes(', lugar geográfico')) return undefined;
     return renderedMarkers.find(
       (marker): marker is AtlasRegionMarkerModel =>
         isRegion(marker) && searchTargetMatchesPin(target, marker),
