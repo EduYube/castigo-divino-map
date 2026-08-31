@@ -328,7 +328,7 @@ for (const width of [320, 390, 430]) {
     const cromryn = region(page, REGION_A_ID);
     await expect(insidePin(page)).toHaveCount(0);
 
-    await clickRegionInterior(page, REGION_A_ID);
+    await clickRegionInterior(page, REGION_A_ID, { xRatio: 0.25, yRatio: 0.5 });
     await expect(page.getByTestId('place-details')).toHaveAttribute('data-entity-id', REGION_A_ID);
     await expect(page.getByTestId('place-details')).toBeVisible();
     await expect(cromryn).toHaveAttribute('aria-pressed', 'true');
