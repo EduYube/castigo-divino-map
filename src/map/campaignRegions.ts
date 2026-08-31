@@ -1,11 +1,15 @@
 import L, { type Map as LeafletMap, type Polygon } from 'leaflet';
 
-import type { AtlasRegionModel } from '../data/mapRegions';
+import type { AtlasPinMarkerModel } from '../data/pinMarkers';
+import '../styles/campaign-regions.css';
 
 export type RegionMatchingSemantics = 'search-and-filters' | 'filters-only';
+export type AtlasRegionMarkerModel = AtlasPinMarkerModel & {
+  readonly mapPresentation: Extract<AtlasPinMarkerModel['mapPresentation'], { readonly kind: 'polygon' }>;
+};
 
 export interface CampaignRegionController {
-  setRegions(regions: readonly AtlasRegionModel[]): void;
+  setRegions(regions: readonly AtlasRegionMarkerModel[]): void;
   setActiveRegion(regionId: string | null): void;
   setMatchingRegions(
     regionIds: ReadonlySet<string>,
@@ -17,12 +21,12 @@ export interface CampaignRegionController {
 }
 
 export interface CampaignRegionOptions {
-  readonly regions?: readonly AtlasRegionModel[];
-  readonly onActivate?: (region: AtlasRegionModel) => void;
+  readonly regions?: readonly AtlasRegionMarkerModel[];
+  readonly onActivate?: (region: AtlasRegionMarkerModel) => void;
 }
 
 interface RenderedRegion {
-  readonly model: AtlasRegionModel;
+  readonly model: AtlasRegionMarkerModel;
   readonly polygon: Polygon;
   keydown?: (event: KeyboardEvent) => void;
 }
@@ -37,11 +41,9 @@ function ensureRegionPane(map: LeafletMap): void {
   pane.style.pointerEvents = 'auto';
 }
 
-function regionBounds(region: AtlasRegionModel): L.LatLngBounds {
-  return L.latLngBounds(
-    [region.bounds.minY, region.bounds.minX],
-    [region.bounds.maxY, region.bounds.maxX],
-  );
+function regionBounds(region: AtlasRegionMarkerModel): L.LatLngBounds {
+  const { bounds } = region.mapPresentation;
+  return L.latLngBounds([bounds.minY, bounds.minX], [bounds.maxY, bounds.maxX]);
 }
 
 function announce(root: ParentNode, message: string): void {
@@ -59,7 +61,7 @@ export function mountCampaignRegions(
   const rendered = new Map<string, RenderedRegion>();
   let regions = options.regions ?? [];
   let activeRegionId: string | null = null;
-  let matchingRegionIds = new Set<string>();
+  let matchingRegionIds = new Set(regions.map(({ id }) => id));
   let matchingSemantics: RegionMatchingSemantics = 'search-and-filters';
   let destroyed = false;
 
@@ -82,10 +84,11 @@ export function mountCampaignRegions(
     element.classList.toggle('campaign-region--active', active);
     element.classList.toggle('campaign-region--dimmed', !matches);
     element.dataset.regionId = entry.model.id;
-    element.dataset.regionEntityId = entry.model.entityId;
+    if (entry.model.entityId) element.dataset.regionEntityId = entry.model.entityId;
     element.dataset.regionMatch = String(matches);
     element.setAttribute('role', 'button');
     element.setAttribute('tabindex', '0');
+    element.setAttribute('aria-keyshortcuts', 'Enter Space');
     element.setAttribute('aria-pressed', String(active));
     element.setAttribute(
       'aria-label',
@@ -107,7 +110,7 @@ export function mountCampaignRegions(
     if (destroyed) return;
 
     for (const model of regions) {
-      const polygon = L.polygon(model.vertices, {
+      const polygon = L.polygon(model.mapPresentation.vertices, {
         pane: REGION_PANE,
         className: 'campaign-region',
         interactive: true,
@@ -129,6 +132,7 @@ export function mountCampaignRegions(
         const keydown = (event: KeyboardEvent): void => {
           if (event.key !== 'Enter' && event.key !== ' ') return;
           event.preventDefault();
+          event.stopPropagation();
           options.onActivate?.(model);
         };
         entry.keydown = keydown;
@@ -141,26 +145,19 @@ export function mountCampaignRegions(
     }
   };
 
-  matchingRegionIds = new Set(regions.map(({ id }) => id));
   render();
 
   return {
     setRegions(nextRegions): void {
+      const previousIds = new Set(regions.map(({ id }) => id));
       regions = nextRegions;
-      const valid = new Set(regions.map(({ id }) => id));
-      if (activeRegionId && !valid.has(activeRegionId)) activeRegionId = null;
+      const validIds = new Set(regions.map(({ id }) => id));
+      if (activeRegionId && !validIds.has(activeRegionId)) activeRegionId = null;
       matchingRegionIds = new Set(
-        [...matchingRegionIds].filter((regionId) => valid.has(regionId)),
+        regions
+          .map(({ id }) => id)
+          .filter((regionId) => !previousIds.has(regionId) || matchingRegionIds.has(regionId)),
       );
-      for (const region of regions) {
-        if (!matchingRegionIds.has(region.id) && rendered.size === 0) {
-          matchingRegionIds.add(region.id);
-        }
-      }
-      // A fresh catalog starts fully matching until search/filter synchronization runs.
-      if (matchingRegionIds.size === 0 && regions.length > 0) {
-        matchingRegionIds = new Set(regions.map(({ id }) => id));
-      }
       render();
     },
     setActiveRegion(regionId): void {
@@ -181,11 +178,12 @@ export function mountCampaignRegions(
         maxZoom: map.getMaxZoom(),
       });
       const container = map.getContainer();
+      const { bounds } = entry.model.mapPresentation;
       container.dataset.regionFocusBounds = [
-        entry.model.bounds.minX,
-        entry.model.bounds.maxX,
-        entry.model.bounds.minY,
-        entry.model.bounds.maxY,
+        bounds.minX,
+        bounds.maxX,
+        bounds.minY,
+        bounds.maxY,
       ].join(',');
       announce(root, `Mapa encuadrado en ${label ?? entry.model.name}; región de campaña.`);
       return true;
@@ -197,8 +195,7 @@ export function mountCampaignRegions(
       if (destroyed) return;
       destroyed = true;
       removeRendered();
-      const pane = map.getPane(REGION_PANE);
-      pane?.remove();
+      map.getPane(REGION_PANE)?.remove();
       delete map.getContainer().dataset.regionFocusBounds;
     },
   };
