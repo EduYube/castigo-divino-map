@@ -151,7 +151,9 @@ function publicRows(table: string, campaignId: string): readonly Record<string, 
     case 'campaign_geographic_entity_links':
       return [];
     case 'players':
-      return PLAYERS[campaignId as keyof typeof PLAYERS].map(({ display_order: _order, ...player }) => player);
+      return PLAYERS[campaignId as keyof typeof PLAYERS].map(
+        ({ display_order: _order, ...player }) => player,
+      );
     case 'map_entities':
       return ENTITIES[campaignId as keyof typeof ENTITIES];
     case 'public_notes':
@@ -181,7 +183,12 @@ function publicRows(table: string, campaignId: string): readonly Record<string, 
   }
 }
 
-function jsonResponse(rows: unknown): { status: number; contentType: string; headers?: Record<string, string>; body: string } {
+function jsonResponse(rows: unknown): {
+  status: number;
+  contentType: string;
+  headers?: Record<string, string>;
+  body: string;
+} {
   if (Array.isArray(rows)) {
     const range = rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
     return {
@@ -211,7 +218,10 @@ function noteRow(overrides: Partial<NoteRow> = {}): NoteRow {
   };
 }
 
-async function configureBackend(context: BrowserContext, options: { admin?: boolean; online?: boolean } = {}): Promise<BackendState> {
+async function configureBackend(
+  context: BrowserContext,
+  options: { admin?: boolean; online?: boolean } = {},
+): Promise<BackendState> {
   const state: BackendState = {
     online: options.online ?? true,
     admin: options.admin ?? false,
@@ -360,7 +370,11 @@ async function configureBackend(context: BrowserContext, options: { admin?: bool
       return;
     }
 
-    if (!state.online && ['public_notes', 'players', 'map_entities'].includes(path) && !request.headers().range) {
+    if (
+      !state.online &&
+      ['public_notes', 'players', 'map_entities'].includes(path) &&
+      !request.headers().range
+    ) {
       await route.fulfill({ status: 503, contentType: 'application/json', body: '[]' });
       return;
     }
@@ -409,7 +423,10 @@ async function openCampaignA(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { level: 2, name: 'Notas públicas' })).toBeVisible();
 }
 
-test('visitor declares a campaign player and sees the persisted note immediately without moderation', async ({ context, page }) => {
+test('visitor declares a campaign player and sees the persisted note immediately without moderation', async ({
+  context,
+  page,
+}) => {
   const state = await configureBackend(context);
   await openCampaignA(page);
 
@@ -430,7 +447,9 @@ test('visitor declares a campaign player and sees the persisted note immediately
   await page.getByRole('button', { name: 'Publicar nota' }).click();
 
   const created = page.locator('[data-public-note-id="note-map063-created-1"]');
-  await expect(created.getByRole('heading', { level: 3, name: 'Hallazgo del jugador' })).toBeVisible();
+  await expect(
+    created.getByRole('heading', { level: 3, name: 'Hallazgo del jugador' }),
+  ).toBeVisible();
   await expect(created.getByText('<img src=x onerror=alert(1)>')).toBeVisible();
   await expect(created.locator('img')).toHaveCount(0);
   await expect(created).toContainText('Autor: Skade.');
@@ -465,7 +484,10 @@ test('campaign B exposes only its roster and notes', async ({ context, page }) =
   await expect(page.getByText('Apunte de Skade')).toHaveCount(0);
 });
 
-test('authorized Master creates, edits and retires notes while original player authorship is preserved', async ({ context, page }) => {
+test('authorized Master creates, edits and retires notes while original player authorship is preserved', async ({
+  context,
+  page,
+}) => {
   const state = await configureBackend(context, { admin: true });
   await openCampaignA(page);
 
@@ -489,7 +511,9 @@ test('authorized Master creates, edits and retires notes while original player a
   await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
 
   const edited = page.locator('[data-public-note-id="note-map063-player-a"]');
-  await expect(edited.getByRole('heading', { level: 3, name: 'Apunte de Skade revisado' })).toBeVisible();
+  await expect(
+    edited.getByRole('heading', { level: 3, name: 'Apunte de Skade revisado' }),
+  ).toBeVisible();
   await expect(edited).toContainText('Autor: Skade.');
   await expect(edited).toContainText('· Máster.');
 
@@ -499,7 +523,11 @@ test('authorized Master creates, edits and retires notes while original player a
   await expect(page.getByText(/conservada como archivada/i)).toBeVisible();
 
   const adminCalls = state.rpcBodies.filter((call) =>
-    ['create_master_public_note', 'update_master_public_note', 'archive_master_public_note'].includes(call.name),
+    [
+      'create_master_public_note',
+      'update_master_public_note',
+      'archive_master_public_note',
+    ].includes(call.name),
   );
   expect(adminCalls).toHaveLength(3);
   for (const call of adminCalls) {
@@ -511,7 +539,10 @@ test('authorized Master creates, edits and retires notes while original player a
   }
 });
 
-test('degraded mode keeps snapshot notes and draft text, then recovers locally without reload', async ({ context, page }) => {
+test('degraded mode keeps snapshot notes and draft text, then recovers locally without reload', async ({
+  context,
+  page,
+}) => {
   const state = await configureBackend(context, { online: false });
   await openCampaignA(page);
 
@@ -525,13 +556,18 @@ test('degraded mode keeps snapshot notes and draft text, then recovers locally w
   await page.getByRole('button', { name: 'Reintentar conexión' }).click();
 
   await expect(page.getByLabel('Título')).toHaveValue('Borrador conservado');
-  await expect(page.getByLabel('Nota')).toHaveValue('Este texto debe sobrevivir a la recuperación.');
+  await expect(page.getByLabel('Nota')).toHaveValue(
+    'Este texto debe sobrevivir a la recuperación.',
+  );
   await expect(page.getByLabel('Autor declarado')).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Publicar nota' })).toBeEnabled();
   await expect(page.getByRole('heading', { level: 1, name: 'MAP-063 Lugar A' })).toBeVisible();
 });
 
-test('note form and metadata reflow at 320, 390 and 430 px with forced colors and reduced motion', async ({ context, page }) => {
+test('note form and metadata reflow at 320, 390 and 430 px with forced colors and reduced motion', async ({
+  context,
+  page,
+}) => {
   await configureBackend(context);
   await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
 
@@ -542,8 +578,12 @@ test('note form and metadata reflow at 320, 390 and 430 px with forced colors an
     await expect(page.getByLabel('Título')).toBeVisible();
     await expect(page.getByLabel('Nota')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Publicar nota' })).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-    const ids = await page.locator('[id]').evaluateAll((elements) => elements.map((element) => element.id));
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+    const ids = await page
+      .locator('[id]')
+      .evaluateAll((elements) => elements.map((element) => element.id));
     expect(new Set(ids).size).toBe(ids.length);
   }
 
