@@ -1,5 +1,6 @@
-/* MAP-062: desktop/tablet compact details live below the cartographic surface.
- * Mobile keeps the MAP-037 overlay contract in mobile-compact-pin-details.css. */
+/* MAP-062: desktop/tablet compact details live below the cartographic surface and use
+ * the document's natural scroll instead of a narrow internal scroller. Mobile keeps
+ * the MAP-037 overlay contract in mobile-compact-pin-details.css. */
 
 .place-details__return {
   display: inline-flex;
