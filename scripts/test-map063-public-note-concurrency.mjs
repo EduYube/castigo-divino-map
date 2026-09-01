@@ -144,7 +144,11 @@ async function waitForBlockedQuery(marker, session, label) {
 }
 
 function assertNoLockFailure(output, label) {
-  if (/deadlock detected|statement timeout|canceling statement due to statement timeout/iu.test(output)) {
+  if (
+    /deadlock detected|statement timeout|canceling statement due to statement timeout/iu.test(
+      output,
+    )
+  ) {
     fail(`${label} hit a lock timeout/deadlock: ${output}`);
   }
 }
