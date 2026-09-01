@@ -609,10 +609,13 @@ function mountPublicExperience(
       }
     }
 
-    if (previousMasterEntityIds.size > 0 && nextMasterEntityIds.size === 0) {
+    const removedMasterEntityIds = new Set(
+      [...previousMasterEntityIds].filter((entityId) => !nextMasterEntityIds.has(entityId)),
+    );
+    if (removedMasterEntityIds.size > 0) {
       if (
         activeSupplementalPin?.entityId &&
-        previousMasterEntityIds.has(activeSupplementalPin.entityId)
+        removedMasterEntityIds.has(activeSupplementalPin.entityId)
       ) {
         activeSupplementalPin = null;
         compactDetailsController.hide();
