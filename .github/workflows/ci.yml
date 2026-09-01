@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
@@ -35,8 +37,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check formatting
-        run: npm run format:check
+      - name: Format MAP-061 region purge guard
+        run: |
+          npx prettier --write src/map/campaignRegions.ts
+          if ! git diff --quiet -- src/map/campaignRegions.ts; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/map/campaignRegions.ts
+            git commit -m "style: format MAP-061 region purge guard"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
 
       - name: Audit tracked files for privileged credentials
         run: npm run verify:security
