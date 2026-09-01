@@ -1,0 +1,118 @@
+name: MAP-061 invalid drag test helper
+
+on:
+  push:
+    paths:
+      - '.github/workflows/map061-invalid-drag-test-helper.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/map-061-campaign-regions
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Patch invalid drag regression
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('tests/e2e/map061-admin-regions.spec.ts')
+          text = path.read_text()
+          old = '''  const canvasBox = await canvas.boundingBox();
+  const viewport = page.viewportSize();
+  const firstVertex = page.getByTestId('admin-polygon-vertex-0');
+  const beforeBox = await firstVertex.boundingBox();
+  if (!canvasBox || !viewport || !beforeBox) {
+    throw new Error('El mapa o el vértice administrativo no tiene geometría visible.');
+  }
+
+  const start = {
+    x: beforeBox.x + beforeBox.width / 2,
+    y: beforeBox.y + beforeBox.height / 2,
+  };
+  let target: { x: number; y: number };
+  if (canvasBox.x >= 32) {
+    target = { x: canvasBox.x - 24, y: start.y };
+  } else if (canvasBox.x + canvasBox.width + 24 < viewport.width) {
+    target = { x: canvasBox.x + canvasBox.width + 24, y: start.y };
+  } else if (canvasBox.y >= 32) {
+    target = { x: start.x, y: canvasBox.y - 24 };
+  } else if (canvasBox.y + canvasBox.height + 24 < viewport.height) {
+    target = { x: start.x, y: canvasBox.y + canvasBox.height + 24 };
+  } else {
+    throw new Error('No hay espacio de viewport para arrastrar el vértice fuera del mapa.');
+  }
+
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(target.x, target.y, { steps: 8 });
+  await page.mouse.up();
+
+  await expect(firstVertex).toBeFocused();
+  const restoredBox = await firstVertex.boundingBox();
+'''
+          new = '''  const canvasBox = await canvas.boundingBox();
+  const imageBox = await canvas.locator('.admin-map-entity__image').boundingBox();
+  // At fit-to-bounds the 36px handles overlap. Vertex 1 has the highest z-index on
+  // the lower edge, so its physical centre is an unambiguous draggable target.
+  const draggedVertex = page.getByTestId('admin-polygon-vertex-1');
+  const beforeBox = await draggedVertex.boundingBox();
+  if (!canvasBox || !imageBox || !beforeBox) {
+    throw new Error('El mapa, su imagen o el vértice administrativo no tiene geometría visible.');
+  }
+
+  const start = {
+    x: beforeBox.x + beforeBox.width / 2,
+    y: beforeBox.y + beforeBox.height / 2,
+  };
+  const canvasRight = canvasBox.x + canvasBox.width;
+  const canvasBottom = canvasBox.y + canvasBox.height;
+  const imageRight = imageBox.x + imageBox.width;
+  const imageBottom = imageBox.y + imageBox.height;
+  let target: { x: number; y: number } | null = null;
+  if (imageBox.x - canvasBox.x >= 12) {
+    target = { x: imageBox.x - 6, y: start.y };
+  } else if (canvasRight - imageRight >= 12) {
+    target = { x: imageRight + 6, y: start.y };
+  } else if (imageBox.y - canvasBox.y >= 12) {
+    target = { x: start.x, y: imageBox.y - 6 };
+  } else if (canvasBottom - imageBottom >= 12) {
+    target = { x: start.x, y: imageBottom + 6 };
+  }
+  if (!target) {
+    throw new Error('La imagen cartográfica no deja margen interior para probar un drag fuera de bounds.');
+  }
+
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(target.x, target.y);
+  await page.mouse.up();
+
+  await expect(page.locator('body')).not.toHaveClass(/leaflet-dragging/);
+  const restoredBox = await draggedVertex.boundingBox();
+'''
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one old drag block, found {text.count(old)}')
+          text = text.replace(old, new, 1)
+          path.write_text(text)
+      - name: Format and validate
+        run: |
+          npx prettier --write tests/e2e/map061-admin-regions.spec.ts
+          npx prettier --check tests/e2e/map061-admin-regions.spec.ts
+          git diff --check
+      - name: Commit test correction
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tests/e2e/map061-admin-regions.spec.ts
+          git commit -m 'test: exercise invalid polygon drag within map canvas'
+          git push origin HEAD:agent/map-061-campaign-regions
