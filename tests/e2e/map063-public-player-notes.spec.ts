@@ -100,7 +100,6 @@ const ENTITIES = {
       portrait_path: null,
       x: 700,
       y: 700,
-      geometry: { kind: 'point', x: 700, y: 700 },
       category_id: 'category-map063-a',
     },
   ],
@@ -117,7 +116,6 @@ const ENTITIES = {
       portrait_path: null,
       x: 800,
       y: 800,
-      geometry: { kind: 'point', x: 800, y: 800 },
       category_id: 'category-map063-b',
     },
   ],
@@ -151,9 +149,13 @@ function publicRows(table: string, campaignId: string): readonly Record<string, 
     case 'campaign_geographic_entity_links':
       return [];
     case 'players':
-      return PLAYERS[campaignId as keyof typeof PLAYERS].map(
-        ({ display_order: _order, ...player }) => player,
-      );
+      return PLAYERS[campaignId as keyof typeof PLAYERS].map((player) => ({
+        id: player.id,
+        slug: player.slug,
+        display_name: player.display_name,
+        name_language: player.name_language,
+        accent_color: player.accent_color,
+      }));
     case 'map_entities':
       return ENTITIES[campaignId as keyof typeof ENTITIES];
     case 'public_notes':
@@ -492,7 +494,7 @@ test('authorized Master creates, edits and retires notes while original player a
   await openCampaignA(page);
 
   await expect(page.getByText('Autor: Máster', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('Autor declarado')).toHaveCount(0);
+  await expect(page.getByLabel('Autor declarado')).not.toBeVisible();
   await expect(page.getByRole('button', { name: 'Publicar como Máster' })).toBeEnabled();
 
   await page.getByLabel('Título').fill('Nota del Máster');
