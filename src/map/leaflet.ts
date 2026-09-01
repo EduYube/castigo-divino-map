@@ -68,6 +68,7 @@ export function mountFaerunMap(
     ...options,
     markers: initial.points,
     onPinActivate(pin): void {
+      clearRegionAnnouncement();
       if (pin.legacyPlaceId) {
         activePlaceId = pin.legacyPlaceId;
         activeSupplementalPinId = null;
@@ -112,9 +113,12 @@ export function mountFaerunMap(
   function announceActiveRegion(region: AtlasRegionMarkerModel, message: string): void {
     window.requestAnimationFrame(() => {
       if (activeRegionId() !== region.id) return;
-      const status = root.querySelector<HTMLElement>('[data-map-search-status]');
-      if (status) status.textContent = message;
+      regionController.announceRegion(region.id, message);
     });
+  }
+
+  function clearRegionAnnouncement(validRegionIds?: ReadonlySet<string>): void {
+    regionController.clearAnnouncement(validRegionIds);
   }
 
   function synchronizePointSelectionForRegion(region: AtlasRegionMarkerModel): void {
@@ -158,6 +162,21 @@ export function mountFaerunMap(
   return {
     map: pointController.map,
     setMarkers(markers, updateOptions: FaerunMapMarkerUpdateOptions = {}): void {
+      const next = splitMarkers(markers);
+      const previousRegionNames = new Map(
+        renderedMarkers
+          .filter(isRegion)
+          .map((region) => [region.id, region.name] as const),
+      );
+      const stableRegionIds = new Set(
+        next.regions
+          .filter((region) => previousRegionNames.get(region.id) === region.name)
+          .map(({ id }) => id),
+      );
+
+      // Purge an announcement if its region disappeared or changed identity/name, but
+      // keep a still-valid public announcement across a benign catalog refresh.
+      clearRegionAnnouncement(stableRegionIds);
       // Purge old polygon DOM/bounds before adopting the next catalog. This is
       // intentionally synchronous so a Master region cannot flash across campaign
       // changes, logout, OFF or a 401/403-driven catalog downgrade.
@@ -176,7 +195,6 @@ export function mountFaerunMap(
       ) {
         activePlaceId = null;
       }
-      const next = splitMarkers(markers);
       pointController.setMarkers(next.points, updateOptions);
       regionController.setRegions(next.regions);
       synchronizeRegionPresentation();
@@ -205,6 +223,7 @@ export function mountFaerunMap(
         regionController.locateRegion(region.id, region.name);
         return;
       }
+      clearRegionAnnouncement();
       clearRegionFocusMetadata();
       pointController.locatePlace(placeId);
     },
@@ -226,10 +245,12 @@ export function mountFaerunMap(
         announceActiveRegion(region, `Mapa encuadrado en ${target.label}; región de campaña.`);
         return;
       }
+      clearRegionAnnouncement();
       clearRegionFocusMetadata();
       pointController.locateSearchTarget(target);
     },
     clearSearchFocus(): void {
+      clearRegionAnnouncement();
       clearRegionFocusMetadata();
       pointController.clearSearchFocus();
     },
