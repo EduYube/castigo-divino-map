@@ -85,10 +85,21 @@ jobs:
           test = test.replace(insertionPoint, () => shapeTests);
           fs.writeFileSync(testPath, test);
           NODE
-      - name: Start Supabase
-        run: npm run supabase:start
-      - name: Run complete database validation
-        run: npm run supabase:db:validate
+      - name: Run complete database validation with stack retry
+        run: |
+          set -u
+          validated=0
+          for attempt in 1 2; do
+            echo "MAP-063 database validation attempt ${attempt}/2"
+            npm run supabase:stop -- --no-backup >/dev/null 2>&1 || true
+            sleep 5
+            if npm run supabase:start && npm run supabase:db:validate; then
+              validated=1
+              break
+            fi
+            echo "Attempt ${attempt} failed; restarting the entire local stack before retry."
+          done
+          test "$validated" -eq 1
       - name: Stop Supabase
         if: always()
         run: npm run supabase:stop -- --no-backup
