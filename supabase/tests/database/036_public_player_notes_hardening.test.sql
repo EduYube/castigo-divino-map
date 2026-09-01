@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(11);
+select plan(14);
 
 set local role anon;
 
@@ -37,6 +37,28 @@ select ok(
     'entity-aster-guide', 'player-demo-one', 'Title', 'Body', 'master'
   )$$),
   'public RPC exposes no extra mass-assignment parameter for Master authorship'
+);
+
+select ok(
+  pg_catalog.strpos(
+    pg_catalog.pg_get_function_result('public.create_public_player_note(text,text,text,text)'::regprocedure),
+    'slug'
+  ) = 0,
+  'public player RPC response omits the unused slug field rejected by the strict client parser'
+);
+select ok(
+  pg_catalog.strpos(
+    pg_catalog.pg_get_function_result('public.create_master_public_note(text,text,text)'::regprocedure),
+    'slug'
+  ) = 0,
+  'Master create RPC response matches the strict public note client shape'
+);
+select ok(
+  pg_catalog.strpos(
+    pg_catalog.pg_get_function_result('public.update_master_public_note(text,text,text,text)'::regprocedure),
+    'slug'
+  ) = 0,
+  'Master update RPC response matches the strict public note client shape'
 );
 select ok(
   pg_temp.statement_fails($$select * from public.update_master_public_note(

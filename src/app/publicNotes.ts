@@ -427,6 +427,10 @@ export function mountPublicNotes(
         })
         .finally(() => {
           saving = false;
+          if (form.isConnected) {
+            form.removeAttribute('aria-busy');
+            save.disabled = false;
+          }
         });
     });
   };

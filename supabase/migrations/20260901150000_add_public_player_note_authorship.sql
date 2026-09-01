@@ -66,7 +66,6 @@ create or replace function public.create_public_player_note(
 )
 returns table (
   id text,
-  slug text,
   entity_id text,
   title text,
   body text,
@@ -188,7 +187,6 @@ begin
   )
   returning
     note.id,
-    note.slug,
     note.entity_id,
     note.title,
     note.body,
@@ -214,7 +212,6 @@ create or replace function public.create_master_public_note(
 )
 returns table (
   id text,
-  slug text,
   entity_id text,
   title text,
   body text,
@@ -303,7 +300,6 @@ begin
   )
   returning
     note.id,
-    note.slug,
     note.entity_id,
     note.title,
     note.body,
@@ -330,7 +326,6 @@ create or replace function public.update_master_public_note(
 )
 returns table (
   id text,
-  slug text,
   entity_id text,
   title text,
   body text,
@@ -379,7 +374,6 @@ begin
     and entity.audience = 'public'::public.entity_audience
   returning
     note.id,
-    note.slug,
     note.entity_id,
     note.title,
     note.body,

@@ -26,6 +26,7 @@ interface NoteRow {
 interface BackendState {
   online: boolean;
   admin: boolean;
+  failNextMasterUpdate: boolean;
   rpcBodies: Array<{ name: string; body: Record<string, unknown>; authorization: string | null }>;
   notes: Map<string, NoteRow[]>;
 }
@@ -227,6 +228,7 @@ async function configureBackend(
   const state: BackendState = {
     online: options.online ?? true,
     admin: options.admin ?? false,
+    failNextMasterUpdate: false,
     rpcBodies: [],
     notes: new Map([
       ['place-map063-a', [noteRow()]],
@@ -351,6 +353,11 @@ async function configureBackend(
         return;
       }
       if (name === 'update_master_public_note') {
+        if (state.failNextMasterUpdate) {
+          state.failNextMasterUpdate = false;
+          await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+          return;
+        }
         const entityId = String(body.p_entity_id ?? '');
         const noteId = String(body.p_note_id ?? '');
         const current = state.notes.get(entityId) ?? [];
@@ -574,6 +581,35 @@ test('authorized Master creates, edits and retires notes while original player a
     expect(call.body).not.toHaveProperty('campaign_id');
     expect(call.body).not.toHaveProperty('publication_status');
   }
+});
+
+test('recoverable Master edit failure preserves the draft and allows retry', async ({
+  context,
+  page,
+}) => {
+  const state = await configureBackend(context, { admin: true });
+  await openCampaignA(page);
+
+  const playerNote = page.locator('[data-public-note-id="note-map063-player-a"]');
+  await playerNote.getByRole('button', { name: 'Editar nota Apunte de Skade' }).click();
+  const editForm = playerNote.locator('form');
+  const title = editForm.getByLabel('Título');
+  const body = editForm.getByRole('textbox', { name: 'Nota', exact: true });
+  const save = editForm.getByRole('button', { name: 'Guardar cambios' });
+
+  await title.fill('Apunte recuperable');
+  await body.fill('Este borrador debe sobrevivir a un fallo transitorio.');
+  state.failNextMasterUpdate = true;
+  await save.click();
+
+  await expect(editForm.getByText(/texto se conserva para reintentarlo/i)).toBeVisible();
+  await expect(title).toHaveValue('Apunte recuperable');
+  await expect(body).toHaveValue('Este borrador debe sobrevivir a un fallo transitorio.');
+  await expect(editForm).not.toHaveAttribute('aria-busy', 'true');
+  await expect(save).toBeEnabled();
+
+  await save.click();
+  await expect(page.getByRole('heading', { level: 3, name: 'Apunte recuperable' })).toBeVisible();
 });
 
 test('stale Master authorization fails closed until the session is revalidated', async ({
