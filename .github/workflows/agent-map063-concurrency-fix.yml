@@ -35,123 +35,104 @@ jobs:
           const path = 'supabase/migrations/20260901150000_add_public_player_note_authorship.sql';
           let sql = fs.readFileSync(path, 'utf8');
 
-          const publicBefore = `  -- Lock the public entity before validation and sort-order allocation. Missing,
-          -- draft, archived and Master-only targets deliberately share one error.
-          select entity.*
-          into entity_row
-          from public.map_entities as entity
-          join public.campaigns as campaign
-            on campaign.id = entity.campaign_id
-           and campaign.status = 'active'
-          where entity.id = p_entity_id
-            and entity.publication_status = 'published'::public.publication_status
-            and entity.audience = 'public'::public.entity_audience
-          for update of entity;
-
-          if not found then
-            raise exception using errcode = '22023', message = 'public note target unavailable';
-          end if;
-
-          if not exists (
-            select 1
-            from public.players as player
-            where player.id = p_player_id
-              and player.campaign_id = entity_row.campaign_id
-              and player.publication_status = 'published'::public.publication_status
-          ) then
-            raise exception using errcode = '22023', message = 'invalid public note author';
-          end if;`;
-
-          const publicAfter = `  -- Keep the lock order deterministic: entity -> campaign -> player. The entity
-          -- UPDATE lock is also the existing serialization point for rate limiting and
-          -- sort-order allocation. Missing, draft, archived and Master-only targets
-          -- deliberately share one error.
-          select entity.*
-          into entity_row
-          from public.map_entities as entity
-          where entity.id = p_entity_id
-            and entity.publication_status = 'published'::public.publication_status
-            and entity.audience = 'public'::public.entity_audience
-          for update;
-
-          if not found then
-            raise exception using errcode = '22023', message = 'public note target unavailable';
-          end if;
-
-          -- FOR SHARE conflicts with administrative UPDATE/DELETE while remaining
-          -- compatible with concurrent public-note creations for different entities.
-          -- Under READ COMMITTED a waiter rechecks these predicates after the writer
-          -- commits, so a concurrent revocation either serializes after this creation
-          -- or makes this RPC fail before INSERT.
-          perform 1
-          from public.campaigns as campaign
-          where campaign.id = entity_row.campaign_id
-            and campaign.status = 'active'
-          for share;
-
-          if not found then
-            raise exception using errcode = '22023', message = 'public note target unavailable';
-          end if;
-
-          perform 1
-          from public.players as player
-          where player.id = p_player_id
-            and player.campaign_id = entity_row.campaign_id
-            and player.publication_status = 'published'::public.publication_status
-          for share;
-
-          if not found then
-            raise exception using errcode = '22023', message = 'invalid public note author';
-          end if;`;
-
-          if ((sql.split(publicBefore).length - 1) !== 1) {
-            throw new Error('expected one public note eligibility block');
+          function replaceSection(source, startMarker, endMarker, replacement, after = 0) {
+            const start = source.indexOf(startMarker, after);
+            if (start < 0) throw new Error(`missing start marker: ${startMarker}`);
+            const end = source.indexOf(endMarker, start);
+            if (end < 0) throw new Error(`missing end marker after: ${startMarker}`);
+            return source.slice(0, start) + replacement + source.slice(end);
           }
-          sql = sql.replace(publicBefore, publicAfter);
 
-          const masterBefore = `  select entity.*
-          into entity_row
-          from public.map_entities as entity
-          join public.campaigns as campaign
-            on campaign.id = entity.campaign_id
-           and campaign.status = 'active'
-          where entity.id = p_entity_id
-            and entity.publication_status = 'published'::public.publication_status
-            and entity.audience = 'public'::public.entity_audience
-          for update of entity;
+          const publicAfter = [
+            '  -- Keep the lock order deterministic: entity -> campaign -> player. The entity',
+            '  -- UPDATE lock is also the existing serialization point for rate limiting and',
+            '  -- sort-order allocation. Missing, draft, archived and Master-only targets',
+            '  -- deliberately share one error.',
+            '  select entity.*',
+            '  into entity_row',
+            '  from public.map_entities as entity',
+            '  where entity.id = p_entity_id',
+            "    and entity.publication_status = 'published'::public.publication_status",
+            "    and entity.audience = 'public'::public.entity_audience",
+            '  for update;',
+            '',
+            '  if not found then',
+            "    raise exception using errcode = '22023', message = 'public note target unavailable';",
+            '  end if;',
+            '',
+            '  -- FOR SHARE conflicts with administrative UPDATE/DELETE while remaining',
+            '  -- compatible with concurrent public-note creations for different entities.',
+            '  -- Under READ COMMITTED a waiter rechecks these predicates after the writer',
+            '  -- commits, so a concurrent revocation either serializes after this creation',
+            '  -- or makes this RPC fail before INSERT.',
+            '  perform 1',
+            '  from public.campaigns as campaign',
+            '  where campaign.id = entity_row.campaign_id',
+            "    and campaign.status = 'active'",
+            '  for share;',
+            '',
+            '  if not found then',
+            "    raise exception using errcode = '22023', message = 'public note target unavailable';",
+            '  end if;',
+            '',
+            '  perform 1',
+            '  from public.players as player',
+            '  where player.id = p_player_id',
+            '    and player.campaign_id = entity_row.campaign_id',
+            "    and player.publication_status = 'published'::public.publication_status",
+            '  for share;',
+            '',
+            '  if not found then',
+            "    raise exception using errcode = '22023', message = 'invalid public note author';",
+            '  end if;',
+          ].join('\n');
 
-          if not found then
-            raise exception using errcode = '22023', message = 'public note target unavailable';
-          end if;`;
+          sql = replaceSection(
+            sql,
+            '  -- Lock the public entity before validation and sort-order allocation. Missing,',
+            '\n\n  if pg_catalog.char_length(title_value)',
+            publicAfter,
+          );
 
-          const masterAfter = `  select entity.*
-          into entity_row
-          from public.map_entities as entity
-          where entity.id = p_entity_id
-            and entity.publication_status = 'published'::public.publication_status
-            and entity.audience = 'public'::public.entity_audience
-          for update;
+          const masterFunction = 'create or replace function public.create_master_public_note(';
+          const masterOffset = sql.indexOf(masterFunction);
+          if (masterOffset < 0) throw new Error('missing Master create function');
+          const masterAfter = [
+            '  select entity.*',
+            '  into entity_row',
+            '  from public.map_entities as entity',
+            '  where entity.id = p_entity_id',
+            "    and entity.publication_status = 'published'::public.publication_status",
+            "    and entity.audience = 'public'::public.entity_audience",
+            '  for update;',
+            '',
+            '  if not found then',
+            "    raise exception using errcode = '22023', message = 'public note target unavailable';",
+            '  end if;',
+            '',
+            "  -- Match the public writer's entity -> campaign prefix so a campaign",
+            '  -- lifecycle change cannot race an administrative note creation either.',
+            '  perform 1',
+            '  from public.campaigns as campaign',
+            '  where campaign.id = entity_row.campaign_id',
+            "    and campaign.status = 'active'",
+            '  for share;',
+            '',
+            '  if not found then',
+            "    raise exception using errcode = '22023', message = 'public note target unavailable';",
+            '  end if;',
+          ].join('\n');
 
-          if not found then
-            raise exception using errcode = '22023', message = 'public note target unavailable';
-          end if;
+          sql = replaceSection(
+            sql,
+            '  select entity.*',
+            '\n\n  if pg_catalog.char_length(title_value)',
+            masterAfter,
+            masterOffset,
+          );
 
-          -- Match the public writer's entity -> campaign prefix so a campaign
-          -- lifecycle change cannot race an administrative note creation either.
-          perform 1
-          from public.campaigns as campaign
-          where campaign.id = entity_row.campaign_id
-            and campaign.status = 'active'
-          for share;
-
-          if not found then
-            raise exception using errcode = '22023', message = 'public note target unavailable';
-          end if;`;
-
-          if ((sql.split(masterBefore).length - 1) !== 1) {
-            throw new Error('expected one Master note target block');
-          }
-          sql = sql.replace(masterBefore, masterAfter);
+          const shareCount = (sql.match(/for share;/g) ?? []).length;
+          if (shareCount < 3) throw new Error(`expected new campaign/player SHARE locks, found ${shareCount}`);
           fs.writeFileSync(path, sql);
           NODE
 
