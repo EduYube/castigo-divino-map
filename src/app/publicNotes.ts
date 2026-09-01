@@ -239,7 +239,11 @@ function describeRepositoryError(error: unknown): string {
   }
 }
 
-function setFieldError(control: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, error: HTMLElement, message: string): void {
+function setFieldError(
+  control: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+  error: HTMLElement,
+  message: string,
+): void {
   error.textContent = message;
   if (message) control.setAttribute('aria-invalid', 'true');
   else control.removeAttribute('aria-invalid');
@@ -249,7 +253,10 @@ export interface PublicNotesController {
   destroy(): void;
 }
 
-export function mountPublicNotes(root: ParentNode, details: FullEntityDetailModel): PublicNotesController {
+export function mountPublicNotes(
+  root: ParentNode,
+  details: FullEntityDetailModel,
+): PublicNotesController {
   const elements = createElements(root);
   const configuration = resolveConfiguration();
   let noteRepository: SupabasePublicNoteRepository | null = null;
@@ -265,7 +272,9 @@ export function mountPublicNotes(root: ParentNode, details: FullEntityDetailMode
   const fallbackById = new Map(details.notes.map((note) => [note.id, note] as const));
 
   const playerName = (playerId: PlayerId | null): string =>
-    playerId ? (roster.find((player) => player.id === playerId)?.displayName ?? 'Jugador no disponible') : 'Máster';
+    playerId
+      ? (roster.find((player) => player.id === playerId)?.displayName ?? 'Jugador no disponible')
+      : 'Máster';
 
   const announce = (message: string, error = false): void => {
     elements.status.textContent = message;
@@ -276,7 +285,12 @@ export function mountPublicNotes(root: ParentNode, details: FullEntityDetailMode
   const renderFallback = (): void => {
     elements.list.replaceChildren();
     if (details.notes.length === 0) {
-      appendText(elements.list, 'p', 'full-entity__muted', 'Sin notas públicas en el snapshot disponible.');
+      appendText(
+        elements.list,
+        'p',
+        'full-entity__muted',
+        'Sin notas públicas en el snapshot disponible.',
+      );
       return;
     }
     for (const note of details.notes) {
@@ -394,7 +408,12 @@ export function mountPublicNotes(root: ParentNode, details: FullEntityDetailMode
     const confirmation = document.createElement('div');
     confirmation.className = 'public-notes__archive-confirmation';
     confirmation.dataset.publicNoteAdminActions = '';
-    appendText(confirmation, 'p', '', '¿Retirar esta nota de la ficha pública? Se conservará archivada.');
+    appendText(
+      confirmation,
+      'p',
+      '',
+      '¿Retirar esta nota de la ficha pública? Se conservará archivada.',
+    );
     const confirm = document.createElement('button');
     confirm.type = 'button';
     confirm.textContent = 'Confirmar retirada';
@@ -484,7 +503,12 @@ export function mountPublicNotes(root: ParentNode, details: FullEntityDetailMode
   const updateAuthorControls = (): void => {
     if (mode === 'master') {
       elements.authorField.replaceChildren();
-      const label = appendText(elements.authorField, 'p', 'public-notes__master-author', 'Autor: Máster');
+      const label = appendText(
+        elements.authorField,
+        'p',
+        'public-notes__master-author',
+        'Autor: Máster',
+      );
       label.dataset.publicNoteMasterAuthor = '';
       elements.submit.textContent = 'Publicar como Máster';
       return;
@@ -565,7 +589,10 @@ export function mountPublicNotes(root: ParentNode, details: FullEntityDetailMode
       renderList();
       if (mode === 'unverified') {
         setFormAvailable(false);
-        announce('No se pudo verificar de forma segura la sesión administrativa. Reintenta la conexión.', true);
+        announce(
+          'No se pudo verificar de forma segura la sesión administrativa. Reintenta la conexión.',
+          true,
+        );
       } else {
         setFormAvailable(true);
         announce(
@@ -594,7 +621,11 @@ export function mountPublicNotes(root: ParentNode, details: FullEntityDetailMode
     const selected = elements.authorSelect.value;
     const player = roster.find((candidate) => candidate.id === selected);
     if (!player) {
-      setFieldError(elements.authorSelect, elements.authorError, 'Selecciona un personaje del roster.');
+      setFieldError(
+        elements.authorSelect,
+        elements.authorError,
+        'Selecciona un personaje del roster.',
+      );
       elements.authorSelect.focus();
       return null;
     }

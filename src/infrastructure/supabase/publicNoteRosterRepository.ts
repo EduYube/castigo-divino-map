@@ -38,7 +38,10 @@ export class SupabasePublicNoteRosterRepository {
     this.#timeoutMs = options.timeoutMs ?? 8_000;
   }
 
-  async load(entityId: EntityId, parentSignal?: AbortSignal): Promise<readonly PublicNoteRosterPlayer[]> {
+  async load(
+    entityId: EntityId,
+    parentSignal?: AbortSignal,
+  ): Promise<readonly PublicNoteRosterPlayer[]> {
     const entityUrl = new URL(`${this.#projectUrl}/rest/v1/map_entities`);
     entityUrl.searchParams.set('select', 'campaign_id');
     entityUrl.searchParams.set('id', `eq.${entityId}`);
@@ -46,12 +49,22 @@ export class SupabasePublicNoteRosterRepository {
     entityUrl.searchParams.set('audience', 'eq.public');
     const entityResponse = await this.#request(entityUrl, parentSignal);
     const entityPayload = await readJson(entityResponse);
-    if (!Array.isArray(entityPayload) || entityPayload.length !== 1 || !isRecord(entityPayload[0])) {
-      throw new PublicNoteRepositoryError('unavailable', 'La entidad no está disponible para notas públicas.');
+    if (
+      !Array.isArray(entityPayload) ||
+      entityPayload.length !== 1 ||
+      !isRecord(entityPayload[0])
+    ) {
+      throw new PublicNoteRepositoryError(
+        'unavailable',
+        'La entidad no está disponible para notas públicas.',
+      );
     }
     const campaignId = entityPayload[0].campaign_id;
     if (typeof campaignId !== 'string' || campaignId.length === 0) {
-      throw new PublicNoteRepositoryError('invalid-response', 'La campaña pública de la entidad es inválida.');
+      throw new PublicNoteRepositoryError(
+        'invalid-response',
+        'La campaña pública de la entidad es inválida.',
+      );
     }
 
     const playersUrl = new URL(`${this.#projectUrl}/rest/v1/players`);
@@ -65,11 +78,21 @@ export class SupabasePublicNoteRosterRepository {
       throw new PublicNoteRepositoryError('invalid-response', 'El roster público es inválido.');
     }
     return playersPayload.map((value) => {
-      if (!isRecord(value) || typeof value.id !== 'string' || typeof value.display_name !== 'string') {
-        throw new PublicNoteRepositoryError('invalid-response', 'El roster público contiene un jugador inválido.');
+      if (
+        !isRecord(value) ||
+        typeof value.id !== 'string' ||
+        typeof value.display_name !== 'string'
+      ) {
+        throw new PublicNoteRepositoryError(
+          'invalid-response',
+          'El roster público contiene un jugador inválido.',
+        );
       }
       if (!/^player-[a-z0-9]+([a-z0-9-]*[a-z0-9])?$/.test(value.id)) {
-        throw new PublicNoteRepositoryError('invalid-response', 'El roster público contiene un identificador inválido.');
+        throw new PublicNoteRepositoryError(
+          'invalid-response',
+          'El roster público contiene un identificador inválido.',
+        );
       }
       return { id: value.id as PlayerId, displayName: value.display_name };
     });

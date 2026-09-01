@@ -104,8 +104,10 @@ function parseNoteRow(value: unknown): PublicNoteWriteRecord {
   }
   const authorKind = value.author_kind;
   const lastModifierKind = value.last_modifier_kind;
-  if ((authorKind !== 'master' && authorKind !== 'player') ||
-      (lastModifierKind !== 'master' && lastModifierKind !== 'player')) {
+  if (
+    (authorKind !== 'master' && authorKind !== 'player') ||
+    (lastModifierKind !== 'master' && lastModifierKind !== 'player')
+  ) {
     throw new PublicNoteRepositoryError('invalid-response', 'Supabase devolvió autoría inválida.');
   }
   const authorPlayerId = expectNullablePlayerId(value.author_player_id, 'author_player_id');
@@ -117,7 +119,10 @@ function parseNoteRow(value: unknown): PublicNoteWriteRecord {
     throw new PublicNoteRepositoryError('invalid-response', 'La autoría original es incoherente.');
   }
   if ((lastModifierKind === 'master') !== (lastModifierPlayerId === null)) {
-    throw new PublicNoteRepositoryError('invalid-response', 'La última modificación es incoherente.');
+    throw new PublicNoteRepositoryError(
+      'invalid-response',
+      'La última modificación es incoherente.',
+    );
   }
   if (!Number.isSafeInteger(value.sort_order) || (value.sort_order as number) < 0) {
     throw new PublicNoteRepositoryError('invalid-response', 'Supabase devolvió un orden inválido.');
@@ -163,7 +168,10 @@ export class SupabasePublicNoteRepository {
       (!PUBLISHABLE_KEY_PATTERN.test(publishableKey) &&
         !(options.allowLocalProject && local && isLegacyAnonKey(publishableKey)))
     ) {
-      throw new PublicNoteRepositoryError('configuration', 'Configuración pública de Supabase inválida.');
+      throw new PublicNoteRepositoryError(
+        'configuration',
+        'Configuración pública de Supabase inválida.',
+      );
     }
     this.#projectUrl = projectUrl.replace(/\/$/, '');
     this.#publishableKey = publishableKey;
@@ -179,10 +187,17 @@ export class SupabasePublicNoteRepository {
     url.searchParams.set('entity_id', `eq.${entityId}`);
     url.searchParams.set('publication_status', 'eq.published');
     url.searchParams.set('order', 'sort_order.asc,id.asc');
-    const response = await this.#request(url, { method: 'GET', headers: this.#publicHeaders() }, signal);
+    const response = await this.#request(
+      url,
+      { method: 'GET', headers: this.#publicHeaders() },
+      signal,
+    );
     const payload = await this.#json(response);
     if (!Array.isArray(payload)) {
-      throw new PublicNoteRepositoryError('invalid-response', 'Supabase devolvió una lista de notas inválida.');
+      throw new PublicNoteRepositoryError(
+        'invalid-response',
+        'Supabase devolvió una lista de notas inválida.',
+      );
     }
     return payload.map(parseNoteRow);
   }
@@ -241,7 +256,10 @@ export class SupabasePublicNoteRepository {
     );
     const payload = await this.#json(response);
     if (payload !== true) {
-      throw new PublicNoteRepositoryError('invalid-response', 'Supabase no confirmó la retirada de la nota.');
+      throw new PublicNoteRepositoryError(
+        'invalid-response',
+        'Supabase no confirmó la retirada de la nota.',
+      );
     }
   }
 
@@ -255,7 +273,10 @@ export class SupabasePublicNoteRepository {
       const serialized = this.#storage.getItem(AUTH_SESSION_STORAGE_KEY);
       parsed = serialized ? JSON.parse(serialized) : null;
     } catch {
-      throw new PublicNoteRepositoryError('unauthorized', 'La sesión administrativa no está disponible.');
+      throw new PublicNoteRepositoryError(
+        'unauthorized',
+        'La sesión administrativa no está disponible.',
+      );
     }
     if (
       !isRecord(parsed) ||
@@ -279,7 +300,10 @@ export class SupabasePublicNoteRepository {
     const response = await this.#rpcResponse(name, body, admin, signal);
     const payload = await this.#json(response);
     if (!Array.isArray(payload) || payload.length !== 1) {
-      throw new PublicNoteRepositoryError('invalid-response', 'Supabase no devolvió la nota persistida.');
+      throw new PublicNoteRepositoryError(
+        'invalid-response',
+        'Supabase no devolvió la nota persistida.',
+      );
     }
     return parseNoteRow(payload[0]);
   }
@@ -302,7 +326,11 @@ export class SupabasePublicNoteRepository {
     );
   }
 
-  async #request(input: RequestInfo | URL, init: RequestInit, parentSignal?: AbortSignal): Promise<Response> {
+  async #request(
+    input: RequestInfo | URL,
+    init: RequestInit,
+    parentSignal?: AbortSignal,
+  ): Promise<Response> {
     const controller = new AbortController();
     const timeout = globalThis.setTimeout(() => controller.abort(), this.#timeoutMs);
     const abort = (): void => controller.abort();
