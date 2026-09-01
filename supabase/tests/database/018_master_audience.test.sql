@@ -115,6 +115,11 @@ where tag.publication_status = 'published'
 order by tag.id
 limit 1;
 
+-- MAP-063 intentionally removes authenticated direct DML on public_notes. This
+-- legacy MAP-044 fixture needs a synthetic note attached to a Master-only entity,
+-- which the production creation RPC correctly rejects. Seed only that fixture as
+-- the database owner, then immediately return to the authenticated admin boundary.
+reset role;
 insert into public.public_notes (
   id, slug, entity_id, title, body, sort_order, publication_status
 )
@@ -138,6 +143,7 @@ from public.tags as tag
 where tag.publication_status = 'published'
 order by tag.id
 limit 1;
+set local role authenticated;
 
 -- Geography is global after MAP-053. The global canary remains player-safe while
 -- its campaign-specific link to a Master entity must stay hidden.
