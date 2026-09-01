@@ -343,6 +343,6 @@ test('purges Master region search status after a 403 revokes administrative auth
   await campaignSelector.selectOption('campaign-b');
   await expect(campaignSelector).toHaveValue('campaign-b');
   await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);
-  await expect(masterToggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(masterToggle).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Administrar' })).toBeVisible();
 });
