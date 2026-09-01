@@ -2,8 +2,8 @@ import { spawn, spawnSync } from 'node:child_process';
 
 const DATABASE_CONTAINER = 'supabase_db_castigo-divino-map';
 const CAMPAIGN_ID = '00000000-0000-4000-8000-000000000053';
-const ENTITY_ID = 'place-demo-harbor';
-const PLAYER_ID = 'player-skade';
+const ENTITY_ID = 'entity-aster-guide';
+const PLAYER_ID = 'player-demo-one';
 const ADMIN_SUB = '00000000-0000-4000-8000-000000000001';
 const TITLE_PREFIX = 'MAP063 concurrency';
 const TIMEOUT_MS = 12_000;
