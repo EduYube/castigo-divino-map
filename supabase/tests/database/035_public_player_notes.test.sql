@@ -29,7 +29,7 @@ exception
 end;
 $$;
 
-select plan(35);
+select plan(38);
 
 select has_column('public', 'public_notes', 'author_kind', 'notes persist original author kind');
 select has_column('public', 'public_notes', 'author_player_id', 'notes persist stable player author id');
