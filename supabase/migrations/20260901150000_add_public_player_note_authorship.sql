@@ -143,7 +143,7 @@ begin
     and note.created_at >= pg_catalog.now() - interval '10 minutes';
 
   if recent_player_count >= 5 or recent_entity_count >= 15 then
-    raise exception using errcode = '54000', message = 'public note rate limit exceeded';
+    raise exception using errcode = 'PT429', message = 'public note rate limit exceeded';
   end if;
 
   select coalesce(pg_catalog.max(note.sort_order), -1) + 1
