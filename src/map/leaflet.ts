@@ -164,9 +164,7 @@ export function mountFaerunMap(
     setMarkers(markers, updateOptions: FaerunMapMarkerUpdateOptions = {}): void {
       const next = splitMarkers(markers);
       const previousRegionNames = new Map(
-        renderedMarkers
-          .filter(isRegion)
-          .map((region) => [region.id, region.name] as const),
+        renderedMarkers.filter(isRegion).map((region) => [region.id, region.name] as const),
       );
       const stableRegionIds = new Set(
         next.regions
