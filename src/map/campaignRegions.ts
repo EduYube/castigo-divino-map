@@ -16,6 +16,8 @@ export interface CampaignRegionController {
   setActiveRegion(regionId: string | null): void;
   setMatchingRegions(regionIds: ReadonlySet<string>, semantics?: RegionMatchingSemantics): void;
   locateRegion(regionId: string, label?: string): boolean;
+  announceRegion(regionId: string, message: string): void;
+  clearAnnouncement(validRegionIds?: ReadonlySet<string>): void;
   focusRegion(regionId: string): void;
   destroy(): void;
 }
@@ -29,6 +31,11 @@ interface RenderedRegion {
   readonly model: AtlasRegionMarkerModel;
   readonly polygon: Polygon;
   keydown?: (event: KeyboardEvent) => void;
+}
+
+interface RegionAnnouncement {
+  readonly regionId: string;
+  readonly message: string;
 }
 
 const REGION_PANE = 'campaignRegionsPane';
@@ -54,11 +61,6 @@ function polygonElement(polygon: Polygon): HTMLElement | null {
   return polygon.getElement() as HTMLElement | null;
 }
 
-function announce(root: ParentNode, message: string): void {
-  const status = root.querySelector<HTMLElement>('[data-map-search-status]');
-  if (status) status.textContent = message;
-}
-
 export function mountCampaignRegions(
   root: ParentNode,
   map: LeafletMap,
@@ -71,7 +73,26 @@ export function mountCampaignRegions(
   let activeRegionId: string | null = null;
   let matchingRegionIds = new Set(regions.map(({ id }) => id));
   let matchingSemantics: RegionMatchingSemantics = 'search-and-filters';
+  let announcedStatus: RegionAnnouncement | null = null;
   let destroyed = false;
+
+  const announceRegion = (regionId: string, message: string): void => {
+    const status = root.querySelector<HTMLElement>('[data-map-search-status]');
+    if (!status) return;
+    status.textContent = message;
+    announcedStatus = { regionId, message };
+  };
+
+  const clearAnnouncement = (validRegionIds?: ReadonlySet<string>): void => {
+    const announcement = announcedStatus;
+    if (!announcement) return;
+    if (validRegionIds?.has(announcement.regionId)) return;
+
+    const status = root.querySelector<HTMLElement>('[data-map-search-status]');
+    // Do not erase a newer public/point announcement that replaced the region message.
+    if (status?.textContent === announcement.message) status.textContent = '';
+    announcedStatus = null;
+  };
 
   const describeMatching = (matches: boolean): string => {
     if (matchingSemantics === 'filters-only') {
@@ -193,9 +214,14 @@ export function mountCampaignRegions(
         bounds.minY,
         bounds.maxY,
       ].join(',');
-      announce(root, `Mapa encuadrado en ${label ?? entry.model.name}; región de campaña.`);
+      announceRegion(
+        regionId,
+        `Mapa encuadrado en ${label ?? entry.model.name}; región de campaña.`,
+      );
       return true;
     },
+    announceRegion,
+    clearAnnouncement,
     focusRegion(regionId): void {
       const entry = rendered.get(regionId);
       if (!entry) return;
@@ -204,6 +230,7 @@ export function mountCampaignRegions(
     destroy(): void {
       if (destroyed) return;
       destroyed = true;
+      clearAnnouncement();
       removeRendered();
       map.getPane(REGION_PANE)?.remove();
       delete map.getContainer().dataset.regionFocusBounds;
