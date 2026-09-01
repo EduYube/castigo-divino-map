@@ -28,40 +28,31 @@ jobs:
 
           path = Path('src/main.ts')
           text = path.read_text()
-          old = """    if (previousMasterEntityIds.size > 0 && nextMasterEntityIds.size === 0) {
-              if (
-                activeSupplementalPin?.entityId &&
-                previousMasterEntityIds.has(activeSupplementalPin.entityId)
-              ) {
-                activeSupplementalPin = null;
-                compactDetailsController.hide();
-                clearSupplementalMapSelection();
-              }
-              if (placeSearchController.getQuery()) {
-                placeSearchController.setQuery('', { notify: false });
-              }
+          start_marker = '    if (previousMasterEntityIds.size > 0 && nextMasterEntityIds.size === 0) {'
+          end_marker = '\n\n    masterEntityIds = nextMasterEntityIds;'
+          start = text.find(start_marker)
+          if start < 0:
+              raise SystemExit('start marker not found')
+          end = text.find(end_marker, start)
+          if end < 0:
+              raise SystemExit('end marker not found')
+          replacement = """    const removedMasterEntityIds = new Set(
+            [...previousMasterEntityIds].filter((entityId) => !nextMasterEntityIds.has(entityId)),
+          );
+          if (removedMasterEntityIds.size > 0) {
+            if (
+              activeSupplementalPin?.entityId &&
+              removedMasterEntityIds.has(activeSupplementalPin.entityId)
+            ) {
+              activeSupplementalPin = null;
+              compactDetailsController.hide();
+              clearSupplementalMapSelection();
             }
-          """
-          new = """    const removedMasterEntityIds = new Set(
-              [...previousMasterEntityIds].filter((entityId) => !nextMasterEntityIds.has(entityId)),
-            );
-            if (removedMasterEntityIds.size > 0) {
-              if (
-                activeSupplementalPin?.entityId &&
-                removedMasterEntityIds.has(activeSupplementalPin.entityId)
-              ) {
-                activeSupplementalPin = null;
-                compactDetailsController.hide();
-                clearSupplementalMapSelection();
-              }
-              if (placeSearchController.getQuery()) {
-                placeSearchController.setQuery('', { notify: false });
-              }
+            if (placeSearchController.getQuery()) {
+              placeSearchController.setQuery('', { notify: false });
             }
-          """
-          if text.count(old) != 1:
-              raise SystemExit(f'expected one target block, found {text.count(old)}')
-          path.write_text(text.replace(old, new))
+          }"""
+          path.write_text(text[:start] + replacement + text[end:])
           PY
           npx prettier --write src/main.ts
           git diff --check
