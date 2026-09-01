@@ -331,6 +331,16 @@ export function mountPublicNotes(
     });
   };
 
+  const focusAdminAction = (noteId: string, action: 'edit' | 'archive'): void => {
+    window.requestAnimationFrame(() => {
+      elements.list
+        .querySelector<HTMLButtonElement>(
+          `[data-public-note-id="${CSS.escape(noteId)}"] [data-public-note-action="${action}"]`,
+        )
+        ?.focus({ preventScroll: true });
+    });
+  };
+
   const renderEditForm = (record: PublicNoteWriteRecord): void => {
     const article = elements.list.querySelector<HTMLElement>(
       `[data-public-note-id="${CSS.escape(record.id)}"]`,
@@ -376,7 +386,10 @@ export function mountPublicNotes(
     form.append(actions);
     article.append(form);
     title.focus();
-    cancel.addEventListener('click', () => renderList());
+    cancel.addEventListener('click', () => {
+      renderList();
+      focusAdminAction(record.id, 'edit');
+    });
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       if (saving || !noteRepository) return;
@@ -441,7 +454,10 @@ export function mountPublicNotes(
     confirmation.append(confirm, cancel);
     article.append(confirmation);
     confirm.focus();
-    cancel.addEventListener('click', () => renderList());
+    cancel.addEventListener('click', () => {
+      renderList();
+      focusAdminAction(record.id, 'archive');
+    });
     confirm.addEventListener('click', () => {
       if (saving || !noteRepository) return;
       saving = true;
@@ -510,10 +526,12 @@ export function mountPublicNotes(
         const edit = document.createElement('button');
         edit.type = 'button';
         edit.textContent = 'Editar';
+        edit.dataset.publicNoteAction = 'edit';
         edit.setAttribute('aria-label', `Editar nota ${record.title}`);
         const archive = document.createElement('button');
         archive.type = 'button';
         archive.textContent = 'Retirar';
+        archive.dataset.publicNoteAction = 'archive';
         archive.setAttribute('aria-label', `Retirar nota ${record.title}`);
         edit.addEventListener('click', () => renderEditForm(record));
         archive.addEventListener('click', () => renderArchiveConfirmation(record));

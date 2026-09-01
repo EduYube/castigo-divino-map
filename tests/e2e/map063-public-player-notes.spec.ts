@@ -517,6 +517,12 @@ test('authorized Master creates, edits and retires notes while original player a
 
   const playerNote = page.locator('[data-public-note-id="note-map063-player-a"]');
   await playerNote.getByRole('button', { name: 'Editar nota Apunte de Skade' }).click();
+  await playerNote.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(
+    playerNote.getByRole('button', { name: 'Editar nota Apunte de Skade' }),
+  ).toBeFocused();
+
+  await playerNote.getByRole('button', { name: 'Editar nota Apunte de Skade' }).click();
   const editForm = playerNote.locator('form');
   await editForm.getByLabel('Título').fill('Apunte de Skade revisado');
   await editForm
@@ -530,6 +536,12 @@ test('authorized Master creates, edits and retires notes while original player a
   ).toBeVisible();
   await expect(edited).toContainText('Autor: Skade.');
   await expect(edited).toContainText('· Máster.');
+
+  await edited.getByRole('button', { name: 'Retirar nota Apunte de Skade revisado' }).click();
+  await edited.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(
+    edited.getByRole('button', { name: 'Retirar nota Apunte de Skade revisado' }),
+  ).toBeFocused();
 
   await edited.getByRole('button', { name: 'Retirar nota Apunte de Skade revisado' }).click();
   await page.getByRole('button', { name: 'Confirmar retirada' }).click();
