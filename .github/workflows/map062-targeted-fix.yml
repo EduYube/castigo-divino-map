@@ -49,6 +49,41 @@ jobs:
           new = """  await page.route('**/rest/v1/**', async (route: Route) => {\n    const requestUrl = new URL(route.request().url());\n    const resource = requestUrl.pathname.split('/rest/v1/')[1] ?? '';\n    if (resource.startsWith('rpc/')) {\n      await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });\n      return;\n    }\n    const table = resource.split('?')[0] ?? '';\n    const requestedFields =\n      requestUrl.searchParams\n        .get('select')\n        ?.split(',')\n        .filter(Boolean) ?? [];\n    const rows = (ROWS[table] ?? []).map((row) =>\n      Object.fromEntries(requestedFields.map((field) => [field, row[field]])),\n    );\n    await route.fulfill({\n"""
           if old not in text:
               raise SystemExit('MAP-062 REST mock anchor not found')
+          text = text.replace(old, new, 1)
+
+          read_anchor = """async function readMapView(page: Page): Promise<MapViewState> {\n  const shell = page.getByTestId('map-shell');\n  return {\n    center: (await shell.getAttribute('data-map-center')) ?? '',\n    zoom: (await shell.getAttribute('data-map-zoom')) ?? '',\n  };\n}\n\n"""
+          settle = read_anchor + """async function settleLayoutFrames(page: Page): Promise<void> {\n  await page.evaluate(\n    () =>\n      new Promise<void>((resolve) =>\n        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),\n      ),\n  );\n}\n\n"""
+          if read_anchor not in text:
+              raise SystemExit('readMapView anchor not found')
+          text = text.replace(read_anchor, settle, 1)
+
+          text = text.replace("  const viewBefore = await readMapView(page);\n", "", 1)
+          old = """  await expectDesktopDetailsBelowMap(page, mapBefore?.width ?? 0);\n  expect(await readMapView(page)).toEqual(viewBefore);\n\n"""
+          new = """  await expectDesktopDetailsBelowMap(page, mapBefore?.width ?? 0);\n  const viewAfterSelection = await readMapView(page);\n  await settleLayoutFrames(page);\n  expect(await readMapView(page)).toEqual(viewAfterSelection);\n\n"""
+          if old not in text:
+              raise SystemExit('1440 viewport assertion anchor not found')
+          text = text.replace(old, new, 1)
+          old = """  await expect(panel).toBeHidden();\n  await expect(marker).toBeFocused();\n  await expect(marker).toHaveAttribute('aria-pressed', 'false');\n});\n"""
+          new = """  await expect(panel).toBeHidden();\n  await expect(marker).toBeFocused();\n  await expect(marker).toHaveAttribute('aria-pressed', 'false');\n  expect(await readMapView(page)).toEqual(viewAfterSelection);\n});\n"""
+          if old not in text:
+              raise SystemExit('1440 close assertion anchor not found')
+          text = text.replace(old, new, 1)
+
+          text = text.replace("  const viewBeforeOpen = await readMapView(page);\n\n", "", 1)
+          old = """  const panel = page.getByTestId('place-details');\n  await expectDesktopDetailsBelowMap(page, expandedBefore?.width ?? 0);\n  expect(await readMapView(page)).toEqual(viewBeforeOpen);\n  await expect(page.locator('.map-experience')).toHaveAttribute('data-map-expanded', 'true');\n"""
+          new = """  const panel = page.getByTestId('place-details');\n  await expectDesktopDetailsBelowMap(page, expandedBefore?.width ?? 0);\n  const viewAfterFirstSelection = await readMapView(page);\n  await settleLayoutFrames(page);\n  expect(await readMapView(page)).toEqual(viewAfterFirstSelection);\n  await expect(page.locator('.map-experience')).toHaveAttribute('data-map-expanded', 'true');\n"""
+          if old not in text:
+              raise SystemExit('expanded first selection assertion anchor not found')
+          text = text.replace(old, new, 1)
+          old = """  await expect(\n    panel.getByRole('heading', { level: 3, name: 'MAP062 Second Character' }),\n  ).toBeFocused();\n  await expectUniqueCompactIds(page);\n\n"""
+          new = """  await expect(\n    panel.getByRole('heading', { level: 3, name: 'MAP062 Second Character' }),\n  ).toBeFocused();\n  const viewAfterSecondSelection = await readMapView(page);\n  await settleLayoutFrames(page);\n  expect(await readMapView(page)).toEqual(viewAfterSecondSelection);\n  await expectUniqueCompactIds(page);\n\n"""
+          if old not in text:
+              raise SystemExit('expanded second selection assertion anchor not found')
+          text = text.replace(old, new, 1)
+          old = """  await toggleExpanded(page, true);\n  await panel.getByRole('button', { name: 'Cerrar la ficha de MAP062 Second Character' }).click();\n  await expect(panel).toBeHidden();\n  await expect(page.locator('.map-experience')).toHaveAttribute('data-map-expanded', 'true');\n});\n"""
+          new = """  await toggleExpanded(page, true);\n  const viewBeforeClose = await readMapView(page);\n  await panel.getByRole('button', { name: 'Cerrar la ficha de MAP062 Second Character' }).click();\n  await expect(panel).toBeHidden();\n  await expect(page.locator('.map-experience')).toHaveAttribute('data-map-expanded', 'true');\n  expect(await readMapView(page)).toEqual(viewBeforeClose);\n});\n"""
+          if old not in text:
+              raise SystemExit('expanded close assertion anchor not found')
           spec.write_text(text.replace(old, new, 1))
 
           css = Path('src/styles/map062-desktop-details.css')
