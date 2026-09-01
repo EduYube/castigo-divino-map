@@ -9,7 +9,7 @@ const POINT_A_ID = 'entity-map062-rich-character';
 const POINT_B_ID = 'entity-map062-second-character';
 const REGION_ID = 'entity-map062-region';
 const RELATED_ID = 'entity-map062-related-character';
-const PORTRAIT_PATH = 'portraits/map062-rich-character.png';
+const PORTRAIT_PATH = 'portraits/123e4567-e89b-42d3-a456-426614174062.png';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -197,13 +197,17 @@ async function configureBackend(page: Page): Promise<void> {
   });
 
   await page.route('**/rest/v1/**', async (route: Route) => {
-    const resource = new URL(route.request().url()).pathname.split('/rest/v1/')[1] ?? '';
+    const requestUrl = new URL(route.request().url());
+    const resource = requestUrl.pathname.split('/rest/v1/')[1] ?? '';
     if (resource.startsWith('rpc/')) {
       await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
       return;
     }
     const table = resource.split('?')[0] ?? '';
-    const rows = ROWS[table] ?? [];
+    const requestedFields = requestUrl.searchParams.get('select')?.split(',').filter(Boolean) ?? [];
+    const rows = (ROWS[table] ?? []).map((row) =>
+      Object.fromEntries(requestedFields.map((field) => [field, row[field]])),
+    );
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -251,6 +255,15 @@ async function readMapView(page: Page): Promise<MapViewState> {
     center: (await shell.getAttribute('data-map-center')) ?? '',
     zoom: (await shell.getAttribute('data-map-zoom')) ?? '',
   };
+}
+
+async function settleLayoutFrames(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
 }
 
 async function expectNoHorizontalOverflow(page: Page): Promise<void> {
@@ -308,7 +321,6 @@ test('1440 desktop keeps map width and viewport stable while exposing a broad na
   const map = page.locator('[data-map-canvas]');
   const mapBefore = await map.boundingBox();
   expect(mapBefore).not.toBeNull();
-  const viewBefore = await readMapView(page);
   await map.scrollIntoViewIfNeeded();
   const scrollBefore = await page.evaluate(() => window.scrollY);
 
@@ -323,7 +335,9 @@ test('1440 desktop keeps map width and viewport stable while exposing a broad na
     1,
   );
   await expectDesktopDetailsBelowMap(page, mapBefore?.width ?? 0);
-  expect(await readMapView(page)).toEqual(viewBefore);
+  const viewAfterSelection = await readMapView(page);
+  await settleLayoutFrames(page);
+  expect(await readMapView(page)).toEqual(viewAfterSelection);
 
   await expect(panel.getByTestId('compact-character-portrait')).toBeVisible();
   await expect(panel).toContainText('Alicia');
@@ -351,6 +365,7 @@ test('1440 desktop keeps map width and viewport stable while exposing a broad na
   await expect(panel).toBeHidden();
   await expect(marker).toBeFocused();
   await expect(marker).toHaveAttribute('aria-pressed', 'false');
+  expect(await readMapView(page)).toEqual(viewAfterSelection);
 });
 
 test('1920 expanded keeps full horizontal map geometry, reuses one details region and restore does not close it', async ({
@@ -363,20 +378,26 @@ test('1920 expanded keeps full horizontal map geometry, reuses one details regio
   const map = page.locator('[data-map-canvas]');
   const expandedBefore = await map.boundingBox();
   expect(expandedBefore).not.toBeNull();
-  const viewBeforeOpen = await readMapView(page);
-
   await point(page, POINT_A_ID).click();
   const panel = page.getByTestId('place-details');
   await expectDesktopDetailsBelowMap(page, expandedBefore?.width ?? 0);
-  expect(await readMapView(page)).toEqual(viewBeforeOpen);
+  const viewAfterFirstSelection = await readMapView(page);
+  await settleLayoutFrames(page);
+  expect(await readMapView(page)).toEqual(viewAfterFirstSelection);
   await expect(page.locator('.map-experience')).toHaveAttribute('data-map-expanded', 'true');
 
-  await point(page, POINT_B_ID).click();
+  const secondPoint = point(page, POINT_B_ID);
+  await secondPoint.focus();
+  await expect(secondPoint).toBeFocused();
+  await page.keyboard.press('Enter');
   await expect(panel).toHaveCount(1);
   await expect(panel).toHaveAttribute('data-active-pin-id', POINT_B_ID);
   await expect(
     panel.getByRole('heading', { level: 3, name: 'MAP062 Second Character' }),
   ).toBeFocused();
+  const viewAfterSecondSelection = await readMapView(page);
+  await settleLayoutFrames(page);
+  expect(await readMapView(page)).toEqual(viewAfterSecondSelection);
   await expectUniqueCompactIds(page);
 
   await toggleExpanded(page, false);
@@ -386,9 +407,11 @@ test('1920 expanded keeps full horizontal map geometry, reuses one details regio
   await expectNoHorizontalOverflow(page);
 
   await toggleExpanded(page, true);
+  const viewBeforeClose = await readMapView(page);
   await panel.getByRole('button', { name: 'Cerrar la ficha de MAP062 Second Character' }).click();
   await expect(panel).toBeHidden();
   await expect(page.locator('.map-experience')).toHaveAttribute('data-map-expanded', 'true');
+  expect(await readMapView(page)).toEqual(viewBeforeClose);
 });
 
 test('polygon selection uses the same lower details region and returns focus to the region', async ({
