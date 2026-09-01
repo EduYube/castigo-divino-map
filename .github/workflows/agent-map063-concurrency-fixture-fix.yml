@@ -1,4 +1,4 @@
-name: MAP-063 temporary concurrency fixture fix
+name: MAP-063 temporary identity-first lock hardening
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
   patch-and-test:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
@@ -25,36 +25,218 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Correct fixture state assertion
+      - name: Apply identity-first lock hardening and test fix
         run: |
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const path = 'scripts/test-map063-public-note-concurrency.mjs';
-          let source = fs.readFileSync(path, 'utf8');
-          const before = "state !== 'active:published:published:public'";
-          const after = "state !== 'active:published:public'";
-          if ((source.split(before).length - 1) !== 1) {
-            throw new Error('expected exactly one MAP-063 fixture assertion');
-          }
-          source = source.replace(before, after);
-          fs.writeFileSync(path, source);
-          NODE
+          python - <<'PY'
+          from pathlib import Path
+
+          migration_path = Path('supabase/migrations/20260901150000_add_public_player_note_authorship.sql')
+          source = migration_path.read_text()
+
+          old_declare = """declare
+            entity_row public.map_entities%rowtype;
+            title_value text := pg_catalog.btrim(p_title);
+          """
+          new_declare = """declare
+            entity_row public.map_entities%rowtype;
+            campaign_status public.campaigns.status%type;
+            player_publication_status public.players.publication_status%type;
+            title_value text := pg_catalog.btrim(p_title);
+          """
+          if source.count(old_declare) != 1:
+              raise SystemExit('expected one visitor declaration block')
+          source = source.replace(old_declare, new_declare, 1)
+
+          old_visitor = """  -- Keep the lock order deterministic: entity -> campaign -> player. The entity
+            -- UPDATE lock is also the existing serialization point for rate limiting and
+            -- sort-order allocation. Missing, draft, archived and Master-only targets
+            -- deliberately share one error.
+            select entity.*
+            into entity_row
+            from public.map_entities as entity
+            where entity.id = p_entity_id
+              and entity.publication_status = 'published'::public.publication_status
+              and entity.audience = 'public'::public.entity_audience
+            for update;
+
+            if not found then
+              raise exception using errcode = '22023', message = 'public note target unavailable';
+            end if;
+
+            -- FOR SHARE conflicts with administrative UPDATE/DELETE while remaining
+            -- compatible with concurrent public-note creations for different entities.
+            -- Under READ COMMITTED a waiter rechecks these predicates after the writer
+            -- commits, so a concurrent revocation either serializes after this creation
+            -- or makes this RPC fail before INSERT.
+            perform 1
+            from public.campaigns as campaign
+            where campaign.id = entity_row.campaign_id
+              and campaign.status = 'active'
+            for share;
+
+            if not found then
+              raise exception using errcode = '22023', message = 'public note target unavailable';
+            end if;
+
+            perform 1
+            from public.players as player
+            where player.id = p_player_id
+              and player.campaign_id = entity_row.campaign_id
+              and player.publication_status = 'published'::public.publication_status
+            for share;
+
+            if not found then
+              raise exception using errcode = '22023', message = 'invalid public note author';
+            end if;
+          """
+          new_visitor = """  -- Keep the lock order deterministic: entity -> campaign -> player. Lock each
+            -- dynamic precondition by identity first, then validate its mutable state.
+            -- This prevents an already-started administrative revocation from making a
+            -- row disappear from the lock candidate set before this transaction waits.
+            -- The entity UPDATE lock remains the serialization point for rate limiting
+            -- and sort-order allocation.
+            select entity.*
+            into entity_row
+            from public.map_entities as entity
+            where entity.id = p_entity_id
+            for update;
+
+            if not found
+               or entity_row.publication_status <> 'published'::public.publication_status
+               or entity_row.audience <> 'public'::public.entity_audience then
+              raise exception using errcode = '22023', message = 'public note target unavailable';
+            end if;
+
+            -- FOR SHARE conflicts with administrative UPDATE/DELETE while remaining
+            -- compatible with other readers. Because the row is selected by immutable
+            -- identity, READ COMMITTED waits for an in-flight writer and then validates
+            -- the state that won the serialization order.
+            select campaign.status
+            into campaign_status
+            from public.campaigns as campaign
+            where campaign.id = entity_row.campaign_id
+            for share;
+
+            if not found or campaign_status <> 'active' then
+              raise exception using errcode = '22023', message = 'public note target unavailable';
+            end if;
+
+            select player.publication_status
+            into player_publication_status
+            from public.players as player
+            where player.id = p_player_id
+              and player.campaign_id = entity_row.campaign_id
+            for share;
+
+            if not found
+               or player_publication_status <> 'published'::public.publication_status then
+              raise exception using errcode = '22023', message = 'invalid public note author';
+            end if;
+          """
+          if source.count(old_visitor) != 1:
+              raise SystemExit('expected one visitor lock block')
+          source = source.replace(old_visitor, new_visitor, 1)
+
+          old_master_declare = """declare
+            entity_row public.map_entities%rowtype;
+            title_value text := pg_catalog.btrim(p_title);
+            body_value text := pg_catalog.btrim(p_body);
+            note_id text;
+            next_sort_order integer;
+          begin
+          """
+          new_master_declare = """declare
+            entity_row public.map_entities%rowtype;
+            campaign_status public.campaigns.status%type;
+            title_value text := pg_catalog.btrim(p_title);
+            body_value text := pg_catalog.btrim(p_body);
+            note_id text;
+            next_sort_order integer;
+          begin
+          """
+          if source.count(old_master_declare) != 1:
+              raise SystemExit('expected one master declaration block')
+          source = source.replace(old_master_declare, new_master_declare, 1)
+
+          old_master = """  select entity.*
+            into entity_row
+            from public.map_entities as entity
+            where entity.id = p_entity_id
+              and entity.publication_status = 'published'::public.publication_status
+              and entity.audience = 'public'::public.entity_audience
+            for update;
+
+            if not found then
+              raise exception using errcode = '22023', message = 'public note target unavailable';
+            end if;
+
+            -- Match the public writer's entity -> campaign prefix so a campaign
+            -- lifecycle change cannot race an administrative note creation either.
+            perform 1
+            from public.campaigns as campaign
+            where campaign.id = entity_row.campaign_id
+              and campaign.status = 'active'
+            for share;
+
+            if not found then
+              raise exception using errcode = '22023', message = 'public note target unavailable';
+            end if;
+          """
+          new_master = """  select entity.*
+            into entity_row
+            from public.map_entities as entity
+            where entity.id = p_entity_id
+            for update;
+
+            if not found
+               or entity_row.publication_status <> 'published'::public.publication_status
+               or entity_row.audience <> 'public'::public.entity_audience then
+              raise exception using errcode = '22023', message = 'public note target unavailable';
+            end if;
+
+            -- Match the public writer's entity -> campaign prefix and identity-first
+            -- locking so a campaign lifecycle change cannot race a Master creation.
+            select campaign.status
+            into campaign_status
+            from public.campaigns as campaign
+            where campaign.id = entity_row.campaign_id
+            for share;
+
+            if not found or campaign_status <> 'active' then
+              raise exception using errcode = '22023', message = 'public note target unavailable';
+            end if;
+          """
+          if source.count(old_master) != 1:
+              raise SystemExit('expected one master lock block')
+          source = source.replace(old_master, new_master, 1)
+          migration_path.write_text(source)
+
+          test_path = Path('scripts/test-map063-public-note-concurrency.mjs')
+          test_source = test_path.read_text()
+          before = "state !== 'active:published:published:public'"
+          after = "state !== 'active:published:public'"
+          if test_source.count(before) != 1:
+              raise SystemExit('expected one MAP-063 fixture assertion')
+          test_path.write_text(test_source.replace(before, after, 1))
+          PY
           npx prettier --check scripts/test-map063-public-note-concurrency.mjs
       - name: Start local Supabase stack
         run: npx supabase start
-      - name: Reset database and run MAP-063 concurrency regression
+      - name: Reset, lint, pgTAP and run MAP-063 concurrency regression
         run: |
           npm run supabase:db:reset
+          npm run supabase:db:lint
+          npm run supabase:db:test
           node scripts/test-map063-public-note-concurrency.mjs
       - name: Stop local Supabase stack
         if: always()
         run: npx supabase stop --no-backup
-      - name: Commit validated fixture fix and remove helper
+      - name: Commit validated hardening and remove helper
         if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+EduYube@users.noreply.github.com"
-          git add scripts/test-map063-public-note-concurrency.mjs
+          git add supabase/migrations/20260901150000_add_public_player_note_authorship.sql scripts/test-map063-public-note-concurrency.mjs
           git rm .github/workflows/agent-map063-concurrency-fixture-fix.yml
-          git commit -m "test(db): fix MAP-063 concurrency fixture assertion"
+          git commit -m "fix(db): serialize MAP-063 roster and campaign revocations"
           git push origin HEAD:agent/map-063-public-player-notes
