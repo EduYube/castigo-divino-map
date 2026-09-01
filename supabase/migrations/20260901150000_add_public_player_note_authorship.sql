@@ -92,30 +92,45 @@ declare
   recent_player_count integer;
   recent_entity_count integer;
 begin
-  -- Lock the public entity before validation and sort-order allocation. Missing,
-  -- draft, archived and Master-only targets deliberately share one error.
+  -- Keep the lock order deterministic: entity -> campaign -> player. The entity
+  -- UPDATE lock is also the existing serialization point for rate limiting and
+  -- sort-order allocation. Missing, draft, archived and Master-only targets
+  -- deliberately share one error.
   select entity.*
   into entity_row
   from public.map_entities as entity
-  join public.campaigns as campaign
-    on campaign.id = entity.campaign_id
-   and campaign.status = 'active'
   where entity.id = p_entity_id
     and entity.publication_status = 'published'::public.publication_status
     and entity.audience = 'public'::public.entity_audience
-  for update of entity;
+  for update;
 
   if not found then
     raise exception using errcode = '22023', message = 'public note target unavailable';
   end if;
 
-  if not exists (
-    select 1
-    from public.players as player
-    where player.id = p_player_id
-      and player.campaign_id = entity_row.campaign_id
-      and player.publication_status = 'published'::public.publication_status
-  ) then
+  -- FOR SHARE conflicts with administrative UPDATE/DELETE while remaining
+  -- compatible with concurrent public-note creations for different entities.
+  -- Under READ COMMITTED a waiter rechecks these predicates after the writer
+  -- commits, so a concurrent revocation either serializes after this creation
+  -- or makes this RPC fail before INSERT.
+  perform 1
+  from public.campaigns as campaign
+  where campaign.id = entity_row.campaign_id
+    and campaign.status = 'active'
+  for share;
+
+  if not found then
+    raise exception using errcode = '22023', message = 'public note target unavailable';
+  end if;
+
+  perform 1
+  from public.players as player
+  where player.id = p_player_id
+    and player.campaign_id = entity_row.campaign_id
+    and player.publication_status = 'published'::public.publication_status
+  for share;
+
+  if not found then
     raise exception using errcode = '22023', message = 'invalid public note author';
   end if;
 
@@ -242,13 +257,22 @@ begin
   select entity.*
   into entity_row
   from public.map_entities as entity
-  join public.campaigns as campaign
-    on campaign.id = entity.campaign_id
-   and campaign.status = 'active'
   where entity.id = p_entity_id
     and entity.publication_status = 'published'::public.publication_status
     and entity.audience = 'public'::public.entity_audience
-  for update of entity;
+  for update;
+
+  if not found then
+    raise exception using errcode = '22023', message = 'public note target unavailable';
+  end if;
+
+  -- Match the public writer's entity -> campaign prefix so a campaign
+  -- lifecycle change cannot race an administrative note creation either.
+  perform 1
+  from public.campaigns as campaign
+  where campaign.id = entity_row.campaign_id
+    and campaign.status = 'active'
+  for share;
 
   if not found then
     raise exception using errcode = '22023', message = 'public note target unavailable';
