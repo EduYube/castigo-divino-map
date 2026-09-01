@@ -1,0 +1,54 @@
+name: MAP-063 temporary catalog bootstrap fix
+
+on:
+  push:
+    branches:
+      - agent/map-063-public-player-notes
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-063-public-player-notes
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Patch catalog test configuration
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = 'tests/e2e/map063-public-player-notes.spec.ts';
+          let source = fs.readFileSync(path, 'utf8');
+          const before = `      window.__MAP063_PUBLIC_NOTES_TEST_CONFIG__ = {\n        projectUrl,\n        publishableKey,\n        timeoutMs: 300,\n      };`;
+          const after = `      window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {\n        projectUrl,\n        publishableKey,\n        timeoutMs: 300,\n        retryDelaysMs: [0, 0, 0],\n      };\n      window.__MAP063_PUBLIC_NOTES_TEST_CONFIG__ = {\n        projectUrl,\n        publishableKey,\n        timeoutMs: 300,\n      };`;
+          const count = source.split(before).length - 1;
+          if (count !== 1) throw new Error(`expected one public-notes test config, found ${count}`);
+          source = source.replace(before, after);
+          fs.writeFileSync(path, source);
+          NODE
+          npx prettier --write tests/e2e/map063-public-player-notes.spec.ts
+          npx prettier --check tests/e2e/map063-public-player-notes.spec.ts
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run MAP-063 E2E
+        run: npx playwright test tests/e2e/map063-public-player-notes.spec.ts --project=chromium
+      - name: Commit fix and remove helper
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/map063-public-player-notes.spec.ts
+          git rm .github/workflows/agent-map063-bootstrap-fix.yml
+          git commit -m "test(e2e): bootstrap MAP-063 catalog fixture"
+          git push origin HEAD:agent/map-063-public-player-notes
