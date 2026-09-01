@@ -5,6 +5,7 @@ import {
   validatePublicNoteDraft,
 } from './publicNotes';
 
+// Keep client-side draft validation aligned with the MAP-063 backend contract and text-only rendering.
 describe('validatePublicNoteDraft', () => {
   it('trims valid title and body without interpreting markup', () => {
     expect(
