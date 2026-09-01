@@ -1,0 +1,109 @@
+.campaign-regions-pane {
+  pointer-events: auto;
+}
+
+/* The app globally constrains svg to max-width: 100%. Leaflet neutralizes that
+ * only for its default overlay pane, so custom renderers need the same reset or
+ * their SVG can collapse to the zero-sized pane and lose paint/hit-testing. */
+.leaflet-container .campaign-regions-pane > svg {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.campaign-region {
+  pointer-events: all;
+  stroke: currentColor;
+  color: #4f3f31;
+  fill: currentColor;
+  cursor: pointer;
+  vector-effect: non-scaling-stroke;
+  transition: none;
+}
+
+.campaign-region:hover {
+  stroke-width: 4;
+  stroke-dasharray: 12 4;
+  fill-opacity: 0.065;
+}
+
+.campaign-region:focus {
+  outline: none;
+  stroke-width: 5;
+  stroke-dasharray: 3 4;
+  fill-opacity: 0.075;
+}
+
+.campaign-region--active {
+  stroke-width: 5;
+  stroke-dasharray: none;
+  fill-opacity: 0.09;
+}
+
+.campaign-region--dimmed {
+  stroke-opacity: 0.38;
+  fill-opacity: 0.018;
+  stroke-dasharray: 5 8;
+}
+
+.campaign-region--active.campaign-region--dimmed {
+  stroke-opacity: 0.62;
+  fill-opacity: 0.04;
+}
+
+.campaign-region--master {
+  color: #5b365f;
+  stroke-width: 4;
+  stroke-dasharray: 2 5 10 5;
+}
+
+.campaign-region--master.campaign-region--active {
+  stroke-width: 6;
+  stroke-dasharray: 2 4 12 4;
+}
+
+@media (forced-colors: active) {
+  .campaign-region {
+    color: CanvasText;
+    stroke: CanvasText;
+    fill: Canvas;
+    fill-opacity: 0.01;
+    forced-color-adjust: auto;
+  }
+
+  .campaign-region:hover,
+  .campaign-region:focus {
+    stroke: Highlight;
+    stroke-width: 5;
+    stroke-dasharray: 3 4;
+    fill-opacity: 0.01;
+  }
+
+  .campaign-region--active {
+    stroke: Highlight;
+    stroke-width: 6;
+    stroke-dasharray: none;
+  }
+
+  .campaign-region--dimmed {
+    stroke: GrayText;
+    stroke-dasharray: 5 8;
+  }
+
+  .campaign-region--master {
+    stroke: LinkText;
+    stroke-width: 4;
+    stroke-dasharray: 2 5 10 5;
+  }
+
+  .campaign-region--master.campaign-region--active {
+    stroke: Highlight;
+    stroke-width: 6;
+    stroke-dasharray: 2 4 12 4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campaign-region {
+    transition: none;
+  }
+}

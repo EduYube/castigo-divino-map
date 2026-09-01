@@ -24,6 +24,21 @@ function synchronizePopupBadge(button: HTMLButtonElement, master: boolean): void
   button.append(badge);
 }
 
+function synchronizeMasterRegionDescription(element: HTMLElement, master: boolean): void {
+  const current = element.getAttribute('aria-description') ?? '';
+  const publicDescription = current.replace(/^Contenido del Máster\.\s*/u, '').trim();
+  if (master) {
+    element.setAttribute(
+      'aria-description',
+      `Contenido del Máster.${publicDescription ? ` ${publicDescription}` : ''}`,
+    );
+  } else if (publicDescription) {
+    element.setAttribute('aria-description', publicDescription);
+  } else {
+    element.removeAttribute('aria-description');
+  }
+}
+
 export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualController {
   let markers: readonly AtlasPinMarkerModel[] = [];
   let masterEntityIds: ReadonlySet<EntityId> = new Set();
@@ -39,6 +54,9 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
     const byId = new Map(markers.map((marker) => [marker.id, marker] as const));
     const byCoordinate = new Map<string, AtlasPinMarkerModel[]>();
     for (const marker of markers) {
+      // Polygon coordinates are representative points for search/detail compatibility only.
+      // They must never participate in point-marker audience aggregation or ARIA counts.
+      if (marker.mapPresentation?.kind === 'polygon') continue;
       const key = coordinateKey(marker);
       const group = byCoordinate.get(key) ?? [];
       group.push(marker);
@@ -101,6 +119,14 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
       );
     });
 
+    root.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]').forEach((element) => {
+      const marker = byId.get(element.dataset.regionId ?? '');
+      const master = Boolean(marker && isMaster(marker));
+      element.dataset.audience = master ? 'master' : 'public';
+      element.classList.toggle('campaign-region--master', master);
+      synchronizeMasterRegionDescription(element, master);
+    });
+
     root
       .querySelectorAll<HTMLButtonElement>('.pin-coincident-list__button[data-pin-id]')
       .forEach((button) => {
@@ -140,6 +166,11 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
       root.querySelectorAll<HTMLElement>('.campaign-marker-icon').forEach((element) => {
         delete element.dataset.audience;
         element.querySelector<HTMLElement>('.pin-visual')?.classList.remove('pin-visual--master');
+      });
+      root.querySelectorAll<HTMLElement>('.campaign-region').forEach((element) => {
+        delete element.dataset.audience;
+        element.classList.remove('campaign-region--master');
+        synchronizeMasterRegionDescription(element, false);
       });
       root
         .querySelectorAll<HTMLElement>('[data-master-pin-badge]')

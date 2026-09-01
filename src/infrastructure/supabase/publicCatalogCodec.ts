@@ -25,6 +25,7 @@ import {
   parsePlayer,
   parseTag,
 } from './publicCatalogRows';
+import { publicPolygonHasSelfIntersection } from './publicPolygonSafety';
 
 const HISTORIC_PLAYER_ACCENT = '#475569';
 
@@ -164,6 +165,12 @@ function assertReferences(snapshot: PublicCatalogContentV2): void {
   snapshot.entities.forEach((entity) => {
     if (!categoryIds.has(entity.categoryId)) {
       invalidResponse(`La entidad “${entity.id}” referencia una categoría ausente.`);
+    }
+    if (
+      entity.geometry?.kind === 'polygon' &&
+      publicPolygonHasSelfIntersection(entity.geometry.vertices)
+    ) {
+      invalidResponse(`La geometría pública de “${entity.id}” no puede autointersectarse.`);
     }
 
     assertUnique(entity.tagIds, `entities.${entity.id}.tagIds`);

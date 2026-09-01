@@ -97,12 +97,14 @@ describe('createAtlasPinMarkerModels', () => {
       legacyPlaceId: 'place-harbor',
       entityId: 'place-harbor',
       entityType: 'location',
+      mapPresentation: { kind: 'point' },
       source: 'beta02',
     });
     expect(pins[1]).toMatchObject({
       legacyPlaceId: null,
       entityType: 'character',
       portraitPath: 'portraits/123e4567-e89b-42d3-a456-426614174000.webp',
+      mapPresentation: { kind: 'point' },
       source: 'beta02',
     });
   });
@@ -126,10 +128,11 @@ describe('createAtlasPinMarkerModels', () => {
       source: 'beta01',
       dispositions: [],
       portraitPath: null,
+      mapPresentation: { kind: 'point' },
     });
   });
 
-  it('does not expose polygon locations to MAP-059 clustering or resurrect their legacy pin', () => {
+  it('represents a stable polygon as a region model instead of a point fallback', () => {
     const polygonCatalog: PublicCatalogSnapshotV2 = {
       ...beta02Catalog,
       entities: beta02Catalog.entities.map((entity) =>
@@ -151,8 +154,51 @@ describe('createAtlasPinMarkerModels', () => {
       ),
     };
 
-    expect(createAtlasPinMarkerModels(legacyCatalog, polygonCatalog).map(({ id }) => id)).toEqual([
-      'entity-hero',
-    ]);
+    const models = createAtlasPinMarkerModels(legacyCatalog, polygonCatalog);
+    expect(models.map(({ id }) => id)).toEqual(['place-harbor', 'entity-hero']);
+    expect(models[0]).toMatchObject({
+      id: 'place-harbor',
+      legacyPlaceId: 'place-harbor',
+      entityId: 'place-harbor',
+      coordinate: [200, 100],
+      mapPresentation: {
+        kind: 'polygon',
+        vertices: [
+          [150, 50],
+          [150, 150],
+          [250, 150],
+          [250, 50],
+        ],
+        bounds: { minX: 50, maxX: 150, minY: 150, maxY: 250 },
+      },
+    });
+  });
+
+  it('consumes a legacy fallback when its Beta 0.2 search_only entity is a polygon', () => {
+    const searchOnlyPolygonCatalog: PublicCatalogSnapshotV2 = {
+      ...beta02Catalog,
+      entities: beta02Catalog.entities.map((entity) =>
+        entity.id === 'place-harbor'
+          ? {
+              ...entity,
+              visibility: 'search_only' as const,
+              geometry: {
+                kind: 'polygon' as const,
+                vertices: [
+                  { x: 50, y: 150 },
+                  { x: 150, y: 150 },
+                  { x: 150, y: 250 },
+                  { x: 50, y: 250 },
+                ],
+              },
+              coordinates: { x: 100, y: 200 },
+            }
+          : entity,
+      ),
+    };
+
+    expect(
+      createAtlasPinMarkerModels(legacyCatalog, searchOnlyPolygonCatalog).map(({ id }) => id),
+    ).toEqual(['entity-hero']);
   });
 });

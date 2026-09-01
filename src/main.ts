@@ -139,11 +139,23 @@ function mountPublicExperience(
   let geographicNameId: GeographicNameId | null = null;
   let masterEntityIds: ReadonlySet<EntityId> = new Set();
   let masterModeRuntime: MasterModeRuntime | null = null;
+  let deferredSelectionAnnouncementGeneration = 0;
+  const invalidateDeferredSelectionAnnouncement = (): void => {
+    deferredSelectionAnnouncementGeneration += 1;
+  };
   const portraitResources = createPortraitResources();
   const selection = createPlaceSelectionController();
   const mapSearchStatus = app.querySelector<HTMLElement>('[data-map-search-status]');
 
   const focusPinControl = (pin: AtlasPinMarkerModel): void => {
+    const region = Array.from(
+      app.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]'),
+    ).find((candidate) => candidate.dataset.regionId === pin.id);
+    if (region) {
+      region.focus({ preventScroll: true });
+      return;
+    }
+
     const [lat, lng] = pin.coordinate;
     const element = Array.from(
       app.querySelectorAll<HTMLElement>('.campaign-marker-icon[data-marker-lat][data-marker-lng]'),
@@ -166,6 +178,8 @@ function mountPublicExperience(
       });
     },
     onPinActivate(pin): void {
+      const announcementGeneration = ++deferredSelectionAnnouncementGeneration;
+      const wasMaster = Boolean(pin.entityId && masterEntityIds.has(pin.entityId));
       mapController.clearSearchFocus();
 
       if (pin.legacyPlaceId) {
@@ -187,6 +201,14 @@ function mountPublicExperience(
       mapController.map.invalidateSize({ animate: false, pan: false });
 
       window.requestAnimationFrame(() => {
+        if (
+          announcementGeneration !== deferredSelectionAnnouncementGeneration ||
+          activeSupplementalPin?.id !== pin.id ||
+          !renderedMarkers.some(({ id }) => id === pin.id) ||
+          (wasMaster && (!pin.entityId || !masterEntityIds.has(pin.entityId)))
+        ) {
+          return;
+        }
         if (!mapSearchStatus) return;
         const type = getPinTypeVisual(pin.entityType).label.toLocaleLowerCase('es');
         const audience =
@@ -272,6 +294,7 @@ function mountPublicExperience(
 
   const compactDetailsController = mountCompactPinDetails(app, {
     onClose(): void {
+      invalidateDeferredSelectionAnnouncement();
       const previouslyActivePlaceId = selection.getActivePlaceId();
 
       if (previouslyActivePlaceId) {
@@ -370,6 +393,7 @@ function mountPublicExperience(
   });
 
   const openLegacyPlace = (placeId: PlaceId): void => {
+    invalidateDeferredSelectionAnnouncement();
     const wasAlreadyActive = selection.getActivePlaceId() === placeId;
 
     activeSupplementalPin = null;
@@ -384,6 +408,7 @@ function mountPublicExperience(
   const placeSearchController = mountPlaceSearch(app, {
     catalog,
     onQueryChange(): void {
+      invalidateDeferredSelectionAnnouncement();
       if (geographicNameId !== null) {
         geographicNameId = null;
         mapController.clearSearchFocus();
@@ -392,6 +417,7 @@ function mountPublicExperience(
       writePublicStateToHistory('replace');
     },
     onSelect(result): void {
+      invalidateDeferredSelectionAnnouncement();
       if (result.type === 'location' && result.legacyPlaceId) {
         geographicNameId = null;
         mapController.clearSearchFocus();
@@ -578,6 +604,7 @@ function mountPublicExperience(
   function applyCatalogState(nextCatalogState: PublicCatalogState, force = false): void {
     if (!force && isSameCatalogState(catalogState, nextCatalogState)) return;
 
+    invalidateDeferredSelectionAnnouncement();
     catalogState = nextCatalogState;
     const previousActivePlaceId = selection.getActivePlaceId();
     const previousGeographicNameId = geographicNameId;
@@ -601,10 +628,13 @@ function mountPublicExperience(
       }
     }
 
-    if (previousMasterEntityIds.size > 0 && nextMasterEntityIds.size === 0) {
+    const removedMasterEntityIds = new Set(
+      [...previousMasterEntityIds].filter((entityId) => !nextMasterEntityIds.has(entityId)),
+    );
+    if (removedMasterEntityIds.size > 0) {
       if (
         activeSupplementalPin?.entityId &&
-        previousMasterEntityIds.has(activeSupplementalPin.entityId)
+        removedMasterEntityIds.has(activeSupplementalPin.entityId)
       ) {
         activeSupplementalPin = null;
         compactDetailsController.hide();
@@ -812,6 +842,7 @@ function mountPublicExperience(
   }
 
   function restorePublicStateFromUrl(sourceUrl: URL): void {
+    invalidateDeferredSelectionAnnouncement();
     const shouldPreserveUnknownFilters =
       !initialPublicRefreshSettled &&
       publicDataRuntime !== undefined &&

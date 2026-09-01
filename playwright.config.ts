@@ -1,9 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const criticalAccessibilitySuite = /responsive-accessibility\.spec\.ts/;
-const mobileOnlySuite = /(map033-mobile|map037-mobile-details)\.spec\.ts/;
+const mobileOnlySuite = /(map033-mobile|map037-mobile-details|map061-admin-mobile)\.spec\.ts/;
 const criticalMobileSuite =
-  /(responsive-accessibility|map033-mobile|map037-mobile-details|map038-search-autocomplete|map042-geographic-navigation-pins|map043-public-pin-form)\.spec\.ts/;
+  /(responsive-accessibility|map033-mobile|map037-mobile-details|map038-search-autocomplete|map042-geographic-navigation-pins|map043-public-pin-form|map061-admin-mobile)\.spec\.ts/;
+const criticalMap061Suite = /(map061-campaign-regions|map061-master-status-purge)\.spec\.ts/;
+const criticalMap061Flow =
+  /renders translucent overlapping regions|searching the region frames persistent polygon bounds|explicit filters dim non-matching regions|purges Master region search status/;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -30,6 +33,18 @@ export default defineConfig({
       name: 'firefox',
       testMatch: criticalAccessibilitySuite,
       use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'firefox-map061',
+      testMatch: criticalMap061Suite,
+      grep: criticalMap061Flow,
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit-map061',
+      testMatch: criticalMap061Suite,
+      grep: criticalMap061Flow,
+      use: { ...devices['Desktop Safari'] },
     },
     {
       name: 'mobile-chromium',
