@@ -449,6 +449,78 @@ test('keyboard vertex editing exposes invalid geometry and blocks any partial sa
   expect(backend.getGeometry().kind).toBe('point');
 });
 
+test('rejecting an out-of-bounds vertex drag restores the visible handle before save', async ({
+  page,
+}) => {
+  const backend = await openAdmin(page);
+  await page.getByTestId('admin-geometry-kind').selectOption('polygon');
+
+  const canvas = page.getByTestId('admin-coordinate-map');
+  await canvas.scrollIntoViewIfNeeded();
+  const canvasBox = await canvas.boundingBox();
+  const viewport = page.viewportSize();
+  const firstVertex = page.getByTestId('admin-polygon-vertex-0');
+  const beforeBox = await firstVertex.boundingBox();
+  if (!canvasBox || !viewport || !beforeBox) {
+    throw new Error('El mapa o el vértice administrativo no tiene geometría visible.');
+  }
+
+  const start = {
+    x: beforeBox.x + beforeBox.width / 2,
+    y: beforeBox.y + beforeBox.height / 2,
+  };
+  let target: { x: number; y: number };
+  if (canvasBox.x >= 32) {
+    target = { x: canvasBox.x - 24, y: start.y };
+  } else if (canvasBox.x + canvasBox.width + 24 < viewport.width) {
+    target = { x: canvasBox.x + canvasBox.width + 24, y: start.y };
+  } else if (canvasBox.y >= 32) {
+    target = { x: start.x, y: canvasBox.y - 24 };
+  } else if (canvasBox.y + canvasBox.height + 24 < viewport.height) {
+    target = { x: start.x, y: canvasBox.y + canvasBox.height + 24 };
+  } else {
+    throw new Error('No hay espacio de viewport para arrastrar el vértice fuera del mapa.');
+  }
+
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(target.x, target.y, { steps: 8 });
+  await page.mouse.up();
+
+  await expect(firstVertex).toBeFocused();
+  const restoredBox = await firstVertex.boundingBox();
+  if (!restoredBox) throw new Error('El vértice restaurado no es visible.');
+  const restoredCenter = {
+    x: restoredBox.x + restoredBox.width / 2,
+    y: restoredBox.y + restoredBox.height / 2,
+  };
+  expect(Math.abs(restoredCenter.x - start.x)).toBeLessThan(2);
+  expect(Math.abs(restoredCenter.y - start.y)).toBeLessThan(2);
+
+  await page.getByRole('button', { name: 'Previsualizar' }).click();
+  await expect(page.getByText(/Área\/Región · 4 vértices/)).toBeVisible();
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
+
+  const expectedGeometry: Geometry = {
+    kind: 'polygon',
+    vertices: [
+      { x: 964, y: 764 },
+      { x: 1036, y: 764 },
+      { x: 1036, y: 836 },
+      { x: 964, y: 836 },
+    ],
+  };
+  expect(backend.getGeometry()).toEqual(expectedGeometry);
+  expect(backend.getLastSaveBody()).toMatchObject({ p_geometry: expectedGeometry });
+
+  await page.getByRole('button', { name: 'Cerrar editor' }).click();
+  await openExistingEditor(page);
+  await expect(page.getByTestId('admin-geometry-kind')).toHaveValue('polygon');
+  await expect(page.locator('[data-testid^="admin-polygon-vertex-"]')).toHaveCount(4);
+  await expect(page.getByLabel(/Coordenada X representativa/)).toHaveValue('1000');
+  await expect(page.getByLabel(/Coordenada Y representativa/)).toHaveValue('800');
+});
 test('saving a valid polygon preserves stable identity, audience, tags, dispositions and player associations', async ({
   page,
 }) => {

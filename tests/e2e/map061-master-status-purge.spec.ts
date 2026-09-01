@@ -295,6 +295,56 @@ async function expectSecretPurged(page: Page, name: string, regionId: string): P
   expect(await sensitiveAttributeLeaks(page, name)).toEqual([]);
 }
 
+async function holdAnimationFrames(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const testWindow = window as typeof window & {
+      __MAP061_RAF_CONTROL__?: { readonly pending: () => number; readonly release: () => void };
+    };
+    const originalRequestAnimationFrame = window.requestAnimationFrame.bind(window);
+    const originalCancelAnimationFrame = window.cancelAnimationFrame.bind(window);
+    const pending = new Map<number, FrameRequestCallback>();
+    let nextId = 1_000_000;
+
+    testWindow.__MAP061_RAF_CONTROL__ = {
+      pending: () => pending.size,
+      release: () => {
+        window.requestAnimationFrame = originalRequestAnimationFrame;
+        window.cancelAnimationFrame = originalCancelAnimationFrame;
+        const callbacks = [...pending.values()];
+        pending.clear();
+        callbacks.forEach((callback) => callback(performance.now()));
+      },
+    };
+    window.requestAnimationFrame = (callback: FrameRequestCallback): number => {
+      const id = nextId;
+      nextId += 1;
+      pending.set(id, callback);
+      return id;
+    };
+    window.cancelAnimationFrame = (id: number): void => {
+      if (!pending.delete(id)) originalCancelAnimationFrame(id);
+    };
+  });
+}
+
+async function heldAnimationFrameCount(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const testWindow = window as typeof window & {
+      __MAP061_RAF_CONTROL__?: { readonly pending: () => number };
+    };
+    return testWindow.__MAP061_RAF_CONTROL__?.pending() ?? 0;
+  });
+}
+
+async function releaseAnimationFrames(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const testWindow = window as typeof window & {
+      __MAP061_RAF_CONTROL__?: { readonly release: () => void };
+    };
+    testWindow.__MAP061_RAF_CONTROL__?.release();
+    delete testWindow.__MAP061_RAF_CONTROL__;
+  });
+}
 test('purges Master region search status on OFF and campaign replacement without residual metadata', async ({
   page,
 }) => {
@@ -332,6 +382,38 @@ test('purges Master region search status on OFF and campaign replacement without
   await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);
 });
 
+test('purges Master region search status when a deferred selection frame runs after OFF', async ({
+  page,
+}) => {
+  await openAuthorizedMap(page);
+  const masterToggle = page.locator('[data-master-mode-toggle]');
+  const regionA = page.locator(`[data-region-entity-id="${MASTER_REGION_A_ID}"]`);
+  const status = page.locator('[data-map-search-status]');
+
+  await masterToggle.click();
+  await expect(masterToggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(regionA).toHaveCount(1);
+  await searchMasterRegion(page, MASTER_REGION_A_NAME);
+
+  await holdAnimationFrames(page);
+  await regionA.focus();
+  await regionA.press('Enter');
+  expect(await heldAnimationFrameCount(page)).toBeGreaterThan(0);
+
+  await masterToggle.click();
+  await expect(masterToggle).toHaveAttribute('aria-pressed', 'false');
+  await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);
+
+  const newerPublicStatus = 'Estado público posterior MAP061.';
+  await status.evaluate((element, message) => {
+    element.textContent = message;
+  }, newerPublicStatus);
+  await releaseAnimationFrames(page);
+
+  await expect(status).toHaveText(newerPublicStatus);
+  await expect(status).not.toContainText(MASTER_REGION_A_NAME);
+  await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);
+});
 test('purges Master region search status after a 403 revokes administrative authorization', async ({
   page,
 }) => {
@@ -346,10 +428,16 @@ test('purges Master region search status after a 403 revokes administrative auth
   await expect(regionA).toHaveAttribute('data-audience', 'master');
   await searchMasterRegion(page, MASTER_REGION_A_NAME);
 
+  await holdAnimationFrames(page);
+  await regionA.focus();
+  await regionA.press('Enter');
+  expect(await heldAnimationFrameCount(page)).toBeGreaterThan(0);
+
   backend.denyMasterCatalog();
   await campaignSelector.selectOption('campaign-b');
   await expect(campaignSelector).toHaveValue('campaign-b');
-  await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);
   await expect(masterToggle).toHaveCount(0);
+  await releaseAnimationFrames(page);
+  await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);
   await expect(page.getByRole('button', { name: 'Administrar' })).toBeVisible();
 });

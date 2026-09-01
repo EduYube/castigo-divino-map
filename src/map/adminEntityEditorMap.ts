@@ -321,7 +321,15 @@ export function mountAdminEntityEditorMap(
   };
 
   const updateVertex = (index: number, coordinate: CampaignCoordinate): void => {
-    if (currentGeometry?.kind !== 'polygon' || !isMapCoordinateWithinBounds(coordinate)) return;
+    if (currentGeometry?.kind !== 'polygon') return;
+    if (!isMapCoordinateWithinBounds(coordinate)) {
+      selectedVertexIndex = index;
+      renderGeometry();
+      window.requestAnimationFrame(() =>
+        vertexMarkers[index]?.getElement()?.focus({ preventScroll: true }),
+      );
+      return;
+    }
     currentGeometry = {
       kind: 'polygon',
       vertices: currentGeometry.vertices.map((vertex, vertexIndex) =>
