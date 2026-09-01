@@ -1,4 +1,4 @@
-name: MAP-063 temporary bounded lock diagnostic
+name: MAP-063 temporary concurrency fixture validation
 
 on:
   push:
@@ -6,13 +6,13 @@ on:
       - agent/map-063-public-player-notes
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  validate:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
@@ -22,59 +22,37 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Patch concurrency fixture
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/test-map063-public-note-concurrency.mjs')
+          source = path.read_text()
+          replacements = {
+              "const ENTITY_ID = 'place-demo-harbor';": "const ENTITY_ID = 'entity-aster-guide';",
+              "const PLAYER_ID = 'player-skade';": "const PLAYER_ID = 'player-demo-one';",
+          }
+          for before, after in replacements.items():
+              if source.count(before) != 1:
+                  raise SystemExit(f'expected exactly one fixture constant: {before}')
+              source = source.replace(before, after, 1)
+          path.write_text(source)
+          PY
+          npx prettier --check scripts/test-map063-public-note-concurrency.mjs
       - run: npx supabase start
-      - name: Diagnose held player lock
-        shell: bash
+      - name: Run focused MAP-063 concurrency regression
         run: |
           npm run supabase:db:reset
-          cat > /tmp/map063-diag.mjs <<'NODE'
-          import { spawn, spawnSync } from 'node:child_process';
-          const C='supabase_db_castigo-divino-map', P='player-skade', E='place-demo-harbor';
-          const A='00000000-0000-4000-8000-000000000001';
-          const sessions=[];
-          const d=(ms)=>new Promise(r=>setTimeout(r,ms));
-          function argv(i=false){return ['exec',...(i?['--interactive']:[]),'--user','postgres',C,'psql','--username','postgres','--dbname','postgres','--no-psqlrc','--set=ON_ERROR_STOP=1','--quiet','--tuples-only','--no-align'];}
-          function q(sql){const r=spawnSync('docker',[...argv(),'--command',sql],{encoding:'utf8'});if(r.status!==0)throw new Error(r.stderr);return r.stdout.trim();}
-          function s(name){const child=spawn('docker',argv(true),{stdio:['pipe','pipe','pipe']});let out='',err='',done=false,code=null;child.stdout.setEncoding('utf8');child.stderr.setEncoding('utf8');child.stdout.on('data',x=>out+=x);child.stderr.on('data',x=>err+=x);child.on('close',c=>{done=true;code=c});child.stdin.write(`set application_name='${name}';\n`);const x={child,get out(){return `${out}\n${err}`.trim()},get done(){return done},get code(){return code}};sessions.push(x);return x;}
-          async function mark(x,m){for(let i=0;i<500;i++){if(x.out.includes(m))return;if(x.done)throw new Error(`early ${m}: ${x.out}`);await d(20)}throw new Error(`timeout ${m}: ${x.out}`)}
-          const act=n=>q(`select concat_ws('|',state,coalesce(wait_event_type,''),coalesce(wait_event,''),case when xact_start is null then 'no-xact' else 'xact' end,case when backend_xid is null then 'no-xid' else 'xid' end) from pg_stat_activity where application_name='${n}'`);
-          const block=n=>q(`select coalesce(array_to_string(pg_blocking_pids(pid),','),'') from pg_stat_activity where application_name='${n}'`);
-          try {
-            q(`update public.players set publication_status='draft' where id='${P}' and publication_status='archived'; update public.players set publication_status='published' where id='${P}' and publication_status<>'published';`);
-            console.log('external.before='+q(`select publication_status from public.players where id='${P}'`));
-            const a=s('map063_admin_diag');
-            const claims=JSON.stringify({sub:A,role:'authenticated'}).replaceAll("'","''");
-            a.child.stdin.write(`set "request.jwt.claim.sub"='${A}'; set "request.jwt.claims"='${claims}'; set role authenticated; set statement_timeout='8s'; begin; update public.players set publication_status='archived' where id='${P}' returning publication_status; \\echo ADMIN_READY\n`);
-            await mark(a,'ADMIN_READY');
-            console.log('admin.out='+JSON.stringify(a.out));
-            console.log('admin.activity='+act('map063_admin_diag'));
-            console.log('external.during='+q(`select publication_status from public.players where id='${P}'`));
-            const r=s('map063_rpc_diag');
-            r.child.stdin.write(`set role anon; set statement_timeout='8s'; \\echo RPC_STARTED\nselect id from public.create_public_player_note('${E}','${P}','MAP063 diag','diag');\n\\echo RPC_DONE\n`);
-            await mark(r,'RPC_STARTED');
-            await d(300);
-            console.log('rpc.done300='+r.done);
-            console.log('rpc.out300='+JSON.stringify(r.out));
-            console.log('rpc.activity300='+act('map063_rpc_diag'));
-            console.log('rpc.blockers300='+block('map063_rpc_diag'));
-            console.log('admin.activity300='+act('map063_admin_diag'));
-            console.log('external.300='+q(`select publication_status from public.players where id='${P}'`));
-            if(r.done) throw new Error('RPC exited before admin commit');
-            a.child.stdin.write('commit; \\echo ADMIN_COMMITTED\n\\q\n');
-            await mark(a,'ADMIN_COMMITTED');
-            for(let i=0;i<500&&!r.done;i++)await d(20);
-            console.log('rpc.final='+JSON.stringify(r.out));
-            console.log('rpc.code='+r.code);
-            if(!r.done||!r.out.includes('invalid public note author'))throw new Error('RPC did not revalidate after commit');
-            console.log('DIAGNOSTIC_OK');
-            for(const x of sessions)if(!x.done)x.child.kill();
-            process.exit(0);
-          } catch(e) {
-            console.error('DIAGNOSTIC_FAIL='+String(e?.stack||e));
-            for(const x of sessions)if(!x.done)x.child.kill();
-            process.exit(1);
-          }
-          NODE
-          node /tmp/map063-diag.mjs
+          node scripts/test-map063-public-note-concurrency.mjs
       - if: always()
         run: npx supabase stop --no-backup
+      - name: Commit validated fixture and remove diagnostics
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+EduYube@users.noreply.github.com"
+          git add scripts/test-map063-public-note-concurrency.mjs
+          git rm .github/workflows/agent-map063-concurrency-fixture-fix.yml
+          git rm .github/workflows/agent-map063-lock-diagnostic-fast.yml
+          git commit -m "test(db): cover MAP-063 concurrent eligibility revocations"
+          git push origin HEAD:agent/map-063-public-player-notes
