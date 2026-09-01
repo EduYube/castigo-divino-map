@@ -40,7 +40,10 @@ jobs:
           }
 
           const migrationPath = 'supabase/migrations/20260901150000_add_public_player_note_authorship.sql';
+          const compatibilityPath = 'supabase/migrations/20260901150100_keep_internal_note_import_compatibility.sql';
+          const sessionModePath = 'supabase/migrations/20260901150200_enforce_note_author_session_mode.sql';
           let migration = fs.readFileSync(migrationPath, 'utf8');
+
           const returnShapeBefore = `returns table (\n  id text,\n  slug text,\n  entity_id text,`;
           const returnShapeAfter = `returns table (\n  id text,\n  entity_id text,`;
           const returnShapeCount = migration.split(returnShapeBefore).length - 1;
@@ -53,14 +56,12 @@ jobs:
           if (returningCount !== 3) throw new Error(`expected three RETURNING slug fields, found ${returningCount}`);
           migration = migration.split(returningBefore).join(returningAfter);
 
-          const compatibilityPath = 'supabase/migrations/20260901150100_keep_internal_note_import_compatibility.sql';
-          const sessionModePath = 'supabase/migrations/20260901150200_enforce_note_author_session_mode.sql';
           const compatibility = unwrapMigration(compatibilityPath);
           const sessionMode = unwrapMigration(sessionModePath);
           const finalCommit = '\ncommit;\n';
           const commitIndex = migration.lastIndexOf(finalCommit);
           if (commitIndex < 0 || commitIndex !== migration.length - finalCommit.length) {
-            throw new Error('expected a single final commit marker in MAP-063 authorship migration');
+            throw new Error('expected final commit marker in MAP-063 authorship migration');
           }
           migration =
             migration.slice(0, commitIndex).trimEnd() +
@@ -70,6 +71,8 @@ jobs:
             sessionMode +
             finalCommit;
           fs.writeFileSync(migrationPath, migration);
+          fs.unlinkSync(compatibilityPath);
+          fs.unlinkSync(sessionModePath);
 
           const testPath = 'supabase/tests/database/036_public_player_notes_hardening.test.sql';
           let test = fs.readFileSync(testPath, 'utf8');
@@ -89,14 +92,12 @@ jobs:
       - name: Stop Supabase
         if: always()
         run: npm run supabase:stop -- --no-backup
-      - name: Commit validated contract and remove obsolete migrations/helper
+      - name: Commit validated contract and remove helper
         if: success()
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add supabase/migrations/20260901150000_add_public_player_note_authorship.sql supabase/tests/database/036_public_player_notes_hardening.test.sql
-          git rm supabase/migrations/20260901150100_keep_internal_note_import_compatibility.sql
-          git rm supabase/migrations/20260901150200_enforce_note_author_session_mode.sql
+          git config user.email "41898282+EduYube@users.noreply.github.com"
+          git add -A supabase/migrations supabase/tests/database/036_public_player_notes_hardening.test.sql
           git rm .github/workflows/agent-map063-rpc-shape-fix.yml
           git commit -m "fix(db): publish MAP-063 note contract atomically"
           git push origin HEAD:agent/map-063-public-player-notes
