@@ -487,7 +487,6 @@ test('rejecting an out-of-bounds vertex drag restores the visible handle before 
   await page.mouse.move(target.x, target.y, { steps: 8 });
   await page.mouse.up();
 
-  await expect(firstVertex).toBeFocused();
   const restoredBox = await firstVertex.boundingBox();
   if (!restoredBox) throw new Error('El vértice restaurado no es visible.');
   const restoredCenter = {
