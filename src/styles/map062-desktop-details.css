@@ -1,0 +1,119 @@
+/* MAP-062: desktop/tablet compact details live below the cartographic surface and use
+ * the document's natural scroll instead of a narrow internal scroller. Mobile keeps
+ * the MAP-037 overlay contract in mobile-compact-pin-details.css. */
+
+@media (min-width: 48.001rem) {
+  .place-details__return {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.8rem;
+    color: var(--ink);
+    font-size: 0.78rem;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(247, 241, 227, 0.08);
+    border: 1px solid var(--line);
+    border-radius: 0.7rem;
+    touch-action: manipulation;
+  }
+
+  .place-details__return:hover {
+    color: #172018;
+    background: var(--accent-strong);
+  }
+
+  .map-workspace[data-details-open='true'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .map-workspace[data-details-open='true'] > .place-details {
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    background:
+      linear-gradient(180deg, rgba(45, 58, 49, 0.98), rgba(24, 32, 27, 0.99)),
+      #1c251f;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+    scrollbar-gutter: auto;
+  }
+
+  .place-details__toolbar {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 0.65rem;
+  }
+
+  .place-details__content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    column-gap: clamp(1.5rem, 4vw, 4rem);
+    row-gap: 1.35rem;
+  }
+
+  .place-details__content > .compact-details__type,
+  .place-details__content > .compact-details__title,
+  .place-details__content > .compact-details__category {
+    grid-column: 1;
+  }
+
+  .place-details__content:not(:has(.compact-details__portrait)) > .compact-details__type,
+  .place-details__content:not(:has(.compact-details__portrait)) > .compact-details__title,
+  .place-details__content:not(:has(.compact-details__portrait)) > .compact-details__category {
+    grid-column: 1 / -1;
+  }
+
+  .place-details__content > .compact-details__portrait {
+    float: none;
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    justify-self: end;
+    margin: 0;
+  }
+
+  .compact-details__portrait-image {
+    inline-size: clamp(6rem, 9vw, 8.5rem);
+    block-size: clamp(6rem, 9vw, 8.5rem);
+  }
+
+  .place-details__content > section:not(.compact-details__full-boundary) {
+    min-width: 0;
+  }
+
+  .place-details__content > .compact-details__full-boundary {
+    grid-column: 1 / -1;
+  }
+
+  .compact-details__dispositions {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  }
+
+  .compact-details__important-characters {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    column-gap: 1rem;
+  }
+
+  .compact-details__full-boundary {
+    grid-template-columns: minmax(12rem, 22rem) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .compact-details__full-boundary .compact-details__future-note {
+    margin: 0;
+  }
+}
+
+@media (forced-colors: active) and (min-width: 48.001rem) {
+  .place-details__return {
+    color: ButtonText;
+    background: ButtonFace;
+    border-color: ButtonText;
+    forced-color-adjust: auto;
+  }
+}

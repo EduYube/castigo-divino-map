@@ -198,8 +198,6 @@ function mountPublicExperience(
         return;
       }
 
-      mapController.map.invalidateSize({ animate: false, pan: false });
-
       window.requestAnimationFrame(() => {
         if (
           announcementGeneration !== deferredSelectionAnnouncementGeneration ||
@@ -227,6 +225,10 @@ function mountPublicExperience(
     if (!mobileCompactDetailsMedia.matches) {
       return;
     }
+
+    // MAP-037: synchronize Leaflet before the first sheet measurement. Narrow WebKit
+    // otherwise observes stale viewport geometry; desktop never enters this branch.
+    mapController.map.invalidateSize({ animate: false, pan: false });
 
     const adjustActiveMarker = (attemptsRemaining: number): void => {
       window.requestAnimationFrame(() => {

@@ -314,6 +314,26 @@ function renderDetails(
   return title;
 }
 
+function findActiveMapControl(
+  workspace: HTMLElement,
+  activePinId: string | undefined,
+): HTMLElement | null {
+  if (activePinId) {
+    const region = Array.from(
+      workspace.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]'),
+    ).find((candidate) => candidate.dataset.regionId === activePinId);
+    if (region) return region;
+  }
+
+  return workspace.querySelector<HTMLElement>('.campaign-marker-icon[aria-pressed="true"]');
+}
+
+function isRegionTarget(workspace: HTMLElement, detailsId: string): boolean {
+  return Array.from(
+    workspace.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]'),
+  ).some((candidate) => candidate.dataset.regionId === detailsId);
+}
+
 export function mountCompactPinDetails(
   root: ParentNode = document,
   options: CompactPinDetailsOptions,
@@ -331,14 +351,12 @@ export function mountCompactPinDetails(
   };
   const handleClose = (): void => closePreservingViewport();
   const handleReturnToPin = (): void => {
-    const marker = elements.workspace.querySelector<HTMLElement>(
-      '.campaign-marker-icon[aria-pressed="true"]',
-    );
-    if (!marker) return;
+    const target = findActiveMapControl(elements.workspace, elements.panel.dataset.activePinId);
+    if (!target) return;
     const preserveViewport = isMobileSheet();
     const scrollX = preserveViewport ? window.scrollX : 0;
     const scrollY = preserveViewport ? window.scrollY : 0;
-    marker.focus({ preventScroll: preserveViewport });
+    target.focus({ preventScroll: preserveViewport });
     if (preserveViewport) {
       restoreViewportPosition(scrollX, scrollY);
       window.requestAnimationFrame(() => restoreViewportPosition(scrollX, scrollY));
@@ -376,7 +394,13 @@ export function mountCompactPinDetails(
       elements.workspace.dataset.detailsOpen = 'true';
       elements.closeButton.setAttribute('aria-label', `Cerrar la ficha de ${details.name}`);
       elements.closeButton.setAttribute('aria-keyshortcuts', 'Escape');
-      elements.returnButton.setAttribute('aria-label', `Volver al pin de ${details.name}`);
+      if (isRegionTarget(elements.workspace, details.id)) {
+        elements.returnButton.textContent = 'Volver a la región';
+        elements.returnButton.setAttribute('aria-label', `Volver a la región de ${details.name}`);
+      } else {
+        elements.returnButton.textContent = 'Volver al pin';
+        elements.returnButton.setAttribute('aria-label', `Volver al pin de ${details.name}`);
+      }
       if (!canReuseContent) {
         elements.panel.scrollTop = 0;
         portraitAbort?.abort();
@@ -396,7 +420,7 @@ export function mountCompactPinDetails(
           });
         }
       }
-      if (showOptions.focus !== false) title.focus({ preventScroll: isMobileSheet() });
+      if (showOptions.focus !== false) title.focus({ preventScroll: true });
     },
     hide(): void {
       portraitAbort?.abort();
@@ -414,6 +438,7 @@ export function mountCompactPinDetails(
       delete elements.workspace.dataset.detailsOpen;
       elements.closeButton.setAttribute('aria-label', 'Cerrar la ficha compacta');
       elements.closeButton.removeAttribute('aria-keyshortcuts');
+      elements.returnButton.textContent = 'Volver al pin';
       elements.returnButton.setAttribute('aria-label', 'Volver al pin seleccionado');
       elements.content.replaceChildren();
       if (preserveViewport) {
