@@ -97,16 +97,13 @@ export function mountCampaignRegions(
     const currentStatus = status?.textContent ?? '';
     const selectionMessageForSameRegion = Boolean(
       announcement.regionName &&
-        currentStatus.startsWith(`${announcement.regionName}, `) &&
-        currentStatus.includes('seleccionado en el mapa. Ficha compacta abierta.'),
+      currentStatus.startsWith(`${announcement.regionName}, `) &&
+      currentStatus.includes('seleccionado en el mapa. Ficha compacta abierta.'),
     );
     // clearSearchFocus can be followed by main.ts' deferred compact-selection message.
     // When the same region is being purged, that later message is still private region state
     // and must disappear too. A newer unrelated public/point announcement is preserved.
-    if (
-      status &&
-      (currentStatus === announcement.message || selectionMessageForSameRegion)
-    ) {
+    if (status && (currentStatus === announcement.message || selectionMessageForSameRegion)) {
       status.textContent = '';
     }
     announcedStatus = null;
