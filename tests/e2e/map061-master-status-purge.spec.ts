@@ -319,13 +319,14 @@ test('purges Master region search status on OFF and campaign replacement without
 
   await campaignSelector.selectOption('campaign-b');
   await expect(campaignSelector).toHaveValue('campaign-b');
-  await expect(page.locator(`[data-region-entity-id="${MASTER_REGION_B_ID}"]`)).toBeVisible();
+  const regionB = page.locator(`[data-region-entity-id="${MASTER_REGION_B_ID}"]`);
+  await expect(regionB).toBeVisible();
+  await expect(regionB).toHaveAttribute('aria-label', new RegExp(MASTER_REGION_B_NAME, 'i'));
   await expect(page.locator('[data-region-entity-id]')).not.toHaveAttribute(
     'data-region-entity-id',
     MASTER_REGION_A_ID,
   );
   await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);
-  await expect(page.locator('body')).toContainText(MASTER_REGION_B_NAME);
 });
 
 test('purges Master region search status after a 403 revokes administrative authorization', async ({
