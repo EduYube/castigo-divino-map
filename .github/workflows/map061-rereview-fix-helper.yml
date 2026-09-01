@@ -1,0 +1,120 @@
+name: MAP-061 rereview fix helper
+
+on:
+  push:
+    paths:
+      - '.github/workflows/map061-rereview-fix-helper.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fixes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/map-061-campaign-regions
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply review fixes and regressions
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, found {count}')
+              p.write_text(text.replace(old, new, 1))
+
+          main = 'src/main.ts'
+          replace_once(
+              main,
+              "  let masterModeRuntime: MasterModeRuntime | null = null;\n  const portraitResources = createPortraitResources();",
+              "  let masterModeRuntime: MasterModeRuntime | null = null;\n  let deferredSelectionAnnouncementGeneration = 0;\n  const invalidateDeferredSelectionAnnouncement = (): void => {\n    deferredSelectionAnnouncementGeneration += 1;\n  };\n  const portraitResources = createPortraitResources();",
+          )
+          replace_once(
+              main,
+              "    onPinActivate(pin): void {\n      mapController.clearSearchFocus();",
+              "    onPinActivate(pin): void {\n      const announcementGeneration = ++deferredSelectionAnnouncementGeneration;\n      const wasMaster = Boolean(pin.entityId && masterEntityIds.has(pin.entityId));\n      mapController.clearSearchFocus();",
+          )
+          replace_once(
+              main,
+              "      window.requestAnimationFrame(() => {\n        if (!mapSearchStatus) return;\n        const type = getPinTypeVisual(pin.entityType).label.toLocaleLowerCase('es');",
+              "      window.requestAnimationFrame(() => {\n        if (\n          announcementGeneration !== deferredSelectionAnnouncementGeneration ||\n          activeSupplementalPin?.id !== pin.id ||\n          !renderedMarkers.some(({ id }) => id === pin.id) ||\n          (wasMaster && (!pin.entityId || !masterEntityIds.has(pin.entityId)))\n        ) {\n          return;\n        }\n        if (!mapSearchStatus) return;\n        const type = getPinTypeVisual(pin.entityType).label.toLocaleLowerCase('es');",
+          )
+          replace_once(
+              main,
+              "    onClose(): void {\n      const previouslyActivePlaceId = selection.getActivePlaceId();",
+              "    onClose(): void {\n      invalidateDeferredSelectionAnnouncement();\n      const previouslyActivePlaceId = selection.getActivePlaceId();",
+          )
+          replace_once(
+              main,
+              "  const openLegacyPlace = (placeId: PlaceId): void => {\n    const wasAlreadyActive",
+              "  const openLegacyPlace = (placeId: PlaceId): void => {\n    invalidateDeferredSelectionAnnouncement();\n    const wasAlreadyActive",
+          )
+          replace_once(
+              main,
+              "    onQueryChange(): void {\n      if (geographicNameId !== null)",
+              "    onQueryChange(): void {\n      invalidateDeferredSelectionAnnouncement();\n      if (geographicNameId !== null)",
+          )
+          replace_once(
+              main,
+              "    onSelect(result): void {\n      if (result.type === 'location'",
+              "    onSelect(result): void {\n      invalidateDeferredSelectionAnnouncement();\n      if (result.type === 'location'",
+          )
+          replace_once(
+              main,
+              "  function applyCatalogState(nextCatalogState: PublicCatalogState, force = false): void {\n    if (!force && isSameCatalogState(catalogState, nextCatalogState)) return;\n\n    catalogState = nextCatalogState;",
+              "  function applyCatalogState(nextCatalogState: PublicCatalogState, force = false): void {\n    if (!force && isSameCatalogState(catalogState, nextCatalogState)) return;\n\n    invalidateDeferredSelectionAnnouncement();\n    catalogState = nextCatalogState;",
+          )
+          replace_once(
+              main,
+              "  function restorePublicStateFromUrl(sourceUrl: URL): void {\n    const shouldPreserveUnknownFilters =",
+              "  function restorePublicStateFromUrl(sourceUrl: URL): void {\n    invalidateDeferredSelectionAnnouncement();\n    const shouldPreserveUnknownFilters =",
+          )
+
+          editor = 'src/map/adminEntityEditorMap.ts'
+          replace_once(
+              editor,
+              "  const updateVertex = (index: number, coordinate: CampaignCoordinate): void => {\n    if (currentGeometry?.kind !== 'polygon' || !isMapCoordinateWithinBounds(coordinate)) return;\n    currentGeometry = {",
+              "  const updateVertex = (index: number, coordinate: CampaignCoordinate): void => {\n    if (currentGeometry?.kind !== 'polygon') return;\n    if (!isMapCoordinateWithinBounds(coordinate)) {\n      selectedVertexIndex = index;\n      renderGeometry();\n      window.requestAnimationFrame(() =>\n        vertexMarkers[index]?.getElement()?.focus({ preventScroll: true }),\n      );\n      return;\n    }\n    currentGeometry = {",
+          )
+
+          status_test = 'tests/e2e/map061-master-status-purge.spec.ts'
+          helper_anchor = "async function expectSecretPurged(page: Page, name: string, regionId: string): Promise<void> {\n  await expect(page.locator(`[data-region-entity-id=\\\"${regionId}\\\"]`)).toHaveCount(0);\n  await expect(page.locator('[data-map-canvas]')).not.toHaveAttribute('data-region-focus-bounds');\n  await expect(page.locator('[data-map-search-status]')).not.toContainText(name);\n  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).not.toHaveValue(name);\n  await expect(page.locator('body')).not.toContainText(name);\n  expect(await sensitiveAttributeLeaks(page, name)).toEqual([]);\n}\n"
+          helper_add = helper_anchor + "\nasync function holdAnimationFrames(page: Page): Promise<void> {\n  await page.evaluate(() => {\n    const testWindow = window as typeof window & {\n      __MAP061_RAF_CONTROL__?: { readonly pending: () => number; readonly release: () => void };\n    };\n    const originalRequestAnimationFrame = window.requestAnimationFrame.bind(window);\n    const originalCancelAnimationFrame = window.cancelAnimationFrame.bind(window);\n    const pending = new Map<number, FrameRequestCallback>();\n    let nextId = 1_000_000;\n\n    testWindow.__MAP061_RAF_CONTROL__ = {\n      pending: () => pending.size,\n      release: () => {\n        window.requestAnimationFrame = originalRequestAnimationFrame;\n        window.cancelAnimationFrame = originalCancelAnimationFrame;\n        const callbacks = [...pending.values()];\n        pending.clear();\n        callbacks.forEach((callback) => callback(performance.now()));\n      },\n    };\n    window.requestAnimationFrame = (callback: FrameRequestCallback): number => {\n      const id = nextId;\n      nextId += 1;\n      pending.set(id, callback);\n      return id;\n    };\n    window.cancelAnimationFrame = (id: number): void => {\n      if (!pending.delete(id)) originalCancelAnimationFrame(id);\n    };\n  });\n}\n\nasync function heldAnimationFrameCount(page: Page): Promise<number> {\n  return page.evaluate(() => {\n    const testWindow = window as typeof window & {\n      __MAP061_RAF_CONTROL__?: { readonly pending: () => number };\n    };\n    return testWindow.__MAP061_RAF_CONTROL__?.pending() ?? 0;\n  });\n}\n\nasync function releaseAnimationFrames(page: Page): Promise<void> {\n  await page.evaluate(() => {\n    const testWindow = window as typeof window & {\n      __MAP061_RAF_CONTROL__?: { readonly release: () => void };\n    };\n    testWindow.__MAP061_RAF_CONTROL__?.release();\n    delete testWindow.__MAP061_RAF_CONTROL__;\n  });\n}\n"
+          replace_once(status_test, helper_anchor, helper_add)
+
+          first_test_anchor = "test('purges Master region search status after a 403 revokes administrative authorization', async ({\n  page,\n}) => {"
+          deterministic_test = "test('purges Master region search status when a deferred selection frame runs after OFF', async ({\n  page,\n}) => {\n  await openAuthorizedMap(page);\n  const masterToggle = page.locator('[data-master-mode-toggle]');\n  const regionA = page.locator(`[data-region-entity-id=\\\"${MASTER_REGION_A_ID}\\\"]`);\n  const status = page.locator('[data-map-search-status]');\n\n  await masterToggle.click();\n  await expect(masterToggle).toHaveAttribute('aria-pressed', 'true');\n  await expect(regionA).toHaveCount(1);\n  await searchMasterRegion(page, MASTER_REGION_A_NAME);\n\n  await holdAnimationFrames(page);\n  await regionA.focus();\n  await regionA.press('Enter');\n  expect(await heldAnimationFrameCount(page)).toBeGreaterThan(0);\n\n  await masterToggle.click();\n  await expect(masterToggle).toHaveAttribute('aria-pressed', 'false');\n  await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);\n\n  const newerPublicStatus = 'Estado público posterior MAP061.';\n  await status.evaluate((element, message) => {\n    element.textContent = message;\n  }, newerPublicStatus);\n  await releaseAnimationFrames(page);\n\n  await expect(status).toHaveText(newerPublicStatus);\n  await expect(status).not.toContainText(MASTER_REGION_A_NAME);\n  await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);\n});\n\n" + first_test_anchor
+          replace_once(status_test, first_test_anchor, deterministic_test)
+
+          old_403 = "  await searchMasterRegion(page, MASTER_REGION_A_NAME);\n\n  backend.denyMasterCatalog();\n  await campaignSelector.selectOption('campaign-b');\n  await expect(campaignSelector).toHaveValue('campaign-b');\n  await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);\n  await expect(masterToggle).toHaveCount(0);"
+          new_403 = "  await searchMasterRegion(page, MASTER_REGION_A_NAME);\n\n  await holdAnimationFrames(page);\n  await regionA.focus();\n  await regionA.press('Enter');\n  expect(await heldAnimationFrameCount(page)).toBeGreaterThan(0);\n\n  backend.denyMasterCatalog();\n  await campaignSelector.selectOption('campaign-b');\n  await expect(campaignSelector).toHaveValue('campaign-b');\n  await expect(masterToggle).toHaveCount(0);\n  await releaseAnimationFrames(page);\n  await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);"
+          replace_once(status_test, old_403, new_403)
+
+          admin_test = 'tests/e2e/map061-admin-regions.spec.ts'
+          admin_anchor = "test('saving a valid polygon preserves stable identity, audience, tags, dispositions and player associations', async ({\n  page,\n}) => {"
+          admin_regression = "test('rejecting an out-of-bounds vertex drag restores the visible handle before save', async ({\n  page,\n}) => {\n  const backend = await openAdmin(page);\n  await page.getByTestId('admin-geometry-kind').selectOption('polygon');\n\n  const canvas = page.getByTestId('admin-coordinate-map');\n  await canvas.scrollIntoViewIfNeeded();\n  const canvasBox = await canvas.boundingBox();\n  const viewport = page.viewportSize();\n  const firstVertex = page.getByTestId('admin-polygon-vertex-0');\n  const beforeBox = await firstVertex.boundingBox();\n  if (!canvasBox || !viewport || !beforeBox) {\n    throw new Error('El mapa o el vértice administrativo no tiene geometría visible.');\n  }\n\n  const start = {\n    x: beforeBox.x + beforeBox.width / 2,\n    y: beforeBox.y + beforeBox.height / 2,\n  };\n  let target: { x: number; y: number };\n  if (canvasBox.x >= 32) {\n    target = { x: canvasBox.x - 24, y: start.y };\n  } else if (canvasBox.x + canvasBox.width + 24 < viewport.width) {\n    target = { x: canvasBox.x + canvasBox.width + 24, y: start.y };\n  } else if (canvasBox.y >= 32) {\n    target = { x: start.x, y: canvasBox.y - 24 };\n  } else if (canvasBox.y + canvasBox.height + 24 < viewport.height) {\n    target = { x: start.x, y: canvasBox.y + canvasBox.height + 24 };\n  } else {\n    throw new Error('No hay espacio de viewport para arrastrar el vértice fuera del mapa.');\n  }\n\n  await page.mouse.move(start.x, start.y);\n  await page.mouse.down();\n  await page.mouse.move(target.x, target.y, { steps: 8 });\n  await page.mouse.up();\n\n  await expect(firstVertex).toBeFocused();\n  const restoredBox = await firstVertex.boundingBox();\n  if (!restoredBox) throw new Error('El vértice restaurado no es visible.');\n  const restoredCenter = {\n    x: restoredBox.x + restoredBox.width / 2,\n    y: restoredBox.y + restoredBox.height / 2,\n  };\n  expect(Math.abs(restoredCenter.x - start.x)).toBeLessThan(2);\n  expect(Math.abs(restoredCenter.y - start.y)).toBeLessThan(2);\n\n  await page.getByRole('button', { name: 'Previsualizar' }).click();\n  await expect(page.getByText(/Área\\/Región · 4 vértices/)).toBeVisible();\n  await page.getByRole('button', { name: 'Publicar' }).click();\n  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();\n\n  const expectedGeometry: Geometry = {\n    kind: 'polygon',\n    vertices: [\n      { x: 964, y: 764 },\n      { x: 1036, y: 764 },\n      { x: 1036, y: 836 },\n      { x: 964, y: 836 },\n    ],\n  };\n  expect(backend.getGeometry()).toEqual(expectedGeometry);\n  expect(backend.getLastSaveBody()).toMatchObject({ p_geometry: expectedGeometry });\n\n  await page.getByRole('button', { name: 'Cerrar editor' }).click();\n  await openExistingEditor(page);\n  await expect(page.getByTestId('admin-geometry-kind')).toHaveValue('polygon');\n  await expect(page.locator('[data-testid^=\\\"admin-polygon-vertex-\\\"]')).toHaveCount(4);\n  await expect(page.getByLabel(/Coordenada X representativa/)).toHaveValue('1000');\n  await expect(page.getByLabel(/Coordenada Y representativa/)).toHaveValue('800');\n});\n\n" + admin_anchor
+          replace_once(admin_test, admin_anchor, admin_regression)
+      - name: Format changed files
+        run: npx prettier --write src/main.ts src/map/adminEntityEditorMap.ts tests/e2e/map061-master-status-purge.spec.ts tests/e2e/map061-admin-regions.spec.ts
+      - name: Validate patch
+        run: |
+          git diff --check
+          npx prettier --check src/main.ts src/map/adminEntityEditorMap.ts tests/e2e/map061-master-status-purge.spec.ts tests/e2e/map061-admin-regions.spec.ts
+      - name: Commit fixes
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/main.ts src/map/adminEntityEditorMap.ts tests/e2e/map061-master-status-purge.spec.ts tests/e2e/map061-admin-regions.spec.ts
+          git commit -m 'fix: close MAP-061 rereview findings'
+          git push origin HEAD:agent/map-061-campaign-regions
