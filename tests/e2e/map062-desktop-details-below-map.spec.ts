@@ -207,7 +207,9 @@ async function configureBackend(page: Page): Promise<void> {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      headers: { 'Content-Range': rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}` },
+      headers: {
+        'Content-Range': rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`,
+      },
       body: JSON.stringify(rows),
     });
   });
@@ -314,8 +316,12 @@ test('1440 desktop keeps map width and viewport stable while exposing a broad na
   await marker.click();
   const panel = page.getByTestId('place-details');
   await expect(panel).toBeVisible();
-  await expect(panel.getByRole('heading', { level: 3, name: 'MAP062 Rich Character' })).toBeFocused();
-  expect(Math.abs((await page.evaluate(() => window.scrollY)) - scrollBefore)).toBeLessThanOrEqual(1);
+  await expect(
+    panel.getByRole('heading', { level: 3, name: 'MAP062 Rich Character' }),
+  ).toBeFocused();
+  expect(Math.abs((await page.evaluate(() => window.scrollY)) - scrollBefore)).toBeLessThanOrEqual(
+    1,
+  );
   await expectDesktopDetailsBelowMap(page, mapBefore?.width ?? 0);
   expect(await readMapView(page)).toEqual(viewBefore);
 
@@ -328,8 +334,12 @@ test('1440 desktop keeps map width and viewport stable while exposing a broad na
   await expect(panel).toContainText('Juramento antiguo');
   await expect(panel).not.toContainText('Resumen deliberadamente reservado');
   await expect(panel).not.toContainText('Descripción deliberadamente reservada');
-  await expect(panel.getByRole('button', { name: 'Volver al pin de MAP062 Rich Character' })).toBeVisible();
-  await expect(panel.getByRole('link', { name: /Abrir ficha completa de MAP062 Rich Character/ })).toBeVisible();
+  await expect(
+    panel.getByRole('button', { name: 'Volver al pin de MAP062 Rich Character' }),
+  ).toBeVisible();
+  await expect(
+    panel.getByRole('link', { name: /Abrir ficha completa de MAP062 Rich Character/ }),
+  ).toBeVisible();
   await expectUniqueCompactIds(page);
   await expectNoHorizontalOverflow(page);
 
@@ -364,7 +374,9 @@ test('1920 expanded keeps full horizontal map geometry, reuses one details regio
   await point(page, POINT_B_ID).click();
   await expect(panel).toHaveCount(1);
   await expect(panel).toHaveAttribute('data-active-pin-id', POINT_B_ID);
-  await expect(panel.getByRole('heading', { level: 3, name: 'MAP062 Second Character' })).toBeFocused();
+  await expect(
+    panel.getByRole('heading', { level: 3, name: 'MAP062 Second Character' }),
+  ).toBeFocused();
   await expectUniqueCompactIds(page);
 
   await toggleExpanded(page, false);
@@ -394,14 +406,16 @@ test('polygon selection uses the same lower details region and returns focus to 
 
   const panel = page.getByTestId('place-details');
   await expect(panel).toHaveAttribute('data-active-pin-id', REGION_ID);
-  await expect(panel.getByRole('heading', { level: 3, name: 'MAP062 Campaign Region' })).toBeFocused();
+  await expect(
+    panel.getByRole('heading', { level: 3, name: 'MAP062 Campaign Region' }),
+  ).toBeFocused();
   await expect(panel).toContainText('MAP062 Related Character');
   await expectDesktopDetailsBelowMap(page, mapBefore?.width ?? 0);
-  await expect(panel.getByRole('button', { name: 'Volver a la región de MAP062 Campaign Region' })).toBeVisible();
+  await expect(
+    panel.getByRole('button', { name: 'Volver a la región de MAP062 Campaign Region' }),
+  ).toBeVisible();
 
-  await panel
-    .getByRole('button', { name: 'Volver a la región de MAP062 Campaign Region' })
-    .click();
+  await panel.getByRole('button', { name: 'Volver a la región de MAP062 Campaign Region' }).click();
   await expect(campaignRegion).toBeFocused();
   await expect(campaignRegion).toHaveAttribute('aria-pressed', 'true');
 
@@ -429,8 +443,12 @@ for (const width of [320, 390, 430]) {
       expect(panelBox.y).toBeLessThan(mapBox.y + mapBox.height);
       expect(panelBox.height).toBeLessThanOrEqual(mapBox.height * 0.53);
     }
-    expect(Math.abs((await page.evaluate(() => window.scrollY)) - scrollBefore)).toBeLessThanOrEqual(1);
-    await expect(panel.getByRole('button', { name: 'Volver al pin de MAP062 Rich Character' })).toBeVisible();
+    expect(
+      Math.abs((await page.evaluate(() => window.scrollY)) - scrollBefore),
+    ).toBeLessThanOrEqual(1);
+    await expect(
+      panel.getByRole('button', { name: 'Volver al pin de MAP062 Rich Character' }),
+    ).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
     await page.keyboard.press('Escape');

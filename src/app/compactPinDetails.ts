@@ -314,7 +314,10 @@ function renderDetails(
   return title;
 }
 
-function findActiveMapControl(workspace: HTMLElement, activePinId: string | undefined): HTMLElement | null {
+function findActiveMapControl(
+  workspace: HTMLElement,
+  activePinId: string | undefined,
+): HTMLElement | null {
   if (activePinId) {
     const region = Array.from(
       workspace.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]'),
@@ -326,9 +329,9 @@ function findActiveMapControl(workspace: HTMLElement, activePinId: string | unde
 }
 
 function isRegionTarget(workspace: HTMLElement, detailsId: string): boolean {
-  return Array.from(workspace.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]')).some(
-    (candidate) => candidate.dataset.regionId === detailsId,
-  );
+  return Array.from(
+    workspace.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]'),
+  ).some((candidate) => candidate.dataset.regionId === detailsId);
 }
 
 export function mountCompactPinDetails(

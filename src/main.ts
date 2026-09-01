@@ -198,8 +198,6 @@ function mountPublicExperience(
         return;
       }
 
-      mapController.map.invalidateSize({ animate: false, pan: false });
-
       window.requestAnimationFrame(() => {
         if (
           announcementGeneration !== deferredSelectionAnnouncementGeneration ||
