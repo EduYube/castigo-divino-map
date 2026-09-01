@@ -1,4 +1,4 @@
-name: MAP-063 temporary database contract fix
+name: MAP-063 temporary RPC shape fix
 
 on:
   push:
@@ -12,6 +12,7 @@ jobs:
   patch-and-test:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
@@ -24,24 +25,12 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Align RPC response and consolidate security contract
+      - name: Align strict RPC response contract
         run: |
           node - <<'NODE'
           const fs = require('node:fs');
 
-          function unwrapMigration(path) {
-            const content = fs.readFileSync(path, 'utf8');
-            const prefix = 'begin;\n\n';
-            const suffix = '\ncommit;\n';
-            if (!content.startsWith(prefix) || !content.endsWith(suffix)) {
-              throw new Error(`unexpected migration wrapper: ${path}`);
-            }
-            return content.slice(prefix.length, -suffix.length).trimEnd();
-          }
-
           const migrationPath = 'supabase/migrations/20260901150000_add_public_player_note_authorship.sql';
-          const compatibilityPath = 'supabase/migrations/20260901150100_keep_internal_note_import_compatibility.sql';
-          const sessionModePath = 'supabase/migrations/20260901150200_enforce_note_author_session_mode.sql';
           let migration = fs.readFileSync(migrationPath, 'utf8');
 
           const returnShapeBefore = `returns table (\n  id text,\n  slug text,\n  entity_id text,`;
@@ -55,24 +44,7 @@ jobs:
           const returningCount = migration.split(returningBefore).length - 1;
           if (returningCount !== 3) throw new Error(`expected three RETURNING slug fields, found ${returningCount}`);
           migration = migration.split(returningBefore).join(returningAfter);
-
-          const compatibility = unwrapMigration(compatibilityPath);
-          const sessionMode = unwrapMigration(sessionModePath);
-          const finalCommit = '\ncommit;\n';
-          const commitIndex = migration.lastIndexOf(finalCommit);
-          if (commitIndex < 0 || commitIndex !== migration.length - finalCommit.length) {
-            throw new Error('expected final commit marker in MAP-063 authorship migration');
-          }
-          migration =
-            migration.slice(0, commitIndex).trimEnd() +
-            `\n\n-- Keep compatibility defaults and session-derived Master authorship in the\n-- same transaction that publishes the RPCs, so no intermediate deploy state\n-- exposes a weaker contract.\n` +
-            compatibility +
-            `\n\n` +
-            sessionMode +
-            finalCommit;
           fs.writeFileSync(migrationPath, migration);
-          fs.unlinkSync(compatibilityPath);
-          fs.unlinkSync(sessionModePath);
 
           const testPath = 'supabase/tests/database/036_public_player_notes_hardening.test.sql';
           let test = fs.readFileSync(testPath, 'utf8');
@@ -85,30 +57,19 @@ jobs:
           test = test.replace(insertionPoint, () => shapeTests);
           fs.writeFileSync(testPath, test);
           NODE
-      - name: Run complete database validation with stack retry
-        run: |
-          set -u
-          validated=0
-          for attempt in 1 2; do
-            echo "MAP-063 database validation attempt ${attempt}/2"
-            npm run supabase:stop -- --no-backup >/dev/null 2>&1 || true
-            sleep 5
-            if npm run supabase:start && npm run supabase:db:validate; then
-              validated=1
-              break
-            fi
-            echo "Attempt ${attempt} failed; restarting the entire local stack before retry."
-          done
-          test "$validated" -eq 1
-      - name: Stop Supabase
+      - name: Start local Supabase stack
+        run: npx supabase start
+      - name: Run official database validation
+        run: npm run supabase:db:validate
+      - name: Stop local Supabase stack
         if: always()
-        run: npm run supabase:stop -- --no-backup
-      - name: Commit validated contract and remove helper
+        run: npx supabase stop --no-backup
+      - name: Commit validated fix and remove helper
         if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+EduYube@users.noreply.github.com"
-          git add -A supabase/migrations supabase/tests/database/036_public_player_notes_hardening.test.sql
+          git add supabase/migrations/20260901150000_add_public_player_note_authorship.sql supabase/tests/database/036_public_player_notes_hardening.test.sql
           git rm .github/workflows/agent-map063-rpc-shape-fix.yml
-          git commit -m "fix(db): publish MAP-063 note contract atomically"
+          git commit -m "fix(db): align public note RPC response shape"
           git push origin HEAD:agent/map-063-public-player-notes
