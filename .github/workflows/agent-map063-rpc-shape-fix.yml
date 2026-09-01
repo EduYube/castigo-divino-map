@@ -1,4 +1,4 @@
-name: MAP-063 temporary RPC shape fix
+name: MAP-063 temporary database contract fix
 
 on:
   push:
@@ -24,10 +24,20 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Align RPC response contract and add regression
+      - name: Align RPC response and consolidate security contract
         run: |
           node - <<'NODE'
           const fs = require('node:fs');
+
+          function unwrapMigration(path) {
+            const content = fs.readFileSync(path, 'utf8');
+            const prefix = 'begin;\n\n';
+            const suffix = '\ncommit;\n';
+            if (!content.startsWith(prefix) || !content.endsWith(suffix)) {
+              throw new Error(`unexpected migration wrapper: ${path}`);
+            }
+            return content.slice(prefix.length, -suffix.length).trimEnd();
+          }
 
           const migrationPath = 'supabase/migrations/20260901150000_add_public_player_note_authorship.sql';
           let migration = fs.readFileSync(migrationPath, 'utf8');
@@ -42,36 +52,51 @@ jobs:
           const returningCount = migration.split(returningBefore).length - 1;
           if (returningCount !== 3) throw new Error(`expected three RETURNING slug fields, found ${returningCount}`);
           migration = migration.split(returningBefore).join(returningAfter);
+
+          const compatibilityPath = 'supabase/migrations/20260901150100_keep_internal_note_import_compatibility.sql';
+          const sessionModePath = 'supabase/migrations/20260901150200_enforce_note_author_session_mode.sql';
+          const compatibility = unwrapMigration(compatibilityPath);
+          const sessionMode = unwrapMigration(sessionModePath);
+          const finalCommit = '\ncommit;\n';
+          const commitIndex = migration.lastIndexOf(finalCommit);
+          if (commitIndex < 0 || commitIndex !== migration.length - finalCommit.length) {
+            throw new Error('expected a single final commit marker in MAP-063 authorship migration');
+          }
+          migration =
+            migration.slice(0, commitIndex).trimEnd() +
+            `\n\n-- Keep compatibility defaults and session-derived Master authorship in the\n-- same transaction that publishes the RPCs, so no intermediate deploy state\n-- exposes a weaker contract.\n` +
+            compatibility +
+            `\n\n` +
+            sessionMode +
+            finalCommit;
           fs.writeFileSync(migrationPath, migration);
 
           const testPath = 'supabase/tests/database/036_public_player_notes_hardening.test.sql';
           let test = fs.readFileSync(testPath, 'utf8');
-          const planBefore = `select plan(11);`;
-          if ((test.split(planBefore).length - 1) !== 1) throw new Error('expected plan(11) once');
-          test = test.replace(planBefore, `select plan(14);`);
+          if ((test.split('select plan(11);').length - 1) !== 1) throw new Error('expected plan(11) once');
+          test = test.replace('select plan(11);', 'select plan(14);');
 
           const insertionPoint = `select ok(\n  pg_temp.statement_fails($$select public.create_public_player_note(\n    'entity-aster-guide', 'player-demo-one', 'Title', 'Body', 'master'\n  )$$),\n  'public RPC exposes no extra mass-assignment parameter for Master authorship'\n);\n`;
           if ((test.split(insertionPoint).length - 1) !== 1) throw new Error('expected mass-assignment test once');
-          const shapeTests = `${insertionPoint}\nselect unlike(\n  pg_get_function_result('public.create_public_player_note(text,text,text,text)'::regprocedure),\n  '%slug%',\n  'public player RPC response omits the unused slug field expected to be rejected by the strict client parser'\n);\nselect unlike(\n  pg_get_function_result('public.create_master_public_note(text,text,text)'::regprocedure),\n  '%slug%',\n  'Master create RPC response matches the strict public note client shape'\n);\nselect unlike(\n  pg_get_function_result('public.update_master_public_note(text,text,text,text)'::regprocedure),\n  '%slug%',\n  'Master update RPC response matches the strict public note client shape'\n);\n`;
-          test = test.replace(insertionPoint, shapeTests);
+          const shapeTests = `${insertionPoint}\nselect unlike(\n  pg_get_function_result('public.create_public_player_note(text,text,text,text)'::regprocedure),\n  '%slug%',\n  'public player RPC response omits the unused slug field rejected by the strict client parser'\n);\nselect unlike(\n  pg_get_function_result('public.create_master_public_note(text,text,text)'::regprocedure),\n  '%slug%',\n  'Master create RPC response matches the strict public note client shape'\n);\nselect unlike(\n  pg_get_function_result('public.update_master_public_note(text,text,text,text)'::regprocedure),\n  '%slug%',\n  'Master update RPC response matches the strict public note client shape'\n);\n`;
+          test = test.replace(insertionPoint, () => shapeTests);
           fs.writeFileSync(testPath, test);
           NODE
       - name: Start Supabase
-        run: npx supabase start
-      - name: Reset, lint and run database tests
-        run: |
-          npx supabase db reset --local
-          npx supabase db lint --local --fail-on warning
-          npx supabase test db --local
+        run: npm run supabase:start
+      - name: Run complete database validation
+        run: npm run supabase:db:validate
       - name: Stop Supabase
         if: always()
-        run: npx supabase stop --no-backup
-      - name: Commit validated fix and remove helper
+        run: npm run supabase:stop -- --no-backup
+      - name: Commit validated contract and remove obsolete migrations/helper
         if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add supabase/migrations/20260901150000_add_public_player_note_authorship.sql supabase/tests/database/036_public_player_notes_hardening.test.sql
+          git rm supabase/migrations/20260901150100_keep_internal_note_import_compatibility.sql
+          git rm supabase/migrations/20260901150200_enforce_note_author_session_mode.sql
           git rm .github/workflows/agent-map063-rpc-shape-fix.yml
-          git commit -m "fix(db): align public note RPC response shape"
+          git commit -m "fix(db): publish MAP-063 note contract atomically"
           git push origin HEAD:agent/map-063-public-player-notes
