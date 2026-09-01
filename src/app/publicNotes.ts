@@ -222,6 +222,13 @@ function createElements(root: ParentNode): PublicNotesElements {
   };
 }
 
+function isAuthorizationFailure(error: unknown): boolean {
+  return (
+    error instanceof PublicNoteRepositoryError &&
+    (error.code === 'unauthorized' || error.code === 'forbidden')
+  );
+}
+
 function describeRepositoryError(error: unknown): string {
   if (!(error instanceof PublicNoteRepositoryError)) {
     return 'No se pudo completar la operación con las notas públicas.';
@@ -355,6 +362,7 @@ export function mountPublicNotes(
     body.rows = 5;
     const error = appendText(form, 'p', 'public-notes__error', '');
     error.setAttribute('aria-live', 'assertive');
+    error.tabIndex = -1;
     const actions = document.createElement('div');
     actions.className = 'public-notes__form-actions';
     const save = document.createElement('button');
@@ -390,8 +398,18 @@ export function mountPublicNotes(
           focusNote(updated.id);
         })
         .catch((errorValue) => {
+          if (isAuthorizationFailure(errorValue)) {
+            mode = 'unverified';
+            authAdapter?.dispose();
+            authAdapter = null;
+            setFormAvailable(false);
+            renderList();
+            announce(describeRepositoryError(errorValue), true);
+            elements.status.focus({ preventScroll: true });
+            return;
+          }
           error.textContent = describeRepositoryError(errorValue);
-          error.focus?.();
+          error.focus({ preventScroll: true });
         })
         .finally(() => {
           saving = false;
@@ -437,6 +455,12 @@ export function mountPublicNotes(
           elements.heading.focus({ preventScroll: true });
         })
         .catch((errorValue) => {
+          if (isAuthorizationFailure(errorValue)) {
+            mode = 'unverified';
+            authAdapter?.dispose();
+            authAdapter = null;
+            setFormAvailable(false);
+          }
           announce(describeRepositoryError(errorValue), true);
           elements.status.focus({ preventScroll: true });
           renderList();
@@ -692,6 +716,13 @@ export function mountPublicNotes(
         focusNote(created.id);
       })
       .catch((error) => {
+        if (isAuthorizationFailure(error)) {
+          mode = 'unverified';
+          authAdapter?.dispose();
+          authAdapter = null;
+          setFormAvailable(false);
+          renderList();
+        }
         announce(describeRepositoryError(error), true);
         elements.status.focus({ preventScroll: true });
       })
