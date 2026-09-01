@@ -1,0 +1,105 @@
+name: MAP-063 temporary unverified session fix
+
+on:
+  push:
+    branches:
+      - agent/map-063-public-player-notes
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-063-public-player-notes
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Patch unverified author state and E2E
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          function replaceOnce(source, before, after, label) {
+            const count = source.split(before).length - 1;
+            if (count !== 1) throw new Error(`${label}: expected one match, found ${count}`);
+            return source.replace(before, after);
+          }
+
+          const appPath = 'src/app/publicNotes.ts';
+          let app = fs.readFileSync(appPath, 'utf8');
+          app = replaceOnce(
+            app,
+            `    const existingMasterAuthor = elements.authorField.querySelector<HTMLElement>(\n      '[data-public-note-master-author]',\n    );\n\n    if (mode === 'master') {`,
+            `    const existingMasterAuthor = elements.authorField.querySelector<HTMLElement>(\n      '[data-public-note-master-author]',\n    );\n    const existingUnverifiedAuthor = elements.authorField.querySelector<HTMLElement>(\n      '[data-public-note-unverified-author]',\n    );\n\n    if (mode === 'master') {\n      existingUnverifiedAuthor?.remove();`,
+            'master/unverified author nodes',
+          );
+          app = replaceOnce(
+            app,
+            `      elements.submit.textContent = 'Publicar como Máster';\n      return;\n    }\n\n    authorLabel?.removeAttribute('hidden');`,
+            `      elements.submit.textContent = 'Publicar como Máster';\n      return;\n    }\n\n    if (mode === 'unverified') {\n      authorLabel?.setAttribute('hidden', '');\n      elements.authorSelect.hidden = true;\n      authorHelp?.setAttribute('hidden', '');\n      elements.authorError.hidden = true;\n      existingMasterAuthor?.remove();\n      const unverifiedAuthor =\n        existingUnverifiedAuthor ??\n        appendText(\n          elements.authorField,\n          'p',\n          'public-notes__master-author',\n          'Autor: sesión sin verificar',\n        );\n      unverifiedAuthor.dataset.publicNoteUnverifiedAuthor = '';\n      unverifiedAuthor.hidden = false;\n      elements.submit.textContent = 'Publicar nota';\n      return;\n    }\n\n    authorLabel?.removeAttribute('hidden');`,
+            'unverified author branch',
+          );
+          app = replaceOnce(
+            app,
+            `    existingMasterAuthor?.remove();\n    elements.authorSelect.replaceChildren();`,
+            `    existingMasterAuthor?.remove();\n    existingUnverifiedAuthor?.remove();\n    elements.authorSelect.replaceChildren();`,
+            'visitor removes mode author',
+          );
+
+          const authFailureSnippet = `            mode = 'unverified';\n            authAdapter?.dispose();\n            authAdapter = null;\n            setFormAvailable(false);`;
+          const authFailureReplacement = `            mode = 'unverified';\n            authAdapter?.dispose();\n            authAdapter = null;\n            updateAuthorControls();\n            setFormAvailable(false);`;
+          const nestedCount = app.split(authFailureSnippet).length - 1;
+          if (nestedCount !== 2) throw new Error(`expected two nested auth failures, found ${nestedCount}`);
+          app = app.split(authFailureSnippet).join(authFailureReplacement);
+
+          const createFailureSnippet = `          mode = 'unverified';\n          authAdapter?.dispose();\n          authAdapter = null;\n          setFormAvailable(false);`;
+          const createCount = app.split(createFailureSnippet).length - 1;
+          if (createCount !== 1) throw new Error(`expected one create auth failure, found ${createCount}`);
+          app = app.replace(
+            createFailureSnippet,
+            `          mode = 'unverified';\n          authAdapter?.dispose();\n          authAdapter = null;\n          updateAuthorControls();\n          setFormAvailable(false);`,
+          );
+          fs.writeFileSync(appPath, app);
+
+          const testPath = 'tests/e2e/map063-public-player-notes.spec.ts';
+          let test = fs.readFileSync(testPath, 'utf8');
+          test = replaceOnce(
+            test,
+            `      if (name === 'current_user_is_admin') {\n        await route.fulfill(jsonResponse(state.admin));\n        return;\n      }\n      if (name === 'create_public_player_note') {`,
+            `      if (name === 'current_user_is_admin') {\n        await route.fulfill(jsonResponse(state.admin));\n        return;\n      }\n      if (\n        !state.admin &&\n        ['create_master_public_note', 'update_master_public_note', 'archive_master_public_note'].includes(\n          name,\n        )\n      ) {\n        await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });\n        return;\n      }\n      if (name === 'create_public_player_note') {`,
+            'admin RPC authorization fixture',
+          );
+
+          const marker = `test('degraded mode keeps snapshot notes and draft text, then recovers locally without reload', async ({`;
+          const markerCount = test.split(marker).length - 1;
+          if (markerCount !== 1) throw new Error(`expected degraded test marker once, found ${markerCount}`);
+          const regression = `test('stale Master authorization fails closed until the session is revalidated', async ({\n  context,\n  page,\n}) => {\n  const state = await configureBackend(context, { admin: true });\n  await openCampaignA(page);\n\n  await expect(page.getByText('Autor: Máster', { exact: true })).toBeVisible();\n  state.admin = false;\n  await page.getByLabel('Título').fill('No debe publicarse');\n  await page.getByRole('textbox', { name: 'Nota', exact: true }).fill('Sesión revocada.');\n  await page.getByRole('button', { name: 'Publicar como Máster' }).click();\n\n  await expect(page.getByText(/sesión del Máster ya no está autorizada/i)).toBeVisible();\n  await expect(page.getByText('Autor: Máster', { exact: true })).toHaveCount(0);\n  await expect(page.getByText('Autor: sesión sin verificar', { exact: true })).toBeVisible();\n  await expect(page.locator('[data-public-note-admin-actions]')).toHaveCount(0);\n  await expect(page.getByRole('button', { name: 'Publicar nota' })).toBeDisabled();\n  await expect(page.getByRole('button', { name: 'Reintentar conexión' })).toBeVisible();\n  await expect(page.getByLabel('Título')).toHaveValue('No debe publicarse');\n  await expect(page.getByRole('textbox', { name: 'Nota', exact: true })).toHaveValue(\n    'Sesión revocada.',\n  );\n\n  state.admin = true;\n  await page.getByRole('button', { name: 'Reintentar conexión' }).click();\n  await expect(page.getByText('Autor: Máster', { exact: true })).toBeVisible();\n  await expect(page.getByText('Autor: sesión sin verificar', { exact: true })).toHaveCount(0);\n  await expect(page.getByRole('button', { name: 'Publicar como Máster' })).toBeEnabled();\n  await expect(page.locator('[data-public-note-admin-actions]')).toHaveCount(1);\n});\n\n`;
+          test = test.replace(marker, regression + marker);
+          fs.writeFileSync(testPath, test);
+          NODE
+          npx prettier --write src/app/publicNotes.ts tests/e2e/map063-public-player-notes.spec.ts
+          npx prettier --check src/app/publicNotes.ts tests/e2e/map063-public-player-notes.spec.ts
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run MAP-063 E2E
+        run: npx playwright test tests/e2e/map063-public-player-notes.spec.ts --project=chromium
+      - name: Run lint and unit tests
+        run: npm run lint && npm run test -- --run src/domain/publicNotes.test.ts
+      - name: Commit validated fix and remove helper
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/app/publicNotes.ts tests/e2e/map063-public-player-notes.spec.ts
+          git rm .github/workflows/agent-map063-unverified-state.yml
+          git commit -m "fix(notes): reflect revoked Master authorization"
+          git push origin HEAD:agent/map-063-public-player-notes
