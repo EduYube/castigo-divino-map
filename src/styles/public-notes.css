@@ -1,0 +1,149 @@
+.public-notes {
+  min-width: 0;
+}
+
+.public-notes__list {
+  display: grid;
+  gap: 1rem;
+}
+
+.public-note {
+  min-width: 0;
+}
+
+.public-note__meta,
+.public-notes__help,
+.public-notes__status {
+  margin: 0.5rem 0 0;
+  color: var(--color-text-muted, currentColor);
+  overflow-wrap: anywhere;
+}
+
+.public-notes__form,
+.public-notes__edit-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid currentColor;
+}
+
+.public-notes__form-title {
+  margin: 0;
+}
+
+.public-notes__field,
+.public-notes__edit-form {
+  min-width: 0;
+}
+
+.public-notes__field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.public-notes__field label,
+.public-notes__edit-form label,
+.public-notes__master-author {
+  font-weight: 700;
+}
+
+.public-notes__field input,
+.public-notes__field select,
+.public-notes__field textarea,
+.public-notes__edit-form input,
+.public-notes__edit-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 0.35rem;
+  background: var(--color-surface, Canvas);
+  color: inherit;
+  font: inherit;
+}
+
+.public-notes__field textarea,
+.public-notes__edit-form textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.public-notes__error {
+  margin: 0;
+  font-weight: 600;
+}
+
+.public-notes__error:empty {
+  display: none;
+}
+
+.public-notes__form-actions,
+.public-notes__note-actions,
+.public-notes__archive-confirmation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.public-notes button {
+  min-height: 44px;
+  max-width: 100%;
+  padding: 0.65rem 1rem;
+  font: inherit;
+}
+
+.public-notes__note-actions,
+.public-notes__archive-confirmation {
+  margin-top: 0.75rem;
+}
+
+.public-notes__archive-confirmation p {
+  flex: 1 1 100%;
+  margin: 0;
+}
+
+.public-notes__form[aria-busy='true'],
+.public-notes__edit-form[aria-busy='true'] {
+  cursor: progress;
+}
+
+.public-notes__form--offline {
+  opacity: 0.9;
+}
+
+.public-notes__status--error {
+  font-weight: 700;
+}
+
+.public-notes :focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (max-width: 30rem) {
+  .public-notes__form-actions > button,
+  .public-notes__note-actions > button,
+  .public-notes__archive-confirmation > button {
+    width: 100%;
+  }
+}
+
+@media (forced-colors: active) {
+  .public-notes__field input,
+  .public-notes__field select,
+  .public-notes__field textarea,
+  .public-notes__edit-form input,
+  .public-notes__edit-form textarea,
+  .public-notes__form,
+  .public-notes__edit-form {
+    border-color: CanvasText;
+  }
+
+  .public-notes button {
+    border: 1px solid ButtonText;
+  }
+}
