@@ -602,7 +602,7 @@ export function mountPublicNotes(
         );
       }
       if (focusOnRecovery) elements.status.focus({ preventScroll: true });
-    } catch (error) {
+    } catch {
       if (destroyed || request.signal.aborted) return;
       setFormAvailable(false);
       renderFallback();
