@@ -1,0 +1,60 @@
+name: MAP-063 temporary concurrency fixture fix
+
+on:
+  push:
+    branches:
+      - agent/map-063-public-player-notes
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-063-public-player-notes
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Correct fixture state assertion
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = 'scripts/test-map063-public-note-concurrency.mjs';
+          let source = fs.readFileSync(path, 'utf8');
+          const before = "state !== 'active:published:published:public'";
+          const after = "state !== 'active:published:public'";
+          if ((source.split(before).length - 1) !== 1) {
+            throw new Error('expected exactly one MAP-063 fixture assertion');
+          }
+          source = source.replace(before, after);
+          fs.writeFileSync(path, source);
+          NODE
+          npx prettier --check scripts/test-map063-public-note-concurrency.mjs
+      - name: Start local Supabase stack
+        run: npx supabase start
+      - name: Reset database and run MAP-063 concurrency regression
+        run: |
+          npm run supabase:db:reset
+          node scripts/test-map063-public-note-concurrency.mjs
+      - name: Stop local Supabase stack
+        if: always()
+        run: npx supabase stop --no-backup
+      - name: Commit validated fixture fix and remove helper
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+EduYube@users.noreply.github.com"
+          git add scripts/test-map063-public-note-concurrency.mjs
+          git rm .github/workflows/agent-map063-concurrency-fixture-fix.yml
+          git commit -m "test(db): fix MAP-063 concurrency fixture assertion"
+          git push origin HEAD:agent/map-063-public-player-notes
