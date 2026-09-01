@@ -248,6 +248,12 @@ async function configureBackend(
 
   await context.addInitScript(
     ({ projectUrl, publishableKey, admin, authStorageKey, userId }) => {
+      window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
+        projectUrl,
+        publishableKey,
+        timeoutMs: 300,
+        retryDelaysMs: [0, 0, 0],
+      };
       window.__MAP063_PUBLIC_NOTES_TEST_CONFIG__ = {
         projectUrl,
         publishableKey,
@@ -440,7 +446,9 @@ test('visitor declares a campaign player and sees the persisted note immediately
   await expect(page.getByText(/autoría del jugador es declarada/i)).toBeVisible();
 
   await page.getByLabel('Título').fill('Hallazgo del jugador');
-  await page.getByLabel('Nota').fill('<img src=x onerror=alert(1)>');
+  await page
+    .getByRole('textbox', { name: 'Nota', exact: true })
+    .fill('<img src=x onerror=alert(1)>');
   await page.getByRole('button', { name: 'Publicar nota' }).click();
   await expect(page.getByText('Selecciona un personaje del roster.')).toBeVisible();
   await expect(author).toBeFocused();
@@ -498,7 +506,9 @@ test('authorized Master creates, edits and retires notes while original player a
   await expect(page.getByRole('button', { name: 'Publicar como Máster' })).toBeEnabled();
 
   await page.getByLabel('Título').fill('Nota del Máster');
-  await page.getByLabel('Nota').fill('Creada desde una sesión administrativa autorizada.');
+  await page
+    .getByRole('textbox', { name: 'Nota', exact: true })
+    .fill('Creada desde una sesión administrativa autorizada.');
   await page.getByRole('button', { name: 'Publicar como Máster' }).click();
   const masterNote = page.getByRole('heading', { level: 3, name: 'Nota del Máster' });
   await expect(masterNote).toBeVisible();
@@ -509,7 +519,9 @@ test('authorized Master creates, edits and retires notes while original player a
   await playerNote.getByRole('button', { name: 'Editar nota Apunte de Skade' }).click();
   const editForm = playerNote.locator('form');
   await editForm.getByLabel('Título').fill('Apunte de Skade revisado');
-  await editForm.getByLabel('Nota').fill('Revisado por el Máster.');
+  await editForm
+    .getByRole('textbox', { name: 'Nota', exact: true })
+    .fill('Revisado por el Máster.');
   await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
 
   const edited = page.locator('[data-public-note-id="note-map063-player-a"]');
@@ -553,12 +565,14 @@ test('degraded mode keeps snapshot notes and draft text, then recovers locally w
   await expect(page.getByRole('button', { name: 'Publicar nota' })).toBeDisabled();
 
   await page.getByLabel('Título').fill('Borrador conservado');
-  await page.getByLabel('Nota').fill('Este texto debe sobrevivir a la recuperación.');
+  await page
+    .getByRole('textbox', { name: 'Nota', exact: true })
+    .fill('Este texto debe sobrevivir a la recuperación.');
   state.online = true;
   await page.getByRole('button', { name: 'Reintentar conexión' }).click();
 
   await expect(page.getByLabel('Título')).toHaveValue('Borrador conservado');
-  await expect(page.getByLabel('Nota')).toHaveValue(
+  await expect(page.getByRole('textbox', { name: 'Nota', exact: true })).toHaveValue(
     'Este texto debe sobrevivir a la recuperación.',
   );
   await expect(page.getByLabel('Autor declarado')).toBeEnabled();
@@ -578,7 +592,7 @@ test('note form and metadata reflow at 320, 390 and 430 px with forced colors an
     await openCampaignA(page);
     await expect(page.getByLabel('Autor declarado')).toBeVisible();
     await expect(page.getByLabel('Título')).toBeVisible();
-    await expect(page.getByLabel('Nota')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Nota', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Publicar nota' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       width,
