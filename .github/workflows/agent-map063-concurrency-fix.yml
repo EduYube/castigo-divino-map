@@ -1,0 +1,179 @@
+name: MAP-063 temporary concurrency fix
+
+on:
+  push:
+    branches:
+      - agent/map-063-public-player-notes
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-063-public-player-notes
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lock dynamic note preconditions
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = 'supabase/migrations/20260901150000_add_public_player_note_authorship.sql';
+          let sql = fs.readFileSync(path, 'utf8');
+
+          const publicBefore = `  -- Lock the public entity before validation and sort-order allocation. Missing,
+          -- draft, archived and Master-only targets deliberately share one error.
+          select entity.*
+          into entity_row
+          from public.map_entities as entity
+          join public.campaigns as campaign
+            on campaign.id = entity.campaign_id
+           and campaign.status = 'active'
+          where entity.id = p_entity_id
+            and entity.publication_status = 'published'::public.publication_status
+            and entity.audience = 'public'::public.entity_audience
+          for update of entity;
+
+          if not found then
+            raise exception using errcode = '22023', message = 'public note target unavailable';
+          end if;
+
+          if not exists (
+            select 1
+            from public.players as player
+            where player.id = p_player_id
+              and player.campaign_id = entity_row.campaign_id
+              and player.publication_status = 'published'::public.publication_status
+          ) then
+            raise exception using errcode = '22023', message = 'invalid public note author';
+          end if;`;
+
+          const publicAfter = `  -- Keep the lock order deterministic: entity -> campaign -> player. The entity
+          -- UPDATE lock is also the existing serialization point for rate limiting and
+          -- sort-order allocation. Missing, draft, archived and Master-only targets
+          -- deliberately share one error.
+          select entity.*
+          into entity_row
+          from public.map_entities as entity
+          where entity.id = p_entity_id
+            and entity.publication_status = 'published'::public.publication_status
+            and entity.audience = 'public'::public.entity_audience
+          for update;
+
+          if not found then
+            raise exception using errcode = '22023', message = 'public note target unavailable';
+          end if;
+
+          -- FOR SHARE conflicts with administrative UPDATE/DELETE while remaining
+          -- compatible with concurrent public-note creations for different entities.
+          -- Under READ COMMITTED a waiter rechecks these predicates after the writer
+          -- commits, so a concurrent revocation either serializes after this creation
+          -- or makes this RPC fail before INSERT.
+          perform 1
+          from public.campaigns as campaign
+          where campaign.id = entity_row.campaign_id
+            and campaign.status = 'active'
+          for share;
+
+          if not found then
+            raise exception using errcode = '22023', message = 'public note target unavailable';
+          end if;
+
+          perform 1
+          from public.players as player
+          where player.id = p_player_id
+            and player.campaign_id = entity_row.campaign_id
+            and player.publication_status = 'published'::public.publication_status
+          for share;
+
+          if not found then
+            raise exception using errcode = '22023', message = 'invalid public note author';
+          end if;`;
+
+          if ((sql.split(publicBefore).length - 1) !== 1) {
+            throw new Error('expected one public note eligibility block');
+          }
+          sql = sql.replace(publicBefore, publicAfter);
+
+          const masterBefore = `  select entity.*
+          into entity_row
+          from public.map_entities as entity
+          join public.campaigns as campaign
+            on campaign.id = entity.campaign_id
+           and campaign.status = 'active'
+          where entity.id = p_entity_id
+            and entity.publication_status = 'published'::public.publication_status
+            and entity.audience = 'public'::public.entity_audience
+          for update of entity;
+
+          if not found then
+            raise exception using errcode = '22023', message = 'public note target unavailable';
+          end if;`;
+
+          const masterAfter = `  select entity.*
+          into entity_row
+          from public.map_entities as entity
+          where entity.id = p_entity_id
+            and entity.publication_status = 'published'::public.publication_status
+            and entity.audience = 'public'::public.entity_audience
+          for update;
+
+          if not found then
+            raise exception using errcode = '22023', message = 'public note target unavailable';
+          end if;
+
+          -- Match the public writer's entity -> campaign prefix so a campaign
+          -- lifecycle change cannot race an administrative note creation either.
+          perform 1
+          from public.campaigns as campaign
+          where campaign.id = entity_row.campaign_id
+            and campaign.status = 'active'
+          for share;
+
+          if not found then
+            raise exception using errcode = '22023', message = 'public note target unavailable';
+          end if;`;
+
+          if ((sql.split(masterBefore).length - 1) !== 1) {
+            throw new Error('expected one Master note target block');
+          }
+          sql = sql.replace(masterBefore, masterAfter);
+          fs.writeFileSync(path, sql);
+          NODE
+
+      - name: Start local Supabase stack
+        run: npx supabase start
+
+      - name: Validate migration and database tests
+        run: |
+          npm run supabase:db:reset
+          npm run supabase:db:lint
+          npm run supabase:db:test
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: npx supabase stop --no-backup
+
+      - name: Commit validated lock fix and remove helper
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+EduYube@users.noreply.github.com"
+          git add supabase/migrations/20260901150000_add_public_player_note_authorship.sql
+          git rm .github/workflows/agent-map063-concurrency-fix.yml
+          git commit -m "fix(db): serialize public note eligibility"
+          git push origin HEAD:agent/map-063-public-player-notes
