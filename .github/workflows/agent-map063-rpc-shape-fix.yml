@@ -1,0 +1,77 @@
+name: MAP-063 temporary RPC shape fix
+
+on:
+  push:
+    branches:
+      - agent/map-063-public-player-notes
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-063-public-player-notes
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Align RPC response contract and add regression
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+
+          const migrationPath = 'supabase/migrations/20260901150000_add_public_player_note_authorship.sql';
+          let migration = fs.readFileSync(migrationPath, 'utf8');
+          const returnShapeBefore = `returns table (\n  id text,\n  slug text,\n  entity_id text,`;
+          const returnShapeAfter = `returns table (\n  id text,\n  entity_id text,`;
+          const returnShapeCount = migration.split(returnShapeBefore).length - 1;
+          if (returnShapeCount !== 3) throw new Error(`expected three RPC return shapes with slug, found ${returnShapeCount}`);
+          migration = migration.split(returnShapeBefore).join(returnShapeAfter);
+
+          const returningBefore = `  returning\n    note.id,\n    note.slug,\n    note.entity_id,`;
+          const returningAfter = `  returning\n    note.id,\n    note.entity_id,`;
+          const returningCount = migration.split(returningBefore).length - 1;
+          if (returningCount !== 3) throw new Error(`expected three RETURNING slug fields, found ${returningCount}`);
+          migration = migration.split(returningBefore).join(returningAfter);
+          fs.writeFileSync(migrationPath, migration);
+
+          const testPath = 'supabase/tests/database/036_public_player_notes_hardening.test.sql';
+          let test = fs.readFileSync(testPath, 'utf8');
+          const planBefore = `select plan(11);`;
+          if ((test.split(planBefore).length - 1) !== 1) throw new Error('expected plan(11) once');
+          test = test.replace(planBefore, `select plan(14);`);
+
+          const insertionPoint = `select ok(\n  pg_temp.statement_fails($$select public.create_public_player_note(\n    'entity-aster-guide', 'player-demo-one', 'Title', 'Body', 'master'\n  )$$),\n  'public RPC exposes no extra mass-assignment parameter for Master authorship'\n);\n`;
+          if ((test.split(insertionPoint).length - 1) !== 1) throw new Error('expected mass-assignment test once');
+          const shapeTests = `${insertionPoint}\nselect unlike(\n  pg_get_function_result('public.create_public_player_note(text,text,text,text)'::regprocedure),\n  '%slug%',\n  'public player RPC response omits the unused slug field expected to be rejected by the strict client parser'\n);\nselect unlike(\n  pg_get_function_result('public.create_master_public_note(text,text,text)'::regprocedure),\n  '%slug%',\n  'Master create RPC response matches the strict public note client shape'\n);\nselect unlike(\n  pg_get_function_result('public.update_master_public_note(text,text,text,text)'::regprocedure),\n  '%slug%',\n  'Master update RPC response matches the strict public note client shape'\n);\n`;
+          test = test.replace(insertionPoint, shapeTests);
+          fs.writeFileSync(testPath, test);
+          NODE
+      - name: Start Supabase
+        run: npx supabase start
+      - name: Reset, lint and run database tests
+        run: |
+          npx supabase db reset --local
+          npx supabase db lint --local --fail-on warning
+          npx supabase test db --local
+      - name: Stop Supabase
+        if: always()
+        run: npx supabase stop --no-backup
+      - name: Commit validated fix and remove helper
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/migrations/20260901150000_add_public_player_note_authorship.sql supabase/tests/database/036_public_player_notes_hardening.test.sql
+          git rm .github/workflows/agent-map063-rpc-shape-fix.yml
+          git commit -m "fix(db): align public note RPC response shape"
+          git push origin HEAD:agent/map-063-public-player-notes
