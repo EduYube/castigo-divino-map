@@ -301,6 +301,17 @@ async function configureBackend(
         await route.fulfill(jsonResponse(state.admin));
         return;
       }
+      if (
+        !state.admin &&
+        [
+          'create_master_public_note',
+          'update_master_public_note',
+          'archive_master_public_note',
+        ].includes(name)
+      ) {
+        await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
+        return;
+      }
       if (name === 'create_public_player_note') {
         const entityId = String(body.p_entity_id ?? '');
         const current = state.notes.get(entityId) ?? [];
@@ -563,6 +574,38 @@ test('authorized Master creates, edits and retires notes while original player a
     expect(call.body).not.toHaveProperty('campaign_id');
     expect(call.body).not.toHaveProperty('publication_status');
   }
+});
+
+test('stale Master authorization fails closed until the session is revalidated', async ({
+  context,
+  page,
+}) => {
+  const state = await configureBackend(context, { admin: true });
+  await openCampaignA(page);
+
+  await expect(page.getByText('Autor: Máster', { exact: true })).toBeVisible();
+  state.admin = false;
+  await page.getByLabel('Título').fill('No debe publicarse');
+  await page.getByRole('textbox', { name: 'Nota', exact: true }).fill('Sesión revocada.');
+  await page.getByRole('button', { name: 'Publicar como Máster' }).click();
+
+  await expect(page.getByText(/sesión del Máster ya no está autorizada/i)).toBeVisible();
+  await expect(page.getByText('Autor: Máster', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Autor: sesión sin verificar', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-public-note-admin-actions]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Publicar nota' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Reintentar conexión' })).toBeVisible();
+  await expect(page.getByLabel('Título')).toHaveValue('No debe publicarse');
+  await expect(page.getByRole('textbox', { name: 'Nota', exact: true })).toHaveValue(
+    'Sesión revocada.',
+  );
+
+  state.admin = true;
+  await page.getByRole('button', { name: 'Reintentar conexión' }).click();
+  await expect(page.getByText('Autor: Máster', { exact: true })).toBeVisible();
+  await expect(page.getByText('Autor: sesión sin verificar', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Publicar como Máster' })).toBeEnabled();
+  await expect(page.locator('[data-public-note-admin-actions]')).toHaveCount(1);
 });
 
 test('degraded mode keeps snapshot notes and draft text, then recovers locally without reload', async ({

@@ -415,6 +415,7 @@ export function mountPublicNotes(
             mode = 'unverified';
             authAdapter?.dispose();
             authAdapter = null;
+            updateAuthorControls();
             setFormAvailable(false);
             renderList();
             announce(describeRepositoryError(errorValue), true);
@@ -475,6 +476,7 @@ export function mountPublicNotes(
             mode = 'unverified';
             authAdapter?.dispose();
             authAdapter = null;
+            updateAuthorControls();
             setFormAvailable(false);
           }
           announce(describeRepositoryError(errorValue), true);
@@ -550,8 +552,12 @@ export function mountPublicNotes(
     const existingMasterAuthor = elements.authorField.querySelector<HTMLElement>(
       '[data-public-note-master-author]',
     );
+    const existingUnverifiedAuthor = elements.authorField.querySelector<HTMLElement>(
+      '[data-public-note-unverified-author]',
+    );
 
     if (mode === 'master') {
+      existingUnverifiedAuthor?.remove();
       authorLabel?.setAttribute('hidden', '');
       elements.authorSelect.hidden = true;
       authorHelp?.setAttribute('hidden', '');
@@ -565,11 +571,32 @@ export function mountPublicNotes(
       return;
     }
 
+    if (mode === 'unverified') {
+      authorLabel?.setAttribute('hidden', '');
+      elements.authorSelect.hidden = true;
+      authorHelp?.setAttribute('hidden', '');
+      elements.authorError.hidden = true;
+      existingMasterAuthor?.remove();
+      const unverifiedAuthor =
+        existingUnverifiedAuthor ??
+        appendText(
+          elements.authorField,
+          'p',
+          'public-notes__master-author',
+          'Autor: sesión sin verificar',
+        );
+      unverifiedAuthor.dataset.publicNoteUnverifiedAuthor = '';
+      unverifiedAuthor.hidden = false;
+      elements.submit.textContent = 'Publicar nota';
+      return;
+    }
+
     authorLabel?.removeAttribute('hidden');
     elements.authorSelect.hidden = false;
     authorHelp?.removeAttribute('hidden');
     elements.authorError.hidden = false;
     existingMasterAuthor?.remove();
+    existingUnverifiedAuthor?.remove();
     elements.authorSelect.replaceChildren();
     const placeholder = document.createElement('option');
     placeholder.value = '';
@@ -738,6 +765,7 @@ export function mountPublicNotes(
           mode = 'unverified';
           authAdapter?.dispose();
           authAdapter = null;
+          updateAuthorControls();
           setFormAvailable(false);
           renderList();
         }
