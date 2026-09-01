@@ -6,7 +6,7 @@ const criticalMobileSuite =
   /(responsive-accessibility|map033-mobile|map037-mobile-details|map038-search-autocomplete|map042-geographic-navigation-pins|map043-public-pin-form|map061-admin-mobile)\.spec\.ts/;
 const criticalMap061Suite = /(map061-campaign-regions|map061-master-status-purge)\.spec\.ts/;
 const criticalMap061Flow =
-  /renders translucent overlapping regions|purges Master region search status/;
+  /renders translucent overlapping regions|searching the region frames persistent polygon bounds|explicit filters dim non-matching regions|purges Master region search status/;
 
 export default defineConfig({
   testDir: './tests/e2e',
