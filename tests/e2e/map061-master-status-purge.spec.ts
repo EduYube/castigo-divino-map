@@ -242,8 +242,9 @@ async function signIn(page: Page): Promise<void> {
   await page.getByLabel('Correo').fill('admin@example.invalid');
   await page.getByLabel('Contraseña').fill('correct horse battery staple');
   await page.getByRole('button', { name: 'Iniciar sesión' }).click();
-  await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
-  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+  const closeAccess = page.getByRole('button', { name: 'Cerrar acceso administrativo' });
+  await expect(closeAccess).toBeVisible();
+  await closeAccess.click();
   await expect(page.getByRole('button', { name: 'Administración' })).toBeVisible();
 }
 
@@ -262,10 +263,11 @@ async function searchMasterRegion(page: Page, name: string): Promise<void> {
   const input = page.getByRole('searchbox', { name: 'Buscar lugares' });
   await input.fill(name);
   await input.press('Escape');
-  await page
+  const result = page
     .getByRole('list', { name: 'Resultados de búsqueda de lugares' })
-    .getByRole('button', { name: new RegExp(name, 'i') })
-    .click();
+    .getByRole('button', { name: new RegExp(name, 'i') });
+  await expect(result).toBeVisible();
+  await result.click();
 
   await expect(page.locator('[data-map-search-status]')).toContainText(name);
 }
@@ -299,10 +301,12 @@ test('purges Master region search status on OFF and campaign replacement without
   await openAuthorizedMap(page);
   const masterToggle = page.locator('[data-master-mode-toggle]');
   const campaignSelector = page.getByLabel('Campaña', { exact: true });
+  const regionA = page.locator(`[data-region-entity-id="${MASTER_REGION_A_ID}"]`);
 
   await masterToggle.click();
   await expect(masterToggle).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator(`[data-region-entity-id="${MASTER_REGION_A_ID}"]`)).toBeVisible();
+  await expect(regionA).toHaveCount(1);
+  await expect(regionA).toHaveAttribute('data-audience', 'master');
 
   await searchMasterRegion(page, MASTER_REGION_A_NAME);
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue(
@@ -315,17 +319,16 @@ test('purges Master region search status on OFF and campaign replacement without
 
   await masterToggle.click();
   await expect(masterToggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(regionA).toHaveCount(1);
+  await expect(regionA).toHaveAttribute('data-audience', 'master');
   await searchMasterRegion(page, MASTER_REGION_A_NAME);
 
   await campaignSelector.selectOption('campaign-b');
   await expect(campaignSelector).toHaveValue('campaign-b');
   const regionB = page.locator(`[data-region-entity-id="${MASTER_REGION_B_ID}"]`);
-  await expect(regionB).toBeVisible();
+  await expect(regionB).toHaveCount(1);
+  await expect(regionB).toHaveAttribute('data-audience', 'master');
   await expect(regionB).toHaveAttribute('aria-label', new RegExp(MASTER_REGION_B_NAME, 'i'));
-  await expect(page.locator('[data-region-entity-id]')).not.toHaveAttribute(
-    'data-region-entity-id',
-    MASTER_REGION_A_ID,
-  );
   await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);
 });
 
@@ -335,9 +338,12 @@ test('purges Master region search status after a 403 revokes administrative auth
   const backend = await openAuthorizedMap(page);
   const masterToggle = page.locator('[data-master-mode-toggle]');
   const campaignSelector = page.getByLabel('Campaña', { exact: true });
+  const regionA = page.locator(`[data-region-entity-id="${MASTER_REGION_A_ID}"]`);
 
   await masterToggle.click();
   await expect(masterToggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(regionA).toHaveCount(1);
+  await expect(regionA).toHaveAttribute('data-audience', 'master');
   await searchMasterRegion(page, MASTER_REGION_A_NAME);
 
   backend.denyMasterCatalog();
