@@ -17,6 +17,10 @@ const TEST_MAP = `
   </svg>
 `;
 
+interface BackendControl {
+  denyMasterCatalog(): void;
+}
+
 function contentRange(rows: readonly unknown[]): string {
   return rows.length === 0 ? '*/0' : `0-${rows.length - 1}/${rows.length}`;
 }
@@ -115,7 +119,9 @@ function masterCatalog(campaignId: string): Record<string, unknown> {
   };
 }
 
-async function configureBackend(page: Page): Promise<void> {
+async function configureBackend(page: Page): Promise<BackendControl> {
+  let denyMasterCatalog = false;
+
   await page.addInitScript((projectUrl) => {
     window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
       projectUrl,
@@ -164,6 +170,14 @@ async function configureBackend(page: Page): Promise<void> {
     }
 
     if (isAdmin && resource === 'rpc/admin_get_master_catalog_v5') {
+      if (denyMasterCatalog) {
+        await route.fulfill({
+          status: 403,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: '42501', message: 'forbidden' }),
+        });
+        return;
+      }
       const body = JSON.parse(request.postData() ?? '{}') as { p_campaign_id?: unknown };
       const campaignId =
         typeof body.p_campaign_id === 'string' ? body.p_campaign_id : CAMPAIGN_A_ID;
@@ -215,6 +229,12 @@ async function configureBackend(page: Page): Promise<void> {
       body: JSON.stringify(rows),
     });
   });
+
+  return {
+    denyMasterCatalog(): void {
+      denyMasterCatalog = true;
+    },
+  };
 }
 
 async function signIn(page: Page): Promise<void> {
@@ -227,11 +247,12 @@ async function signIn(page: Page): Promise<void> {
   await expect(page.getByRole('button', { name: 'Administración' })).toBeVisible();
 }
 
-async function openAuthorizedMap(page: Page): Promise<void> {
-  await configureBackend(page);
+async function openAuthorizedMap(page: Page): Promise<BackendControl> {
+  const backend = await configureBackend(page);
   await page.goto('/');
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
   await signIn(page);
+  return backend;
 }
 
 async function searchMasterRegion(page: Page, name: string): Promise<void> {
@@ -305,4 +326,23 @@ test('purges Master region search status on OFF and campaign replacement without
   );
   await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);
   await expect(page.locator('body')).toContainText(MASTER_REGION_B_NAME);
+});
+
+test('purges Master region search status after a 403 revokes administrative authorization', async ({
+  page,
+}) => {
+  const backend = await openAuthorizedMap(page);
+  const masterToggle = page.locator('[data-master-mode-toggle]');
+  const campaignSelector = page.getByLabel('Campaña', { exact: true });
+
+  await masterToggle.click();
+  await expect(masterToggle).toHaveAttribute('aria-pressed', 'true');
+  await searchMasterRegion(page, MASTER_REGION_A_NAME);
+
+  backend.denyMasterCatalog();
+  await campaignSelector.selectOption('campaign-b');
+  await expect(campaignSelector).toHaveValue('campaign-b');
+  await expectSecretPurged(page, MASTER_REGION_A_NAME, MASTER_REGION_A_ID);
+  await expect(masterToggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByRole('button', { name: 'Administrar' })).toBeVisible();
 });
