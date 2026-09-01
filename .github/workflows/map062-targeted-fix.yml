@@ -1,0 +1,63 @@
+name: MAP-062 targeted regression fix
+
+on:
+  push:
+    branches:
+      - agent/map-062-desktop-details-below-map
+    paths:
+      - .github/workflows/map062-targeted-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-062-desktop-details-below-map
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Apply focused fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          main = Path('src/main.ts')
+          text = main.read_text()
+          old = """  const keepPinVisibleWithCompactDetails = (): void => {\n    if (!mobileCompactDetailsMedia.matches) {\n      return;\n    }\n\n    const adjustActiveMarker = (attemptsRemaining: number): void => {\n"""
+          new = """  const keepPinVisibleWithCompactDetails = (): void => {\n    if (!mobileCompactDetailsMedia.matches) {\n      return;\n    }\n\n    // MAP-037: synchronize Leaflet before the first sheet measurement. Narrow WebKit\n    // otherwise observes stale viewport geometry; desktop never enters this branch.\n    mapController.map.invalidateSize({ animate: false, pan: false });\n\n    const adjustActiveMarker = (attemptsRemaining: number): void => {\n"""
+          if old not in text:
+              raise SystemExit('main.ts mobile helper anchor not found')
+          main.write_text(text.replace(old, new, 1))
+
+          spec = Path('tests/e2e/map062-desktop-details-below-map.spec.ts')
+          text = spec.read_text()
+          old = """  await page.route('**/rest/v1/**', async (route: Route) => {\n    const resource = new URL(route.request().url()).pathname.split('/rest/v1/')[1] ?? '';\n    if (resource.startsWith('rpc/')) {\n      await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });\n      return;\n    }\n    const table = resource.split('?')[0] ?? '';\n    const rows = ROWS[table] ?? [];\n    await route.fulfill({\n"""
+          new = """  await page.route('**/rest/v1/**', async (route: Route) => {\n    const requestUrl = new URL(route.request().url());\n    const resource = requestUrl.pathname.split('/rest/v1/')[1] ?? '';\n    if (resource.startsWith('rpc/')) {\n      await route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });\n      return;\n    }\n    const table = resource.split('?')[0] ?? '';\n    const requestedFields =\n      requestUrl.searchParams\n        .get('select')\n        ?.split(',')\n        .filter(Boolean) ?? [];\n    const rows = (ROWS[table] ?? []).map((row) =>\n      Object.fromEntries(requestedFields.map((field) => [field, row[field]])),\n    );\n    await route.fulfill({\n"""
+          if old not in text:
+              raise SystemExit('MAP-062 REST mock anchor not found')
+          spec.write_text(text.replace(old, new, 1))
+          PY
+          npx prettier --write src/main.ts tests/e2e/map062-desktop-details-below-map.spec.ts
+      - name: Install targeted Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+      - name: Verify MAP-062 desktop fixture
+        run: npx playwright test tests/e2e/map062-desktop-details-below-map.spec.ts --project=chromium
+      - name: Verify MAP-037 narrow WebKit regression
+        run: npx playwright test tests/e2e/map037-mobile-details.spec.ts --project=mobile-webkit --grep "320x740"
+      - name: Commit verified fixes and remove helper workflow
+        run: |
+          rm .github/workflows/map062-targeted-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main.ts tests/e2e/map062-desktop-details-below-map.spec.ts .github/workflows/map062-targeted-fix.yml
+          git commit -m "fix(map): preserve mobile sheet sync and strict E2E fixtures"
+          git push origin HEAD:agent/map-062-desktop-details-below-map
