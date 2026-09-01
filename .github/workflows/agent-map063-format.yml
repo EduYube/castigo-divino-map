@@ -1,4 +1,4 @@
-name: MAP-063 temporary formatter
+name: MAP-063 temporary branch patcher
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  format:
+  patch:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -24,15 +24,137 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Format MAP-063 sources
-        run: npx prettier --write src/app/publicNotes.ts src/infrastructure/supabase/publicNoteRepository.ts src/infrastructure/supabase/publicNoteRosterRepository.ts
-      - name: Commit formatting
+      - name: Harden note author controls
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/app/publicNotes.ts')
+          text = path.read_text()
+
+          def replace_once(old: str, new: str) -> None:
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected one replacement, found {count}: {old[:80]!r}')
+              text = text.replace(old, new, 1)
+
+          replace_once(
+              "  readonly authorField: HTMLElement;\n  readonly authorSelect: HTMLSelectElement;\n  readonly authorError: HTMLElement;",
+              "  readonly authorField: HTMLElement;\n  readonly authorLabel: HTMLLabelElement;\n  readonly authorSelect: HTMLSelectElement;\n  readonly authorHelp: HTMLElement;\n  readonly authorError: HTMLElement;\n  readonly masterAuthor: HTMLElement;",
+          )
+          replace_once(
+              "  const authorError = appendText(authorField, 'p', 'public-notes__error', '');\n  authorError.id = 'public-note-author-error';\n  authorField.prepend(authorLabel, authorSelect);",
+              "  const authorError = appendText(authorField, 'p', 'public-notes__error', '');\n  authorError.id = 'public-note-author-error';\n  const masterAuthor = appendText(\n    authorField,\n    'p',\n    'public-notes__master-author',\n    'Autor: Máster',\n  );\n  masterAuthor.dataset.publicNoteMasterAuthor = '';\n  masterAuthor.hidden = true;\n  authorField.prepend(authorLabel, authorSelect);",
+          )
+          replace_once(
+              "    authorField,\n    authorSelect,\n    authorError,",
+              "    authorField,\n    authorLabel,\n    authorSelect,\n    authorHelp,\n    authorError,\n    masterAuthor,",
+          )
+          replace_once(
+              "  let destroyed = false;\n  let request: AbortController | null = null;",
+              "  let destroyed = false;\n  let request: AbortController | null = null;\n  let unsubscribeAuth: (() => void) | null = null;",
+          )
+          old_controls = """  const updateAuthorControls = (): void => {
+    if (mode === 'master') {
+      elements.authorField.replaceChildren();
+      const label = appendText(
+        elements.authorField,
+        'p',
+        'public-notes__master-author',
+        'Autor: Máster',
+      );
+      label.dataset.publicNoteMasterAuthor = '';
+      elements.submit.textContent = 'Publicar como Máster';
+      return;
+    }
+    elements.authorSelect.replaceChildren();
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Selecciona tu personaje';
+    elements.authorSelect.append(placeholder);
+    for (const player of roster) {
+      const option = document.createElement('option');
+      option.value = player.id;
+      option.textContent = player.displayName;
+      elements.authorSelect.append(option);
+    }
+    elements.submit.textContent = 'Publicar nota';
+  };
+
+  const setFormAvailable = (available: boolean): void => {
+    liveAvailable = available;
+    elements.submit.disabled = !available || mode === 'unverified';
+    elements.retry.hidden = available;
+    elements.form.classList.toggle('public-notes__form--offline', !available);
+  };"""
+          new_controls = """  const updateAuthorControls = (): void => {
+    const master = mode === 'master';
+    elements.authorLabel.hidden = master;
+    elements.authorSelect.hidden = master;
+    elements.authorHelp.hidden = master;
+    elements.authorError.hidden = master;
+    elements.masterAuthor.hidden = !master;
+    setFieldError(elements.authorSelect, elements.authorError, '');
+
+    if (master) {
+      elements.authorSelect.value = '';
+      elements.submit.textContent = 'Publicar como Máster';
+      return;
+    }
+
+    elements.authorSelect.replaceChildren();
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Selecciona tu personaje';
+    elements.authorSelect.append(placeholder);
+    for (const player of roster) {
+      const option = document.createElement('option');
+      option.value = player.id;
+      option.textContent = player.displayName;
+      elements.authorSelect.append(option);
+    }
+    elements.submit.textContent = 'Publicar nota';
+  };
+
+  const setFormAvailable = (available: boolean): void => {
+    liveAvailable = available;
+    const hasEligibleAuthor = mode === 'master' || (mode === 'visitor' && roster.length > 0);
+    elements.submit.disabled = !available || mode === 'unverified' || !hasEligibleAuthor;
+    elements.retry.hidden = available;
+    elements.form.classList.toggle('public-notes__form--offline', !available);
+  };"""
+          replace_once(old_controls, new_controls)
+          replace_once(
+              "  const resolveAuthorMode = async (): Promise<AuthorMode> => {\n    if (!hasStoredAdminSession()) return 'visitor';\n    try {",
+              "  const resolveAuthorMode = async (): Promise<AuthorMode> => {\n    unsubscribeAuth?.();\n    unsubscribeAuth = null;\n    authAdapter?.dispose();\n    authAdapter = null;\n    if (!hasStoredAdminSession()) return 'visitor';\n    try {",
+          )
+          replace_once(
+              "      const identity = await authAdapter.restoreSession();\n      if (!identity) return 'visitor';\n      return (await authAdapter.isCurrentUserAdmin()) ? 'master' : 'visitor';",
+              "      const identity = await authAdapter.restoreSession();\n      if (!identity) return 'visitor';\n      const resolvedMode = (await authAdapter.isCurrentUserAdmin()) ? 'master' : 'visitor';\n      unsubscribeAuth = authAdapter.onAuthStateChange((event) => {\n        if (destroyed || (event.type !== 'refresh-failed' && event.type !== 'signed-out')) return;\n        mode = event.type === 'signed-out' ? 'visitor' : 'unverified';\n        updateAuthorControls();\n        renderList();\n        setFormAvailable(event.type === 'signed-out');\n        announce(\n          event.type === 'signed-out'\n            ? 'La sesión de Máster ha finalizado. La autoría vuelve a ser declarada por jugador.'\n            : 'La sesión del Máster ya no puede verificarse. Reintenta la conexión antes de guardar.',\n          event.type === 'refresh-failed',\n        );\n      });\n      return resolvedMode;",
+          )
+          replace_once(
+              "      } else {\n        setFormAvailable(true);\n        announce(\n          mode === 'master'\n            ? 'Sesión de Máster verificada. Puedes crear, editar y retirar notas.'\n            : 'Puedes publicar una nota eligiendo un personaje del roster activo.',\n        );\n      }",
+              "      } else {\n        setFormAvailable(true);\n        announce(\n          mode === 'master'\n            ? 'Sesión de Máster verificada. Puedes crear, editar y retirar notas.'\n            : roster.length > 0\n              ? 'Puedes publicar una nota eligiendo un personaje del roster activo.'\n              : 'Esta campaña no tiene personajes jugadores activos disponibles para declarar autoría.',\n        );\n      }",
+          )
+          replace_once(
+              "        elements.submit.disabled = !liveAvailable || mode === 'unverified';",
+              "        elements.submit.disabled =\n          !liveAvailable ||\n          mode === 'unverified' ||\n          (mode === 'visitor' && roster.length === 0);",
+          )
+          replace_once(
+              "      authAdapter?.dispose();",
+              "      unsubscribeAuth?.();\n      authAdapter?.dispose();",
+          )
+
+          path.write_text(text)
+          PY
+          npx prettier --write src/app/publicNotes.ts
+          npx prettier --check src/app/publicNotes.ts
+      - name: Commit hardening
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/app/publicNotes.ts src/infrastructure/supabase/publicNoteRepository.ts src/infrastructure/supabase/publicNoteRosterRepository.ts
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m "style(notes): apply repository formatting"
+          git add src/app/publicNotes.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(notes): harden author session state"
           git push origin HEAD:agent/map-063-public-player-notes
