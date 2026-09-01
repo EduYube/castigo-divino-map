@@ -24,17 +24,31 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Patch catalog test configuration
+      - name: Patch catalog configuration and selectors
         run: |
           node - <<'NODE'
           const fs = require('node:fs');
           const path = 'tests/e2e/map063-public-player-notes.spec.ts';
           let source = fs.readFileSync(path, 'utf8');
-          const before = `      window.__MAP063_PUBLIC_NOTES_TEST_CONFIG__ = {\n        projectUrl,\n        publishableKey,\n        timeoutMs: 300,\n      };`;
-          const after = `      window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {\n        projectUrl,\n        publishableKey,\n        timeoutMs: 300,\n        retryDelaysMs: [0, 0, 0],\n      };\n      window.__MAP063_PUBLIC_NOTES_TEST_CONFIG__ = {\n        projectUrl,\n        publishableKey,\n        timeoutMs: 300,\n      };`;
-          const count = source.split(before).length - 1;
-          if (count !== 1) throw new Error(`expected one public-notes test config, found ${count}`);
-          source = source.replace(before, after);
+
+          const beforeConfig = `      window.__MAP063_PUBLIC_NOTES_TEST_CONFIG__ = {\n        projectUrl,\n        publishableKey,\n        timeoutMs: 300,\n      };`;
+          const afterConfig = `      window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {\n        projectUrl,\n        publishableKey,\n        timeoutMs: 300,\n        retryDelaysMs: [0, 0, 0],\n      };\n      window.__MAP063_PUBLIC_NOTES_TEST_CONFIG__ = {\n        projectUrl,\n        publishableKey,\n        timeoutMs: 300,\n      };`;
+          const configCount = source.split(beforeConfig).length - 1;
+          if (configCount !== 1) throw new Error(`expected one public-notes test config, found ${configCount}`);
+          source = source.replace(beforeConfig, afterConfig);
+
+          const pageBefore = `page.getByLabel('Nota')`;
+          const pageAfter = `page.getByRole('textbox', { name: 'Nota', exact: true })`;
+          const pageCount = source.split(pageBefore).length - 1;
+          if (pageCount !== 5) throw new Error(`expected five page Nota selectors, found ${pageCount}`);
+          source = source.split(pageBefore).join(pageAfter);
+
+          const editBefore = `editForm.getByLabel('Nota')`;
+          const editAfter = `editForm.getByRole('textbox', { name: 'Nota', exact: true })`;
+          const editCount = source.split(editBefore).length - 1;
+          if (editCount !== 1) throw new Error(`expected one edit Nota selector, found ${editCount}`);
+          source = source.replace(editBefore, editAfter);
+
           fs.writeFileSync(path, source);
           NODE
           npx prettier --write tests/e2e/map063-public-player-notes.spec.ts
@@ -43,12 +57,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Run MAP-063 E2E
         run: npx playwright test tests/e2e/map063-public-player-notes.spec.ts --project=chromium
-      - name: Commit fix and remove helper
+      - name: Commit validated fix and remove helper
         if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add tests/e2e/map063-public-player-notes.spec.ts
           git rm .github/workflows/agent-map063-bootstrap-fix.yml
-          git commit -m "test(e2e): bootstrap MAP-063 catalog fixture"
+          git commit -m "test(e2e): align MAP-063 fixture with catalog runtime"
           git push origin HEAD:agent/map-063-public-player-notes
