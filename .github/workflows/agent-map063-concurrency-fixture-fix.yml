@@ -1,4 +1,4 @@
-name: MAP-063 temporary identity-first lock hardening
+name: MAP-063 temporary transaction lock diagnostic
 
 on:
   push:
@@ -6,13 +6,13 @@ on:
       - agent/map-063-public-player-notes
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  patch-and-test:
+  diagnose:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
     steps:
       - name: Checkout branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
@@ -25,136 +25,158 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Apply identity-first lock hardening and test fix
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          migration_path = Path('supabase/migrations/20260901150000_add_public_player_note_authorship.sql')
-          source = migration_path.read_text()
-
-          visitor_start = source.index('create or replace function public.create_public_player_note(')
-          visitor_end = source.index('revoke all on function public.create_public_player_note', visitor_start)
-          visitor = source[visitor_start:visitor_end]
-          visitor = visitor.replace(
-              'declare\n  entity_row public.map_entities%rowtype;\n  title_value text := pg_catalog.btrim(p_title);',
-              'declare\n  entity_row public.map_entities%rowtype;\n  campaign_status public.campaigns.status%type;\n  player_publication_status public.players.publication_status%type;\n  title_value text := pg_catalog.btrim(p_title);',
-              1,
-          )
-          lock_start = visitor.index('  -- Keep the lock order deterministic: entity -> campaign -> player.')
-          lock_end = visitor.index('  if pg_catalog.char_length(title_value)', lock_start)
-          visitor_lock = """  -- Keep the lock order deterministic: entity -> campaign -> player. Lock each
-            -- dynamic precondition by identity first, then validate its mutable state.
-            -- This prevents an already-started administrative revocation from making a
-            -- row disappear from the lock candidate set before this transaction waits.
-            -- The entity UPDATE lock remains the serialization point for rate limiting
-            -- and sort-order allocation.
-            select entity.*
-            into entity_row
-            from public.map_entities as entity
-            where entity.id = p_entity_id
-            for update;
-
-            if not found
-               or entity_row.publication_status <> 'published'::public.publication_status
-               or entity_row.audience <> 'public'::public.entity_audience then
-              raise exception using errcode = '22023', message = 'public note target unavailable';
-            end if;
-
-            -- FOR SHARE conflicts with administrative UPDATE/DELETE while remaining
-            -- compatible with other readers. Identity-first selection guarantees that
-            -- an in-flight writer is waited on before its mutable state is validated.
-            select campaign.status
-            into campaign_status
-            from public.campaigns as campaign
-            where campaign.id = entity_row.campaign_id
-            for share;
-
-            if not found or campaign_status <> 'active' then
-              raise exception using errcode = '22023', message = 'public note target unavailable';
-            end if;
-
-            select player.publication_status
-            into player_publication_status
-            from public.players as player
-            where player.id = p_player_id
-              and player.campaign_id = entity_row.campaign_id
-            for share;
-
-            if not found
-               or player_publication_status <> 'published'::public.publication_status then
-              raise exception using errcode = '22023', message = 'invalid public note author';
-            end if;
-
-          """
-          visitor = visitor[:lock_start] + visitor_lock + visitor[lock_end:]
-          source = source[:visitor_start] + visitor + source[visitor_end:]
-
-          master_start = source.index('create or replace function public.create_master_public_note(')
-          master_end = source.index('revoke all on function public.create_master_public_note', master_start)
-          master = source[master_start:master_end]
-          master = master.replace(
-              'declare\n  entity_row public.map_entities%rowtype;\n  title_value text := pg_catalog.btrim(p_title);',
-              'declare\n  entity_row public.map_entities%rowtype;\n  campaign_status public.campaigns.status%type;\n  title_value text := pg_catalog.btrim(p_title);',
-              1,
-          )
-          master_lock_start = master.index('  select entity.*')
-          master_lock_end = master.index('  if pg_catalog.char_length(title_value)', master_lock_start)
-          master_lock = """  select entity.*
-            into entity_row
-            from public.map_entities as entity
-            where entity.id = p_entity_id
-            for update;
-
-            if not found
-               or entity_row.publication_status <> 'published'::public.publication_status
-               or entity_row.audience <> 'public'::public.entity_audience then
-              raise exception using errcode = '22023', message = 'public note target unavailable';
-            end if;
-
-            -- Match the public writer's entity -> campaign prefix and identity-first
-            -- locking so a campaign lifecycle change cannot race a Master creation.
-            select campaign.status
-            into campaign_status
-            from public.campaigns as campaign
-            where campaign.id = entity_row.campaign_id
-            for share;
-
-            if not found or campaign_status <> 'active' then
-              raise exception using errcode = '22023', message = 'public note target unavailable';
-            end if;
-
-          """
-          master = master[:master_lock_start] + master_lock + master[master_lock_end:]
-          source = source[:master_start] + master + source[master_end:]
-          migration_path.write_text(source)
-
-          test_path = Path('scripts/test-map063-public-note-concurrency.mjs')
-          test_source = test_path.read_text()
-          before = "state !== 'active:published:published:public'"
-          after = "state !== 'active:published:public'"
-          if test_source.count(before) != 1:
-              raise SystemExit('expected one MAP-063 fixture assertion')
-          test_path.write_text(test_source.replace(before, after, 1))
-          PY
-          npx prettier --check scripts/test-map063-public-note-concurrency.mjs
       - name: Start local Supabase stack
         run: npx supabase start
-      - name: Reset, lint, pgTAP and run MAP-063 concurrency regression
+      - name: Reset database and diagnose transaction visibility
         run: |
           npm run supabase:db:reset
-          npm run supabase:db:lint
-          npm run supabase:db:test
-          node scripts/test-map063-public-note-concurrency.mjs
+          node - <<'NODE'
+          const { spawn, spawnSync } = require('node:child_process');
+
+          const container = 'supabase_db_castigo-divino-map';
+          const playerId = 'player-skade';
+          const entityId = 'place-demo-harbor';
+          const adminSub = '00000000-0000-4000-8000-000000000001';
+          const timeoutMs = 12000;
+
+          function args(interactive = false) {
+            return [
+              'exec',
+              ...(interactive ? ['--interactive'] : []),
+              '--user', 'postgres',
+              container,
+              'psql', '--username', 'postgres', '--dbname', 'postgres',
+              '--no-psqlrc', '--set=ON_ERROR_STOP=1', '--quiet', '--tuples-only', '--no-align',
+            ];
+          }
+
+          function run(sql) {
+            const result = spawnSync('docker', [...args(false), '--command', sql], { encoding: 'utf8' });
+            if (result.status !== 0) throw new Error(result.stderr || `psql exited ${result.status}`);
+            return result.stdout.trim();
+          }
+
+          function session(name) {
+            const child = spawn('docker', args(true), { stdio: ['pipe', 'pipe', 'pipe'] });
+            let stdout = '';
+            let stderr = '';
+            let exited = false;
+            let exitCode = null;
+            child.stdout.setEncoding('utf8');
+            child.stderr.setEncoding('utf8');
+            child.stdout.on('data', (chunk) => { stdout += chunk; });
+            child.stderr.on('data', (chunk) => { stderr += chunk; });
+            child.on('close', (code) => { exited = true; exitCode = code; });
+            child.stdin.write(`set application_name = '${name}';\n`);
+            return {
+              child,
+              get output() { return `${stdout}\n${stderr}`.trim(); },
+              get exited() { return exited; },
+              get exitCode() { return exitCode; },
+            };
+          }
+
+          const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+          async function waitFor(session, marker) {
+            const deadline = Date.now() + timeoutMs;
+            while (Date.now() < deadline) {
+              if (session.output.includes(marker)) return;
+              if (session.exited) throw new Error(`session exited before ${marker}: ${session.output}`);
+              await delay(20);
+            }
+            throw new Error(`timeout waiting for ${marker}: ${session.output}`);
+          }
+
+          function activity(name) {
+            return run(`
+              select concat_ws('|', state, coalesce(wait_event_type, ''), coalesce(wait_event, ''),
+                     case when xact_start is null then 'no-xact' else 'xact' end,
+                     case when backend_xid is null then 'no-xid' else 'xid' end)
+              from pg_catalog.pg_stat_activity
+              where application_name = '${name}';
+            `);
+          }
+
+          function blockers(name) {
+            return run(`
+              select coalesce(pg_catalog.array_to_string(pg_catalog.pg_blocking_pids(pid), ','), '')
+              from pg_catalog.pg_stat_activity
+              where application_name = '${name}';
+            `);
+          }
+
+          async function main() {
+            run(`
+              update public.players set publication_status='draft'::public.publication_status
+              where id='${playerId}' and publication_status='archived'::public.publication_status;
+              update public.players set publication_status='published'::public.publication_status
+              where id='${playerId}' and publication_status<>'published'::public.publication_status;
+            `);
+            console.log('initial_external_player=' + run(`select publication_status from public.players where id='${playerId}';`));
+
+            const admin = session('map063_diag_admin');
+            const claims = JSON.stringify({ sub: adminSub, role: 'authenticated' }).replaceAll("'", "''");
+            admin.child.stdin.write(`
+              set "request.jwt.claim.sub"='${adminSub}';
+              set "request.jwt.claims"='${claims}';
+              set role authenticated;
+              set statement_timeout='8s';
+              begin;
+              update public.players
+              set publication_status='archived'::public.publication_status
+              where id='${playerId}'
+              returning publication_status;
+              \\echo ADMIN_READY
+            `);
+            await waitFor(admin, 'ADMIN_READY');
+            console.log('admin_output_after_ready=' + JSON.stringify(admin.output));
+            console.log('admin_activity_after_ready=' + activity('map063_diag_admin'));
+            console.log('external_player_while_admin_open=' + run(`select publication_status from public.players where id='${playerId}';`));
+
+            const rpc = session('map063_diag_rpc');
+            rpc.child.stdin.write(`
+              set role anon;
+              set statement_timeout='8s';
+              \\echo RPC_STARTED
+              select id from public.create_public_player_note(
+                '${entityId}', '${playerId}', 'MAP063 diagnostic note', 'diagnostic body'
+              );
+              \\echo RPC_DONE
+            `);
+            await waitFor(rpc, 'RPC_STARTED');
+            await delay(300);
+            console.log('rpc_exited_after_300ms=' + rpc.exited);
+            console.log('rpc_output_after_300ms=' + JSON.stringify(rpc.output));
+            console.log('rpc_activity_after_300ms=' + activity('map063_diag_rpc'));
+            console.log('rpc_blockers_after_300ms=' + blockers('map063_diag_rpc'));
+            console.log('admin_activity_with_rpc=' + activity('map063_diag_admin'));
+            console.log('external_player_with_rpc=' + run(`select publication_status from public.players where id='${playerId}';`));
+
+            if (rpc.exited) {
+              throw new Error('RPC exited while admin transaction should still hold the player row lock');
+            }
+            if (!activity('map063_diag_rpc').includes('|Lock|')) {
+              throw new Error('RPC is alive but PostgreSQL does not report a lock wait');
+            }
+
+            admin.child.stdin.write('commit;\n\\echo ADMIN_COMMITTED\n\\q\n');
+            await waitFor(admin, 'ADMIN_COMMITTED');
+            const deadline = Date.now() + timeoutMs;
+            while (!rpc.exited && Date.now() < deadline) await delay(20);
+            console.log('rpc_final_output=' + JSON.stringify(rpc.output));
+            console.log('rpc_final_exit=' + rpc.exitCode);
+            if (!rpc.exited) throw new Error('RPC did not finish after admin commit');
+            if (!rpc.output.includes('invalid public note author')) {
+              throw new Error('RPC did not revalidate the player after serialized revocation');
+            }
+            console.log('DIAGNOSTIC_OK');
+          }
+
+          main().catch((error) => {
+            console.error(error.stack || error.message || error);
+            process.exitCode = 1;
+          });
+          NODE
       - name: Stop local Supabase stack
         if: always()
         run: npx supabase stop --no-backup
-      - name: Commit validated hardening and remove helper
-        if: success()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+EduYube@users.noreply.github.com"
-          git add supabase/migrations/20260901150000_add_public_player_note_authorship.sql scripts/test-map063-public-note-concurrency.mjs
-          git rm .github/workflows/agent-map063-concurrency-fixture-fix.yml
-          git commit -m "fix(db): serialize MAP-063 roster and campaign revocations"
-          git push origin HEAD:agent/map-063-public-player-notes
