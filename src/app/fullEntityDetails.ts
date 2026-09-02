@@ -1,6 +1,8 @@
 import { createFullEntityUrl } from './fullEntityUrl';
+import { mountPublicNotes, type PublicNotesController } from './publicNotes';
 import type { FullEntityDetailModel } from '../data/fullEntityDetails';
 import { createPlayerDispositionVisuals, getPinTypeVisual } from '../domain/pinVisualSystem';
+import '../styles/public-notes.css';
 
 export interface FullEntityDetailsController {
   show(details: FullEntityDetailModel, options?: { readonly focus?: boolean }): void;
@@ -337,6 +339,7 @@ export function mountFullEntityDetails(
     mapLink: getRequiredElement(root, '[data-full-entity-map-link]'),
   };
   let portraitAbort: AbortController | null = null;
+  let publicNotesController: PublicNotesController | null = null;
   root.querySelectorAll<HTMLAnchorElement>('[data-full-entity-map-link]').forEach((link) => {
     link.href = mapUrl.href;
   });
@@ -347,7 +350,10 @@ export function mountFullEntityDetails(
     show(details, showOptions = {}): void {
       portraitAbort?.abort();
       portraitAbort = null;
+      publicNotesController?.destroy();
+      publicNotesController = null;
       renderDetails(elements, details);
+      publicNotesController = mountPublicNotes(root, details);
       if (details.portraitPath && options.loadPortrait) {
         const request = new AbortController();
         portraitAbort = request;
@@ -361,6 +367,8 @@ export function mountFullEntityDetails(
     showUnavailable(showOptions = {}): void {
       portraitAbort?.abort();
       portraitAbort = null;
+      publicNotesController?.destroy();
+      publicNotesController = null;
       elements.type.textContent = 'Ficha pública completa';
       elements.title.textContent = 'Entidad no disponible';
       elements.body.replaceChildren();
