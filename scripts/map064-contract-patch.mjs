@@ -25,4 +25,57 @@ patch('src/infrastructure/supabase/masterCatalogRepository.test.ts', [
   ['geometry-aware v5 RPC', 'lifecycle-aware v6 RPC', 'master test title'],
 ]);
 
+patch('src/app/adminMapEntities.ts', [
+  [
+    "  type MapEntityLifecycleStatus,\n  type MapEntityPublicationStatus,",
+    "  type MapEntityAudience,\n  type MapEntityLifecycleStatus,\n  type MapEntityPublicationStatus,",
+    'audience type import',
+  ],
+  [
+    "  let tagCheckboxes: HTMLInputElement[] = [];\n  let dispositionSelects: HTMLSelectElement[] = [];",
+    "  let tagCheckboxes: HTMLInputElement[] = [];\n  let associationCheckboxes: HTMLInputElement[] = [];\n  let dispositionSelects: HTMLSelectElement[] = [];",
+    'association checkbox state',
+  ],
+  [
+    "  let tagError: HTMLParagraphElement | null = null;\n  let dispositionError: HTMLParagraphElement | null = null;",
+    "  let tagError: HTMLParagraphElement | null = null;\n  let associationError: HTMLParagraphElement | null = null;\n  let dispositionError: HTMLParagraphElement | null = null;",
+    'association error state',
+  ],
+  [
+    "      lifecycleStatus: (input('lifecycleStatus') || null) as MapEntityLifecycleStatus | null,\n      visibility: input('visibility') as MapVisibility,",
+    "      lifecycleStatus: (input('lifecycleStatus') || null) as MapEntityLifecycleStatus | null,\n      visibility: input('visibility') as MapVisibility,\n      audience: input('audience') as MapEntityAudience,",
+    'read audience',
+  ],
+  [
+    "      dispositions: [\n        ...dispositionSelects.map((select) => ({",
+    "      playerAssociationIds: associationCheckboxes\n        .filter((checkbox) => checkbox.checked)\n        .map((checkbox) => checkbox.value),\n      dispositions: [\n        ...dispositionSelects.map((select) => ({",
+    'read associations',
+  ],
+  [
+    "    if (tagError) tagError.textContent = validation.fieldErrors.tagIds ?? '';\n    if (dispositionError) {",
+    "    if (tagError) tagError.textContent = validation.fieldErrors.tagIds ?? '';\n    if (associationError) {\n      const message = validation.fieldErrors.playerAssociationIds ?? '';\n      associationError.textContent = message;\n      associationCheckboxes.forEach((checkbox) =>\n        checkbox.setAttribute('aria-invalid', message ? 'true' : 'false'),\n      );\n    }\n    if (dispositionError) {",
+    'association validation errors',
+  ],
+  [
+    "    tagCheckboxes = [];\n    dispositionSelects = [];\n    preservedDispositions = [];\n    tagError = null;\n    dispositionError = null;",
+    "    tagCheckboxes = [];\n    associationCheckboxes = [];\n    dispositionSelects = [];\n    preservedDispositions = [];\n    tagError = null;\n    associationError = null;\n    dispositionError = null;",
+    'reset association controls',
+  ],
+  [
+    "    addSelect({\n      name: 'visibility',\n      label: 'Visibilidad cartográfica',\n      value: draft.visibility,\n      choices: [\n        { value: 'pin', label: 'Visible en el mapa' },\n        { value: 'search_only', label: 'Solo búsqueda' },\n      ],\n    });",
+    "    addSelect({\n      name: 'visibility',\n      label: 'Visibilidad cartográfica',\n      value: draft.visibility,\n      choices: [\n        { value: 'pin', label: 'Visible en el mapa' },\n        { value: 'search_only', label: 'Solo búsqueda' },\n      ],\n    });\n    addSelect({\n      name: 'audience',\n      label: 'Audiencia',\n      value: draft.audience ?? 'public',\n      choices: [\n        { value: 'public', label: 'Público' },\n        { value: 'master', label: 'Solo Máster' },\n      ],\n    });",
+    'audience field',
+  ],
+  [
+    "    tagFieldset.append(tagError);\n    fields.append(tagFieldset);\n\n    const dispositionFieldset",
+    "    tagFieldset.append(tagError);\n    fields.append(tagFieldset);\n\n    const associationFieldset = createElement('fieldset', 'admin-map-entity__fieldset');\n    const associationLegend = createElement('legend', 'admin-map-entity__legend');\n    const associationHelp = createElement('p', 'admin-map-entity__help');\n    associationLegend.textContent = 'Asociaciones de jugadores';\n    associationHelp.textContent =\n      'Asocia narrativamente la entidad con uno o varios personajes jugadores. La forma funcional de misión o peligro siempre se conserva.';\n    associationFieldset.append(associationLegend, associationHelp);\n    for (const player of activePlayers) {\n      const row = createElement('label', 'admin-map-entity__check');\n      const checkbox = document.createElement('input');\n      const text = document.createElement('span');\n      checkbox.type = 'checkbox';\n      checkbox.value = player.id;\n      checkbox.checked = (draft.playerAssociationIds ?? []).includes(player.id);\n      checkbox.setAttribute('data-testid', `admin-player-association-${player.id}`);\n      text.textContent = player.displayName;\n      row.append(checkbox, text);\n      associationFieldset.append(row);\n      associationCheckboxes.push(checkbox);\n    }\n    associationError = createElement('p', 'admin-map-entity__field-error');\n    associationError.setAttribute('aria-live', 'polite');\n    associationFieldset.append(associationError);\n    fields.append(associationFieldset);\n\n    const dispositionFieldset",
+    'association fieldset',
+  ],
+  [
+    "      ...tagCheckboxes,\n      ...dispositionSelects,",
+    "      ...tagCheckboxes,\n      ...associationCheckboxes,\n      ...dispositionSelects,",
+    'association inputs validation',
+  ],
+]);
+
 console.log('MAP-064 compatibility contract patch applied');
