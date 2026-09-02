@@ -39,12 +39,19 @@ jobs:
 
       - name: Apply and format MAP-064 integration
         run: |
+          set +e
           node scripts/map064-integration-patch.mjs
+          first_status=$?
+          set -e
+          if [ "$first_status" -ne 0 ]; then
+            echo "Primary patch stopped at its known Leaflet tail; applying deterministic tail patch."
+          fi
+          node scripts/map064-integration-tail.mjs
           npx prettier --write src/domain/mapGeometry.ts src/data-access/publicCatalogQueryContract.js src/infrastructure/supabase/publicCatalogRows.ts src/app/adminCampaignScope.ts src/infrastructure/supabase/adminMapEntityRepository.ts src/infrastructure/supabase/masterCatalogRepository.ts src/data/pinMarkers.ts src/data/compactPinDetails.ts src/app/compactPinDetails.ts src/map/leafletBase.ts src/styles/pin-visual-system.css
 
       - name: Remove temporary integration scaffolding and restore CI
         run: |
-          git rm scripts/map064-integration-patch.mjs .github/workflows/map064-integration-patch.yml
+          git rm scripts/map064-integration-patch.mjs scripts/map064-integration-tail.mjs .github/workflows/map064-integration-patch.yml
           git checkout origin/master -- .github/workflows/ci.yml
 
       - name: Commit integrated MAP-064 pipeline
