@@ -29,12 +29,42 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Update MAP-064 E2E contracts
+      - name: Update MAP-064 browser contracts
         shell: bash
         run: |
           node <<'NODE'
           const fs = require('node:fs');
           const path = require('node:path');
+
+          function patchFile(file, replacements) {
+            let text = fs.readFileSync(file, 'utf8');
+            for (const [from, to, label] of replacements) {
+              if (!text.includes(from)) throw new Error(`${file}: missing ${label}`);
+              text = text.replace(from, to);
+            }
+            fs.writeFileSync(file, text);
+          }
+
+          patchFile('src/app/placeSearch.ts', [
+            [
+              "    case 'location':\n      return 'Emplazamiento de campaña';\n  }",
+              "    case 'location':\n      return 'Emplazamiento de campaña';\n    case 'mission':\n      return 'Misión';\n    case 'hazard':\n      return 'Peligro';\n  }",
+              'search result labels',
+            ],
+            [
+              'No hay lugares, personajes ni nombres geográficos para “${query.trim()}”.',
+              'No hay lugares, personajes, misiones, peligros ni nombres geográficos para “${query.trim()}”.',
+              'empty search status',
+            ],
+          ]);
+
+          patchFile('src/main.ts', [
+            [
+              "    case 'location':\n      return `${result.name}, emplazamiento de campaña`;\n  }",
+              "    case 'location':\n      return `${result.name}, emplazamiento de campaña`;\n    case 'mission':\n      return `${result.name}, misión`;\n    case 'hazard':\n      return `${result.name}, peligro`;\n  }",
+              'accessible search target labels',
+            ],
+          ]);
 
           const e2eDirectory = path.join(process.cwd(), 'tests', 'e2e');
           for (const entry of fs.readdirSync(e2eDirectory, { withFileTypes: true })) {
@@ -86,8 +116,8 @@ jobs:
           fs.writeFileSync(adminPath, admin);
           NODE
 
-      - name: Format changed frontend files
-        run: npx prettier --write src/data/search.ts scripts/test-map064-mission-hazard-upgrade.mjs tests/e2e/*.ts
+      - name: Format changed files
+        run: npx prettier --write src/app/placeSearch.ts src/main.ts src/data/search.ts scripts/test-map064-mission-hazard-upgrade.mjs tests/e2e/*.ts
 
       - name: Run focused frontend checks
         run: |
@@ -102,6 +132,6 @@ jobs:
           git rm .github/workflows/map064-e2e-integration.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/data/search.ts scripts/test-map064-mission-hazard-upgrade.mjs tests/e2e
+          git add src/app/placeSearch.ts src/main.ts src/data/search.ts scripts/test-map064-mission-hazard-upgrade.mjs tests/e2e
           git commit -m "test(map-064): integrate lifecycle browser coverage"
           git push origin HEAD:agent/map-064-mission-hazard-lifecycle
