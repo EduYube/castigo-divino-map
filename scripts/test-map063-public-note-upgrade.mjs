@@ -103,7 +103,7 @@ function fetchSnapshots(containerName) {
        'archived_at', note.archived_at,
        'created_at', note.created_at,
        'updated_at', note.updated_at,
-       'tags', pg_catalog.coalesce((
+       'tags', coalesce((
          select pg_catalog.jsonb_agg(note_tag.tag_id order by note_tag.tag_id)
          from public.public_note_tags as note_tag
          where note_tag.note_id = note.id
@@ -183,7 +183,9 @@ runPsql(
 
 const beforeSnapshots = fetchSnapshots(containerName);
 if (beforeSnapshots.length !== NOTE_IDS.length) {
-  fail(`expected ${NOTE_IDS.length} historical notes before migration, found ${beforeSnapshots.length}`);
+  fail(
+    `expected ${NOTE_IDS.length} historical notes before migration, found ${beforeSnapshots.length}`,
+  );
 }
 
 runCommand(
