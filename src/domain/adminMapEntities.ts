@@ -1,7 +1,8 @@
 import type { MapCoordinate } from './mapCoordinates';
 import type { MapEntityGeometry } from './mapGeometry';
 
-export type MapEntityType = 'character' | 'location';
+export type MapEntityType = 'character' | 'location' | 'mission' | 'hazard';
+export type MapEntityLifecycleStatus = 'active' | 'completed' | 'failed' | 'resolved';
 export type MapVisibility = 'pin' | 'search_only';
 export type MapEntityAudience = 'public' | 'master';
 export type PlayerDisposition = 'ally' | 'enemy' | 'neutral';
@@ -11,6 +12,8 @@ export interface AdminMapEntityRecord extends MapCoordinate {
   readonly id: string;
   readonly slug: string;
   readonly entityType: MapEntityType;
+  /** MAP-064 functional lifecycle, separate from publicationStatus. */
+  readonly lifecycleStatus?: MapEntityLifecycleStatus | null;
   readonly visibility: MapVisibility;
   /**
    * Older in-memory fixtures predate MAP-044. Runtime repositories always return
@@ -112,6 +115,7 @@ export interface AdminMapEntityDraft extends MapCoordinate {
   readonly id: string;
   readonly slug: string;
   readonly entityType: MapEntityType;
+  readonly lifecycleStatus?: MapEntityLifecycleStatus | null;
   readonly visibility: MapVisibility;
   /** See AdminMapEntityRecord.audience. Missing means the safe migration default. */
   readonly audience?: MapEntityAudience;
@@ -134,6 +138,15 @@ export function getMapEntityAudience(
   return value.audience ?? 'public';
 }
 
+export function getMapEntityLifecycleStatus(
+  value: Pick<AdminMapEntityRecord | AdminMapEntityDraft, 'entityType' | 'lifecycleStatus'>,
+): MapEntityLifecycleStatus | null {
+  if (value.entityType === 'mission' || value.entityType === 'hazard') {
+    return value.lifecycleStatus ?? 'active';
+  }
+  return null;
+}
+
 export function getSelectedTagIds(detail: AdminMapEntityDetail): readonly string[] {
   return detail.tagLinks
     .filter((link) => link.publicationStatus !== 'archived')
@@ -145,6 +158,7 @@ export function detailToDraft(detail: AdminMapEntityDetail): AdminMapEntityDraft
     id: detail.record.id,
     slug: detail.record.slug,
     entityType: detail.record.entityType,
+    lifecycleStatus: getMapEntityLifecycleStatus(detail.record),
     visibility: detail.record.visibility,
     audience: getMapEntityAudience(detail.record),
     portraitPath: detail.record.portraitPath ?? null,
@@ -175,6 +189,7 @@ export function createEmptyMapEntityDraft(
     id: 'entity-',
     slug: '',
     entityType,
+    lifecycleStatus: entityType === 'mission' || entityType === 'hazard' ? 'active' : null,
     visibility: 'pin',
     audience: 'public',
     portraitPath: null,
