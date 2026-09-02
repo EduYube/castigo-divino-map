@@ -123,6 +123,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
     },
   ];
   const entityTags = new Map<string, string[]>([['entity-aster-guide', ['notable']]]);
+  const entityAssociations = new Map<string, string[]>();
   const dispositions = new Map<string, Record<string, Disposition>>([
     [
       'entity-aster-guide',
@@ -132,13 +133,14 @@ async function configureBackend(page: Page): Promise<BackendControl> {
 
   const timestamp = (): string => `2026-08-07T12:00:${String(counter++).padStart(2, '0')}.000Z`;
   const relationRevision = (id: string): string =>
-    `revision-${id}-${(entityTags.get(id) ?? []).join('-')}-${Object.values(dispositions.get(id) ?? {}).join('-')}`;
+    `revision-${id}-${(entityTags.get(id) ?? []).join('-')}-${Object.values(dispositions.get(id) ?? {}).join('-')}-${(entityAssociations.get(id) ?? []).join('-')}`;
 
   const detailFor = (id: string): Record<string, unknown> | null => {
     const entity = entities.find((candidate) => candidate.id === id);
     if (!entity) return null;
     const tagIds = entityTags.get(id) ?? [];
     const currentDispositions = dispositions.get(id) ?? {};
+    const associationIds = entityAssociations.get(id) ?? [];
     return {
       record: entity,
       tag_links: tagIds.map((tagId) => ({
@@ -154,7 +156,20 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         disposition: currentDispositions[player.id] ?? 'neutral',
         updated_at: entity.updated_at,
       })),
-      associations: [],
+      associations: associationIds.flatMap((playerId) => {
+        const player = players.find((candidate) => candidate.id === playerId);
+        return player
+          ? [
+              {
+                player_id: player.id,
+                display_name: player.display_name,
+                accent_color: player.accent_color,
+                publication_status: player.publication_status,
+                created_at: entity.updated_at,
+              },
+            ]
+          : [];
+      }),
       relations_revision: relationRevision(id),
       delete_blockers: {
         aliases: 0,
@@ -464,6 +479,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       lastAssociationIds = Array.isArray(body.p_player_association_ids)
         ? body.p_player_association_ids.map(String)
         : [];
+      entityAssociations.set(id, [...lastAssociationIds]);
       saveCount += 1;
       await route.fulfill({
         status: 200,
@@ -503,6 +519,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       const [removed] = entities.splice(index, 1);
       entityTags.delete(id);
       dispositions.delete(id);
+      entityAssociations.delete(id);
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
