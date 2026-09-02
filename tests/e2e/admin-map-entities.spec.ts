@@ -24,7 +24,8 @@ type Audience = 'public' | 'master';
 interface EntityRow extends Record<string, unknown> {
   id: string;
   slug: string;
-  entity_type: 'character' | 'location';
+  entity_type: 'character' | 'location' | 'mission' | 'hazard';
+  lifecycle_status: 'active' | 'completed' | 'failed' | 'resolved' | null;
   visibility: 'pin' | 'search_only';
   audience: Audience;
   portrait_path: string | null;
@@ -105,6 +106,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       id: 'entity-aster-guide',
       slug: 'aster-guide',
       entity_type: 'character',
+      lifecycle_status: null,
       visibility: 'pin',
       audience: 'public',
       portrait_path: null,
@@ -308,6 +310,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
                       id: entity.id,
                       slug: entity.slug,
                       entity_type: entity.entity_type,
+                      lifecycle_status: entity.lifecycle_status,
                       visibility: entity.visibility,
                       name: entity.name,
                       name_language: 'en',
@@ -354,7 +357,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v6')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v7')) {
       const body = request.postDataJSON() as { p_entity_id?: string };
       await route.fulfill({
         status: 200,
@@ -364,7 +367,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v6')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v7')) {
       if (mode === 'network') {
         mode = 'normal';
         await route.abort('failed');
@@ -425,6 +428,12 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         id,
         slug: String(body.p_slug),
         entity_type: body.p_entity_type as EntityRow['entity_type'],
+        lifecycle_status:
+          body.p_lifecycle_status == null
+            ? body.p_entity_type === 'mission' || body.p_entity_type === 'hazard'
+              ? 'active'
+              : null
+            : (body.p_lifecycle_status as EntityRow['lifecycle_status']),
         visibility: body.p_visibility as EntityRow['visibility'],
         audience: body.p_audience as Audience,
         portrait_path: body.p_portrait_path == null ? null : String(body.p_portrait_path),
@@ -921,4 +930,125 @@ test('physical deletion requires confirmation, restores focus on Escape and rema
       () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
     ),
   ).toBe(true);
+});
+
+test('MAP-064 mission and hazard lifecycle remains independent from publication', async ({
+  page,
+}) => {
+  const backend = await configureBackend(page);
+  await page.goto('/');
+  await loginAndConnect(page);
+
+  await page.getByRole('button', { name: 'Crear misión' }).click();
+  await fillIdentity(page, {
+    id: 'entity-map064-rescue-mission',
+    slug: 'map064-rescue-mission',
+    name: 'Rescue the Lantern',
+  });
+  await page.getByLabel('Categoría', { exact: true }).selectOption('category-places');
+  await page.getByLabel('Audiencia').selectOption('public');
+  await page.getByLabel('Coordenada X').fill('1450');
+  await page.getByLabel('Coordenada Y').fill('980');
+  await expect(page.getByLabel('Estado funcional')).toHaveValue('active');
+  await page.getByTestId('admin-player-association-player-skade').check();
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
+  expect(backend.getEntity('entity-map064-rescue-mission')).toMatchObject({
+    id: 'entity-map064-rescue-mission',
+    slug: 'map064-rescue-mission',
+    entity_type: 'mission',
+    lifecycle_status: 'active',
+    publication_status: 'published',
+  });
+  expect(backend.getLastAssociationIds()).toEqual(['player-skade']);
+
+  await page.getByRole('button', { name: 'Cerrar editor' }).click();
+  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+
+  const missionMarker = page.locator(
+    '.campaign-marker-icon[data-entity-id="entity-map064-rescue-mission"]',
+  );
+  await expect(missionMarker).toHaveCount(1);
+  await expect(missionMarker.locator('.pin-visual--mission')).toHaveCount(1);
+
+  const searchToggle = page.locator('[data-place-search-toggle]');
+  if ((await searchToggle.getAttribute('aria-expanded')) === 'false') await searchToggle.click();
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await search.fill('Rescue the Lantern');
+  const missionSuggestion = page.locator(
+    '[role="option"][data-search-suggestion-id="entity-map064-rescue-mission"]',
+  );
+  await expect(missionSuggestion).toBeVisible();
+  await expect(missionSuggestion).toContainText('Misión');
+  await missionMarker.click();
+  const activePanel = page.getByTestId('place-details');
+  await expect(activePanel).toContainText('Misión');
+  await expect(activePanel).toContainText('Activa');
+  const activeHref = await activePanel
+    .getByRole('link', { name: /Abrir ficha completa de Rescue the Lantern/ })
+    .getAttribute('href');
+  expect(activeHref).toMatch(/\?entity=map064-rescue-mission&campaign=castigo-divino$/);
+
+  await page.getByRole('button', { name: 'Administración' }).click();
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+    );
+  });
+  await page.getByRole('button', { name: 'Editar Rescue the Lantern' }).click();
+  await page.getByLabel('Estado funcional').selectOption('completed');
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
+  expect(backend.getEntity('entity-map064-rescue-mission')).toMatchObject({
+    id: 'entity-map064-rescue-mission',
+    slug: 'map064-rescue-mission',
+    lifecycle_status: 'completed',
+    publication_status: 'published',
+  });
+  await expect(page.getByTestId('admin-player-association-player-skade')).toBeChecked();
+
+  await page.getByRole('button', { name: 'Cerrar editor' }).click();
+  await page.getByRole('button', { name: 'Crear peligro' }).click();
+  await fillIdentity(page, {
+    id: 'entity-map064-bridge-hazard',
+    slug: 'map064-bridge-hazard',
+    name: 'Collapsing Bridge',
+  });
+  await page.getByLabel('Categoría', { exact: true }).selectOption('category-places');
+  await page.getByLabel('Coordenada X').fill('1490');
+  await page.getByLabel('Coordenada Y').fill('1010');
+  await expect(page.getByLabel('Estado funcional')).toHaveValue('active');
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await page.getByLabel('Estado funcional').selectOption('resolved');
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  expect(backend.getEntity('entity-map064-bridge-hazard')).toMatchObject({
+    id: 'entity-map064-bridge-hazard',
+    slug: 'map064-bridge-hazard',
+    entity_type: 'hazard',
+    lifecycle_status: 'resolved',
+    publication_status: 'published',
+  });
+
+  await page.getByRole('button', { name: 'Cerrar editor' }).click();
+  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+
+  await expect(missionMarker).toHaveCount(1);
+  await expect(missionMarker.locator('.pin-visual--mission')).toHaveCount(1);
+  await missionMarker.click();
+  const completedPanel = page.getByTestId('place-details');
+  await expect(completedPanel).toContainText('Completada');
+  const completedHref = await completedPanel
+    .getByRole('link', { name: /Abrir ficha completa de Rescue the Lantern/ })
+    .getAttribute('href');
+  expect(completedHref).toBe(activeHref);
+
+  const hazardMarker = page.locator(
+    '.campaign-marker-icon[data-entity-id="entity-map064-bridge-hazard"]',
+  );
+  await expect(hazardMarker).toHaveCount(1);
+  await expect(hazardMarker.locator('.pin-visual--hazard')).toHaveCount(1);
+  await hazardMarker.click();
+  const hazardPanel = page.getByTestId('place-details');
+  await expect(hazardPanel).toContainText('Peligro');
+  await expect(hazardPanel).toContainText('Resuelto');
 });

@@ -189,7 +189,10 @@ const contract = JSON.parse(
   ),
 );
 
-if (JSON.stringify(contract.entity_types) !== JSON.stringify(['character', 'location', 'mission', 'hazard'])) {
+if (
+  JSON.stringify(contract.entity_types) !==
+  JSON.stringify(['character', 'location', 'mission', 'hazard'])
+) {
   fail(`unexpected entity_type enum after upgrade: ${JSON.stringify(contract.entity_types)}`);
 }
 if (Number(contract.legacy_lifecycle_rows) !== 0) {

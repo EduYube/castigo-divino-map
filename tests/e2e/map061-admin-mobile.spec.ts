@@ -97,7 +97,7 @@ async function configureBackend(page: Page): Promise<void> {
 
     if (
       isAdmin &&
-      (resource === 'rpc/admin_get_map_entity_editor_v6' ||
+      (resource === 'rpc/admin_get_map_entity_editor_v7' ||
         resource === 'rpc/admin_get_map_entity_editor_v3')
     ) {
       await route.fulfill({

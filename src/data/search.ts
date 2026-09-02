@@ -19,12 +19,7 @@ export interface PlaceSearchResult {
   readonly matchRank: PlaceSearchMatchRank;
 }
 
-export type AtlasSearchResultType =
-  | 'geographic'
-  | 'character'
-  | 'location'
-  | 'mission'
-  | 'hazard';
+export type AtlasSearchResultType = 'geographic' | 'character' | 'location' | 'mission' | 'hazard';
 
 export interface AtlasSearchResult {
   readonly id: string;

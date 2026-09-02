@@ -107,6 +107,10 @@ function describeSearchTarget(result: AtlasSearchResult): string {
       return `${result.name}, personaje`;
     case 'location':
       return `${result.name}, emplazamiento de campaña`;
+    case 'mission':
+      return `${result.name}, misión`;
+    case 'hazard':
+      return `${result.name}, peligro`;
   }
 }
 
