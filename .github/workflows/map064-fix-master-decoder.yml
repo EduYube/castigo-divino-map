@@ -1,0 +1,114 @@
+name: MAP-064 master decoder fix
+
+on:
+  push:
+    branches:
+      - agent/map-064-mission-hazard-lifecycle
+    paths:
+      - .github/workflows/map064-fix-master-decoder.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-064-mission-hazard-lifecycle
+          fetch-depth: 0
+      - name: Apply MAP-064 decoder and E2E fixes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, found {count}: {old!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              'src/data-access/masterCatalog.ts',
+              "import type { MapEntityGeometry } from '../domain/mapGeometry';\n",
+              "import type { EntityLifecycleStatus } from '../data/beta02-model';\nimport type { MapEntityGeometry } from '../domain/mapGeometry';\n",
+          )
+          replace_once(
+              'src/data-access/masterCatalog.ts',
+              "  readonly entityType: MapEntityType;\n  readonly visibility: MapVisibility;",
+              "  readonly entityType: MapEntityType;\n  readonly lifecycleStatus: EntityLifecycleStatus | null;\n  readonly visibility: MapVisibility;",
+          )
+
+          replace_once(
+              'src/infrastructure/supabase/masterCatalogRepository.ts',
+              "import {\n  mapGeometryRepresentativePoint,\n  normalizeMapEntityGeometry,\n} from '../../domain/mapGeometry';",
+              "import { isEntityLifecycleStatusValid } from '../../domain/entityLifecycle';\nimport {\n  mapGeometryRepresentativePoint,\n  normalizeMapEntityGeometry,\n} from '../../domain/mapGeometry';",
+          )
+          replace_once(
+              'src/infrastructure/supabase/masterCatalogRepository.ts',
+              "  if (entityType !== 'character' && entityType !== 'location') throwInvalid();\n  if (visibility !== 'pin' && visibility !== 'search_only') throwInvalid();",
+              "  if (\n    entityType !== 'character' &&\n    entityType !== 'location' &&\n    entityType !== 'mission' &&\n    entityType !== 'hazard'\n  ) {\n    throwInvalid();\n  }\n  const lifecycleStatus = row.lifecycle_status;\n  if (\n    lifecycleStatus !== null &&\n    lifecycleStatus !== 'active' &&\n    lifecycleStatus !== 'completed' &&\n    lifecycleStatus !== 'failed' &&\n    lifecycleStatus !== 'resolved'\n  ) {\n    throwInvalid();\n  }\n  if (!isEntityLifecycleStatusValid(entityType, lifecycleStatus)) throwInvalid();\n  if (visibility !== 'pin' && visibility !== 'search_only') throwInvalid();",
+          )
+          replace_once(
+              'src/infrastructure/supabase/masterCatalogRepository.ts',
+              "    entityType,\n    visibility,",
+              "    entityType,\n    lifecycleStatus,\n    visibility,",
+          )
+
+          replace_once(
+              'src/data/masterCatalogView.ts',
+              "      entityType: entity.entityType,\n      visibility: entity.visibility,",
+              "      entityType: entity.entityType,\n      lifecycleStatus: entity.lifecycleStatus,\n      visibility: entity.visibility,",
+          )
+
+          test_path = Path('src/infrastructure/supabase/masterCatalogRepository.test.ts')
+          test_text = test_path.read_text()
+          test_text = test_text.replace(
+              "      entity_type: 'character',\n      visibility: 'pin',",
+              "      entity_type: 'character',\n      lifecycle_status: null,\n      visibility: 'pin',",
+              1,
+          )
+          test_text = test_text.replace(
+              "      entity_type: 'location',\n      visibility: 'pin',",
+              "      entity_type: 'location',\n      lifecycle_status: null,\n      visibility: 'pin',",
+              1,
+          )
+          anchor = """    {\n      id: 'location-master-area',\n      slug: 'master-area',\n      entity_type: 'location',\n      lifecycle_status: null,\n      visibility: 'pin',\n      audience: 'master',\n      name: 'Master Area',\n      summary: 'Private area',\n      description: 'Private polygon',\n      portrait_path: null,\n      geometry: {\n        kind: 'polygon',\n        vertices: [\n          { x: 100, y: 100 },\n          { x: 300, y: 100 },\n          { x: 300, y: 300 },\n          { x: 100, y: 300 },\n        ],\n      },\n      x: 200,\n      y: 200,\n      category_id: 'category-master-test',\n      updated_at: '2026-08-28T00:00:00.000Z',\n    },\n"""
+          if test_text.count(anchor) != 1:
+              raise SystemExit('masterCatalogRepository.test.ts: location payload anchor mismatch')
+          functional = """    {\n      id: 'entity-master-mission',\n      slug: 'master-mission',\n      entity_type: 'mission',\n      lifecycle_status: 'active',\n      visibility: 'pin',\n      audience: 'master',\n      name: 'Master Mission',\n      summary: 'Private mission',\n      description: 'Private mission description',\n      portrait_path: null,\n      geometry: { kind: 'point', coordinates: { x: 400, y: 500 } },\n      x: 400,\n      y: 500,\n      category_id: 'category-master-test',\n      updated_at: '2026-09-02T12:00:00.000Z',\n    },\n    {\n      id: 'entity-master-hazard',\n      slug: 'master-hazard',\n      entity_type: 'hazard',\n      lifecycle_status: 'resolved',\n      visibility: 'pin',\n      audience: 'master',\n      name: 'Master Hazard',\n      summary: 'Private hazard',\n      description: 'Private hazard description',\n      portrait_path: null,\n      geometry: { kind: 'point', coordinates: { x: 600, y: 700 } },\n      x: 600,\n      y: 700,\n      category_id: 'category-master-test',\n      updated_at: '2026-09-02T12:00:00.000Z',\n    },\n"""
+          test_text = test_text.replace(anchor, anchor + functional, 1)
+          assertion_anchor = """        expect.objectContaining({\n          id: 'location-master-area',\n          audience: 'master',\n          geometry: {\n            kind: 'polygon',\n            vertices: [\n              { x: 100, y: 100 },\n              { x: 300, y: 100 },\n              { x: 300, y: 300 },\n              { x: 100, y: 300 },\n            ],\n          },\n          x: 200,\n          y: 200,\n        }),\n"""
+          if test_text.count(assertion_anchor) != 1:
+              raise SystemExit('masterCatalogRepository.test.ts: assertion anchor mismatch')
+          assertion_add = """        expect.objectContaining({\n          id: 'entity-master-mission',\n          entityType: 'mission',\n          lifecycleStatus: 'active',\n          geometry: { kind: 'point', coordinates: { x: 400, y: 500 } },\n        }),\n        expect.objectContaining({\n          id: 'entity-master-hazard',\n          entityType: 'hazard',\n          lifecycleStatus: 'resolved',\n          geometry: { kind: 'point', coordinates: { x: 600, y: 700 } },\n        }),\n"""
+          test_text = test_text.replace(assertion_anchor, assertion_anchor + assertion_add, 1)
+          malformed_anchor = """  test('fails closed on malformed successful payloads', async () => {\n"""
+          lifecycle_test = """  test('fails closed when a functional Master entity has an invalid lifecycle', async () => {\n    const payload = structuredClone(VALID_PAYLOAD);\n    const mission = payload.entities.find(({ id }) => id === 'entity-master-mission');\n    if (!mission) throw new Error('Missing mission fixture.');\n    mission.lifecycle_status = 'resolved';\n    const repository = repositoryWith(\n      async () =>\n        new Response(JSON.stringify(payload), {\n          status: 200,\n          headers: { 'Content-Type': 'application/json' },\n        }),\n    );\n\n    await expect(\n      repository.load({\n        signal: new AbortController().signal,\n        campaignId: CAMPAIGN_ID,\n      }),\n    ).rejects.toMatchObject({ code: 'invalid-response' });\n  });\n\n"""
+          if test_text.count(malformed_anchor) != 1:
+              raise SystemExit('masterCatalogRepository.test.ts: malformed test anchor mismatch')
+          test_text = test_text.replace(malformed_anchor, lifecycle_test + malformed_anchor, 1)
+          test_path.write_text(test_text)
+
+          replace_once(
+              'tests/e2e/map064-functional-pin-visuals.spec.ts',
+              "  await expect(options.locator('[data-entity-type=\"location\"]')).toHaveCount(1);\n  await expect(options.locator('[data-entity-type=\"hazard\"]')).toHaveCount(1);",
+              "  await expect(locationOption).toHaveCount(1);\n  await expect(hazardOption).toHaveCount(1);",
+          )
+          PY
+
+          git rm .github/workflows/map064-fix-master-decoder.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data-access/masterCatalog.ts \
+            src/infrastructure/supabase/masterCatalogRepository.ts \
+            src/infrastructure/supabase/masterCatalogRepository.test.ts \
+            src/data/masterCatalogView.ts \
+            tests/e2e/map064-functional-pin-visuals.spec.ts
+          git diff --cached --check
+          git commit -m "fix(map-064): decode functional master entities"
+          git push origin HEAD:agent/map-064-mission-hazard-lifecycle
