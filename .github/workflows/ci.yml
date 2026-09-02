@@ -10,58 +10,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  integrate-map064:
-    if: github.event_name == 'pull_request' && github.head_ref == 'agent/map-064-mission-hazard-lifecycle'
-    name: MAP-064 integration
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout MAP-064 branch
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          ref: agent/map-064-mission-hazard-lifecycle
-          fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Apply and format MAP-064 integration
-        run: |
-          set +e
-          node scripts/map064-integration-patch.mjs
-          first_status=$?
-          set -e
-          if [ "$first_status" -ne 0 ]; then
-            echo "Primary patch stopped at its known Leaflet tail; applying deterministic tail patch."
-          fi
-          node scripts/map064-integration-tail.mjs
-          npx prettier --write src/domain/mapGeometry.ts src/data-access/publicCatalogQueryContract.js src/infrastructure/supabase/publicCatalogRows.ts src/app/adminCampaignScope.ts src/infrastructure/supabase/adminMapEntityRepository.ts src/infrastructure/supabase/masterCatalogRepository.ts src/data/pinMarkers.ts src/data/compactPinDetails.ts src/app/compactPinDetails.ts src/map/leafletBase.ts src/styles/pin-visual-system.css
-
-      - name: Remove temporary integration scaffolding and restore CI
-        run: |
-          git rm scripts/map064-integration-patch.mjs scripts/map064-integration-tail.mjs .github/workflows/map064-integration-patch.yml
-          git checkout origin/master -- .github/workflows/ci.yml
-
-      - name: Commit integrated MAP-064 pipeline
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src .github/workflows/ci.yml
-          git commit -m "feat(map-064): integrate lifecycle across public and admin pipelines"
-          git push origin HEAD:agent/map-064-mission-hazard-lifecycle
-
   validate:
     name: Build, quality and tests
     runs-on: ubuntu-latest

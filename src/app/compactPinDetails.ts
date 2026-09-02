@@ -1,5 +1,6 @@
 import type { CompactPinDetailModel } from '../data/compactPinDetails';
 import { createPlayerDispositionVisuals, getPinTypeVisual } from '../domain/pinVisualSystem';
+import { getEntityLifecycleLabel } from '../domain/entityLifecycle';
 
 export interface CompactPinDetailsController {
   show(details: CompactPinDetailModel, options?: CompactPinDetailsShowOptions): void;
@@ -97,6 +98,13 @@ function appendType(parent: HTMLElement, details: CompactPinDetailModel): void {
   label.textContent = type.label;
   row.append(shape, label);
   parent.append(row);
+  const lifecycle = getEntityLifecycleLabel(details.entityType, details.lifecycleStatus ?? null);
+  if (lifecycle) {
+    const lifecycleRow = document.createElement('p');
+    lifecycleRow.className = 'compact-details__lifecycle';
+    lifecycleRow.textContent = `Estado: ${lifecycle}`;
+    parent.append(lifecycleRow);
+  }
 }
 
 function appendCategory(parent: HTMLElement, details: CompactPinDetailModel): void {
@@ -287,6 +295,7 @@ function createDetailsSignature(details: CompactPinDetailModel): string {
     associatedPlayers: details.associatedPlayers,
     importantCharacters: details.importantCharacters,
     entitySlug: details.entitySlug,
+    lifecycleStatus: details.lifecycleStatus,
   });
 }
 

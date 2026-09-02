@@ -268,7 +268,7 @@ export class SupabaseMasterCatalogRepository implements MasterCatalogRepository 
       let response: Response;
       try {
         response = await this.#fetchImplementation(
-          new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_master_catalog_v5`),
+          new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_master_catalog_v6`),
           {
             method: 'POST',
             headers: {

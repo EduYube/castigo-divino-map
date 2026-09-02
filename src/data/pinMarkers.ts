@@ -29,6 +29,7 @@ export interface AtlasPinMarkerModel {
   readonly entityId: EntityId | null;
   readonly name: string;
   readonly entityType: PinEntityType;
+  readonly lifecycleStatus: PublicMapEntity['lifecycleStatus'];
   /** Representative point. Polygon regions use it only for existing search/detail contracts. */
   readonly coordinate: LeafletSimpleCoordinate;
   /** Missing only in historical fixtures; runtime models always provide it and missing means point. */
@@ -146,6 +147,7 @@ export function createAtlasPinMarkerModels(
         entityId: beta02Entity?.id ?? null,
         name: beta02Entity?.name ?? place.name,
         entityType: beta02Entity?.entityType ?? 'location',
+        lifecycleStatus: beta02Entity?.lifecycleStatus ?? null,
         coordinate: toLeafletSimpleCoordinate(beta02Entity?.coordinates ?? place.coordinates),
         mapPresentation: mapPresentation(beta02Entity),
         categoryId: beta02Entity?.categoryId ?? legacyCategory.id,
@@ -177,6 +179,7 @@ export function createAtlasPinMarkerModels(
         entityId: entity.id,
         name: entity.name,
         entityType: entity.entityType,
+        lifecycleStatus: entity.lifecycleStatus ?? null,
         coordinate: toLeafletSimpleCoordinate(entity.coordinates),
         mapPresentation: mapPresentation(entity),
         categoryId: entity.categoryId,
