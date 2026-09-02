@@ -20,6 +20,16 @@ describe('pin visual system', () => {
       symbol: '◆',
       className: 'pin-visual--location',
     });
+    expect(getPinTypeVisual('mission')).toMatchObject({
+      label: 'Misión',
+      symbol: '⚑',
+      className: 'pin-visual--mission',
+    });
+    expect(getPinTypeVisual('hazard')).toMatchObject({
+      label: 'Peligro',
+      symbol: '!',
+      className: 'pin-visual--hazard',
+    });
   });
 
   it.each([
