@@ -28,8 +28,8 @@ jobs:
 
           p = Path('tests/e2e/admin-map-entities.spec.ts')
           s = p.read_text()
-          old = """                : table === 'players'\n                  ? players\n                  : [];\n"""
-          new = """                : table === 'players'\n                  ? players\n                  : table === 'entity_player_associations'\n                    ? [...entityAssociations.entries()].flatMap(([entityId, playerIds]) =>\n                        entityId === (url.searchParams.get('entity_id') ?? '').replace(/^eq\\./, '')\n                          ? playerIds.map((playerId) => ({ entity_id: entityId, player_id: playerId }))\n                          : [],\n                      )\n                    : [];\n"""
+          old = """              : table === 'players'\n                ? players\n                : [];\n"""
+          new = """              : table === 'players'\n                ? players\n                : table === 'entity_player_associations'\n                  ? [...entityAssociations.entries()].flatMap(([entityId, playerIds]) =>\n                      entityId === (url.searchParams.get('entity_id') ?? '').replace(/^eq\\./, '')\n                        ? playerIds.map((playerId) => ({ entity_id: entityId, player_id: playerId }))\n                        : [],\n                    )\n                  : [];\n"""
           if old not in s:
               raise SystemExit('generic GET fixture anchor missing')
           s = s.replace(old, new, 1)
