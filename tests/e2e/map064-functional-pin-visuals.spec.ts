@@ -193,12 +193,12 @@ test('keeps portrait, functional class, player association and coincident groupi
   await coincident.focus();
   await page.keyboard.press('Enter');
 
-  const locationOption = page
-    .getByTestId('coincident-pin-option')
-    .filter({ has: page.locator('[data-entity-type="location"]') });
-  const hazardOption = page
-    .getByTestId('coincident-pin-option')
-    .filter({ has: page.locator('[data-entity-type="hazard"]') });
+  const locationOption = page.locator(
+    '[data-testid="coincident-pin-option"][data-entity-type="location"]',
+  );
+  const hazardOption = page.locator(
+    '[data-testid="coincident-pin-option"][data-entity-type="hazard"]',
+  );
 
   const options = page.getByTestId('coincident-pin-option');
   await expect(options).toHaveCount(2);
@@ -208,14 +208,15 @@ test('keeps portrait, functional class, player association and coincident groupi
   await expect(options.locator('.pin-visual--hazard')).toHaveCount(1);
   await expect(locationOption.or(hazardOption)).toHaveCount(2);
 
-  const hazard = options.locator('[data-entity-type="hazard"]').first();
-  await hazard.click();
+  await hazardOption.click();
   const details = page.getByTestId('place-details');
   await expect(details).toHaveAttribute('data-entity-type', 'hazard');
   await expect(details).toContainText('Peligro');
   await expect(details).toContainText('Resuelto');
 
-  await details.getByRole('button', { name: /Cerrar la ficha de Peligro agrupado MAP064/i }).click();
+  await details
+    .getByRole('button', { name: /Cerrar la ficha de Peligro agrupado MAP064/i })
+    .click();
   await expect(details).toBeHidden();
   await mission.focus();
   await expect(mission).toBeFocused();
@@ -227,7 +228,9 @@ test('keeps portrait, functional class, player association and coincident groupi
   await expect(details).toContainText('Skade MAP064');
 });
 
-test('functional pins keep perceivable focus and text semantics in forced-colors mode', async ({ page }) => {
+test('functional pins keep perceivable focus and text semantics in forced-colors mode', async ({
+  page,
+}) => {
   await page.emulateMedia({ forcedColors: 'active' });
   await openMap(page);
 

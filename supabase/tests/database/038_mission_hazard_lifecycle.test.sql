@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(28);
+select plan(29);
 
 select is(
   (
@@ -84,6 +84,17 @@ select ok(
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}';
 set local role authenticated;
+
+select ok(
+  pg_temp.statement_fails(
+    $update public.map_entities
+      set lifecycle_status = null
+      where id = 'place-demo-harbor'$
+  ),
+  'authenticated cannot mutate lifecycle directly through the table'
+);
+
+reset role;
 
 insert into public.map_entities (
   campaign_id, id, slug, entity_type, visibility, audience, name, summary, description,
