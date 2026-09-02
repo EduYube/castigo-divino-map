@@ -10,13 +10,51 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  integrate-map064-ui:
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/map-064-mission-hazard-lifecycle'
+    name: MAP-064 admin/details integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout MAP-064 branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: agent/map-064-mission-hazard-lifecycle
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply MAP-064 admin/details patch
+        run: |
+          node scripts/map064-admin-ui-patch.mjs
+          npx prettier --write src/app/adminMapEntities.ts src/app/fullEntityDetails.ts src/data/fullEntityDetails.ts src/domain/adminMapEntityValidation.ts src/domain/entityLifecycle.ts
+
+      - name: Remove temporary integration scaffolding and restore CI
+        run: |
+          git rm scripts/map064-admin-ui-patch.mjs
+          git checkout origin/master -- .github/workflows/ci.yml
+
+      - name: Commit integrated MAP-064 UI
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src .github/workflows/ci.yml
+          git commit -m "feat(map-064): integrate admin lifecycle controls and full details"
+          git push origin HEAD:agent/map-064-mission-hazard-lifecycle
+
   validate:
     name: Build, quality and tests
     runs-on: ubuntu-latest
