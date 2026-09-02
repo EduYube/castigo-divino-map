@@ -1,0 +1,107 @@
+name: MAP-064 E2E integration
+
+on:
+  push:
+    branches:
+      - agent/map-064-mission-hazard-lifecycle
+    paths:
+      - .github/workflows/map064-e2e-integration.yml
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout MAP-064 branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-064-mission-hazard-lifecycle
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update MAP-064 E2E contracts
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+
+          const e2eDirectory = path.join(process.cwd(), 'tests', 'e2e');
+          for (const entry of fs.readdirSync(e2eDirectory, { withFileTypes: true })) {
+            if (!entry.isFile() || !entry.name.endsWith('.ts')) continue;
+            const file = path.join(e2eDirectory, entry.name);
+            let text = fs.readFileSync(file, 'utf8');
+            const original = text;
+            text = text.replaceAll('admin_get_map_entity_editor_v6', 'admin_get_map_entity_editor_v7');
+            text = text.replaceAll('admin_save_map_entity_v6', 'admin_save_map_entity_v7');
+            text = text.replaceAll('admin_get_master_catalog_v5', 'admin_get_master_catalog_v6');
+            if (text !== original) fs.writeFileSync(file, text);
+          }
+
+          const adminPath = path.join(e2eDirectory, 'admin-map-entities.spec.ts');
+          let admin = fs.readFileSync(adminPath, 'utf8');
+
+          const replacements = [
+            [
+              "  entity_type: 'character' | 'location';\n  visibility: 'pin' | 'search_only';",
+              "  entity_type: 'character' | 'location' | 'mission' | 'hazard';\n  lifecycle_status: 'active' | 'completed' | 'failed' | 'resolved' | null;\n  visibility: 'pin' | 'search_only';",
+              'entity type/lifecycle fixture contract',
+            ],
+            [
+              "      entity_type: 'character',\n      visibility: 'pin',",
+              "      entity_type: 'character',\n      lifecycle_status: null,\n      visibility: 'pin',",
+              'legacy character lifecycle fixture',
+            ],
+            [
+              "                      entity_type: entity.entity_type,\n                      visibility: entity.visibility,",
+              "                      entity_type: entity.entity_type,\n                      lifecycle_status: entity.lifecycle_status,\n                      visibility: entity.visibility,",
+              'public lifecycle projection',
+            ],
+            [
+              "        entity_type: body.p_entity_type as EntityRow['entity_type'],\n        visibility: body.p_visibility as EntityRow['visibility'],",
+              "        entity_type: body.p_entity_type as EntityRow['entity_type'],\n        lifecycle_status:\n          body.p_lifecycle_status == null\n            ? body.p_entity_type === 'mission' || body.p_entity_type === 'hazard'\n              ? 'active'\n              : null\n            : (body.p_lifecycle_status as EntityRow['lifecycle_status']),\n        visibility: body.p_visibility as EntityRow['visibility'],",
+              'saved lifecycle fixture',
+            ],
+          ];
+
+          for (const [from, to, label] of replacements) {
+            if (!admin.includes(from)) throw new Error(`admin-map-entities.spec.ts missing ${label}`);
+            admin = admin.replace(from, to);
+          }
+
+          if (!admin.includes("test('MAP-064 mission and hazard lifecycle remains independent from publication'")) {
+            admin += `\n\ntest('MAP-064 mission and hazard lifecycle remains independent from publication', async ({ page }) => {\n  const backend = await configureBackend(page);\n  await page.goto('/');\n  await loginAndConnect(page);\n\n  await page.getByRole('button', { name: 'Crear misión' }).click();\n  await fillIdentity(page, {\n    id: 'entity-map064-rescue-mission',\n    slug: 'map064-rescue-mission',\n    name: 'Rescue the Lantern',\n  });\n  await page.getByLabel('Categoría', { exact: true }).selectOption('category-places');\n  await page.getByLabel('Audiencia').selectOption('public');\n  await page.getByLabel('Coordenada X').fill('1450');\n  await page.getByLabel('Coordenada Y').fill('980');\n  await expect(page.getByLabel('Estado funcional')).toHaveValue('active');\n  await page.getByTestId('admin-player-association-player-skade').check();\n  await page.getByRole('button', { name: 'Publicar' }).click();\n  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();\n  expect(backend.getEntity('entity-map064-rescue-mission')).toMatchObject({\n    id: 'entity-map064-rescue-mission',\n    slug: 'map064-rescue-mission',\n    entity_type: 'mission',\n    lifecycle_status: 'active',\n    publication_status: 'published',\n  });\n  expect(backend.getLastAssociationIds()).toEqual(['player-skade']);\n\n  await page.getByRole('button', { name: 'Cerrar editor' }).click();\n  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();\n\n  const missionMarker = page.locator(\n    '.campaign-marker-icon[data-entity-id="entity-map064-rescue-mission"]',\n  );\n  await expect(missionMarker).toHaveCount(1);\n  await expect(missionMarker.locator('.pin-visual--mission')).toHaveCount(1);\n\n  const searchToggle = page.locator('[data-place-search-toggle]');\n  if ((await searchToggle.getAttribute('aria-expanded')) === 'false') await searchToggle.click();\n  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });\n  await search.fill('Rescue the Lantern');\n  const missionSuggestion = page.locator(\n    '[role="option"][data-search-suggestion-id="entity-map064-rescue-mission"]',\n  );\n  await expect(missionSuggestion).toBeVisible();\n  await expect(missionSuggestion).toContainText('Misión');\n  await missionMarker.click();\n  const activePanel = page.getByTestId('place-details');\n  await expect(activePanel).toContainText('Misión');\n  await expect(activePanel).toContainText('Activa');\n  const activeHref = await activePanel\n    .getByRole('link', { name: /Abrir ficha completa de Rescue the Lantern/ })\n    .getAttribute('href');\n  expect(activeHref).toMatch(/\\?entity=map064-rescue-mission&campaign=castigo-divino$/);\n\n  await page.getByRole('button', { name: 'Administración' }).click();\n  await page.evaluate(() => {\n    window.dispatchEvent(\n      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),\n    );\n  });\n  await page.getByRole('button', { name: 'Editar Rescue the Lantern' }).click();\n  await page.getByLabel('Estado funcional').selectOption('completed');\n  await page.getByRole('button', { name: 'Publicar' }).click();\n  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();\n  expect(backend.getEntity('entity-map064-rescue-mission')).toMatchObject({\n    id: 'entity-map064-rescue-mission',\n    slug: 'map064-rescue-mission',\n    lifecycle_status: 'completed',\n    publication_status: 'published',\n  });\n  await expect(page.getByTestId('admin-player-association-player-skade')).toBeChecked();\n\n  await page.getByRole('button', { name: 'Cerrar editor' }).click();\n  await page.getByRole('button', { name: 'Crear peligro' }).click();\n  await fillIdentity(page, {\n    id: 'entity-map064-bridge-hazard',\n    slug: 'map064-bridge-hazard',\n    name: 'Collapsing Bridge',\n  });\n  await page.getByLabel('Categoría', { exact: true }).selectOption('category-places');\n  await page.getByLabel('Coordenada X').fill('1490');\n  await page.getByLabel('Coordenada Y').fill('1010');\n  await expect(page.getByLabel('Estado funcional')).toHaveValue('active');\n  await page.getByRole('button', { name: 'Publicar' }).click();\n  await page.getByLabel('Estado funcional').selectOption('resolved');\n  await page.getByRole('button', { name: 'Publicar' }).click();\n  expect(backend.getEntity('entity-map064-bridge-hazard')).toMatchObject({\n    id: 'entity-map064-bridge-hazard',\n    slug: 'map064-bridge-hazard',\n    entity_type: 'hazard',\n    lifecycle_status: 'resolved',\n    publication_status: 'published',\n  });\n\n  await page.getByRole('button', { name: 'Cerrar editor' }).click();\n  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();\n\n  await expect(missionMarker).toHaveCount(1);\n  await expect(missionMarker.locator('.pin-visual--mission')).toHaveCount(1);\n  await missionMarker.click();\n  const completedPanel = page.getByTestId('place-details');\n  await expect(completedPanel).toContainText('Completada');\n  const completedHref = await completedPanel\n    .getByRole('link', { name: /Abrir ficha completa de Rescue the Lantern/ })\n    .getAttribute('href');\n  expect(completedHref).toBe(activeHref);\n\n  const hazardMarker = page.locator(\n    '.campaign-marker-icon[data-entity-id="entity-map064-bridge-hazard"]',\n  );\n  await expect(hazardMarker).toHaveCount(1);\n  await expect(hazardMarker.locator('.pin-visual--hazard')).toHaveCount(1);\n  await hazardMarker.click();\n  const hazardPanel = page.getByTestId('place-details');\n  await expect(hazardPanel).toContainText('Peligro');\n  await expect(hazardPanel).toContainText('Resuelto');\n});\n`;
+          }
+
+          fs.writeFileSync(adminPath, admin);
+          NODE
+
+      - name: Format changed frontend files
+        run: npx prettier --write src/data/search.ts scripts/test-map064-mission-hazard-upgrade.mjs tests/e2e/*.ts
+
+      - name: Run focused frontend checks
+        run: |
+          npm run format:check
+          npm run lint
+          npm run test
+          npm run build:pages
+
+      - name: Remove integration workflow and commit
+        shell: bash
+        run: |
+          git rm .github/workflows/map064-e2e-integration.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/search.ts scripts/test-map064-mission-hazard-upgrade.mjs tests/e2e
+          git commit -m "test(map-064): integrate lifecycle browser coverage"
+          git push origin HEAD:agent/map-064-mission-hazard-lifecycle
