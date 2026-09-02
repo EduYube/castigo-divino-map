@@ -17,6 +17,19 @@ function lifecyclePayloads(): PublicCatalogTablePayloadsWithCharacterLocations {
     players: [],
     entities: [
       {
+        id: 'entity-map064-snapshot-legacy',
+        slug: 'map064-snapshot-legacy',
+        entity_type: 'character',
+        visibility: 'pin',
+        name: 'Legacy snapshot character',
+        name_language: 'en',
+        summary: '',
+        description: '',
+        x: 1000,
+        y: 700,
+        category_id: 'category-map064',
+      },
+      {
         id: 'entity-map064-snapshot-mission',
         slug: 'map064-snapshot-mission',
         entity_type: 'mission',
@@ -59,7 +72,7 @@ function lifecyclePayloads(): PublicCatalogTablePayloadsWithCharacterLocations {
 }
 
 describe('MAP-064 public snapshot compatibility', () => {
-  test('round-trips public mission and hazard lifecycle without Supabase-specific state', async () => {
+  test('round-trips new lifecycle while legacy entity classes remain lifecycle-free', async () => {
     const envelope = await buildPublicCatalogEnvelopeV2(lifecyclePayloads(), () =>
       Date.parse('2026-09-02T12:00:00.000Z'),
     );
@@ -67,6 +80,11 @@ describe('MAP-064 public snapshot compatibility', () => {
 
     expect(envelope.data.catalog.entities).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          id: 'entity-map064-snapshot-legacy',
+          entityType: 'character',
+          lifecycleStatus: null,
+        }),
         expect.objectContaining({
           id: 'entity-map064-snapshot-mission',
           entityType: 'mission',
@@ -84,6 +102,11 @@ describe('MAP-064 public snapshot compatibility', () => {
     if (parsed.data.contract !== 'beta02') throw new Error('Expected Beta 0.2 cache projection.');
     expect(parsed.data.catalog.entities).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          id: 'entity-map064-snapshot-legacy',
+          entityType: 'character',
+          lifecycleStatus: null,
+        }),
         expect.objectContaining({
           id: 'entity-map064-snapshot-mission',
           entityType: 'mission',
