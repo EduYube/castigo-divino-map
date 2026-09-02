@@ -87,9 +87,9 @@ set local role authenticated;
 
 select ok(
   pg_temp.statement_fails(
-    $update public.map_entities
+    $$update public.map_entities
       set lifecycle_status = null
-      where id = 'place-demo-harbor'$
+      where id = 'place-demo-harbor'$$
   ),
   'authenticated cannot mutate lifecycle directly through the table'
 );
