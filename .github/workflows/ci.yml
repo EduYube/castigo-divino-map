@@ -37,9 +37,7 @@ jobs:
         run: npm ci
 
       - name: Apply Master wire-contract fix
-        run: |
-          node scripts/map064-master-contract-fix.mjs
-          npx prettier --write supabase/tests/database/038_mission_hazard_lifecycle.test.sql
+        run: node scripts/map064-master-contract-fix.mjs
 
       - name: Remove integration scaffolding
         run: |
