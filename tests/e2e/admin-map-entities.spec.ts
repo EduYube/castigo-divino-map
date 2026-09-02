@@ -1035,6 +1035,7 @@ test('MAP-064 mission and hazard lifecycle remains independent from publication'
   await expect(page.getByTestId('admin-player-association-player-skade')).toBeChecked();
 
   await page.getByRole('button', { name: 'Cerrar editor' }).click();
+  await expect(page.getByRole('button', { name: 'Crear peligro' })).toBeEnabled();
   await page.getByRole('button', { name: 'Crear peligro' }).click();
   await fillIdentity(page, {
     id: 'entity-map064-bridge-hazard',

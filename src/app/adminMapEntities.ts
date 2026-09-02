@@ -1028,12 +1028,17 @@ export function mountAdminMapEntities(
 
   function render(nextState: AdminMapEntityState): void {
     state = nextState;
+    const desiredEditorKey = state.creating
+      ? `new:${requestedEntityType}`
+      : state.editorDetail
+        ? `${state.editorDetail.record.id}:${state.editorDetail.record.updatedAt}`
+        : null;
     const unavailable = !state.authorized || !state.backendConnected;
     const busy =
       state.phase === 'loading' || state.phase === 'loading-editor' || state.phase === 'mutating';
     search.disabled = unavailable || busy;
     createCharacterButton.disabled =
-      unavailable || state.phase !== 'ready' || renderedEditorKey !== null;
+      unavailable || state.phase !== 'ready' || desiredEditorKey !== null;
     createLocationButton.disabled = createCharacterButton.disabled;
     createMissionButton.disabled = createCharacterButton.disabled;
     createHazardButton.disabled = createCharacterButton.disabled;
@@ -1064,11 +1069,6 @@ export function mountAdminMapEntities(
       editorStatus.textContent = '';
     }
 
-    const desiredEditorKey = state.creating
-      ? `new:${requestedEntityType}`
-      : state.editorDetail
-        ? `${state.editorDetail.record.id}:${state.editorDetail.record.updatedAt}`
-        : null;
     if (desiredEditorKey !== renderedEditorKey) {
       renderedEditorKey = desiredEditorKey;
       if (desiredEditorKey === null) closeEditorUi();
