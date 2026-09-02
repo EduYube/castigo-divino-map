@@ -195,8 +195,13 @@ select ok(
   pg_temp.statement_fails(
     $$update public.map_entities
       set lifecycle_status = 'active'::public.entity_lifecycle_status
-      where entity_type = 'location'::public.entity_type
-      limit 1$$
+      where id = (
+        select id
+        from public.map_entities
+        where entity_type = 'location'::public.entity_type
+        order by id
+        limit 1
+      )$$
   ),
   'location cannot carry functional lifecycle'
 );
