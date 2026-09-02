@@ -11,7 +11,7 @@ export interface MasterCatalogEntity {
   readonly id: string;
   readonly slug: string;
   readonly entityType: MapEntityType;
-  readonly lifecycleStatus: EntityLifecycleStatus | null;
+  readonly lifecycleStatus?: EntityLifecycleStatus | null;
   readonly visibility: MapVisibility;
   readonly audience: Extract<MapEntityAudience, 'master'>;
   readonly name: string;
