@@ -2,6 +2,7 @@ import {
   type AdminMapEntityDetail,
   type AdminMapEntityDraft,
   type AdminMapEntityReferences,
+  getMapEntityLifecycleStatus,
   type MapEntityPublicationStatus,
 } from './adminMapEntities';
 import { isMapCoordinateWithinBounds } from './mapCoordinates';
@@ -22,18 +23,14 @@ const PLAYER_DISPOSITIONS = new Set(['ally', 'neutral', 'enemy']);
 const REPRESENTATIVE_ROUNDING_TOLERANCE = 0.005 + Number.EPSILON;
 
 function setError(errors: Record<string, string>, field: string, message: string): void {
-  if (!errors[field]) {
-    errors[field] = message;
-  }
+  if (!errors[field]) errors[field] = message;
 }
 
 function validatesTransition(
   originalStatus: MapEntityPublicationStatus | null,
   nextStatus: MapEntityPublicationStatus,
 ): boolean {
-  if (originalStatus === 'archived') {
-    return nextStatus === 'archived' || nextStatus === 'draft';
-  }
+  if (originalStatus === 'archived') return nextStatus === 'archived' || nextStatus === 'draft';
   return true;
 }
 
@@ -56,11 +53,22 @@ export function validateAdminMapEntityDraft(
   if (name.length < 1 || name.length > 160) {
     setError(errors, 'name', 'El nombre debe tener entre 1 y 160 caracteres.');
   }
-  if (summary.length > 500) {
-    setError(errors, 'summary', 'El resumen no puede superar 500 caracteres.');
-  }
+  if (summary.length > 500) setError(errors, 'summary', 'El resumen no puede superar 500 caracteres.');
   if (description.length > 5000) {
     setError(errors, 'description', 'La descripción no puede superar 5000 caracteres.');
+  }
+
+  const lifecycleStatus = getMapEntityLifecycleStatus(draft);
+  if (draft.entityType === 'mission') {
+    if (lifecycleStatus !== 'active' && lifecycleStatus !== 'completed' && lifecycleStatus !== 'failed') {
+      setError(errors, 'lifecycleStatus', 'Selecciona Activa, Completada o Fallida para la misión.');
+    }
+  } else if (draft.entityType === 'hazard') {
+    if (lifecycleStatus !== 'active' && lifecycleStatus !== 'resolved') {
+      setError(errors, 'lifecycleStatus', 'Selecciona Activo o Resuelto para el peligro.');
+    }
+  } else if (draft.lifecycleStatus != null) {
+    setError(errors, 'lifecycleStatus', 'Personajes y emplazamientos no tienen lifecycle funcional.');
   }
 
   try {
@@ -74,11 +82,7 @@ export function validateAdminMapEntityDraft(
       (Math.abs(draft.x - representative.x) > REPRESENTATIVE_ROUNDING_TOLERANCE ||
         Math.abs(draft.y - representative.y) > REPRESENTATIVE_ROUNDING_TOLERANCE)
     ) {
-      setError(
-        errors,
-        'coordinates',
-        'Las coordenadas representativas de un área se derivan de su geometría.',
-      );
+      setError(errors, 'coordinates', 'Las coordenadas representativas de un área se derivan de su geometría.');
     }
   } catch (error) {
     setError(
@@ -91,7 +95,6 @@ export function validateAdminMapEntityDraft(
   if (!isMapCoordinateWithinBounds(draft)) {
     setError(errors, 'coordinates', 'Las coordenadas deben estar dentro de X 0–3600 e Y 0–2329.');
   }
-
   if (draft.entityType !== 'character' && draft.portraitPath) {
     setError(errors, 'portraitPath', 'Solo los personajes pueden tener retrato.');
   }
@@ -99,10 +102,7 @@ export function validateAdminMapEntityDraft(
   const category = references.categories.find((candidate) => candidate.id === draft.categoryId);
   if (!category || category.publicationStatus === 'archived') {
     setError(errors, 'categoryId', 'Selecciona una categoría disponible.');
-  } else if (
-    draft.publicationStatus === 'published' &&
-    category.publicationStatus !== 'published'
-  ) {
+  } else if (draft.publicationStatus === 'published' && category.publicationStatus !== 'published') {
     setError(errors, 'categoryId', 'Una entidad publicada requiere una categoría publicada.');
   }
 
@@ -130,11 +130,7 @@ export function validateAdminMapEntityDraft(
   for (const playerId of uniqueAssociationIds) {
     const player = references.players.find((candidate) => candidate.id === playerId);
     if (!player || player.publicationStatus === 'archived') {
-      setError(
-        errors,
-        'playerAssociationIds',
-        'La selección contiene un personaje que ya no está disponible en esta campaña.',
-      );
+      setError(errors, 'playerAssociationIds', 'La selección contiene un personaje que ya no está disponible en esta campaña.');
       break;
     }
   }
@@ -147,23 +143,13 @@ export function validateAdminMapEntityDraft(
     uniqueDispositionIds.size !== playerIds.size ||
     [...playerIds].some((playerId) => !uniqueDispositionIds.has(playerId))
   ) {
-    setError(
-      errors,
-      'dispositions',
-      'Las relaciones ya no coinciden con los personajes jugadores actuales. Recarga el editor.',
-    );
+    setError(errors, 'dispositions', 'Las relaciones ya no coinciden con los personajes jugadores actuales. Recarga el editor.');
   } else if (draft.dispositions.some(({ disposition }) => !PLAYER_DISPOSITIONS.has(disposition))) {
-    setError(
-      errors,
-      'dispositions',
-      'Selecciona Aliado, Neutral o Enemigo para cada personaje jugador activo.',
-    );
+    setError(errors, 'dispositions', 'Selecciona Aliado, Neutral o Enemigo para cada personaje jugador activo.');
   }
 
   if (original) {
-    if (draft.id !== original.record.id) {
-      setError(errors, 'id', 'El ID de una entidad existente no puede cambiar.');
-    }
+    if (draft.id !== original.record.id) setError(errors, 'id', 'El ID de una entidad existente no puede cambiar.');
     if (draft.entityType !== original.record.entityType) {
       setError(errors, 'entityType', 'El tipo de entidad no puede cambiar después de crearla.');
     }
@@ -171,11 +157,7 @@ export function validateAdminMapEntityDraft(
       setError(errors, 'slug', 'El slug no puede cambiar después de la primera publicación.');
     }
     if (!validatesTransition(original.record.publicationStatus, draft.publicationStatus)) {
-      setError(
-        errors,
-        'publicationStatus',
-        'Una entidad archivada debe volver a borrador antes de publicarse.',
-      );
+      setError(errors, 'publicationStatus', 'Una entidad archivada debe volver a borrador antes de publicarse.');
     }
   }
 
