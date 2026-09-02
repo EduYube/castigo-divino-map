@@ -1,5 +1,6 @@
 import type {
   EntityId,
+  EntityLifecycleStatus,
   PublicCatalogSnapshotV2,
   PublicCharacterLocationEvent,
   PublicMapEntity,
@@ -27,6 +28,7 @@ export interface FullEntityDetailModel {
   readonly id: PublicMapEntity['id'];
   readonly slug: PublicMapEntity['slug'];
   readonly entityType: PublicMapEntity['entityType'];
+  readonly lifecycleStatus: EntityLifecycleStatus | null;
   readonly visibility: PublicMapEntity['visibility'];
   readonly name: string;
   readonly aliases: readonly string[];
@@ -137,6 +139,7 @@ export function resolveFullEntityDetail(
     id: entity.id,
     slug: entity.slug,
     entityType: entity.entityType,
+    lifecycleStatus: entity.lifecycleStatus ?? null,
     visibility: entity.visibility,
     name: entity.name,
     aliases: entity.aliases.map(({ value }) => value),
