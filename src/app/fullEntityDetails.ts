@@ -1,6 +1,7 @@
 import { createFullEntityUrl } from './fullEntityUrl';
 import { mountPublicNotes, type PublicNotesController } from './publicNotes';
 import type { FullEntityDetailModel } from '../data/fullEntityDetails';
+import { getEntityLifecycleLabel } from '../domain/entityLifecycle';
 import { createPlayerDispositionVisuals, getPinTypeVisual } from '../domain/pinVisualSystem';
 import '../styles/public-notes.css';
 
@@ -277,6 +278,13 @@ function renderDetails(elements: FullEntityDetailsElements, details: FullEntityD
   );
   shape.setAttribute('aria-hidden', 'true');
   appendTextElement(elements.type, 'span', '', type.label);
+  const lifecycleLabel = getEntityLifecycleLabel(details.entityType, details.lifecycleStatus);
+  if (lifecycleLabel) {
+    appendTextElement(elements.type, 'span', 'full-entity__lifecycle', ` · ${lifecycleLabel}`);
+    elements.type.setAttribute('aria-label', `${type.label}. Estado: ${lifecycleLabel}.`);
+  } else {
+    elements.type.removeAttribute('aria-label');
+  }
   elements.title.textContent = details.name;
   elements.status.hidden = true;
   elements.status.textContent = '';

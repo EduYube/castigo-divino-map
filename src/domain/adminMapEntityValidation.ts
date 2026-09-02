@@ -173,9 +173,7 @@ export function validateAdminMapEntityDraft(
       'dispositions',
       'Las relaciones ya no coinciden con los personajes jugadores actuales. Recarga el editor.',
     );
-  } else if (
-    draft.dispositions.some(({ disposition }) => !PLAYER_DISPOSITIONS.has(disposition))
-  ) {
+  } else if (draft.dispositions.some(({ disposition }) => !PLAYER_DISPOSITIONS.has(disposition))) {
     setError(
       errors,
       'dispositions',

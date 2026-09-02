@@ -10,6 +10,7 @@ import {
   detailToDraft,
   type AdminMapEntityDraft,
   type AdminMapEntityRecord,
+  type MapEntityLifecycleStatus,
   type MapEntityPublicationStatus,
   type MapEntityType,
   type MapVisibility,
@@ -22,7 +23,8 @@ import {
 } from '../domain/characterPortrait';
 import { isMapCoordinateWithinBounds } from '../domain/mapCoordinates';
 import { createPointMapGeometry, type MapEntityGeometry } from '../domain/mapGeometry';
-import { getPinDispositionVisual } from '../domain/pinVisualSystem';
+import { getEntityLifecycleLabel } from '../domain/entityLifecycle';
+import { getPinDispositionVisual, getPinTypeVisual } from '../domain/pinVisualSystem';
 import {
   mountAdminEntityEditorMap,
   type AdminEntityEditorMapController,
@@ -82,6 +84,8 @@ export function mountAdminMapEntities(
   const search = createElement('input', 'admin-map-entity__control');
   const createCharacterButton = createElement('button', 'admin-map-entity__primary');
   const createLocationButton = createElement('button', 'admin-map-entity__button');
+  const createMissionButton = createElement('button', 'admin-map-entity__button');
+  const createHazardButton = createElement('button', 'admin-map-entity__button');
   const refreshButton = createElement('button', 'admin-map-entity__button');
   const status = createElement('p', 'admin-map-entity__status');
   const empty = createElement('p', 'admin-map-entity__empty');
@@ -139,7 +143,7 @@ export function mountAdminMapEntities(
   let portraitPreviewUrl: string | null = null;
   let portraitError: HTMLParagraphElement | null = null;
 
-  heading.textContent = 'Personajes y emplazamientos';
+  heading.textContent = 'Entidades del mapa';
   heading.id = 'admin-map-entity-heading';
   section.setAttribute('aria-labelledby', heading.id);
   intro.textContent =
@@ -155,9 +159,21 @@ export function mountAdminMapEntities(
   createCharacterButton.textContent = 'Crear personaje';
   createLocationButton.type = 'button';
   createLocationButton.textContent = 'Crear emplazamiento';
+  createMissionButton.type = 'button';
+  createMissionButton.textContent = 'Crear misión';
+  createHazardButton.type = 'button';
+  createHazardButton.textContent = 'Crear peligro';
   refreshButton.type = 'button';
   refreshButton.textContent = 'Recargar entidades';
-  toolbar.append(searchLabel, search, createCharacterButton, createLocationButton, refreshButton);
+  toolbar.append(
+    searchLabel,
+    search,
+    createCharacterButton,
+    createLocationButton,
+    createMissionButton,
+    createHazardButton,
+    refreshButton,
+  );
 
   status.setAttribute('role', 'status');
   status.setAttribute('aria-live', 'polite');
@@ -325,6 +341,7 @@ export function mountAdminMapEntities(
       id: input('id'),
       slug: input('slug'),
       entityType: input('entityType') as MapEntityType,
+      lifecycleStatus: (input('lifecycleStatus') || null) as MapEntityLifecycleStatus | null,
       visibility: input('visibility') as MapVisibility,
       portraitPath: state.editorDetail?.record.portraitPath ?? null,
       geometry: draftGeometry ?? pointFallback,
@@ -403,10 +420,12 @@ export function mountAdminMapEntities(
       .join(' · ');
     const polygon = draft.geometry?.kind === 'polygon' ? draft.geometry : null;
     const geometryLabel = polygon ? `Área/Región · ${polygon.vertices.length} vértices` : 'Punto';
-    previewMarker.textContent = polygon ? '◇' : draft.visibility === 'pin' ? '◆' : '';
+    const typeVisual = getPinTypeVisual(draft.entityType);
+    const lifecycleLabel = getEntityLifecycleLabel(draft.entityType, draft.lifecycleStatus ?? null);
+    previewMarker.textContent = polygon ? '◇' : draft.visibility === 'pin' ? typeVisual.symbol : '';
     previewMarker.hidden = draft.visibility !== 'pin';
     previewName.textContent = draft.name.trim() || 'Sin nombre';
-    previewMeta.textContent = `${draft.entityType} · ${geometryLabel} · ${category?.name ?? 'Sin categoría'} · X ${draft.x}, Y ${draft.y}${tagNames ? ` · ${tagNames}` : ''}${dispositions ? ` · ${dispositions}` : ''}`;
+    previewMeta.textContent = `${typeVisual.label}${lifecycleLabel ? ` · ${lifecycleLabel}` : ''} · ${geometryLabel} · ${category?.name ?? 'Sin categoría'} · X ${draft.x}, Y ${draft.y}${tagNames ? ` · ${tagNames}` : ''}${dispositions ? ` · ${dispositions}` : ''}`;
     previewDescription.textContent =
       draft.summary.trim() || draft.description.trim() || 'Sin resumen.';
     preview.hidden = false;
@@ -487,7 +506,9 @@ export function mountAdminMapEntities(
     preservedDispositions = draft.dispositions.filter(
       ({ playerId }) => !activePlayerIds.has(playerId),
     );
-    editorHeading.textContent = existing ? `Editar ${draft.name}` : `Crear ${draft.entityType}`;
+    editorHeading.textContent = existing
+      ? `Editar ${draft.name}`
+      : `Crear ${getPinTypeVisual(draft.entityType).label.toLocaleLowerCase('es')}`;
 
     addField({
       name: 'id',
@@ -511,6 +532,8 @@ export function mountAdminMapEntities(
       choices: [
         { value: 'character', label: 'Personaje' },
         { value: 'location', label: 'Emplazamiento' },
+        { value: 'mission', label: 'Misión' },
+        { value: 'hazard', label: 'Peligro' },
       ],
     });
     addField({
@@ -519,6 +542,24 @@ export function mountAdminMapEntities(
       value: draft.name,
       required: true,
     });
+    if (draft.entityType === 'mission' || draft.entityType === 'hazard') {
+      addSelect({
+        name: 'lifecycleStatus',
+        label: 'Estado funcional',
+        value: draft.lifecycleStatus ?? 'active',
+        choices:
+          draft.entityType === 'mission'
+            ? [
+                { value: 'active', label: 'Activa' },
+                { value: 'completed', label: 'Completada' },
+                { value: 'failed', label: 'Fallida' },
+              ]
+            : [
+                { value: 'active', label: 'Activo' },
+                { value: 'resolved', label: 'Resuelto' },
+              ],
+      });
+    }
     addField({ name: 'summary', label: 'Resumen', value: draft.summary, textarea: true });
     addField({
       name: 'description',
@@ -970,6 +1011,8 @@ export function mountAdminMapEntities(
     createCharacterButton.disabled =
       unavailable || state.phase !== 'ready' || renderedEditorKey !== null;
     createLocationButton.disabled = createCharacterButton.disabled;
+    createMissionButton.disabled = createCharacterButton.disabled;
+    createHazardButton.disabled = createCharacterButton.disabled;
     refreshButton.disabled = unavailable || busy;
     saveDraftButton.disabled = busy;
     previewButton.disabled = busy;
@@ -1067,6 +1110,16 @@ export function mountAdminMapEntities(
     restoreFocus = createLocationButton;
     controller.openCreate();
   };
+  const handleCreateMission = (): void => {
+    requestedEntityType = 'mission';
+    restoreFocus = createMissionButton;
+    controller.openCreate();
+  };
+  const handleCreateHazard = (): void => {
+    requestedEntityType = 'hazard';
+    restoreFocus = createHazardButton;
+    controller.openCreate();
+  };
   const handleRefresh = (): void => void controller.reload();
   const handleSaveDraft = (): void => void saveWithStatus('draft');
   const handlePreview = (): void => {
@@ -1136,6 +1189,8 @@ export function mountAdminMapEntities(
   search.addEventListener('input', handleSearch);
   createCharacterButton.addEventListener('click', handleCreateCharacter);
   createLocationButton.addEventListener('click', handleCreateLocation);
+  createMissionButton.addEventListener('click', handleCreateMission);
+  createHazardButton.addEventListener('click', handleCreateHazard);
   refreshButton.addEventListener('click', handleRefresh);
   saveDraftButton.addEventListener('click', handleSaveDraft);
   previewButton.addEventListener('click', handlePreview);
@@ -1162,6 +1217,8 @@ export function mountAdminMapEntities(
       search.removeEventListener('input', handleSearch);
       createCharacterButton.removeEventListener('click', handleCreateCharacter);
       createLocationButton.removeEventListener('click', handleCreateLocation);
+      createMissionButton.removeEventListener('click', handleCreateMission);
+      createHazardButton.removeEventListener('click', handleCreateHazard);
       refreshButton.removeEventListener('click', handleRefresh);
       saveDraftButton.removeEventListener('click', handleSaveDraft);
       previewButton.removeEventListener('click', handlePreview);

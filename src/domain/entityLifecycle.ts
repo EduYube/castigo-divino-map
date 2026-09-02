@@ -1,11 +1,6 @@
 import type { EntityLifecycleStatus, EntityType } from '../data/beta02-model';
 
-export type EntityLifecycleLabel =
-  | 'Activa'
-  | 'Completada'
-  | 'Fallida'
-  | 'Activo'
-  | 'Resuelto';
+export type EntityLifecycleLabel = 'Activa' | 'Completada' | 'Fallida' | 'Activo' | 'Resuelto';
 
 export function isEntityLifecycleStatusValid(
   entityType: EntityType,
