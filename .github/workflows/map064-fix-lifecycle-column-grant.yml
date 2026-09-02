@@ -1,0 +1,58 @@
+name: MAP-064 fix lifecycle column grant
+
+on:
+  push:
+    branches:
+      - agent/map-064-mission-hazard-lifecycle
+    paths:
+      - .github/workflows/map064-fix-lifecycle-column-grant.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout MAP-064 branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-064-mission-hazard-lifecycle
+          fetch-depth: 0
+
+      - name: Patch lifecycle privilege and ACL regression
+        shell: python
+        run: |
+          from pathlib import Path
+
+          migration = Path('supabase/migrations/20260902111000_add_mission_hazard_lifecycle.sql')
+          text = migration.read_text()
+          needle = "alter table public.map_entities\n  add column lifecycle_status public.entity_lifecycle_status;\n"
+          replacement = needle + "\n-- Keep the MAP-060 SECURITY INVOKER model: authenticated callers receive only\n-- the lifecycle column privilege required by admin_save_map_entity_v7. RLS and\n-- the RPC's explicit admin authorization remain the row-level boundary.\ngrant update (lifecycle_status) on public.map_entities to authenticated;\n"
+          if text.count(needle) != 1:
+              raise SystemExit('unexpected lifecycle migration shape')
+          migration.write_text(text.replace(needle, replacement, 1))
+
+          test = Path('supabase/tests/database/038_mission_hazard_lifecycle.test.sql')
+          text = test.read_text()
+          old = '''set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';\nset local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}';\nset local role authenticated;\n\nselect ok(\n  pg_temp.statement_fails(\n    $$update public.map_entities\n      set lifecycle_status = null\n      where id = 'place-demo-harbor'$$\n  ),\n  'authenticated cannot mutate lifecycle directly through the table'\n);'''
+          new = '''set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';\nset local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000002","role":"authenticated"}';\nset local role authenticated;\n\nselect ok(\n  pg_temp.statement_fails(\n    $$update public.map_entities\n      set lifecycle_status = null\n      where id = 'place-demo-harbor'$$\n  ),\n  'authenticated non-admin cannot mutate lifecycle directly through the table'\n);'''
+          if text.count(old) != 1:
+              raise SystemExit('unexpected lifecycle ACL test shape')
+          test.write_text(text.replace(old, new, 1))
+
+      - name: Verify patch shape
+        run: |
+          git diff --check
+          grep -F "grant update (lifecycle_status) on public.map_entities to authenticated;" supabase/migrations/20260902111000_add_mission_hazard_lifecycle.sql
+          grep -F "authenticated non-admin cannot mutate lifecycle directly through the table" supabase/tests/database/038_mission_hazard_lifecycle.test.sql
+
+      - name: Remove workflow and persist patch
+        shell: bash
+        run: |
+          git rm .github/workflows/map064-fix-lifecycle-column-grant.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/migrations/20260902111000_add_mission_hazard_lifecycle.sql supabase/tests/database/038_mission_hazard_lifecycle.test.sql
+          git commit -m "fix(map-064): grant lifecycle column update narrowly"
+          git push origin HEAD:agent/map-064-mission-hazard-lifecycle
