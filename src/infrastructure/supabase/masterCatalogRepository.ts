@@ -12,6 +12,7 @@ import {
   type MasterCatalogRelationEntity,
   type MasterCatalogRepository,
 } from '../../data-access/masterCatalog';
+import { isEntityLifecycleStatusValid } from '../../domain/entityLifecycle';
 import {
   mapGeometryRepresentativePoint,
   normalizeMapEntityGeometry,
@@ -86,7 +87,25 @@ function arrayField(
 function mapEntity(row: Record<string, unknown>): MasterCatalogEntity {
   const entityType = row.entity_type;
   const visibility = row.visibility;
-  if (entityType !== 'character' && entityType !== 'location') throwInvalid();
+  if (
+    entityType !== 'character' &&
+    entityType !== 'location' &&
+    entityType !== 'mission' &&
+    entityType !== 'hazard'
+  ) {
+    throwInvalid();
+  }
+  const lifecycleStatus = row.lifecycle_status;
+  if (
+    lifecycleStatus !== null &&
+    lifecycleStatus !== 'active' &&
+    lifecycleStatus !== 'completed' &&
+    lifecycleStatus !== 'failed' &&
+    lifecycleStatus !== 'resolved'
+  ) {
+    throwInvalid();
+  }
+  if (!isEntityLifecycleStatusValid(entityType, lifecycleStatus)) throwInvalid();
   if (visibility !== 'pin' && visibility !== 'search_only') throwInvalid();
   if (row.audience !== 'master') throwInvalid();
   const x = numberField(row, 'x');
@@ -103,6 +122,7 @@ function mapEntity(row: Record<string, unknown>): MasterCatalogEntity {
     id: stringField(row, 'id'),
     slug: stringField(row, 'slug'),
     entityType,
+    lifecycleStatus,
     visibility,
     audience: 'master',
     name: stringField(row, 'name'),

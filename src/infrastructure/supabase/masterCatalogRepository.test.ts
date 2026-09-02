@@ -15,6 +15,7 @@ const VALID_PAYLOAD = {
       id: 'entity-master-test',
       slug: 'master-test',
       entity_type: 'character',
+      lifecycle_status: null,
       visibility: 'pin',
       audience: 'master',
       name: 'Master Test',
@@ -31,6 +32,7 @@ const VALID_PAYLOAD = {
       id: 'location-master-area',
       slug: 'master-area',
       entity_type: 'location',
+      lifecycle_status: null,
       visibility: 'pin',
       audience: 'master',
       name: 'Master Area',
@@ -50,6 +52,40 @@ const VALID_PAYLOAD = {
       y: 200,
       category_id: 'category-master-test',
       updated_at: '2026-08-28T00:00:00.000Z',
+    },
+    {
+      id: 'entity-master-mission',
+      slug: 'master-mission',
+      entity_type: 'mission',
+      lifecycle_status: 'active',
+      visibility: 'pin',
+      audience: 'master',
+      name: 'Master Mission',
+      summary: 'Private mission',
+      description: 'Private mission description',
+      portrait_path: null,
+      geometry: { kind: 'point', coordinates: { x: 400, y: 500 } },
+      x: 400,
+      y: 500,
+      category_id: 'category-master-test',
+      updated_at: '2026-09-02T12:00:00.000Z',
+    },
+    {
+      id: 'entity-master-hazard',
+      slug: 'master-hazard',
+      entity_type: 'hazard',
+      lifecycle_status: 'resolved',
+      visibility: 'pin',
+      audience: 'master',
+      name: 'Master Hazard',
+      summary: 'Private hazard',
+      description: 'Private hazard description',
+      portrait_path: null,
+      geometry: { kind: 'point', coordinates: { x: 600, y: 700 } },
+      x: 600,
+      y: 700,
+      category_id: 'category-master-test',
+      updated_at: '2026-09-02T12:00:00.000Z',
     },
   ],
   categories: [{ id: 'category-master-test', name: 'Master Category' }],
@@ -197,6 +233,18 @@ describe('SupabaseMasterCatalogRepository', () => {
           x: 200,
           y: 200,
         }),
+        expect.objectContaining({
+          id: 'entity-master-mission',
+          entityType: 'mission',
+          lifecycleStatus: 'active',
+          geometry: { kind: 'point', coordinates: { x: 400, y: 500 } },
+        }),
+        expect.objectContaining({
+          id: 'entity-master-hazard',
+          entityType: 'hazard',
+          lifecycleStatus: 'resolved',
+          geometry: { kind: 'point', coordinates: { x: 600, y: 700 } },
+        }),
       ]),
     );
     expect(result).toMatchObject({
@@ -256,6 +304,27 @@ describe('SupabaseMasterCatalogRepository', () => {
     ).rejects.toMatchObject({ code, status });
 
     expect(requestedPaths).toEqual(['/rest/v1/rpc/admin_get_master_catalog_v6']);
+  });
+
+  test('fails closed when a functional Master entity has an invalid lifecycle', async () => {
+    const payload = structuredClone(VALID_PAYLOAD);
+    const mission = payload.entities.find(({ id }) => id === 'entity-master-mission');
+    if (!mission) throw new Error('Missing mission fixture.');
+    mission.lifecycle_status = 'resolved';
+    const repository = repositoryWith(
+      async () =>
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    );
+
+    await expect(
+      repository.load({
+        signal: new AbortController().signal,
+        campaignId: CAMPAIGN_ID,
+      }),
+    ).rejects.toMatchObject({ code: 'invalid-response' });
   });
 
   test('fails closed on malformed successful payloads', async () => {

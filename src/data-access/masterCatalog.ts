@@ -4,12 +4,14 @@ import type {
   MapVisibility,
   PlayerDisposition,
 } from '../domain/adminMapEntities';
+import type { EntityLifecycleStatus } from '../data/beta02-model';
 import type { MapEntityGeometry } from '../domain/mapGeometry';
 
 export interface MasterCatalogEntity {
   readonly id: string;
   readonly slug: string;
   readonly entityType: MapEntityType;
+  readonly lifecycleStatus: EntityLifecycleStatus | null;
   readonly visibility: MapVisibility;
   readonly audience: Extract<MapEntityAudience, 'master'>;
   readonly name: string;

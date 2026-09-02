@@ -202,8 +202,8 @@ test('keeps portrait, functional class, player association and coincident groupi
 
   const options = page.getByTestId('coincident-pin-option');
   await expect(options).toHaveCount(2);
-  await expect(options.locator('[data-entity-type="location"]')).toHaveCount(1);
-  await expect(options.locator('[data-entity-type="hazard"]')).toHaveCount(1);
+  await expect(locationOption).toHaveCount(1);
+  await expect(hazardOption).toHaveCount(1);
   await expect(options.locator('.pin-visual--location')).toHaveCount(1);
   await expect(options.locator('.pin-visual--hazard')).toHaveCount(1);
   await expect(locationOption.or(hazardOption)).toHaveCount(2);
