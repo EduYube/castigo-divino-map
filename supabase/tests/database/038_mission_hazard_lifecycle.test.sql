@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(29);
+select plan(30);
 
 select is(
   (
@@ -79,6 +79,10 @@ select ok(
 select ok(
   not has_function_privilege('anon', 'public.admin_get_master_catalog_v6(uuid)', 'execute'),
   'anon cannot invoke lifecycle-aware Master catalog'
+);
+select ok(
+  has_column_privilege('authenticated', 'public.map_entities', 'lifecycle_status', 'update'),
+  'authenticated has the narrow lifecycle column privilege required by SECURITY INVOKER v7'
 );
 
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';
