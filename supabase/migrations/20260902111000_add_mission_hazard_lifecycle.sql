@@ -8,6 +8,11 @@ create type public.entity_lifecycle_status as enum ('active', 'completed', 'fail
 alter table public.map_entities
   add column lifecycle_status public.entity_lifecycle_status;
 
+-- Keep the MAP-060 SECURITY INVOKER model: authenticated callers receive only
+-- the lifecycle column privilege required by admin_save_map_entity_v7. RLS and
+-- the RPC's explicit admin authorization remain the row-level boundary.
+grant update (lifecycle_status) on public.map_entities to authenticated;
+
 create function private.default_map_entity_lifecycle()
 returns trigger
 language plpgsql

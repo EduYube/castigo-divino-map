@@ -81,8 +81,8 @@ select ok(
   'anon cannot invoke lifecycle-aware Master catalog'
 );
 
-set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
-set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}';
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000002","role":"authenticated"}';
 set local role authenticated;
 
 select ok(
@@ -91,7 +91,7 @@ select ok(
       set lifecycle_status = null
       where id = 'place-demo-harbor'$$
   ),
-  'authenticated cannot mutate lifecycle directly through the table'
+  'authenticated non-admin cannot mutate lifecycle directly through the table'
 );
 
 reset role;
