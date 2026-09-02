@@ -10,7 +10,6 @@ import {
   detailToDraft,
   type AdminMapEntityDraft,
   type AdminMapEntityRecord,
-  type MapEntityAudience,
   type MapEntityLifecycleStatus,
   type MapEntityPublicationStatus,
   type MapEntityType,
@@ -131,11 +130,9 @@ export function mountAdminMapEntities(
   let geometryKindSelect: HTMLSelectElement | null = null;
   let controls = new Map<string, FieldControl>();
   let tagCheckboxes: HTMLInputElement[] = [];
-  let associationCheckboxes: HTMLInputElement[] = [];
   let dispositionSelects: HTMLSelectElement[] = [];
   let preservedDispositions: AdminMapEntityDraft['dispositions'] = [];
   let tagError: HTMLParagraphElement | null = null;
-  let associationError: HTMLParagraphElement | null = null;
   let dispositionError: HTMLParagraphElement | null = null;
   let restoreFocus: HTMLElement | null = null;
   let pendingConfirmation: PendingConfirmation | null = null;
@@ -346,7 +343,6 @@ export function mountAdminMapEntities(
       entityType: input('entityType') as MapEntityType,
       lifecycleStatus: (input('lifecycleStatus') || null) as MapEntityLifecycleStatus | null,
       visibility: input('visibility') as MapVisibility,
-      audience: input('audience') as MapEntityAudience,
       portraitPath: state.editorDetail?.record.portraitPath ?? null,
       geometry: draftGeometry ?? pointFallback,
       name: input('name'),
@@ -356,9 +352,6 @@ export function mountAdminMapEntities(
       y,
       categoryId: input('categoryId'),
       tagIds: tagCheckboxes
-        .filter((checkbox) => checkbox.checked)
-        .map((checkbox) => checkbox.value),
-      playerAssociationIds: associationCheckboxes
         .filter((checkbox) => checkbox.checked)
         .map((checkbox) => checkbox.value),
       dispositions: [
@@ -399,13 +392,6 @@ export function mountAdminMapEntities(
     }
     mapCanvas.setAttribute('aria-invalid', geometryMessage ? 'true' : 'false');
     if (tagError) tagError.textContent = validation.fieldErrors.tagIds ?? '';
-    if (associationError) {
-      const message = validation.fieldErrors.playerAssociationIds ?? '';
-      associationError.textContent = message;
-      associationCheckboxes.forEach((checkbox) =>
-        checkbox.setAttribute('aria-invalid', message ? 'true' : 'false'),
-      );
-    }
     if (dispositionError) {
       const message = validation.fieldErrors.dispositions ?? '';
       dispositionError.textContent = message;
@@ -436,10 +422,20 @@ export function mountAdminMapEntities(
     const geometryLabel = polygon ? `Área/Región · ${polygon.vertices.length} vértices` : 'Punto';
     const typeVisual = getPinTypeVisual(draft.entityType);
     const lifecycleLabel = getEntityLifecycleLabel(draft.entityType, draft.lifecycleStatus ?? null);
-    previewMarker.textContent = polygon ? '◇' : draft.visibility === 'pin' ? typeVisual.symbol : '';
+    const isFunctionalPin = draft.entityType === 'mission' || draft.entityType === 'hazard';
+    const previewTypeLabel = isFunctionalPin
+      ? `${typeVisual.label}${lifecycleLabel ? ` · ${lifecycleLabel}` : ''}`
+      : draft.entityType;
+    previewMarker.textContent = polygon
+      ? '◇'
+      : draft.visibility === 'pin'
+        ? isFunctionalPin
+          ? typeVisual.symbol
+          : '◆'
+        : '';
     previewMarker.hidden = draft.visibility !== 'pin';
     previewName.textContent = draft.name.trim() || 'Sin nombre';
-    previewMeta.textContent = `${typeVisual.label}${lifecycleLabel ? ` · ${lifecycleLabel}` : ''} · ${geometryLabel} · ${category?.name ?? 'Sin categoría'} · X ${draft.x}, Y ${draft.y}${tagNames ? ` · ${tagNames}` : ''}${dispositions ? ` · ${dispositions}` : ''}`;
+    previewMeta.textContent = `${previewTypeLabel} · ${geometryLabel} · ${category?.name ?? 'Sin categoría'} · X ${draft.x}, Y ${draft.y}${tagNames ? ` · ${tagNames}` : ''}${dispositions ? ` · ${dispositions}` : ''}`;
     previewDescription.textContent =
       draft.summary.trim() || draft.description.trim() || 'Sin resumen.';
     preview.hidden = false;
@@ -498,11 +494,9 @@ export function mountAdminMapEntities(
     geometryKindSelect = null;
     controls = new Map();
     tagCheckboxes = [];
-    associationCheckboxes = [];
     dispositionSelects = [];
     preservedDispositions = [];
     tagError = null;
-    associationError = null;
     dispositionError = null;
     fields.replaceChildren();
     preview.hidden = true;
@@ -522,9 +516,11 @@ export function mountAdminMapEntities(
     preservedDispositions = draft.dispositions.filter(
       ({ playerId }) => !activePlayerIds.has(playerId),
     );
-    editorHeading.textContent = existing
-      ? `Editar ${draft.name}`
-      : `Crear ${getPinTypeVisual(draft.entityType).label.toLocaleLowerCase('es')}`;
+    const createLabel =
+      draft.entityType === 'mission' || draft.entityType === 'hazard'
+        ? getPinTypeVisual(draft.entityType).label.toLocaleLowerCase('es')
+        : draft.entityType;
+    editorHeading.textContent = existing ? `Editar ${draft.name}` : `Crear ${createLabel}`;
 
     addField({
       name: 'id',
@@ -697,16 +693,6 @@ export function mountAdminMapEntities(
         { value: 'search_only', label: 'Solo búsqueda' },
       ],
     });
-    addSelect({
-      name: 'audience',
-      label: 'Audiencia',
-      value: draft.audience ?? 'public',
-      choices: [
-        { value: 'public', label: 'Público' },
-        { value: 'master', label: 'Solo Máster' },
-      ],
-    });
-
     if (draft.entityType === 'location') {
       geometryKindSelect = addSelect({
         name: 'geometryKind',
@@ -766,31 +752,6 @@ export function mountAdminMapEntities(
     tagFieldset.prepend(tagLegend);
     tagFieldset.append(tagError);
     fields.append(tagFieldset);
-
-    const associationFieldset = createElement('fieldset', 'admin-map-entity__fieldset');
-    const associationLegend = createElement('legend', 'admin-map-entity__legend');
-    const associationHelp = createElement('p', 'admin-map-entity__help');
-    associationLegend.textContent = 'Asociaciones de jugadores';
-    associationHelp.textContent =
-      'Asocia narrativamente la entidad con uno o varios personajes jugadores. La forma funcional de misión o peligro siempre se conserva.';
-    associationFieldset.append(associationLegend, associationHelp);
-    for (const player of activePlayers) {
-      const row = createElement('label', 'admin-map-entity__check');
-      const checkbox = document.createElement('input');
-      const text = document.createElement('span');
-      checkbox.type = 'checkbox';
-      checkbox.value = player.id;
-      checkbox.checked = (draft.playerAssociationIds ?? []).includes(player.id);
-      checkbox.setAttribute('data-testid', `admin-player-association-${player.id}`);
-      text.textContent = player.displayName;
-      row.append(checkbox, text);
-      associationFieldset.append(row);
-      associationCheckboxes.push(checkbox);
-    }
-    associationError = createElement('p', 'admin-map-entity__field-error');
-    associationError.setAttribute('aria-live', 'polite');
-    associationFieldset.append(associationError);
-    fields.append(associationFieldset);
 
     const dispositionFieldset = createElement(
       'fieldset',
@@ -870,7 +831,6 @@ export function mountAdminMapEntities(
     const allInputs = [
       ...Array.from(controls.values()).map(({ input }) => input),
       ...tagCheckboxes,
-      ...associationCheckboxes,
       ...dispositionSelects,
     ];
     const refreshValidation = (): void => {

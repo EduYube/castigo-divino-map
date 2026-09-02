@@ -95,7 +95,7 @@ function mapEntity(row: Record<string, unknown>): MasterCatalogEntity {
   ) {
     throwInvalid();
   }
-  const lifecycleStatus = row.lifecycle_status;
+  const lifecycleStatus = row.lifecycle_status ?? null;
   if (
     lifecycleStatus !== null &&
     lifecycleStatus !== 'active' &&

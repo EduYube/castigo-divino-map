@@ -313,7 +313,7 @@ export function mountPlaceSearch(
     if (searchResults.length === 0) {
       setStatusText(
         elements.status,
-        `No hay lugares, personajes, misiones, peligros ni nombres geográficos para “${query.trim()}”.`,
+        `No hay lugares, personajes ni nombres geográficos para “${query.trim()}”; tampoco misiones ni peligros.`,
       );
       elements.results.hidden = true;
       return;
