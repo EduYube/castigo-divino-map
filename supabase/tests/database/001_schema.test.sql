@@ -30,7 +30,7 @@ select is(
     from pg_enum
     where enumtypid = 'public.entity_type'::regtype
   ),
-  array['character', 'location']::text[],
+  array['character', 'location', 'mission', 'hazard']::text[],
   'entity types are closed and ordered'
 );
 
