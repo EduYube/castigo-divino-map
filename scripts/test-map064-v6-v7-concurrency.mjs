@@ -96,7 +96,11 @@ function startPsqlSession(containerName) {
 function runPsql(containerName, sql) {
   const result = spawnSync(
     'docker',
-    [...psqlArguments(containerName).filter((argument) => argument !== '--interactive'), '--command', sql],
+    [
+      ...psqlArguments(containerName).filter((argument) => argument !== '--interactive'),
+      '--command',
+      sql,
+    ],
     { encoding: 'utf8', windowsHide: true },
   );
   if (result.error) fail(`Unable to run psql: ${result.error.message}`);
@@ -310,7 +314,9 @@ async function verifyV6V7LockOrdering(containerName) {
     );
     await waitForMarker(v7Session, 'MAP064_V7_STARTED');
     await waitForDatabaseLock(containerName, '/* map064-v7-lock-order */', v7Session);
-    console.log('ok - v7 holds the shared entity advisory lock while waiting at the relation barrier');
+    console.log(
+      'ok - v7 holds the shared entity advisory lock while waiting at the relation barrier',
+    );
 
     v6Session = startPsqlSession(containerName);
     v6Session.child.stdin.write(
@@ -339,7 +345,8 @@ async function verifyV6V7LockOrdering(containerName) {
 
     v6Session.child.stdin.end('\\q\n');
     const v6Exit = await waitForExit(v6Session, 'queued v6 stale rejection');
-    if (v6Exit.code === 0) fail('Queued legacy v6 writer unexpectedly succeeded after v7 committed.');
+    if (v6Exit.code === 0)
+      fail('Queued legacy v6 writer unexpectedly succeeded after v7 committed.');
     if (!v6Session.output.includes('the entity changed while it was being edited')) {
       fail(`Queued v6 writer failed for an unexpected reason: ${v6Session.output || 'no output'}`);
     }
@@ -357,7 +364,9 @@ async function verifyV6V7LockOrdering(containerName) {
     if (finalState !== 'MAP064 v7 serialized writer:completed') {
       fail(`Final state is ${finalState || 'empty'} instead of the committed v7 lifecycle value.`);
     }
-    console.log('ok - the v7 mutation is the only committed entity write and keeps lifecycle state');
+    console.log(
+      'ok - the v7 mutation is the only committed entity write and keeps lifecycle state',
+    );
   } finally {
     stopSession(v6Session);
     stopSession(v7Session);
