@@ -337,12 +337,24 @@ export function mountAdminMapEntities(
     const pointFallback = isMapCoordinateWithinBounds(coordinate)
       ? createPointMapGeometry(coordinate)
       : undefined;
+    const associationCheckboxes = Array.from(
+      form.querySelectorAll<HTMLInputElement>('[data-player-association-id]'),
+    );
+    const playerAssociationIds =
+      associationCheckboxes.length > 0
+        ? associationCheckboxes
+            .filter((checkbox) => checkbox.checked)
+            .map((checkbox) => checkbox.value)
+        : (state.editorDetail?.associations ?? [])
+            .filter(({ publicationStatus }) => publicationStatus !== 'archived')
+            .map(({ playerId }) => playerId);
     return {
       id: input('id'),
       slug: input('slug'),
       entityType: input('entityType') as MapEntityType,
       lifecycleStatus: (input('lifecycleStatus') || null) as MapEntityLifecycleStatus | null,
       visibility: input('visibility') as MapVisibility,
+      audience: state.pendingAudience,
       portraitPath: state.editorDetail?.record.portraitPath ?? null,
       geometry: draftGeometry ?? pointFallback,
       name: input('name'),
@@ -361,6 +373,7 @@ export function mountAdminMapEntities(
         })),
         ...preservedDispositions,
       ],
+      playerAssociationIds,
       publicationStatus,
     };
   }
