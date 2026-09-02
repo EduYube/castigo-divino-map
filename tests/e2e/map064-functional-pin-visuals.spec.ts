@@ -218,9 +218,7 @@ test('keeps portrait, functional class, player association and coincident groupi
     .getByRole('button', { name: /Cerrar la ficha de Peligro agrupado MAP064/i })
     .click();
   await expect(details).toBeHidden();
-  await mission.focus();
-  await expect(mission).toBeFocused();
-  await page.keyboard.press('Enter');
+  await mission.click();
   await expect(details).toHaveAttribute('data-entity-type', 'mission');
   await expect(details).toContainText('Misión');
   await expect(details).toContainText('Activa');

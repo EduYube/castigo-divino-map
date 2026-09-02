@@ -500,7 +500,16 @@ async function configureBackend(page: Page): Promise<BackendControl> {
               ? tags
               : table === 'players'
                 ? players
-                : [];
+                : table === 'entity_player_associations'
+                  ? [...entityAssociations.entries()].flatMap(([entityId, playerIds]) =>
+                      entityId === (url.searchParams.get('entity_id') ?? '').replace(/^eq\./, '')
+                        ? playerIds.map((playerId) => ({
+                            entity_id: entityId,
+                            player_id: playerId,
+                          }))
+                        : [],
+                    )
+                  : [];
       const range = rangeResponse(rows);
       await route.fulfill({ status: 200, headers: range.headers, body: range.body });
       return;
@@ -1022,6 +1031,7 @@ test('MAP-064 mission and hazard lifecycle remains independent from publication'
     lifecycle_status: 'completed',
     publication_status: 'published',
   });
+  expect(backend.getLastAssociationIds()).toEqual(['player-skade']);
   await expect(page.getByTestId('admin-player-association-player-skade')).toBeChecked();
 
   await page.getByRole('button', { name: 'Cerrar editor' }).click();
