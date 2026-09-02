@@ -144,7 +144,7 @@ function repositoryWith(
 }
 
 describe('SupabaseMasterCatalogRepository', () => {
-  test('uses only the campaign-scoped geometry-aware v5 RPC with the admin bearer session', async () => {
+  test('uses only the campaign-scoped lifecycle-aware v6 RPC with the admin bearer session', async () => {
     const capturedRequests: Request[] = [];
     const repository = repositoryWith(async (input, init) => {
       capturedRequests.push(new Request(input, init));
@@ -165,7 +165,7 @@ describe('SupabaseMasterCatalogRepository', () => {
     if (!request) return;
 
     expect(request.method).toBe('POST');
-    expect(new URL(request.url).pathname).toBe('/rest/v1/rpc/admin_get_master_catalog_v5');
+    expect(new URL(request.url).pathname).toBe('/rest/v1/rpc/admin_get_master_catalog_v6');
     expect(request.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
     expect(request.headers.get('authorization')).toBe(`Bearer ${ACCESS_TOKEN}`);
     expect(request.headers.get('content-type')).toBe('application/json');
@@ -255,7 +255,7 @@ describe('SupabaseMasterCatalogRepository', () => {
       }),
     ).rejects.toMatchObject({ code, status });
 
-    expect(requestedPaths).toEqual(['/rest/v1/rpc/admin_get_master_catalog_v5']);
+    expect(requestedPaths).toEqual(['/rest/v1/rpc/admin_get_master_catalog_v6']);
   });
 
   test('fails closed on malformed successful payloads', async () => {
