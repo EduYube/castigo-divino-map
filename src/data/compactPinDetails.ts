@@ -1,4 +1,4 @@
-import type { EntityId, PublicCatalogSnapshotV2 } from './beta02-model';
+import type { EntityId, PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
 import type { CampaignCatalog, PlaceId } from './model';
 import type { AtlasPinMarkerModel } from './pinMarkers';
 import { buildPublicEntityPresentation } from './publicEntityPresentation';
