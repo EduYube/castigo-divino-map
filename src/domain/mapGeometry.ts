@@ -1,12 +1,5 @@
-import {
-  FAERUN_COORDINATE_BOUNDS,
-  isMapCoordinateWithinBounds,
-  type MapCoordinate,
-} from './mapCoordinates';
 import type { MapEntityType } from './adminMapEntities';
-
-export const MAP_POLYGON_MAX_VERTICES = 64;
-const GEOMETRY_EPSILON = 1e-9;
+import { isMapCoordinateWithinBounds, type MapCoordinate } from './mapCoordinates';
 
 export interface MapPointGeometry {
   readonly kind: 'point';
@@ -19,6 +12,8 @@ export interface MapPolygonGeometry {
 }
 
 export type MapEntityGeometry = MapPointGeometry | MapPolygonGeometry;
+export const MAP_POLYGON_MAX_VERTICES = 64;
+const GEOMETRY_EPSILON = 1e-9;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -26,28 +21,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function coordinateFromUnknown(value: unknown): MapCoordinate {
   if (!isRecord(value) || typeof value.x !== 'number' || typeof value.y !== 'number') {
-    throw new Error('Map geometry coordinates must be numeric objects.');
+    throw new Error('Map geometry coordinates must contain numeric x/y values.');
   }
   const coordinate = { x: value.x, y: value.y };
   if (!isMapCoordinateWithinBounds(coordinate)) {
-    throw new Error(
-      `Map geometry coordinates must remain within X ${FAERUN_COORDINATE_BOUNDS.minX}–${FAERUN_COORDINATE_BOUNDS.maxX} and Y ${FAERUN_COORDINATE_BOUNDS.minY}–${FAERUN_COORDINATE_BOUNDS.maxY}.`,
-    );
+    throw new Error('Map geometry coordinates must stay within the published map bounds.');
   }
   return coordinate;
 }
 
-function cross(a: MapCoordinate, b: MapCoordinate, c: MapCoordinate): number {
+function orientation(a: MapCoordinate, b: MapCoordinate, c: MapCoordinate): number {
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
 
-function pointOnSegment(a: MapCoordinate, b: MapCoordinate, point: MapCoordinate): boolean {
+function pointOnSegment(a: MapCoordinate, b: MapCoordinate, p: MapCoordinate): boolean {
   return (
-    Math.abs(cross(a, b, point)) <= GEOMETRY_EPSILON &&
-    point.x >= Math.min(a.x, b.x) - GEOMETRY_EPSILON &&
-    point.x <= Math.max(a.x, b.x) + GEOMETRY_EPSILON &&
-    point.y >= Math.min(a.y, b.y) - GEOMETRY_EPSILON &&
-    point.y <= Math.max(a.y, b.y) + GEOMETRY_EPSILON
+    Math.abs(orientation(a, b, p)) <= GEOMETRY_EPSILON &&
+    p.x >= Math.min(a.x, b.x) - GEOMETRY_EPSILON &&
+    p.x <= Math.max(a.x, b.x) + GEOMETRY_EPSILON &&
+    p.y >= Math.min(a.y, b.y) - GEOMETRY_EPSILON &&
+    p.y <= Math.max(a.y, b.y) + GEOMETRY_EPSILON
   );
 }
 
@@ -57,10 +50,10 @@ function segmentsIntersect(
   c: MapCoordinate,
   d: MapCoordinate,
 ): boolean {
-  const abC = cross(a, b, c);
-  const abD = cross(a, b, d);
-  const cdA = cross(c, d, a);
-  const cdB = cross(c, d, b);
+  const abC = orientation(a, b, c);
+  const abD = orientation(a, b, d);
+  const cdA = orientation(c, d, a);
+  const cdB = orientation(c, d, b);
   if (
     ((abC > GEOMETRY_EPSILON && abD < -GEOMETRY_EPSILON) ||
       (abC < -GEOMETRY_EPSILON && abD > GEOMETRY_EPSILON)) &&
@@ -78,40 +71,25 @@ function segmentsIntersect(
 }
 
 function signedAreaTwice(vertices: readonly MapCoordinate[]): number {
-  return vertices.reduce((area, vertex, index) => {
+  return vertices.reduce((sum, vertex, index) => {
     const next = vertices[(index + 1) % vertices.length]!;
-    return area + vertex.x * next.y - next.x * vertex.y;
+    return sum + vertex.x * next.y - next.x * vertex.y;
   }, 0);
 }
 
 function assertSimplePolygon(vertices: readonly MapCoordinate[]): void {
-  for (let first = 0; first < vertices.length; first += 1) {
-    const firstVertex = vertices[first]!;
-    for (let second = first + 1; second < vertices.length; second += 1) {
-      const secondVertex = vertices[second]!;
-      if (firstVertex.x === secondVertex.x && firstVertex.y === secondVertex.y) {
-        throw new Error('Map polygon geometry cannot repeat vertices.');
-      }
-    }
-  }
-
-  if (Math.abs(signedAreaTwice(vertices)) <= GEOMETRY_EPSILON) {
+  const areaTwice = signedAreaTwice(vertices);
+  if (Math.abs(areaTwice) <= GEOMETRY_EPSILON) {
     throw new Error('Map polygon geometry must have non-zero area.');
   }
-
-  for (let first = 0; first < vertices.length; first += 1) {
-    const firstNext = (first + 1) % vertices.length;
-    for (let second = first + 1; second < vertices.length; second += 1) {
-      const secondNext = (second + 1) % vertices.length;
-      if (second === firstNext || (first === 0 && secondNext === 0)) continue;
-      if (
-        segmentsIntersect(
-          vertices[first]!,
-          vertices[firstNext]!,
-          vertices[second]!,
-          vertices[secondNext]!,
-        )
-      ) {
+  for (let index = 0; index < vertices.length; index += 1) {
+    const a = vertices[index]!;
+    const b = vertices[(index + 1) % vertices.length]!;
+    for (let other = index + 1; other < vertices.length; other += 1) {
+      if (other === index + 1 || (index === 0 && other === vertices.length - 1)) continue;
+      const c = vertices[other]!;
+      const d = vertices[(other + 1) % vertices.length]!;
+      if (segmentsIntersect(a, b, c, d)) {
         throw new Error('Map polygon geometry cannot self-intersect.');
       }
     }
@@ -125,9 +103,7 @@ function canonicalizePolygon(vertices: readonly MapCoordinate[]): readonly MapCo
   for (let index = 1; index < oriented.length; index += 1) {
     const current = oriented[index]!;
     const first = oriented[firstIndex]!;
-    if (current.x < first.x || (current.x === first.x && current.y < first.y)) {
-      firstIndex = index;
-    }
+    if (current.x < first.x || (current.x === first.x && current.y < first.y)) firstIndex = index;
   }
   return oriented.map((_, offset) => oriented[(firstIndex + offset) % oriented.length]!);
 }
@@ -146,7 +122,8 @@ export function normalizeMapEntityGeometry(
     return { kind: 'point', coordinates: coordinateFromUnknown(value.coordinates) };
   }
   if (value.kind !== 'polygon') throw new Error('Map geometry kind must be point or polygon.');
-  if (entityType !== 'location') throw new Error('Only locations may use polygon geometry.');
+  if (entityType === 'character') throw new Error('Characters must use point geometry.');
+  if (entityType !== 'location') throw new Error('Missions and hazards must use point geometry.');
   if (!Array.isArray(value.vertices)) throw new Error('Map polygon geometry requires vertices.');
   if (value.vertices.length < 3) {
     throw new Error('Map polygon geometry requires at least three vertices.');
