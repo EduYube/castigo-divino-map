@@ -330,7 +330,7 @@ begin
   result := public.admin_get_master_catalog_v5(p_campaign_id);
 
   select coalesce(pg_catalog.jsonb_agg(
-    source_entity.value || pg_catalog.jsonb_build_object('lifecycleStatus', entity.lifecycle_status)
+    source_entity.value || pg_catalog.jsonb_build_object('lifecycle_status', entity.lifecycle_status)
     order by entity.id
   ), '[]'::jsonb)
   into entities

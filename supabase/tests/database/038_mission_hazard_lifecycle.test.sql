@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(30);
+select plan(31);
 
 select is(
   (
@@ -302,6 +302,17 @@ select ok(
     in public.admin_get_master_catalog_v6('00000000-0000-4000-8000-000000000053'::uuid)::text
   ) > 0,
   'authorized Master catalog returns mission and hazard with private audience'
+);
+select is(
+  (
+    select entity ->> 'lifecycle_status'
+    from pg_catalog.jsonb_array_elements(
+      public.admin_get_master_catalog_v6('00000000-0000-4000-8000-000000000053'::uuid) -> 'entities'
+    ) as entity
+    where entity ->> 'id' = 'entity-map064-master-mission'
+  ),
+  'active',
+  'authorized Master catalog exposes snake_case lifecycle_status expected by the client decoder'
 );
 
 select * from finish();
