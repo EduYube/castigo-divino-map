@@ -1,0 +1,110 @@
+.map-layers {
+  margin-block: 0.75rem;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.22));
+  border-radius: 0.75rem;
+  background: var(--surface-raised, rgba(16, 20, 28, 0.88));
+}
+
+.map-layers__summary {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.map-layers__summary::marker {
+  content: '';
+}
+
+.map-layers__summary::-webkit-details-marker {
+  display: none;
+}
+
+.map-layers__summary::after {
+  content: '▾';
+  flex: 0 0 auto;
+  transition: transform 120ms ease;
+}
+
+.map-layers[open] > .map-layers__summary::after {
+  transform: rotate(180deg);
+}
+
+.map-layers__panel {
+  display: grid;
+  gap: 0.625rem;
+  padding: 0 0.875rem 0.875rem;
+}
+
+.map-layers__hint,
+.map-layers__status {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.map-layers__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 0.35rem 0.75rem;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.map-layers__options legend {
+  padding: 0;
+  margin-bottom: 0.35rem;
+  font-weight: 700;
+}
+
+.map-layers__option {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.35rem 0;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.map-layers__option input {
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+  flex: 0 0 auto;
+}
+
+.map-layers__show-all {
+  justify-self: start;
+  min-height: 2.75rem;
+}
+
+.map-layers__summary:focus-visible,
+.map-layers__option input:focus-visible,
+.map-layers__show-all:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (max-width: 30rem) {
+  .map-layers__options {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (forced-colors: active) {
+  .map-layers {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .map-layers__summary,
+  .map-layers__option,
+  .map-layers__show-all {
+    forced-color-adjust: auto;
+  }
+}
