@@ -9,8 +9,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "npm run snapshot:verify && tsc --noEmit && vite build",
-    "build:pages": "npm run snapshot:verify && tsc --noEmit && vite build --mode pages",
+    "build": "npm run verify:release-version && npm run snapshot:verify && tsc --noEmit && vite build",
+    "build:pages": "npm run verify:release-version && npm run snapshot:verify && tsc --noEmit && vite build --mode pages",
     "preview": "vite preview",
     "preview:pages": "vite preview --mode pages",
     "verify:build": "node verify-production-build.mjs",
