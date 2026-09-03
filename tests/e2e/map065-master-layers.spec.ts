@@ -235,8 +235,8 @@ async function openAuthorizedMap(page: Page): Promise<void> {
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
 
   await page.getByRole('button', { name: 'Administrar' }).click();
-  await page.getByLabel('Correo').fill('admin@example.invalid');
-  await page.getByLabel('Contraseña').fill('correct horse battery staple');
+  await page.locator('input[type="email"]').fill('admin@example.invalid');
+  await page.locator('input[type="password"]').fill('correct horse battery staple');
   await page.getByRole('button', { name: 'Iniciar sesión' }).click();
   await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
   await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
