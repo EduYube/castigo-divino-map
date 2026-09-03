@@ -1,0 +1,36 @@
+name: MAP064 format admin E2E
+
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.head_ref == 'agent/map-064-mission-hazard-lifecycle'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-064-mission-hazard-lifecycle
+          fetch-depth: 0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Format MAP-064 admin E2E
+        run: |
+          npx prettier --write tests/e2e/admin-map-entities.spec.ts
+          npx prettier --check tests/e2e/admin-map-entities.spec.ts
+      - name: Remove integration workflow
+        run: rm .github/workflows/map064-format-admin-e2e.yml
+      - name: Commit fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/e2e/admin-map-entities.spec.ts .github/workflows/map064-format-admin-e2e.yml
+          git commit -m 'style(map-064): format deterministic lifecycle E2E'
+          git push origin HEAD:agent/map-064-mission-hazard-lifecycle
