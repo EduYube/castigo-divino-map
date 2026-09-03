@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CampaignCatalog } from '../data/model';
+import { MAP_LAYER_IDS } from '../domain/mapLayers';
 import {
   EMPTY_PUBLIC_APP_URL_STATE,
   arePublicAppUrlStatesEqual,
@@ -122,6 +123,7 @@ describe('public application URL state', () => {
         geographicNameId: 'geo-sword-coast',
         selectedCategoryIds: ['category-landmark'],
         selectedTagIds: ['trade-route', 'mountain-pass'],
+        activeLayerIds: MAP_LAYER_IDS,
       }),
     ).toBe(
       'place=paso-de-demostracion&q=paso+p%C3%BAblico&geo=geo-sword-coast&category=lugares-destacados&tag=trade-route&tag=mountain-pass',
@@ -150,6 +152,7 @@ describe('public application URL state', () => {
       geographicNameId: null,
       selectedCategoryIds: ['category-settlement', 'category-landmark'],
       selectedTagIds: ['coastal', 'mountain-pass'],
+      activeLayerIds: MAP_LAYER_IDS,
     });
   });
 
@@ -165,6 +168,7 @@ describe('public application URL state', () => {
       geographicNameId: null,
       selectedCategoryIds: [],
       selectedTagIds: ['coastal'],
+      activeLayerIds: MAP_LAYER_IDS,
     });
   });
 
@@ -247,6 +251,7 @@ describe('public application URL state', () => {
       geographicNameId: 'geo-waterdeep',
       selectedCategoryIds: ['category-settlement'],
       selectedTagIds: ['coastal', 'trade-route'],
+      activeLayerIds: MAP_LAYER_IDS,
     };
     const url = createCanonicalPublicAppUrl(urlCatalog, baseUrl, state);
 
@@ -262,6 +267,7 @@ describe('public application URL state', () => {
       geographicNameId: 'geo-sword-coast',
       selectedCategoryIds: ['category-landmark', 'category-landmark'],
       selectedTagIds: ['mountain-pass', 'mountain-pass'],
+      activeLayerIds: MAP_LAYER_IDS,
     };
     const stateSnapshot = JSON.parse(JSON.stringify(state));
 
@@ -281,6 +287,7 @@ describe('public application URL state', () => {
           geographicNameId: 'geo-waterdeep',
           selectedCategoryIds: ['category-settlement'],
           selectedTagIds: ['trade-route', 'coastal', 'coastal'],
+          activeLayerIds: ['location', 'character', 'location'],
         },
         {
           activePlaceId: 'place-demo-harbor',
@@ -288,6 +295,7 @@ describe('public application URL state', () => {
           geographicNameId: 'geo-waterdeep',
           selectedCategoryIds: ['category-settlement'],
           selectedTagIds: ['coastal', 'trade-route'],
+          activeLayerIds: ['character', 'location'],
         },
       ),
     ).toBe(true);
