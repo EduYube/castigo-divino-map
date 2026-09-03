@@ -1036,6 +1036,9 @@ export function mountAdminMapEntities(
     const unavailable = !state.authorized || !state.backendConnected;
     const busy =
       state.phase === 'loading' || state.phase === 'loading-editor' || state.phase === 'mutating';
+    editor.setAttribute('aria-busy', busy ? 'true' : 'false');
+    fields.inert = busy;
+    mapRegion.inert = busy;
     search.disabled = unavailable || busy;
     createCharacterButton.disabled =
       unavailable || state.phase !== 'ready' || desiredEditorKey !== null;
