@@ -45,8 +45,13 @@ function marker(
     entityType,
     lifecycleStatus:
       entityType === 'mission' ? 'completed' : entityType === 'hazard' ? 'resolved' : null,
+    categoryId: 'category-test',
+    categoryName: 'Test',
+    categorySlug: 'test',
     portraitPath: null,
     dispositions: [],
+    associations: [],
+    source: 'beta02',
     mapPresentation: polygon
       ? {
           kind: 'polygon',
@@ -55,9 +60,10 @@ function marker(
             [11, 10],
             [10, 11],
           ],
+          bounds: { minX: 10, maxX: 11, minY: 10, maxY: 11 },
         }
       : { kind: 'point' },
-  } as AtlasPinMarkerModel;
+  };
 }
 
 describe('MAP-065 map layer domain', () => {
