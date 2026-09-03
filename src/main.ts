@@ -7,6 +7,7 @@ import { mountCompactPinDetails } from './app/compactPinDetails';
 import { INITIAL_PUBLIC_CAMPAIGN_SLUG } from './app/campaignSelection';
 import { mountFullEntityDetails, renderFullEntityDetailsShell } from './app/fullEntityDetails';
 import { createFullEntityUrl, parseFullEntityUrlRequest } from './app/fullEntityUrl';
+import { mountMapLayers } from './app/mapLayers';
 import { mountMasterDetailActions } from './app/masterDetailActions';
 import { mountMasterPinVisuals } from './app/masterPinVisuals';
 import { bootstrapMasterModeRuntime, type MasterModeRuntime } from './app/masterModeRuntime';
@@ -40,6 +41,13 @@ import type { CampaignCatalog, PlaceId } from './data/model';
 import { createAtlasPinMarkerModels, type AtlasPinMarkerModel } from './data/pinMarkers';
 import type { AtlasSearchResult } from './data/search';
 import type { MapEntityAudience, MapEntityPublicationStatus } from './domain/adminMapEntities';
+import {
+  ALL_MAP_LAYER_STATE,
+  filterAtlasMarkersByLayers,
+  isEntityVisibleForMapLayers,
+  isMapLayerEnabled,
+  type MapLayerState,
+} from './domain/mapLayers';
 import { getPinTypeVisual } from './domain/pinVisualSystem';
 import {
   SupabaseCharacterPortraitResources,
@@ -52,6 +60,7 @@ import './styles/compact-pin-details.css';
 import './styles/full-entity-details.css';
 import './styles/search.css';
 import './styles/filters.css';
+import './styles/map-layers.css';
 import './styles/collapsible-controls.css';
 import './styles/backend-status.css';
 import './styles/admin-auth.css';
@@ -138,7 +147,9 @@ function mountPublicExperience(
   let catalog = initialCatalogState.compatibility;
   let publicBeta02Catalog = initialCatalogState.beta02;
   let beta02Catalog = initialCatalogState.beta02;
-  let renderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
+  let mapLayerState: MapLayerState = ALL_MAP_LAYER_STATE;
+  let authorizedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
+  let renderedMarkers = filterAtlasMarkersByLayers(authorizedMarkers, mapLayerState);
   let activeSupplementalPin: AtlasPinMarkerModel | null = null;
   let geographicNameId: GeographicNameId | null = null;
   let masterEntityIds: ReadonlySet<EntityId> = new Set();
@@ -230,8 +241,6 @@ function mountPublicExperience(
       return;
     }
 
-    // MAP-037: synchronize Leaflet before the first sheet measurement. Narrow WebKit
-    // otherwise observes stale viewport geometry; desktop never enters this branch.
     mapController.map.invalidateSize({ animate: false, pan: false });
 
     const adjustActiveMarker = (attemptsRemaining: number): void => {
@@ -411,8 +420,18 @@ function mountPublicExperience(
     }
   };
 
+  const isSearchResultVisible = (result: AtlasSearchResult): boolean => {
+    if (result.type === 'geographic') return true;
+    if (result.linkedEntityId && beta02Catalog) {
+      const entity = beta02Catalog.entities.find(({ id }) => id === result.linkedEntityId);
+      if (entity) return isEntityVisibleForMapLayers(entity, mapLayerState);
+    }
+    return isMapLayerEnabled(mapLayerState, result.type);
+  };
+
   const placeSearchController = mountPlaceSearch(app, {
     catalog,
+    isResultVisible: isSearchResultVisible,
     onQueryChange(): void {
       invalidateDeferredSelectionAnnouncement();
       if (geographicNameId !== null) {
@@ -424,6 +443,7 @@ function mountPublicExperience(
     },
     onSelect(result): void {
       invalidateDeferredSelectionAnnouncement();
+      if (!isSearchResultVisible(result)) return;
       if (result.type === 'location' && result.legacyPlaceId) {
         geographicNameId = null;
         mapController.clearSearchFocus();
@@ -469,16 +489,49 @@ function mountPublicExperience(
   const masterSearchVisuals = mountMasterSearchVisuals(app);
   masterSearchVisuals.refresh(masterEntityIds);
 
+  const applyLayerVisibility = (historyMode: 'push' | 'replace'): void => {
+    invalidateDeferredSelectionAnnouncement();
+    renderedMarkers = filterAtlasMarkersByLayers(authorizedMarkers, mapLayerState);
+    mapController.setMarkers(renderedMarkers);
+    masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
+
+    if (activeSupplementalPin && !renderedMarkers.some(({ id }) => id === activeSupplementalPin?.id)) {
+      activeSupplementalPin = null;
+      compactDetailsController.hide();
+      clearSupplementalMapSelection();
+    }
+
+    const activePlaceId = selection.getActivePlaceId();
+    if (
+      activePlaceId &&
+      !renderedMarkers.some(({ legacyPlaceId }) => legacyPlaceId === activePlaceId)
+    ) {
+      selection.clear();
+    }
+
+    placeSearchController.refresh();
+    updateMatchingPlaces();
+    writePublicStateToHistory(historyMode);
+  };
+
+  const mapLayersController = mountMapLayers(app, {
+    initialState: mapLayerState,
+    onChange(nextState): void {
+      mapLayerState = nextState;
+      applyLayerVisibility('push');
+    },
+  });
+
   function getCurrentPublicState(): PublicAppUrlState {
     const filters = placeFiltersController.getState();
 
     return {
       activePlaceId: selection.getActivePlaceId(),
-      // Never serialize an admin-only search term while private data is in memory.
       query: masterEntityIds.size > 0 ? '' : placeSearchController.getQuery(),
       geographicNameId,
       selectedCategoryIds: filters.selectedCategoryIds,
       selectedTagIds: filters.selectedTagIds,
+      activeLayerIds: mapLayerState.activeLayerIds,
     };
   }
 
@@ -524,12 +577,14 @@ function mountPublicExperience(
         matchingOptions,
       );
       const matchingEntityIdSet = new Set(matchingEntityIds);
+      const visibleMatchingEntityIds = matchingEntityIds.filter((entityId) => {
+        const entity = publicBeta02Catalog?.entities.find(({ id }) => id === entityId);
+        return Boolean(entity && isEntityVisibleForMapLayers(entity, mapLayerState));
+      });
       const matchingPinIds = new Set(
         renderedMarkers
           .filter((pin) => {
             if (pin.entityId) {
-              // Private pins are outside the public facet universe. When authorized they remain
-              // operable and are never allowed to influence public counts or URL state.
               return masterEntityIds.has(pin.entityId) || matchingEntityIdSet.has(pin.entityId);
             }
 
@@ -548,7 +603,7 @@ function mountPublicExperience(
         isGeographicNavigation ? 'filters-only' : 'search-and-filters',
       );
       placeFiltersController.setMatchSummary(
-        matchingEntityIds.length,
+        visibleMatchingEntityIds.length,
         activePin ? matchingPinIds.has(activePin.id) : null,
       );
       return;
@@ -559,6 +614,11 @@ function mountPublicExperience(
         .filter((pin) => pin.legacyPlaceId !== null && matchingPlaceIdSet.has(pin.legacyPlaceId))
         .map(({ id }) => id),
     );
+    const visibleMatchingPlaceIds = new Set(
+      renderedMarkers
+        .filter((pin) => pin.legacyPlaceId !== null && matchingPlaceIdSet.has(pin.legacyPlaceId))
+        .map(({ legacyPlaceId }) => legacyPlaceId),
+    );
     const activePin = activePlaceId
       ? (renderedMarkers.find(({ legacyPlaceId }) => legacyPlaceId === activePlaceId) ?? null)
       : null;
@@ -568,7 +628,7 @@ function mountPublicExperience(
       isGeographicNavigation ? 'filters-only' : 'search-and-filters',
     );
     placeFiltersController.setMatchSummary(
-      matchingPlaceIds.length,
+      visibleMatchingPlaceIds.size,
       activePin ? matchingPinIds.has(activePin.id) : null,
     );
   }
@@ -626,8 +686,6 @@ function mountPublicExperience(
         effectiveBeta02 = view.catalog;
         nextMasterEntityIds = view.masterEntityIds;
       } catch {
-        // A contradictory public/private projection is a security invariant failure.
-        // Fail closed by dropping private state instead of trying to reconcile it client-side.
         void masterModeRuntime?.controller.setEnabled(false);
         effectiveBeta02 = nextCatalogState.beta02;
         nextMasterEntityIds = new Set();
@@ -673,10 +731,10 @@ function mountPublicExperience(
       beta02Catalog = effectiveBeta02;
       placeFiltersController.setCatalogState(catalog, publicBeta02Catalog);
       placeSearchController.setCatalogState(catalog, beta02Catalog);
-      const previousMarkersById = new Map(renderedMarkers.map((pin) => [pin.id, pin]));
-      const nextRenderedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
+      const previousMarkersById = new Map(authorizedMarkers.map((pin) => [pin.id, pin]));
+      const nextAuthorizedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
       const eagerPortraitPinIds = new Set<string>();
-      for (const pin of nextRenderedMarkers) {
+      for (const pin of nextAuthorizedMarkers) {
         if (!pin.portraitPath) continue;
         const previousPin = previousMarkersById.get(pin.id);
         const previousAccess =
@@ -699,10 +757,12 @@ function mountPublicExperience(
           eagerPortraitPinIds.add(pin.id);
         }
       }
-      renderedMarkers = nextRenderedMarkers;
+      authorizedMarkers = nextAuthorizedMarkers;
+      renderedMarkers = filterAtlasMarkersByLayers(authorizedMarkers, mapLayerState);
       mapController.setMarkers(renderedMarkers, { eagerPortraitPinIds });
       masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
       masterSearchVisuals.refresh(masterEntityIds);
+      placeSearchController.refresh();
       if (initialPublicRefreshSettled) {
         restorePendingInitialFilters();
       }
@@ -773,12 +833,9 @@ function mountPublicExperience(
     const masterEnabled = masterModeRuntime?.controller.getState().enabled === true;
 
     if (audience === 'master') {
-      // Remove the entity from the public projection first so a stale private catalog
-      // can never create a public/private duplicate in memory.
       await publicDataRuntime.refresh();
       if (masterEnabled) await masterModeRuntime?.controller.reload();
     } else {
-      // Remove it from private memory first, then let the public projection expose it.
       if (masterEnabled) await masterModeRuntime?.controller.reload();
       await publicDataRuntime.refresh();
     }
@@ -867,7 +924,13 @@ function mountPublicExperience(
         clearSupplementalMapSelection();
       }
 
+      mapLayerState = { activeLayerIds: parsed.state.activeLayerIds };
+      mapLayersController.setState(mapLayerState, { notify: false });
+      renderedMarkers = filterAtlasMarkersByLayers(authorizedMarkers, mapLayerState);
+      mapController.setMarkers(renderedMarkers);
+      masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
       placeSearchController.setQuery(parsed.state.query, { notify: false });
+      placeSearchController.refresh();
       placeFiltersController.setState(
         {
           selectedCategoryIds: parsed.state.selectedCategoryIds,
