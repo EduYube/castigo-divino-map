@@ -13,6 +13,7 @@ export interface PlaceSearchController {
   getQuery(): string;
   setQuery(query: string, options?: PlaceSearchStateUpdateOptions): void;
   setCatalogState(catalog: CampaignCatalog, beta02Catalog: PublicCatalogSnapshotV2 | null): void;
+  refresh(): void;
   clear(): void;
   destroy(): void;
 }
@@ -26,6 +27,7 @@ export interface PlaceSearchOptions {
   readonly onSelect: (result: AtlasSearchResult) => void;
   readonly onOpenPlace?: (placeId: PlaceId) => void;
   readonly onQueryChange?: (query: string) => void;
+  readonly isResultVisible?: (result: AtlasSearchResult) => boolean;
 }
 
 interface PlaceSearchElements {
@@ -255,11 +257,16 @@ export function mountPlaceSearch(
   };
 
   const publishQueryChange = (): void => options.onQueryChange?.(query);
+  const filterVisibleResults = (results: readonly AtlasSearchResult[]): readonly AtlasSearchResult[] =>
+    options.isResultVisible ? results.filter(options.isResultVisible) : results;
+
+  const getVisibleSuggestions = (): readonly AtlasSearchResult[] =>
+    filterVisibleResults(getPublicAtlasSuggestions(catalog, beta02Catalog, query));
 
   const render = (): void => {
     const normalizedQuery = normalizePlaceSearchQuery(query);
-    const searchResults = searchPublicAtlas(catalog, beta02Catalog, query);
-    const suggestions = getPublicAtlasSuggestions(catalog, beta02Catalog, query);
+    const searchResults = filterVisibleResults(searchPublicAtlas(catalog, beta02Catalog, query));
+    const suggestions = getVisibleSuggestions();
     const suggestionsOpen =
       suggestionsEnabled &&
       document.activeElement === elements.input &&
@@ -313,7 +320,7 @@ export function mountPlaceSearch(
     if (searchResults.length === 0) {
       setStatusText(
         elements.status,
-        `No hay lugares, personajes ni nombres geográficos para “${query.trim()}”; tampoco misiones ni peligros.`,
+        `No hay resultados visibles para “${query.trim()}” con las capas y filtros actuales.`,
       );
       elements.results.hidden = true;
       return;
@@ -389,7 +396,7 @@ export function mountPlaceSearch(
       return;
     }
 
-    const suggestions = getPublicAtlasSuggestions(catalog, beta02Catalog, query);
+    const suggestions = getVisibleSuggestions();
 
     if (event.key === 'Escape' && elements.combobox.getAttribute('aria-expanded') === 'true') {
       event.preventDefault();
@@ -490,6 +497,7 @@ export function mountPlaceSearch(
       activeSuggestionIndex = -1;
       render();
     },
+    refresh: render,
     clear: handleClear,
     destroy(): void {
       elements.input.removeEventListener('input', handleInput);
