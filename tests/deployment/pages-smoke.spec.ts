@@ -162,15 +162,16 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
     name: 'Buscar lugares',
     includeHidden: true,
   });
+  const characterCategoryFilter = page.locator(
+    'input[data-place-filter-kind="category"][data-place-filter-id="category-pj"]',
+  );
 
   await expect(page.getByText('v1.0', { exact: true })).toBeVisible();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'error');
   await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(filtersToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(searchbox).toHaveValue('veyra');
-  await expect(
-    page.getByRole('checkbox', { name: /Personaje/, includeHidden: true }),
-  ).toBeChecked();
+  await expect(characterCategoryFilter).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Veyra/, includeHidden: true })).toBeChecked();
   await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
   const responsibleUse = page.getByRole('complementary', {

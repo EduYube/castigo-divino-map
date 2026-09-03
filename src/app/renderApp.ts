@@ -38,6 +38,11 @@ export function renderApp(): string {
                     o etiquetas. Puedes limpiar los filtros para recuperar todos los lugares.
                   </li>
                   <li>
+                    <strong>Capas.</strong> Abre Capas para mostrar u ocultar personajes,
+                    emplazamientos puntuales, regiones, misiones o peligros sin modificar los datos
+                    de la campaña ni los filtros activos.
+                  </li>
+                  <li>
                     <strong>Abrir un pin.</strong> Activa un marcador con ratón, toque, Enter o barra
                     espaciadora para abrir su ficha compacta. Un contador indica varias entidades en
                     la misma coordenada y abre una lista para elegir entre ellas. Los pines atenuados
@@ -86,13 +91,14 @@ export function renderApp(): string {
             </div>
           </details>
           <p id="map-instructions" class="visually-hidden">
-            Usa Búsqueda para localizar nombres, personajes y emplazamientos, y Filtrar lugares para
-            limitar el catálogo. Recorre controles, resultados y pines con Tab y actívalos con Enter
-            o la barra espaciadora. Activar un pin abre su ficha compacta. Un pin con contador agrupa
-            entidades en la misma coordenada y abre una lista accesible. Los pines atenuados siguen
-            siendo operables. Un círculo indica personaje y un rombo, emplazamiento. Los símbolos
-            más, menos, punto e interrogación indican aliado, enemigo, neutral y sin dato visible. La
-            disposición se expresa por jugador y el color es solo una señal complementaria.
+            Usa Búsqueda para localizar nombres, personajes y emplazamientos, Filtrar lugares para
+            limitar el catálogo y Capas para alternar tipos cartográficos. Recorre controles,
+            resultados y pines con Tab y actívalos con Enter o la barra espaciadora. Activar un pin
+            abre su ficha compacta. Un pin con contador agrupa entidades en la misma coordenada y
+            abre una lista accesible. Los pines atenuados siguen siendo operables. Un círculo indica
+            personaje y un rombo, emplazamiento. Los símbolos más, menos, punto e interrogación
+            indican aliado, enemigo, neutral y sin dato visible. La disposición se expresa por
+            jugador y el color es solo una señal complementaria.
           </p>
         </div>
 
@@ -262,6 +268,51 @@ export function renderApp(): string {
           </div>
         </section>
 
+        <details class="map-layers" data-map-layers>
+          <summary class="map-layers__summary">
+            <span data-map-layers-summary aria-label="5 de 5 capas activas">Capas · 5/5</span>
+          </summary>
+          <div class="map-layers__panel">
+            <p id="map-layers-hint" class="map-layers__hint">
+              Alterna tipos cartográficos sin modificar campaña, búsqueda, categorías ni etiquetas.
+            </p>
+            <fieldset class="map-layers__options" aria-describedby="map-layers-hint map-layers-status">
+              <legend>Tipos visibles</legend>
+              <label class="map-layers__option">
+                <input type="checkbox" data-map-layer="character" checked />
+                <span>Personajes</span>
+              </label>
+              <label class="map-layers__option">
+                <input type="checkbox" data-map-layer="location" checked />
+                <span>Emplazamientos puntuales</span>
+              </label>
+              <label class="map-layers__option">
+                <input type="checkbox" data-map-layer="region" checked />
+                <span>Regiones</span>
+              </label>
+              <label class="map-layers__option">
+                <input type="checkbox" data-map-layer="mission" checked />
+                <span>Misiones</span>
+              </label>
+              <label class="map-layers__option">
+                <input type="checkbox" data-map-layer="hazard" checked />
+                <span>Peligros/Alertas</span>
+              </label>
+            </fieldset>
+            <button class="map-layers__show-all" data-map-layers-show-all type="button" hidden>
+              Mostrar todas
+            </button>
+            <p
+              id="map-layers-status"
+              class="map-layers__status visually-hidden"
+              data-map-layers-status
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            ></p>
+          </div>
+        </details>
+
         <div class="map-workspace" data-map-workspace>
           <div
             class="map-shell"
@@ -275,7 +326,7 @@ export function renderApp(): string {
               data-map-canvas
               role="region"
               aria-label="Mapa navegable de la Costa de la Espada y el noroeste de Faerûn"
-              aria-describedby="map-instructions place-filters-status map-search-status"
+              aria-describedby="map-instructions place-filters-status map-layers-status map-search-status"
             ></div>
             <p class="map-status" data-map-status role="status" aria-atomic="true">
               Cargando la cartografía oficial de Faerûn…

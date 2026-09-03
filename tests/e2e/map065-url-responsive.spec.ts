@@ -1,0 +1,178 @@
+import { expect, test } from '@playwright/test';
+import {
+  configureMap065Backend,
+  MAP065_IDS,
+  map065Layer,
+  map065Pin,
+  openMap065,
+  openMap065Layers,
+} from './map065-fixture';
+
+test('canonical URL round-trips partial state and supports Back, Forward, reload and invalid values', async ({
+  page,
+}) => {
+  await configureMap065Backend(page);
+  await openMap065(page);
+  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+  await openMap065Layers(page);
+  expect(new URL(page.url()).searchParams.has('layers')).toBe(false);
+
+  await map065Layer(page, 'Peligros/Alertas').uncheck();
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('layers'))
+    .toBe('character,location,region,mission');
+  await map065Layer(page, 'Regiones').uncheck();
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('layers'))
+    .toBe('character,location,mission');
+
+  await page.goBack();
+  await openMap065Layers(page);
+  await expect(map065Layer(page, 'Regiones')).toBeChecked();
+  await expect(map065Layer(page, 'Peligros/Alertas')).not.toBeChecked();
+
+  await page.goForward();
+  await openMap065Layers(page);
+  await expect(map065Layer(page, 'Regiones')).not.toBeChecked();
+  await expect(map065Layer(page, 'Peligros/Alertas')).not.toBeChecked();
+
+  await page.reload();
+  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+  await openMap065Layers(page);
+  await expect(map065Layer(page, 'Regiones')).not.toBeChecked();
+  await expect(map065Layer(page, 'Peligros/Alertas')).not.toBeChecked();
+
+  await page.goto('/?layers=hazard,unknown,character,hazard');
+  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+  await expect.poll(() => new URL(page.url()).searchParams.get('layers')).toBe('character,hazard');
+  await openMap065Layers(page);
+  await expect(map065Layer(page, 'Personajes')).toBeChecked();
+  await expect(map065Layer(page, 'Peligros/Alertas')).toBeChecked();
+  await expect(map065Layer(page, 'Misiones')).not.toBeChecked();
+
+  await page.goto('/?layers=unknown,future');
+  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+  await expect.poll(() => new URL(page.url()).searchParams.has('layers')).toBe(false);
+  await expect(page.locator('[data-map-layers-summary]')).toHaveText('Capas · 5/5');
+});
+
+test('keeps layer state through degraded snapshot mode and recovery without duplicate remote entities', async ({
+  page,
+}) => {
+  const backend = await configureMap065Backend(page, 'offline');
+  await openMap065(page, '/?layers=character');
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'degraded',
+  );
+  await openMap065Layers(page);
+  await expect(map065Layer(page, 'Personajes')).toBeChecked();
+  await expect(map065Layer(page, 'Emplazamientos puntuales')).not.toBeChecked();
+
+  backend.setMode('success');
+  await page.locator('[data-backend-status]').getByRole('button', { name: 'Reintentar' }).click();
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'connected',
+  );
+  await openMap065Layers(page);
+  await expect(map065Layer(page, 'Personajes')).toBeChecked();
+  await expect(map065Layer(page, 'Emplazamientos puntuales')).not.toBeChecked();
+  await expect(map065Pin(page, MAP065_IDS.character)).toHaveCount(1);
+  await expect(map065Pin(page, MAP065_IDS.location)).toHaveCount(0);
+  await expect(page.locator(`[data-region-id="${MAP065_IDS.region}"]`)).toHaveCount(0);
+  await expect(page.locator(`[data-pin-id="${MAP065_IDS.character}"]`)).toHaveCount(1);
+});
+
+test('keeps layer state while details open and close and while the map expands and restores', async ({
+  page,
+}) => {
+  await configureMap065Backend(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openMap065(page);
+  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+  await openMap065Layers(page);
+
+  const missionLayer = map065Layer(page, 'Misiones');
+  await missionLayer.uncheck();
+  await expect(missionLayer).not.toBeChecked();
+  await expect(map065Pin(page, MAP065_IDS.mission)).toHaveCount(0);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('layers'))
+    .toBe('character,location,region,hazard');
+
+  await map065Pin(page, MAP065_IDS.location).click();
+  const details = page.getByTestId('place-details');
+  await expect(details).toBeVisible();
+  await details.getByRole('button', { name: /Cerrar la ficha de Emplazamiento MAP065/i }).click();
+  await expect(details).toBeHidden();
+  await expect(missionLayer).not.toBeChecked();
+  await expect(map065Pin(page, MAP065_IDS.mission)).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Expandir mapa' }).click();
+  await expect(page.locator('.map-experience')).toHaveAttribute('data-map-expanded', 'true');
+  await expect(missionLayer).not.toBeChecked();
+  await expect(map065Pin(page, MAP065_IDS.mission)).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Restaurar tamaño del mapa' }).click();
+  await expect(page.locator('.map-experience')).toHaveAttribute('data-map-expanded', 'false');
+  await openMap065Layers(page);
+  await expect(missionLayer).not.toBeChecked();
+  await expect(map065Pin(page, MAP065_IDS.mission)).toHaveCount(0);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('layers'))
+    .toBe('character,location,region,hazard');
+});
+
+for (const width of [320, 390, 430]) {
+  test(`layer panel stays keyboard-usable without horizontal overflow at ${width}px`, async ({
+    page,
+  }) => {
+    await configureMap065Backend(page);
+    await page.setViewportSize({ width, height: 844 });
+    await openMap065(page);
+    await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+    await openMap065Layers(page);
+
+    const mission = map065Layer(page, 'Misiones');
+    await mission.focus();
+    await page.keyboard.press('Space');
+    await expect(mission).not.toBeChecked();
+    await expect(mission).toBeFocused();
+    await expect(page.locator('[data-map-layers]')).toHaveAttribute('open', '');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+  });
+}
+
+test('layer controls reflow and remain operable at the 200% browser-zoom equivalent (320 CSS px)', async ({
+  page,
+}) => {
+  await configureMap065Backend(page);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await openMap065(page);
+  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+  await openMap065Layers(page);
+
+  const characters = map065Layer(page, 'Personajes');
+  await characters.uncheck();
+  await expect(characters).not.toBeChecked();
+  await expect(page.locator('[data-map-layers-summary]')).toHaveText('Capas · 4/5');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});
+
+test('layer controls remain perceivable and operable in forced-colors mode', async ({ page }) => {
+  await configureMap065Backend(page);
+  await page.emulateMedia({ forcedColors: 'active' });
+  await openMap065(page);
+  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+  await openMap065Layers(page);
+
+  const region = map065Layer(page, 'Regiones');
+  await region.focus();
+  await expect(region).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(region).not.toBeChecked();
+  await expect(page.locator('[data-map-layers-status]')).toContainText('Regiones');
+});
