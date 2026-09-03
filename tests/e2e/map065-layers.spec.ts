@@ -103,7 +103,7 @@ test('keeps filters and search while a layer temporarily yields zero results', a
   await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún resultado');
   await expect(page.locator(`[data-search-result-id="${MAP065_IDS.mission}"]`)).toHaveCount(0);
   await expect(page.locator('[data-place-search-status]')).toContainText(
-    'No hay resultados visibles',
+    'No hay lugares, personajes ni nombres geográficos',
   );
 
   await map065Layer(page, 'Misiones').check();
