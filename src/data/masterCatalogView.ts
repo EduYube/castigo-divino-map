@@ -92,6 +92,7 @@ function buildMasterEntities(
       id,
       slug: entity.slug,
       entityType: entity.entityType,
+      lifecycleStatus: entity.lifecycleStatus,
       visibility: entity.visibility,
       name: entity.name,
       nameLanguage: 'en',

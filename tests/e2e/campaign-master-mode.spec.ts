@@ -173,7 +173,7 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
       return;
     }
 
-    if (isAdmin && resource === 'rpc/admin_get_master_catalog_v5') {
+    if (isAdmin && resource === 'rpc/admin_get_master_catalog_v6') {
       const body = JSON.parse(request.postData() ?? '{}') as { p_campaign_id?: unknown };
       const campaignId =
         typeof body.p_campaign_id === 'string' ? body.p_campaign_id : CAMPAIGN_A_ID;

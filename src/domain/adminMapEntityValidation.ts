@@ -2,6 +2,7 @@ import {
   type AdminMapEntityDetail,
   type AdminMapEntityDraft,
   type AdminMapEntityReferences,
+  getMapEntityLifecycleStatus,
   type MapEntityPublicationStatus,
 } from './adminMapEntities';
 import { isMapCoordinateWithinBounds } from './mapCoordinates';
@@ -22,18 +23,14 @@ const PLAYER_DISPOSITIONS = new Set(['ally', 'neutral', 'enemy']);
 const REPRESENTATIVE_ROUNDING_TOLERANCE = 0.005 + Number.EPSILON;
 
 function setError(errors: Record<string, string>, field: string, message: string): void {
-  if (!errors[field]) {
-    errors[field] = message;
-  }
+  if (!errors[field]) errors[field] = message;
 }
 
 function validatesTransition(
   originalStatus: MapEntityPublicationStatus | null,
   nextStatus: MapEntityPublicationStatus,
 ): boolean {
-  if (originalStatus === 'archived') {
-    return nextStatus === 'archived' || nextStatus === 'draft';
-  }
+  if (originalStatus === 'archived') return nextStatus === 'archived' || nextStatus === 'draft';
   return true;
 }
 
@@ -61,6 +58,31 @@ export function validateAdminMapEntityDraft(
   }
   if (description.length > 5000) {
     setError(errors, 'description', 'La descripción no puede superar 5000 caracteres.');
+  }
+
+  const lifecycleStatus = getMapEntityLifecycleStatus(draft);
+  if (draft.entityType === 'mission') {
+    if (
+      lifecycleStatus !== 'active' &&
+      lifecycleStatus !== 'completed' &&
+      lifecycleStatus !== 'failed'
+    ) {
+      setError(
+        errors,
+        'lifecycleStatus',
+        'Selecciona Activa, Completada o Fallida para la misión.',
+      );
+    }
+  } else if (draft.entityType === 'hazard') {
+    if (lifecycleStatus !== 'active' && lifecycleStatus !== 'resolved') {
+      setError(errors, 'lifecycleStatus', 'Selecciona Activo o Resuelto para el peligro.');
+    }
+  } else if (draft.lifecycleStatus != null) {
+    setError(
+      errors,
+      'lifecycleStatus',
+      'Personajes y emplazamientos no tienen lifecycle funcional.',
+    );
   }
 
   try {
@@ -91,7 +113,6 @@ export function validateAdminMapEntityDraft(
   if (!isMapCoordinateWithinBounds(draft)) {
     setError(errors, 'coordinates', 'Las coordenadas deben estar dentro de X 0–3600 e Y 0–2329.');
   }
-
   if (draft.entityType !== 'character' && draft.portraitPath) {
     setError(errors, 'portraitPath', 'Solo los personajes pueden tener retrato.');
   }

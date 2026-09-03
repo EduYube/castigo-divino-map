@@ -84,16 +84,17 @@ export function mountMasterPinVisuals(root: ParentNode): MasterPinVisualControll
           element.dataset.audience = master ? 'master' : 'public';
         }
         inner?.classList.toggle('pin-visual--master', master);
-        if (master && marker) {
-          const type = marker.entityType === 'character' ? 'Personaje' : 'Emplazamiento de campaña';
+        if (marker) {
+          const currentLabel = element.getAttribute('aria-label') ?? `${marker.name}.`;
+          const publicLabel = currentLabel
+            .replace(/\s*Contenido del Máster\.\s*/gu, ' ')
+            .replace(/\s+/gu, ' ')
+            .trim();
           element.setAttribute(
             'aria-label',
-            `${marker.name}. ${type}. Contenido del Máster. Categoría: ${marker.categoryName}.`,
+            master ? `${publicLabel} Contenido del Máster.` : publicLabel,
           );
-          const description = element.getAttribute('aria-description') ?? '';
-          if (!description.includes('Contenido del Máster.')) {
-            element.setAttribute('aria-description', `Contenido del Máster. ${description}`.trim());
-          }
+          synchronizeMasterRegionDescription(element, master);
         }
         return;
       }

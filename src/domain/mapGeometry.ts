@@ -146,7 +146,8 @@ export function normalizeMapEntityGeometry(
     return { kind: 'point', coordinates: coordinateFromUnknown(value.coordinates) };
   }
   if (value.kind !== 'polygon') throw new Error('Map geometry kind must be point or polygon.');
-  if (entityType !== 'location') throw new Error('Characters must use point geometry.');
+  if (entityType === 'character') throw new Error('Characters must use point geometry.');
+  if (entityType !== 'location') throw new Error('Missions and hazards must use point geometry.');
   if (!Array.isArray(value.vertices)) throw new Error('Map polygon geometry requires vertices.');
   if (value.vertices.length < 3) {
     throw new Error('Map polygon geometry requires at least three vertices.');

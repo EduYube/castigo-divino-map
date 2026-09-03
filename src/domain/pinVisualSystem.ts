@@ -1,4 +1,4 @@
-export type PinEntityType = 'character' | 'location';
+export type PinEntityType = 'character' | 'location' | 'mission' | 'hazard';
 export type PinDisposition = 'ally' | 'enemy' | 'neutral';
 export type PinDispositionState = PinDisposition | 'unknown';
 
@@ -53,6 +53,18 @@ const TYPE_VISUALS: Record<PinEntityType, PinTypeVisual> = {
     label: 'Emplazamiento',
     symbol: '◆',
     className: 'pin-visual--location',
+  },
+  mission: {
+    type: 'mission',
+    label: 'Misión',
+    symbol: '⚑',
+    className: 'pin-visual--mission',
+  },
+  hazard: {
+    type: 'hazard',
+    label: 'Peligro',
+    symbol: '!',
+    className: 'pin-visual--hazard',
   },
 };
 

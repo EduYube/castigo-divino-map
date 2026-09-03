@@ -21,6 +21,56 @@
   border-radius: 50%;
 }
 
+.pin-visual--mission {
+  width: 2rem;
+  height: 1.65rem;
+  color: #073a35;
+  background: #87d8ca;
+  border-radius: 0.2rem 0.55rem 0.55rem 0.2rem;
+}
+
+.pin-visual--mission::before {
+  position: absolute;
+  left: -0.2rem;
+  bottom: -0.35rem;
+  width: 0.18rem;
+  height: 2.2rem;
+  content: '';
+  background: currentColor;
+}
+
+.pin-visual--hazard {
+  width: 2.1rem;
+  height: 1.9rem;
+  color: #3b0710;
+  background: #e88b98;
+  border-radius: 0;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.pin-visual--hazard .pin-visual__type-symbol {
+  padding-top: 0.45rem;
+  font-size: 0.9rem;
+}
+
+.pin-visual--lifecycle-completed,
+.pin-visual--lifecycle-resolved {
+  opacity: 0.74;
+}
+
+.pin-visual--lifecycle-completed::after,
+.pin-visual--lifecycle-resolved::after {
+  position: absolute;
+  inset: 0.22rem;
+  content: '';
+  border: 2px solid currentColor;
+  border-radius: inherit;
+}
+
+.pin-visual--lifecycle-failed {
+  text-decoration: line-through;
+}
+
 .pin-visual--location {
   width: 1.7rem;
   height: 1.7rem;
@@ -190,6 +240,14 @@
   border-radius: 50%;
 }
 
+.pin-coincident-list__mini--mission {
+  border-radius: 0.2rem 0.5rem 0.5rem 0.2rem;
+}
+
+.pin-coincident-list__mini--hazard {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
 .pin-coincident-list__mini--location {
   border-radius: 0.25rem;
   transform: rotate(45deg);
@@ -239,6 +297,14 @@
 
 .pin-legend__shape--character {
   border-radius: 50%;
+}
+
+.pin-legend__shape--mission {
+  border-radius: 0.15rem 0.45rem 0.45rem 0.15rem;
+}
+
+.pin-legend__shape--hazard {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 
 .pin-legend__shape--location {

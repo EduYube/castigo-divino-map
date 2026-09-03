@@ -208,7 +208,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
 
     if (
       isAdmin &&
-      (resource === 'rpc/admin_get_map_entity_editor_v6' ||
+      (resource === 'rpc/admin_get_map_entity_editor_v7' ||
         resource === 'rpc/admin_get_map_entity_editor_v3')
     ) {
       await route.fulfill({
@@ -221,7 +221,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
 
     if (
       isAdmin &&
-      (resource === 'rpc/admin_save_map_entity_v6' || resource === 'rpc/admin_save_map_entity_v3')
+      (resource === 'rpc/admin_save_map_entity_v7' || resource === 'rpc/admin_save_map_entity_v3')
     ) {
       const body = request.postDataJSON() as Record<string, unknown>;
       lastSaveBody = structuredClone(body);

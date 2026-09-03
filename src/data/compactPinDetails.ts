@@ -1,4 +1,4 @@
-import type { EntityId, PublicCatalogSnapshotV2 } from './beta02-model';
+import type { EntityId, PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
 import type { CampaignCatalog, PlaceId } from './model';
 import type { AtlasPinMarkerModel } from './pinMarkers';
 import { buildPublicEntityPresentation } from './publicEntityPresentation';
@@ -33,6 +33,7 @@ export interface CompactPinDetailModel {
   readonly entityId: EntityId | null;
   readonly entitySlug: string | null;
   readonly entityType: PinEntityType;
+  readonly lifecycleStatus: PublicMapEntity['lifecycleStatus'];
   readonly name: string;
   readonly category: CompactDetailCategory;
   readonly tags: readonly CompactDetailTag[];
@@ -67,6 +68,7 @@ function buildBeta02Details(
     entityId: entity.id,
     entitySlug: entity.slug,
     entityType: entity.entityType,
+    lifecycleStatus: entity.lifecycleStatus ?? null,
     name: entity.name,
     category: {
       id: presentation.category.id,
@@ -121,6 +123,7 @@ function buildLegacyDetails(
     entityId: null,
     entitySlug: null,
     entityType: 'location',
+    lifecycleStatus: null,
     name: place.name,
     category: { id: category.id, name: category.name },
     tags,

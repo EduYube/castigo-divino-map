@@ -9,7 +9,8 @@ export type Slug = string;
 export type LanguageCode = 'en';
 export type GeographicNameAliasLanguageCode = LanguageCode | 'es';
 
-export type EntityType = 'character' | 'location';
+export type EntityType = 'character' | 'location' | 'mission' | 'hazard';
+export type EntityLifecycleStatus = 'active' | 'completed' | 'failed' | 'resolved';
 export type MapVisibility = 'pin' | 'search_only';
 export type PlayerDisposition = 'ally' | 'enemy' | 'neutral';
 export type CharacterLocationEventType = 'sighting' | 'departure';
@@ -65,6 +66,8 @@ export interface PublicMapEntity {
   readonly id: EntityId;
   readonly slug: Slug;
   readonly entityType: EntityType;
+  /** MAP-064 functional lifecycle; null/absent for character/location legacy snapshots. */
+  readonly lifecycleStatus?: EntityLifecycleStatus | null;
   readonly visibility: MapVisibility;
   readonly name: string;
   readonly nameLanguage: LanguageCode;

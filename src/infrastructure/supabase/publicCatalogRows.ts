@@ -433,6 +433,7 @@ export function parseEntity(
       'id',
       'slug',
       'entity_type',
+      'lifecycle_status',
       'visibility',
       'name',
       'name_language',
@@ -455,7 +456,33 @@ export function parseEntity(
   const parsedEntityType = expectEnum(row.entity_type, `${path}.entity_type`, [
     'character',
     'location',
+    'mission',
+    'hazard',
   ] as const);
+  const parsedLifecycle =
+    row.lifecycle_status == null
+      ? null
+      : expectEnum(row.lifecycle_status, `${path}.lifecycle_status`, [
+          'active',
+          'completed',
+          'failed',
+          'resolved',
+        ] as const);
+  if (
+    (parsedEntityType === 'character' || parsedEntityType === 'location') &&
+    parsedLifecycle !== null
+  ) {
+    invalidResponse(`${path}.lifecycle_status no corresponde a esta clase funcional.`);
+  }
+  if (
+    parsedEntityType === 'mission' &&
+    !['active', 'completed', 'failed'].includes(parsedLifecycle ?? '')
+  ) {
+    invalidResponse(`${path}.lifecycle_status no es válido para una misión.`);
+  }
+  if (parsedEntityType === 'hazard' && !['active', 'resolved'].includes(parsedLifecycle ?? '')) {
+    invalidResponse(`${path}.lifecycle_status no es válido para un peligro.`);
+  }
   const hasPortraitPath = Object.prototype.hasOwnProperty.call(row, 'portrait_path');
   const portraitPath =
     row.portrait_path == null
@@ -483,6 +510,7 @@ export function parseEntity(
     id,
     slug: expectString(row.slug, `${path}.slug`, IDENTIFIER_PATTERNS.slug),
     entityType: parsedEntityType,
+    lifecycleStatus: parsedLifecycle,
     visibility: expectEnum(row.visibility, `${path}.visibility`, ['pin', 'search_only'] as const),
     name: expectString(row.name, `${path}.name`),
     nameLanguage: expectEnum(row.name_language, `${path}.name_language`, ['en'] as const),

@@ -1,4 +1,4 @@
-import type { PinPlayerAssociationInput } from '../domain/pinVisualSystem';
+import type { PinEntityType, PinPlayerAssociationInput } from '../domain/pinVisualSystem';
 import {
   getPinPlayerAssociation,
   PIN_PLAYER_ASSOCIATIONS_CHANGED_EVENT,
@@ -7,6 +7,7 @@ import '../styles/pin-player-associations.css';
 
 const RING_CLASS = 'pin-player-association-ring';
 const COUNT_CLASS = 'pin-player-association-count';
+const RING_ENTITY_TYPES: readonly PinEntityType[] = ['character', 'location', 'mission', 'hazard'];
 
 export function createPlayerAssociationAccent(
   associations: readonly PinPlayerAssociationInput[],
@@ -52,6 +53,12 @@ function synchronizeAssociationDescription(
   element.dataset.playerAssociationDescription = description;
 }
 
+function synchronizeRingTypeClass(ring: HTMLElement, entityType: PinEntityType): void {
+  for (const candidate of RING_ENTITY_TYPES) {
+    ring.classList.toggle(`${RING_CLASS}--${candidate}`, candidate === entityType);
+  }
+}
+
 function decorateMarker(element: HTMLElement): void {
   const pinId = element.dataset.pinId;
   if (!pinId) return;
@@ -77,7 +84,7 @@ function decorateMarker(element: HTMLElement): void {
     ring.setAttribute('aria-hidden', 'true');
     element.prepend(ring);
   }
-  ring.classList.toggle(`${RING_CLASS}--location`, entry.entityType === 'location');
+  synchronizeRingTypeClass(ring, entry.entityType);
   ring.style.setProperty(
     '--pin-player-association-accent',
     createPlayerAssociationAccent(associations),

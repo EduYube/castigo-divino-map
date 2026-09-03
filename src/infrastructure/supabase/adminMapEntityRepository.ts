@@ -16,6 +16,7 @@ import {
   type AdminPlayerReference,
   type AdminTagReference,
   type MapEntityAudience,
+  type MapEntityLifecycleStatus,
   type MapEntityPublicationStatus,
   type MapEntityType,
   type MapVisibility,
@@ -108,11 +109,52 @@ function publicationStatus(value: unknown): MapEntityPublicationStatus {
 }
 
 function entityType(value: unknown): MapEntityType {
-  if (value === 'character' || value === 'location') return value;
+  if (value === 'character' || value === 'location' || value === 'mission' || value === 'hazard')
+    return value;
   throw new AdminMapEntityRepositoryError(
     'invalid-response',
     'Supabase devolvió un tipo de entidad no válido.',
   );
+}
+
+function lifecycleStatus(
+  value: unknown,
+  recordEntityType: MapEntityType,
+): MapEntityLifecycleStatus | null {
+  if (value === null || value === undefined) {
+    if (recordEntityType === 'mission' || recordEntityType === 'hazard') {
+      throw new AdminMapEntityRepositoryError(
+        'invalid-response',
+        'Supabase omitió el lifecycle funcional.',
+      );
+    }
+    return null;
+  }
+  if (value !== 'active' && value !== 'completed' && value !== 'failed' && value !== 'resolved') {
+    throw new AdminMapEntityRepositoryError(
+      'invalid-response',
+      'Supabase devolvió un lifecycle funcional no válido.',
+    );
+  }
+  if (recordEntityType === 'mission' && !['active', 'completed', 'failed'].includes(value)) {
+    throw new AdminMapEntityRepositoryError(
+      'invalid-response',
+      'Supabase devolvió un lifecycle de misión no válido.',
+    );
+  }
+  if (recordEntityType === 'hazard' && !['active', 'resolved'].includes(value)) {
+    throw new AdminMapEntityRepositoryError(
+      'invalid-response',
+      'Supabase devolvió un lifecycle de peligro no válido.',
+    );
+  }
+  if (recordEntityType === 'character' || recordEntityType === 'location') {
+    throw new AdminMapEntityRepositoryError(
+      'invalid-response',
+      'Supabase mezcló lifecycle funcional con una entidad legacy.',
+    );
+  }
+  return value;
 }
 
 function visibility(value: unknown): MapVisibility {
@@ -164,6 +206,7 @@ function mapRecord(row: Record<string, unknown>): AdminMapEntityRecord {
     id: requiredString(row, 'id'),
     slug: requiredString(row, 'slug'),
     entityType: recordEntityType,
+    lifecycleStatus: lifecycleStatus(row.lifecycleStatus ?? row.lifecycle_status, recordEntityType),
     visibility: visibility(row.visibility),
     audience: audience(row.audience),
     portraitPath: row.portrait_path == null ? null : nullableString(row, 'portrait_path'),
@@ -324,7 +367,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
   async list(options: { readonly signal: AbortSignal }): Promise<readonly AdminMapEntityRecord[]> {
     const rows = await this.#listRows(
       'map_entities',
-      'id,slug,entity_type,visibility,audience,portrait_path,name,summary,description,x,y,geometry,category_id,publication_status,published_at,archived_at,updated_at',
+      'id,slug,entity_type,lifecycle_status,visibility,audience,portrait_path,name,summary,description,x,y,geometry,category_id,publication_status,published_at,archived_at,updated_at',
       'name.asc,id.asc',
       options.signal,
     );
@@ -456,6 +499,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
           p_tag_ids: [...draft.tagIds],
           p_dispositions: draft.dispositions,
           p_player_association_ids: [...(draft.playerAssociationIds ?? [])],
+          p_lifecycle_status: draft.lifecycleStatus ?? null,
         }),
       },
       options.signal,

@@ -15,6 +15,7 @@ import {
   describePlayerDispositions,
   getPinTypeVisual,
 } from '../domain/pinVisualSystem';
+import { getEntityLifecycleLabel } from '../domain/entityLifecycle';
 import { FAERUN_MAP_CONFIG, OFFICIAL_MAP_URL, createSimpleImageBounds } from './config';
 import { mountExpandedMapLayout } from './expandedMapLayout';
 import { clearMapSearchFocus, locateMapSearchTarget } from './searchFocus';
@@ -169,7 +170,10 @@ function createDispositionMarkup(marker: AtlasPinMarkerModel): string {
 
 function createSinglePinMarkup(marker: AtlasPinMarkerModel): string {
   const type = getPinTypeVisual(marker.entityType);
-  return `<span class="pin-visual ${type.className}"><span class="pin-visual__type-symbol" aria-hidden="true">${type.symbol}</span><span class="pin-visual__dispositions" aria-hidden="true">${createDispositionMarkup(marker)}</span></span>`;
+  const lifecycleClass = marker.lifecycleStatus
+    ? ` pin-visual--lifecycle-${marker.lifecycleStatus}`
+    : '';
+  return `<span class="pin-visual ${type.className}${lifecycleClass}"><span class="pin-visual__type-symbol" aria-hidden="true">${type.symbol}</span><span class="pin-visual__dispositions" aria-hidden="true">${createDispositionMarkup(marker)}</span></span>`;
 }
 
 function createSinglePinIcon(marker: AtlasPinMarkerModel): L.DivIcon {
@@ -237,7 +241,8 @@ function describePin(marker: AtlasPinMarkerModel): string {
   const type = getPinTypeVisual(marker.entityType);
   const dispositions = describePlayerDispositions(marker.dispositions);
 
-  return `${marker.name}. ${type.label}. Relación con los personajes: ${dispositions}. Categoría: ${marker.categoryName}.`;
+  const lifecycle = getEntityLifecycleLabel(marker.entityType, marker.lifecycleStatus ?? null);
+  return `${marker.name}. ${type.label}.${lifecycle ? ` Estado: ${lifecycle}.` : ''} Relación con los personajes: ${dispositions}. Categoría: ${marker.categoryName}.`;
 }
 
 function describeLegacyMarkerName(marker: AtlasPinMarkerModel): string {
@@ -246,7 +251,8 @@ function describeLegacyMarkerName(marker: AtlasPinMarkerModel): string {
 
 function describePinSemantics(marker: AtlasPinMarkerModel): string {
   const type = getPinTypeVisual(marker.entityType);
-  return `${type.label}. Relación con los personajes: ${describePlayerDispositions(marker.dispositions)}.`;
+  const lifecycle = getEntityLifecycleLabel(marker.entityType, marker.lifecycleStatus ?? null);
+  return `${type.label}.${lifecycle ? ` Estado: ${lifecycle}.` : ''} Relación con los personajes: ${describePlayerDispositions(marker.dispositions)}.`;
 }
 
 function nameZoomControls(control: L.Control.Zoom): void {
