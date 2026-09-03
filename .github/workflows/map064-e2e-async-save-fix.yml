@@ -1,55 +1,44 @@
 name: MAP064 async save E2E fix
 
 on:
-  push:
-    branches:
-      - agent/map-064-mission-hazard-lifecycle
+  pull_request:
+    branches: [master]
 
 permissions:
   contents: write
 
 jobs:
   integrate:
-    runs-on: ubuntu-24.04
+    if: github.head_ref == 'agent/map-064-mission-hazard-lifecycle'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           ref: agent/map-064-mission-hazard-lifecycle
           fetch-depth: 0
-      - name: Apply deterministic save sequencing
-        shell: bash
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Make lifecycle save sequencing deterministic
         run: |
-          python - <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
-          path = Path('tests/e2e/admin-map-entities.spec.ts')
-          text = path.read_text()
-          old = """  await expect(page.getByLabel('Estado funcional')).toHaveValue('active');
-  await page.getByRole('button', { name: 'Publicar' }).click();
-  await page.getByLabel('Estado funcional').selectOption('resolved');
-  await page.getByRole('button', { name: 'Publicar' }).click();
-  expect(backend.getEntity('entity-map064-bridge-hazard')).toMatchObject({
-"""
-          new = """  await expect(page.getByLabel('Estado funcional')).toHaveValue('active');
-  const beforeHazardPublish = backend.getSaveCount();
-  await page.getByRole('button', { name: 'Publicar' }).click();
-  await expect.poll(() => backend.getSaveCount()).toBe(beforeHazardPublish + 1);
-  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
 
-  await page.getByLabel('Estado funcional').selectOption('resolved');
-  const beforeHazardResolve = backend.getSaveCount();
-  await page.getByRole('button', { name: 'Publicar' }).click();
-  await expect.poll(() => backend.getSaveCount()).toBe(beforeHazardResolve + 1);
-  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
-  expect(backend.getEntity('entity-map064-bridge-hazard')).toMatchObject({
-"""
-          count = text.count(old)
-          if count != 1:
-              raise SystemExit(f'expected one target block, found {count}')
-          path.write_text(text.replace(old, new))
+          p = Path('tests/e2e/admin-map-entities.spec.ts')
+          s = p.read_text()
+          old = "  await expect(page.getByLabel('Estado funcional')).toHaveValue('active');\n  await page.getByRole('button', { name: 'Publicar' }).click();\n  await page.getByLabel('Estado funcional').selectOption('resolved');\n  await page.getByRole('button', { name: 'Publicar' }).click();\n  expect(backend.getEntity('entity-map064-bridge-hazard')).toMatchObject({\n"
+          new = "  await expect(page.getByLabel('Estado funcional')).toHaveValue('active');\n  const beforeHazardPublish = backend.getSaveCount();\n  await page.getByRole('button', { name: 'Publicar' }).click();\n  await expect.poll(() => backend.getSaveCount()).toBe(beforeHazardPublish + 1);\n  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();\n\n  await page.getByLabel('Estado funcional').selectOption('resolved');\n  const beforeHazardResolve = backend.getSaveCount();\n  await page.getByRole('button', { name: 'Publicar' }).click();\n  await expect.poll(() => backend.getSaveCount()).toBe(beforeHazardResolve + 1);\n  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();\n  expect(backend.getEntity('entity-map064-bridge-hazard')).toMatchObject({\n"
+          if s.count(old) != 1:
+              raise SystemExit(f'MAP-064 hazard save anchor count: {s.count(old)}')
+          p.write_text(s.replace(old, new, 1))
           PY
-          rm .github/workflows/map064-e2e-async-save-fix.yml
-      - name: Commit integrated fix
-        shell: bash
+          npx prettier --write tests/e2e/admin-map-entities.spec.ts
+          npx prettier --check tests/e2e/admin-map-entities.spec.ts
+      - name: Remove integration workflow
+        run: rm .github/workflows/map064-e2e-async-save-fix.yml
+      - name: Commit fix
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
