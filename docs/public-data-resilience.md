@@ -214,3 +214,7 @@ Textos públicos:
 - `Modo de respaldo. El servicio de datos no está disponible. Se muestra contenido guardado del …`
 - `Sin conexión. Se muestra contenido guardado del …`
 - `No se pudo cargar el contenido público. Reintenta la conexión.`
+
+## Matriz degradada v1.1
+
+El snapshot v1.1 debe conservar selector multicampaña, geografía global, entidades/regiones/misiones/peligros públicos, notas, filtros y capas. El fallback es de solo lectura: una escritura nunca se presenta como exitosa si Supabase está offline. La recuperación mantiene la campaña elegida, evita duplicados y nunca reutiliza secretos Máster de una campaña anterior si falla temporalmente la carga privada de la nueva.

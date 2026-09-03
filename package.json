@@ -1,7 +1,7 @@
 {
   "name": "castigo-divino-map",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "engines": {
     "node": ">=22.12.0",
@@ -45,14 +45,16 @@
     "supabase:db:test:map064:upgrade": "node scripts/test-map064-mission-hazard-upgrade.mjs",
     "supabase:db:test:concurrency": "node scripts/test-supabase-concurrency.mjs && node scripts/test-map058-v4-v5-concurrency.mjs && node scripts/test-map060-v5-v6-concurrency.mjs && node scripts/test-map060-v5-v6-lock-order.mjs && node scripts/test-map064-v6-v7-concurrency.mjs && node scripts/test-map063-public-note-concurrency.mjs && node scripts/test-public-request-moderation-concurrency.mjs",
     "supabase:db:lint": "supabase db lint --local --fail-on warning",
-    "supabase:db:validate": "npm run supabase:db:test:upgrade && npm run supabase:db:test:map053:upgrade && npm run supabase:db:test:map054:upgrade && npm run supabase:db:test:map063:upgrade && npm run supabase:db:test:map064:upgrade && npm run supabase:db:reset && npm run supabase:db:test:map045:http && npm run supabase:db:reset && npm run supabase:db:test:map028 && npm run supabase:db:test:map040 && npm run supabase:db:test:map041 && npm run supabase:db:lint && npm run supabase:db:test && npm run supabase:db:test:concurrency",
+    "supabase:db:validate": "npm run supabase:db:test:upgrade && npm run supabase:db:test:map066:upgrade && npm run supabase:db:test:map054:upgrade && npm run supabase:db:test:map063:upgrade && npm run supabase:db:test:map064:upgrade && npm run supabase:db:reset && npm run supabase:db:test:map045:http && npm run supabase:db:reset && npm run supabase:db:test:map028 && npm run supabase:db:test:map040 && npm run supabase:db:test:map041 && npm run supabase:db:lint && npm run supabase:db:test && npm run supabase:db:test:concurrency",
     "supabase:types": "supabase gen types typescript --local --schema public > src/database.types.ts",
     "snapshot:generate:fixture": "node scripts/generate-public-snapshot.mjs --fixture",
     "snapshot:verify:remote": "node scripts/verify-public-snapshot.mjs --remote",
     "supabase:db:test:map028": "node scripts/test-map028-data-migration.mjs",
     "supabase:db:test:map040": "node scripts/test-map040-data-migration.mjs",
     "supabase:db:test:map041": "node scripts/test-map041-data-migration.mjs",
-    "supabase:db:test:map045:http": "node scripts/test-map045-storage-http.mjs"
+    "supabase:db:test:map045:http": "node scripts/test-map045-storage-http.mjs",
+    "verify:release-version": "node scripts/verify-release-version.mjs",
+    "supabase:db:test:map066:upgrade": "node scripts/test-map066-v1-v1-rehearsal.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4"

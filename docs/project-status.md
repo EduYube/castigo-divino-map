@@ -99,3 +99,7 @@ El procedimiento operativo completo está en [`deployment-and-rollback.md`](depl
 ## Riesgos residuales
 
 MAP-052 no acepta deuda funcional nueva ni modifica el perfil de seguridad. Los riesgos y decisiones históricas de releases anteriores permanecen documentados en sus evidencias originales; promover la nomenclatura a v1.0 no los reinterpreta ni los oculta.
+
+## Estado v1.1 — MAP-066
+
+MAP-066 promueve el baseline posterior a MAP-065 a **v1.1 (1.1.0)** una vez superados rehearsal, seguridad, CI, checkpoint humano, merge y Pages. La fuente canónica de versión sigue siendo `package.json`; el badge público usa `v1.1` y `npm run verify:release-version` comprueba coherencia con lockfile, UI, smoke y este documento. Las secciones anteriores de v1.0 se conservan como evidencia histórica del baseline de partida.

@@ -168,3 +168,7 @@ Consulta [`docs/deployment-and-rollback.md`](docs/deployment-and-rollback.md) pa
 ## Licencia y contenido de fans
 
 El Atlas es contenido de fans no oficial. La aplicación enlaza la Política de contenido de fans y mantiene la atribución de la cartografía. Todo contenido público del repositorio, Issues, PRs, builds y snapshot debe considerarse publicable y no debe contener información privada de campaña ni credenciales.
+
+## Release v1.1
+
+La versión estable preparada por MAP-066 es **v1.1 (1.1.0)**. Consolida el dominio multicampaña, selector y aislamiento por campaña, roster/asociaciones/disposiciones, clustering y spiderfy, geometría persistente y regiones, ficha desktop, notas públicas con autoría declarada, misiones/peligros y control de capas. El contrato de validación y migración sin pérdida está en [docs/map-066-release.md](docs/map-066-release.md). La documentación histórica de v1.0 y Beta permanece intacta.

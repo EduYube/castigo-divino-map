@@ -380,3 +380,7 @@ No se implementa todavía historial editorial de cada mutación.
 - <https://supabase.com/docs/guides/deployment/database-migrations>
 - <https://supabase.com/docs/guides/platform/backups>
 - <https://supabase.com/docs/guides/functions>
+
+## Gate transversal de seguridad v1.1
+
+MAP-066 revalida anon, authenticated no-admin y admin; catálogo público/Máster; campañas A/B; snapshot/artifact; Storage de retratos; logout/expiración/401/403; y escritura pública de notas. Modo Máster nunca debe mezclar secretos entre campañas: A se purga de memoria/DOM/búsqueda/fichas antes de solicitar B. La autoría pública de jugador es declarada, no una autenticación del jugador; la RPC cerrada valida pertenencia a campaña y mantiene la identidad Máster fuera del alcance anónimo.

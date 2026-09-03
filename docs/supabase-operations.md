@@ -334,3 +334,7 @@ Antes de borrar imágenes compartidas debe comprobarse que ningún otro proyecto
 - <https://www.postgresql.org/docs/17/explicit-locking.html>
 - <https://docs.docker.com/engine/network/port-publishing/>
 - <https://docs.github.com/en/actions/reference/security/secure-use>
+
+## Política de migración para v1.1
+
+MAP-066 trata el historial remoto como evidencia de despliegue, no como una invitación a renombrar SQL histórico. Algunas migraciones v1.1 se aplicaron previamente mediante la API de Supabase con versiones remotas distintas del timestamp del filename conservado en Git; sus nombres funcionales/esquema ya están desplegados. No se reescribe `supabase_migrations` ni se hace un `db push` ciego para “alinear” timestamps. Cualquier corrección futura se implementa como una migración nueva, forward-only, después de comparar el delta real.

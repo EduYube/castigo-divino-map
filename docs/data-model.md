@@ -441,3 +441,7 @@ Está prohibido almacenar en tablas públicas, snapshots, bundles, logs, Issues 
 - HTML arbitrario o scripts.
 
 Todo texto se almacena como texto plano. Markdown o contenido enriquecido requerirán ADR, sanitización con allowlist y pruebas XSS.
+
+## Modelo consolidado v1.1
+
+El modelo v1.1 conserva IDs/slugs históricos y añade `campaign_id` a los dominios dependientes de campaña, roster de jugadores, asociaciones narrativas, geometría JSON canónica y lifecycle de misión/peligro. La geografía física permanece global. Las relaciones cross-campaign se impiden en PostgreSQL mediante constraints/FKs compuestas y RLS. El rehearsal de MAP-066 valida que el upgrade desde el último baseline v1.0 no recrea contenido.
