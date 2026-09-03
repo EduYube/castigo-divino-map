@@ -29,12 +29,12 @@ assert(
   `package-lock.json package root must be ${expectedVersion}`,
 );
 assert(
-  renderApp.includes(`release-badge\">${expectedLabel}<`),
+  renderApp.includes(`release-badge">${expectedLabel}<`),
   `UI badge must declare ${expectedLabel}`,
 );
 assert(renderApp.includes(`Faerûn · ${expectedLabel}`), `UI eyebrow must declare ${expectedLabel}`);
 assert(
-  !renderApp.includes('release-badge\">v1.0<'),
+  !renderApp.includes('release-badge">v1.0<'),
   'UI badge must not retain v1.0 as current release',
 );
 assert(pagesSmoke.includes(expectedLabel), 'Pages smoke must assert the current release label');
