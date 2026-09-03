@@ -596,7 +596,7 @@ test('anonymous visitors never receive administrative entity controls', async ({
   await page.goto('/');
 
   await expect(page.getByTestId('map-shell')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Personajes y emplazamientos' })).toBeHidden();
+  await expect(page.getByRole('heading', { name: 'Entidades del mapa' })).toBeHidden();
   await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeHidden();
 });
 
@@ -607,7 +607,7 @@ test('an authorized administrator can open entity administration and preserves d
   await page.goto('/');
   await loginAndConnect(page);
 
-  await expect(page.getByRole('heading', { name: 'Personajes y emplazamientos' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Entidades del mapa' })).toBeVisible();
   await expect(page.getByText('Aster Guide', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Editar Aster Guide' }).click();
   await expect(page.getByLabel('Categoría', { exact: true })).toHaveValue('category-people');
@@ -929,7 +929,7 @@ test('an expired session closes entity administration safely', async ({ page }) 
 
   backend.expireNextSave();
   await page.getByRole('button', { name: 'Guardar borrador' }).click();
-  await expect(page.getByRole('heading', { name: 'Personajes y emplazamientos' })).toBeHidden();
+  await expect(page.getByRole('heading', { name: 'Entidades del mapa' })).toBeHidden();
   await expect(page.getByTestId('map-shell')).toBeVisible();
 });
 
@@ -1058,8 +1058,8 @@ test('MAP-064 mission and hazard lifecycle remains independent from publication'
     name: 'Collapsing Bridge',
   });
   await page.getByLabel('Categoría', { exact: true }).selectOption('category-places');
-  await page.getByLabel('Coordenada X').fill('1490');
-  await page.getByLabel('Coordenada Y').fill('1010');
+  await page.getByLabel('Coordenada X').fill('1700');
+  await page.getByLabel('Coordenada Y').fill('1300');
   await expect(page.getByLabel('Estado funcional')).toHaveValue('active');
   await page.getByRole('button', { name: 'Publicar' }).click();
   await expect
