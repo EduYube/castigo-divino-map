@@ -495,7 +495,10 @@ function mountPublicExperience(
     mapController.setMarkers(renderedMarkers);
     masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
 
-    if (activeSupplementalPin && !renderedMarkers.some(({ id }) => id === activeSupplementalPin?.id)) {
+    if (
+      activeSupplementalPin &&
+      !renderedMarkers.some(({ id }) => id === activeSupplementalPin?.id)
+    ) {
       activeSupplementalPin = null;
       compactDetailsController.hide();
       clearSupplementalMapSelection();

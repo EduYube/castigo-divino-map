@@ -51,7 +51,10 @@ export function isMapLayerEnabled(state: MapLayerState, layerId: MapLayerId): bo
   return state.activeLayerIds.includes(layerId);
 }
 
-export function isEntityVisibleForMapLayers(entity: PublicMapEntity, state: MapLayerState): boolean {
+export function isEntityVisibleForMapLayers(
+  entity: PublicMapEntity,
+  state: MapLayerState,
+): boolean {
   return isMapLayerEnabled(state, getMapLayerForEntity(entity));
 }
 

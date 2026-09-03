@@ -6,11 +6,7 @@ import type {
 } from '../data/beta02-model';
 import { derivePublicFilterFacets } from '../data/filters';
 import type { CampaignCatalog, PlaceId } from '../data/model';
-import {
-  MAP_LAYER_IDS,
-  normalizeMapLayerIds,
-  type MapLayerId,
-} from '../domain/mapLayers';
+import { MAP_LAYER_IDS, normalizeMapLayerIds, type MapLayerId } from '../domain/mapLayers';
 
 export interface PublicAppUrlState {
   readonly activePlaceId: PlaceId | null;

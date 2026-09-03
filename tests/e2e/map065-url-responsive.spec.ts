@@ -8,7 +8,9 @@ import {
   openMap065Layers,
 } from './map065-fixture';
 
-test('canonical URL round-trips partial state and supports Back, Forward, reload and invalid values', async ({ page }) => {
+test('canonical URL round-trips partial state and supports Back, Forward, reload and invalid values', async ({
+  page,
+}) => {
   await configureMap065Backend(page);
   await openMap065(page);
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
@@ -16,13 +18,13 @@ test('canonical URL round-trips partial state and supports Back, Forward, reload
   expect(new URL(page.url()).searchParams.has('layers')).toBe(false);
 
   await map065Layer(page, 'Peligros/Alertas').uncheck();
-  await expect.poll(() => new URL(page.url()).searchParams.get('layers')).toBe(
-    'character,location,region,mission',
-  );
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('layers'))
+    .toBe('character,location,region,mission');
   await map065Layer(page, 'Regiones').uncheck();
-  await expect.poll(() => new URL(page.url()).searchParams.get('layers')).toBe(
-    'character,location,mission',
-  );
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('layers'))
+    .toBe('character,location,mission');
 
   await page.goBack();
   await expect(map065Layer(page, 'Regiones')).toBeChecked();
@@ -50,16 +52,24 @@ test('canonical URL round-trips partial state and supports Back, Forward, reload
   await expect(page.locator('[data-map-layers-summary]')).toHaveText('Capas · 5/5');
 });
 
-test('keeps layer state through degraded snapshot mode and recovery without duplicate remote entities', async ({ page }) => {
+test('keeps layer state through degraded snapshot mode and recovery without duplicate remote entities', async ({
+  page,
+}) => {
   const backend = await configureMap065Backend(page, 'offline');
   await openMap065(page, '/?layers=character');
-  await expect(page.locator('[data-backend-status]')).toHaveAttribute('data-backend-state', 'degraded');
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'degraded',
+  );
   await expect(map065Layer(page, 'Personajes')).toBeChecked();
   await expect(map065Layer(page, 'Emplazamientos puntuales')).not.toBeChecked();
 
   backend.setMode('success');
   await page.locator('[data-backend-status]').getByRole('button', { name: 'Reintentar' }).click();
-  await expect(page.locator('[data-backend-status]')).toHaveAttribute('data-backend-state', 'connected');
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'connected',
+  );
   await expect(map065Layer(page, 'Personajes')).toBeChecked();
   await expect(map065Layer(page, 'Emplazamientos puntuales')).not.toBeChecked();
   await expect(map065Pin(page, MAP065_IDS.character)).toHaveCount(1);
@@ -69,7 +79,9 @@ test('keeps layer state through degraded snapshot mode and recovery without dupl
 });
 
 for (const width of [320, 390, 430]) {
-  test(`layer panel stays keyboard-usable without horizontal overflow at ${width}px`, async ({ page }) => {
+  test(`layer panel stays keyboard-usable without horizontal overflow at ${width}px`, async ({
+    page,
+  }) => {
     await configureMap065Backend(page);
     await page.setViewportSize({ width, height: 844 });
     await openMap065(page);
@@ -82,7 +94,9 @@ for (const width of [320, 390, 430]) {
     await expect(mission).not.toBeChecked();
     await expect(mission).toBeFocused();
     await expect(page.locator('[data-map-layers]')).toHaveAttribute('open', '');
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
   });
 }
 

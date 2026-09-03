@@ -257,7 +257,9 @@ export function mountPlaceSearch(
   };
 
   const publishQueryChange = (): void => options.onQueryChange?.(query);
-  const filterVisibleResults = (results: readonly AtlasSearchResult[]): readonly AtlasSearchResult[] =>
+  const filterVisibleResults = (
+    results: readonly AtlasSearchResult[],
+  ): readonly AtlasSearchResult[] =>
     options.isResultVisible ? results.filter(options.isResultVisible) : results;
 
   const getVisibleSuggestions = (): readonly AtlasSearchResult[] =>

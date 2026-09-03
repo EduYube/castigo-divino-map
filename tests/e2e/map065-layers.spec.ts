@@ -18,7 +18,13 @@ test('all five layers default on and toggle independently', async ({ page }) => 
   await openMap065Layers(page);
 
   await expect(page.locator('[data-map-layers-summary]')).toHaveText('Capas · 5/5');
-  for (const name of ['Personajes', 'Emplazamientos puntuales', 'Regiones', 'Misiones', 'Peligros/Alertas']) {
+  for (const name of [
+    'Personajes',
+    'Emplazamientos puntuales',
+    'Regiones',
+    'Misiones',
+    'Peligros/Alertas',
+  ]) {
     await expect(map065Layer(page, name)).toBeChecked();
   }
 
@@ -57,7 +63,9 @@ test('all five layers default on and toggle independently', async ({ page }) => 
   await expect(map065Pin(page, MAP065_IDS.hazard)).toHaveCount(1);
 });
 
-test('reclusters a character plus mission pair before rendering and restores it exactly', async ({ page }) => {
+test('reclusters a character plus mission pair before rendering and restores it exactly', async ({
+  page,
+}) => {
   await openMap065(page);
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
   await openMap065Layers(page);
@@ -94,7 +102,9 @@ test('keeps filters and search while a layer temporarily yields zero results', a
   await expect(search).toHaveValue('Misión completada MAP065');
   await expect(page.locator('[data-place-filters-status]')).toContainText('Ningún resultado');
   await expect(page.locator(`[data-search-result-id="${MAP065_IDS.mission}"]`)).toHaveCount(0);
-  await expect(page.locator('[data-place-search-status]')).toContainText('No hay resultados visibles');
+  await expect(page.locator('[data-place-search-status]')).toContainText(
+    'No hay resultados visibles',
+  );
 
   await map065Layer(page, 'Misiones').check();
   await expect(missionTag).toBeChecked();

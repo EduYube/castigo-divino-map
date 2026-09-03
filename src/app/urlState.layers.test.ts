@@ -18,7 +18,10 @@ const baseState = {
 
 describe('MAP-065 public layer URL state', () => {
   it('keeps legacy and all-on URLs free of redundant layer parameters', () => {
-    const parsed = parsePublicAppUrlState(campaignCatalog, new URL('https://atlas.test/?campaign=main'));
+    const parsed = parsePublicAppUrlState(
+      campaignCatalog,
+      new URL('https://atlas.test/?campaign=main'),
+    );
 
     expect(parsed.state.activeLayerIds).toEqual(MAP_LAYER_IDS);
     expect(parsed.canonicalUrl.searchParams.has('layers')).toBe(false);
@@ -41,11 +44,10 @@ describe('MAP-065 public layer URL state', () => {
   });
 
   it('represents all-off explicitly', () => {
-    const url = createCanonicalPublicAppUrl(
-      campaignCatalog,
-      new URL('https://atlas.test/'),
-      { ...baseState, activeLayerIds: [] },
-    );
+    const url = createCanonicalPublicAppUrl(campaignCatalog, new URL('https://atlas.test/'), {
+      ...baseState,
+      activeLayerIds: [],
+    });
 
     expect(url.searchParams.get('layers')).toBe('none');
     expect(parsePublicAppUrlState(campaignCatalog, url).state.activeLayerIds).toEqual([]);

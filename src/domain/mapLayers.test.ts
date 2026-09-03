@@ -16,7 +16,8 @@ function entity(
     id: `entity-${entityType}`,
     slug: entityType,
     entityType,
-    lifecycleStatus: entityType === 'mission' ? 'completed' : entityType === 'hazard' ? 'resolved' : null,
+    lifecycleStatus:
+      entityType === 'mission' ? 'completed' : entityType === 'hazard' ? 'resolved' : null,
     visibility: 'pin',
     name: entityType,
     nameLanguage: 'en',
@@ -30,7 +31,11 @@ function entity(
   };
 }
 
-function marker(id: string, entityType: AtlasPinMarkerModel['entityType'], polygon = false): AtlasPinMarkerModel {
+function marker(
+  id: string,
+  entityType: AtlasPinMarkerModel['entityType'],
+  polygon = false,
+): AtlasPinMarkerModel {
   return {
     id,
     entityId: `entity-${id}`,
@@ -38,11 +43,19 @@ function marker(id: string, entityType: AtlasPinMarkerModel['entityType'], polyg
     name: id,
     coordinate: [10, 10],
     entityType,
-    lifecycleStatus: entityType === 'mission' ? 'completed' : entityType === 'hazard' ? 'resolved' : null,
+    lifecycleStatus:
+      entityType === 'mission' ? 'completed' : entityType === 'hazard' ? 'resolved' : null,
     portraitPath: null,
     dispositions: [],
     mapPresentation: polygon
-      ? { kind: 'polygon', vertices: [[10, 10], [11, 10], [10, 11]] }
+      ? {
+          kind: 'polygon',
+          vertices: [
+            [10, 10],
+            [11, 10],
+            [10, 11],
+          ],
+        }
       : { kind: 'point' },
   } as AtlasPinMarkerModel;
 }
@@ -51,7 +64,11 @@ describe('MAP-065 map layer domain', () => {
   it('classifies polygon locations as regions without changing persistent entity type', () => {
     const region = entity('location', {
       kind: 'polygon',
-      vertices: [{ x: 10, y: 10 }, { x: 11, y: 10 }, { x: 10, y: 11 }],
+      vertices: [
+        { x: 10, y: 10 },
+        { x: 11, y: 10 },
+        { x: 10, y: 11 },
+      ],
     });
     const location = entity('location', { kind: 'point', coordinates: { x: 10, y: 10 } });
 
@@ -60,8 +77,12 @@ describe('MAP-065 map layer domain', () => {
   });
 
   it('keeps lifecycle independent from mission and hazard layer membership', () => {
-    expect(getMapLayerForEntity(entity('mission', { kind: 'point', coordinates: { x: 1, y: 1 } }))).toBe('mission');
-    expect(getMapLayerForEntity(entity('hazard', { kind: 'point', coordinates: { x: 2, y: 2 } }))).toBe('hazard');
+    expect(
+      getMapLayerForEntity(entity('mission', { kind: 'point', coordinates: { x: 1, y: 1 } })),
+    ).toBe('mission');
+    expect(
+      getMapLayerForEntity(entity('hazard', { kind: 'point', coordinates: { x: 2, y: 2 } })),
+    ).toBe('hazard');
   });
 
   it('filters markers before clustering while leaving regions independent from point locations', () => {
