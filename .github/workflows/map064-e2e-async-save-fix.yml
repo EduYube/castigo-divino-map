@@ -1,0 +1,67 @@
+name: MAP064 async save E2E fix
+
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.head_ref == 'agent/map-064-mission-hazard-lifecycle'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/map-064-mission-hazard-lifecycle
+          fetch-depth: 0
+          token: ${{ github.token }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Make lifecycle save sequencing deterministic
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/e2e/admin-map-entities.spec.ts')
+          text = path.read_text()
+          old = """  await expect(page.getByLabel('Estado funcional')).toHaveValue('active');
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await page.getByLabel('Estado funcional').selectOption('resolved');
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  expect(backend.getEntity('entity-map064-bridge-hazard')).toMatchObject({
+"""
+          new = """  await expect(page.getByLabel('Estado funcional')).toHaveValue('active');
+  const beforeHazardPublish = backend.getSaveCount();
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect.poll(() => backend.getSaveCount()).toBe(beforeHazardPublish + 1);
+  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
+
+  await page.getByLabel('Estado funcional').selectOption('resolved');
+  const beforeHazardResolve = backend.getSaveCount();
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect.poll(() => backend.getSaveCount()).toBe(beforeHazardResolve + 1);
+  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
+  expect(backend.getEntity('entity-map064-bridge-hazard')).toMatchObject({
+"""
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one target block, found {text.count(old)}')
+          path.write_text(text.replace(old, new))
+          PY
+          rm .github/workflows/map064-e2e-async-save-fix.yml
+          npx prettier --write tests/e2e/admin-map-entities.spec.ts
+          npm run format:check
+          npm run lint
+          npm run test -- --run src/application/adminMapEntityController.test.ts src/domain/entityLifecycle.test.ts
+      - name: Commit fix
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/e2e/admin-map-entities.spec.ts .github/workflows/map064-e2e-async-save-fix.yml
+          git commit -m 'test(map-064): await lifecycle saves before follow-up edits'
+          git push origin HEAD:agent/map-064-mission-hazard-lifecycle
