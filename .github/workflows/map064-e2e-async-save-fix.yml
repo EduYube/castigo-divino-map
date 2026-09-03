@@ -1,28 +1,22 @@
 name: MAP064 async save E2E fix
 
 on:
-  pull_request:
-    branches: [master]
+  push:
+    branches:
+      - agent/map-064-mission-hazard-lifecycle
 
 permissions:
   contents: write
 
 jobs:
   integrate:
-    if: github.head_ref == 'agent/map-064-mission-hazard-lifecycle'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           ref: agent/map-064-mission-hazard-lifecycle
           fetch-depth: 0
-          token: ${{ github.token }}
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Make lifecycle save sequencing deterministic
+      - name: Apply deterministic save sequencing
         shell: bash
         run: |
           python - <<'PY'
@@ -48,16 +42,13 @@ jobs:
   await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
   expect(backend.getEntity('entity-map064-bridge-hazard')).toMatchObject({
 """
-          if text.count(old) != 1:
-              raise SystemExit(f'expected one target block, found {text.count(old)}')
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'expected one target block, found {count}')
           path.write_text(text.replace(old, new))
           PY
           rm .github/workflows/map064-e2e-async-save-fix.yml
-          npx prettier --write tests/e2e/admin-map-entities.spec.ts
-          npm run format:check
-          npm run lint
-          npm run test -- --run src/application/adminMapEntityController.test.ts src/domain/entityLifecycle.test.ts
-      - name: Commit fix
+      - name: Commit integrated fix
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
