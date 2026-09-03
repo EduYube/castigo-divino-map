@@ -8,6 +8,8 @@ MAP-066 es el gate transversal de v1.1. Parte del baseline estable v1.0, valida 
 
 Baseline fijado al comenzar: `9d71d845307481c646fd2c457e8249e94f963ba7` (master posterior a MAP-065). MAP-052→MAP-065 se consideran satisfechas únicamente cuando su issue está cerrada y su PR/follow-up está integrada en la historia de master. El gate de MAP-066 conserva como evidencia las suites acumuladas, no sustituye sus tests por una lista manual.
 
+Cadena de integración auditada en GitHub: MAP-052 `#163/#164`; MAP-053 `#165/#166/#168`; MAP-054 `#169/#170`; MAP-055 `#171`; MAP-056 `#172`; MAP-057 `#173`; MAP-058 `#174`; MAP-059 `#175`; MAP-060 `#176`; MAP-061 `#178/#179`; MAP-062 `#180/#181`; MAP-063 `#182/#183`; MAP-064 `#184`; MAP-065 `#185`. Los reemplazos operativos cerrados sin merge se conservan como historia; la revisión verifica el candidato finalmente integrado, no confunde una PR sustituta con una dependencia ausente.
+
 ## Rehearsal v1.0 → v1.1
 
 `npm run supabase:db:test:map066:upgrade` parte del último baseline SQL de v1.0 (`20260811213000`) mediante el fixture determinista de MAP-053, aplica en orden todas las migraciones posteriores del repositorio y comprueba el estado final de v1.1. El dataset incluye campaña inicial, entidades públicas/Máster, IDs/slugs, coordenadas, retrato/Storage path, categoría/tag/alias, roster/disposiciones, relaciones e historial, notas/tags de nota, solicitud moderada y `converted_entity_id`, además de timestamps históricos. MAP-066 añade comprobación explícita de geometría point derivada sin alterar X/Y, ausencia de duplicados y disponibilidad de los tipos v1.1. El resultado aceptable es cero pérdida, duplicación, regeneración de IDs/slugs o recreación manual.
@@ -15,6 +17,8 @@ Baseline fijado al comenzar: `9d71d845307481c646fd2c457e8249e94f963ba7` (master 
 ## Matriz multicampaña
 
 La fixture de E2E mantiene campañas A/B con contenido distinto. La suite completa cubre selector, pines, búsqueda, filtros, notas, relaciones, disposiciones, geografía global compartida, solicitudes A→A/B→B, negativas cross-campaign, URL/deep links, Back/Forward, reload y snapshot degradado. Las regresiones de Modo Máster cubren purga síncrona A→B y respuestas privadas obsoletas.
+
+Cobertura principal reutilizada como gate: `campaign-switcher.spec.ts`, `campaign-scope.spec.ts`, `campaign-master-mode.spec.ts`, `campaign-master-mode-stale-response.spec.ts`, `map061-master-status-purge.spec.ts`, `map063-public-player-notes.spec.ts`, `map064-master-isolation.spec.ts` y las suites MAP-065 de capas/URL/responsive. La CI ejecuta la suite E2E completa para impedir que una matriz documental sustituya comportamiento real.
 
 ## Seguridad
 
@@ -25,6 +29,10 @@ La autoría de notas públicas de jugador expresa una identidad declarada del ro
 ## Snapshot y degradación
 
 El snapshot público versionado sigue siendo fallback de solo lectura. La suite cubre backend disponible, lento/caído, recuperación, selector de campaña, capas/filtros/notas y ausencia de escrituras simuladas. Recuperar Supabase no debe cambiar la campaña seleccionada ni duplicar entidades. No existe snapshot privado persistente.
+
+## Accesibilidad y regresión visual
+
+La suite acumulada mantiene teclado, Enter/Espacio/Escape, foco, selects/combobox, spiderfy, regiones, formularios/live regions, zoom/reflow equivalente al 200 %, `forced-colors`, `prefers-reduced-motion` y targets táctiles. Los proyectos móviles ejercitan 320/390/430 px y WebKit donde el contrato histórico lo exige; las referencias PNG de MAP-033/MAP-037 y las capturas específicas posteriores se conservan como artifacts de CI.
 
 ## Rendimiento
 
