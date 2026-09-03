@@ -106,7 +106,7 @@ for (const width of [320, 390, 430]) {
   });
 }
 
-test('layer controls reflow and remain operable at the 200% zoom equivalent width', async ({
+test('layer controls reflow and remain operable at the 200% browser-zoom equivalent (320 CSS px)', async ({
   page,
 }) => {
   await configureMap065Backend(page);
