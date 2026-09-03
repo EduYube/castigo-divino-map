@@ -139,3 +139,7 @@ v1.0 solo se considera publicada cuando existe evidencia sobre el SHA final de `
 - #148 contiene el SHA y la evidencia final y queda cerrado como completado.
 
 La definición de la consolidación estable vive en [`map-052-release.md`](map-052-release.md). La evidencia histórica de Beta 0.2 permanece en [`map-030-release.md`](map-030-release.md).
+
+## Release v1.1 / MAP-066
+
+El release final exige CI verde del candidato, checkpoint humano, merge protegido por head SHA, CI verde de master, verificación remota del snapshot, Pages y smoke publicado sobre el mismo SHA. El rollback de frontend se realiza con una nueva PR de `git revert`. La base de datos usa exclusivamente correcciones forward-only: no se reescriben ni renombran migraciones ya aplicadas y no se ejecuta un rollback destructivo de esquema/datos.

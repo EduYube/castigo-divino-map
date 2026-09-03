@@ -402,3 +402,7 @@ Se mantienen en `docs/future-improvements.md`.
 - Configuración y secretos: <https://supabase.com/docs/guides/local-development/managing-config>
 - Backups: <https://supabase.com/docs/guides/platform/backups>
 - Edge Functions y rate limiting: <https://supabase.com/docs/guides/functions>
+
+## Extensión v1.1
+
+Sobre la arquitectura heredada de v1.0, v1.1 añade campaña como dimensión persistente, catálogo público particionado por campaña con geografía global compartida, catálogo Máster efímero scopeado en backend, geometría canónica `point | polygon`, tipos misión/peligro con lifecycle propio y capas de presentación no persistentes. El cambio de campaña purga primero estado privado y solo después carga el catálogo autorizado del nuevo scope.

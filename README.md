@@ -1,21 +1,23 @@
 # El Atlas de los Nuevos Dioses
 
-Aplicación web pública de la campaña **Castigo Divino** para explorar Faerûn mediante mapa interactivo, búsqueda, filtros, pines, fichas públicas y solicitudes de nuevos pines. La administración usa Supabase Auth y autorización PostgreSQL/RLS separada de la experiencia pública.
+Aplicación web pública de **El Atlas de los Nuevos Dioses** para explorar Faerûn mediante mapa interactivo, campañas, búsqueda, filtros, capas, pines/regiones, fichas públicas, notas y solicitudes. La administración usa Supabase Auth y autorización PostgreSQL/RLS separada de la experiencia pública.
 
-## v1.0
+## v1.1
 
 URL pública:
 
 `https://eduyube.github.io/castigo-divino-map/`
 
-**v1.0** consolida como estable el estado funcional actual del Atlas. Mantiene los contratos públicos y de compatibilidad construidos durante Beta 0.1 y Beta 0.2 —backend resiliente de Supabase, catálogo persistente, administración autenticada, entidades `character`/`location`, búsqueda geográfica, sistema visual de pines, fichas compactas y completas, controles responsive, solicitudes públicas y moderación administrativa— sin reinterpretar datos ni introducir una feature nueva por el cambio de versión.
+**v1.1 (1.1.0)** consolida el trabajo de MAP-053 a MAP-065 sobre el baseline v1.0. Añade dominio multicampaña, selector y aislamiento por campaña, roster/asociaciones/disposiciones, clustering y spiderfy, geometría persistente y regiones, ficha desktop bajo el mapa, notas públicas con autoría declarada, misiones/peligros con lifecycle y control de capas.
 
-El frontend es estático y se publica con GitHub Pages. El catálogo público se lee mediante la Data API de Supabase usando únicamente la URL del proyecto y una clave `sb_publishable_*`; si Supabase no responde, la aplicación conserva una instantánea pública versionada y entra en modo degradado.
+MAP-066 es el gate de publicación: ensaya de forma reproducible la migración completa v1.0→v1.1 sin recreación manual, revalida seguridad/Modo Máster/multicampaña, ejecuta la regresión funcional y accesible acumulada, verifica versionado y mantiene rollback frontend + correcciones de DB forward-only.
+
+El frontend es estático y se publica con GitHub Pages. El catálogo público se lee mediante la Data API de Supabase usando únicamente la URL del proyecto y una clave `sb_publishable_*`; si Supabase no responde, la aplicación conserva una instantánea pública versionada y entra en modo degradado de solo lectura.
 
 Documentación principal:
 
 - [`docs/project-status.md`](docs/project-status.md)
-- [`docs/map-052-release.md`](docs/map-052-release.md)
+- [`docs/map-066-release.md`](docs/map-066-release.md)
 - [`docs/deployment-and-rollback.md`](docs/deployment-and-rollback.md)
 - [`docs/architecture.md`](docs/architecture.md)
 - [`docs/security.md`](docs/security.md)
@@ -23,7 +25,7 @@ Documentación principal:
 - [`docs/admin-auth.md`](docs/admin-auth.md)
 - [`docs/public-pin-requests.md`](docs/public-pin-requests.md)
 
-La evidencia histórica de Beta 0.2 permanece en [`docs/map-030-release.md`](docs/map-030-release.md) y los documentos/fixtures/migraciones con nombres Beta conservan su nomenclatura cuando forma parte de un contrato o de la historia del proyecto.
+La definición histórica de v1.0 permanece en [`docs/map-052-release.md`](docs/map-052-release.md), la evidencia de Beta 0.2 en [`docs/map-030-release.md`](docs/map-030-release.md), y los documentos/fixtures/migraciones con nombres Beta conservan su nomenclatura cuando forma parte de un contrato o de la historia del proyecto.
 
 ## Requisitos
 
@@ -48,6 +50,8 @@ npm run build
 npm run preview
 ```
 
+Los builds ejecutan `npm run verify:release-version`, que exige coherencia entre `package.json`, `package-lock.json`, UI, smoke de Pages y estado documental.
+
 ## GitHub Pages
 
 El modo `pages` deriva el nombre del repositorio y usa `/castigo-divino-map/` como base:
@@ -62,13 +66,18 @@ npm run test:e2e:pages
 
 ## Datos públicos y Supabase
 
-El contrato estable de v1.0 separa:
+El contrato estable de v1.1 separa:
 
-- catálogo público publicado;
+- campaña y catálogo público por campaña;
+- geografía física global compartida;
 - estado editorial `draft | published | archived`;
-- sesión administrativa autenticada;
+- audiencia `public | master`;
+- sesión administrativa autenticada y Modo Máster efímero;
 - solicitudes públicas privadas para visitantes;
-- snapshot público degradable.
+- notas públicas de jugador mediante RPC cerrada;
+- snapshot público degradable de solo lectura.
+
+La autoría de una nota pública de jugador identifica un personaje del roster declarado para la campaña, pero no equivale a un login criptográficamente verificado del jugador.
 
 El navegador no usa credenciales privilegiadas. `service_role`, `sb_secret_*`, tokens de gestión, contraseñas de base de datos y connection strings con password están prohibidos en código, build, logs y artefactos.
 
@@ -92,13 +101,15 @@ La aplicación conserva el pathname de Pages y serializa estado mediante query s
 
 | Parámetro | Ejemplo | Significado |
 |---|---|---|
+| `campaign` | `campaign=castigo-divino` | campaña activa; la URL legacy sin parámetro sigue resolviendo la campaña inicial |
 | `place` | `place=paso-de-demostracion` | lugar activo compatible con Beta 0.1 |
 | `q` | `q=paso` | búsqueda pública |
 | `category` | `category=lugares-destacados` | categoría repetible |
 | `tag` | `tag=mountain-pass` | etiqueta repetible |
+| `layers` | valor parcial canónico | capas visibles; se omite cuando todas están activas |
 | `entity` | `entity=paso-de-demostracion` | ficha pública completa independiente |
 
-No se requiere router de servidor ni reescritura de rutas.
+No se requiere router de servidor ni reescritura de rutas. Back/Forward y reload conservan el estado público canónico.
 
 ## Mapa remoto
 
@@ -106,7 +117,7 @@ La imagen cartográfica se solicita exclusivamente a la fuente oficial remota:
 
 `https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg`
 
-El JPEG oficial no se almacena ni transforma en el repositorio, build, artefactos, releases o CDN propio. Si falla, la aplicación conserva controles, pines, fichas, búsqueda, filtros y avisos legales sobre una superficie degradada.
+El JPEG oficial no se almacena ni transforma en el repositorio, build, artefactos, releases o CDN propio. Si falla, la aplicación conserva controles, pines/regiones, fichas, búsqueda, filtros/capas y avisos legales sobre una superficie degradada.
 
 ## Calidad
 
@@ -125,9 +136,10 @@ npm run test:e2e
 npm run test:e2e:pages
 ```
 
-La validación de base de datos reconstruye Supabase local, aplica migraciones desde cero, ejecuta lint SQL, pgTAP/RLS y pruebas de concurrencia:
+La validación de base de datos reconstruye Supabase local, parte también de baselines históricos, aplica migraciones, ejecuta lint SQL, pgTAP/RLS, Storage HTTP y concurrencia. MAP-066 incorpora el rehearsal transversal v1.0→v1.1:
 
 ```bash
+npm run supabase:db:test:map066:upgrade
 npm run supabase:db:validate
 ```
 
@@ -135,8 +147,8 @@ npm run supabase:db:validate
 
 `.github/workflows/ci.yml` valida cada PR hacia `master` y cada push a `master`. Tiene dos jobs obligatorios:
 
-- **Build, quality and tests**: formato, credenciales, accesibilidad, lint, unitarios, build Pages, auditoría, métricas, E2E y smoke local;
-- **Supabase migrations, lint and RLS tests**: rebuild, migraciones, lint, pgTAP y concurrencia.
+- **Build, quality and tests**: formato, credenciales, accesibilidad, lint, unitarios, versionado, snapshot, TypeScript/build Pages, auditoría, métricas, E2E y smoke local;
+- **Supabase migrations, lint and RLS tests**: rebuild, rehearsals, migraciones, lint, pgTAP/RLS, Storage y concurrencia.
 
 `.github/workflows/pages.yml` solo despliega automáticamente después de una CI verde sobre `master`. El workflow:
 
@@ -161,9 +173,9 @@ El rollback no reescribe `master` ni borra datos de producción. Ante una regres
 5. fusionar y dejar que CI + Pages desplieguen el revert;
 6. verificar `github-pages/deployment` y el smoke publicado.
 
-Las migraciones son forward-only. Si frontend y base quedan desalineados, se prioriza desplegar un frontend compatible o una migración correctiva hacia delante. Los datos Beta 0.1 migrados disponen de rollback lógico por archivado, no de borrado físico.
+Las migraciones de base de datos son forward-only. No se renombran ni reescriben migraciones históricas ya aplicadas para alinear timestamps remotos. Si frontend y base quedan desalineados, se prioriza desplegar un frontend compatible o una migración correctiva nueva hacia delante que preserve datos e identidades.
 
-Consulta [`docs/deployment-and-rollback.md`](docs/deployment-and-rollback.md) para el procedimiento coordinado, [`docs/map-052-release.md`](docs/map-052-release.md) para el baseline estable v1.0 y [`docs/map-030-release.md`](docs/map-030-release.md) para la evidencia histórica de Beta 0.2.
+Consulta [`docs/deployment-and-rollback.md`](docs/deployment-and-rollback.md) para el procedimiento coordinado, [`docs/map-066-release.md`](docs/map-066-release.md) para v1.1, [`docs/map-052-release.md`](docs/map-052-release.md) para el baseline histórico v1.0 y [`docs/map-030-release.md`](docs/map-030-release.md) para la evidencia histórica de Beta 0.2.
 
 ## Licencia y contenido de fans
 
