@@ -89,6 +89,29 @@
   outline-offset: 3px;
 }
 
+@media (max-width: 48rem) {
+  .map-experience > .map-layers {
+    order: 4;
+    grid-column: 1 / -1;
+    justify-self: end;
+    width: auto;
+    max-width: calc(100% - 0.5rem);
+    margin: 0 0.25rem -2.875rem 0;
+    z-index: 4;
+  }
+
+  .map-experience > .map-layers[open] {
+    justify-self: stretch;
+    width: auto;
+    max-width: none;
+    margin: 0;
+  }
+
+  .map-layers__summary {
+    white-space: nowrap;
+  }
+}
+
 @media (max-width: 30rem) {
   .map-layers__options {
     grid-template-columns: 1fr;
