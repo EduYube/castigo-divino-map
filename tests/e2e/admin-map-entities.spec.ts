@@ -600,6 +600,21 @@ test('anonymous visitors never receive administrative entity controls', async ({
   await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeHidden();
 });
 
+test('an authorized administrator can open entity administration and preserves draft references', async ({
+  page,
+}) => {
+  await configureBackend(page);
+  await page.goto('/');
+  await loginAndConnect(page);
+
+  await expect(page.getByRole('heading', { name: 'Personajes y emplazamientos' })).toBeVisible();
+  await expect(page.getByText('Aster Guide', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Editar Aster Guide' }).click();
+  await expect(page.getByLabel('Categoría', { exact: true })).toHaveValue('category-people');
+  await expect(page.getByLabel(/Notable · published/)).toBeChecked();
+  await expect(page.getByLabel(/Draft tag · draft/)).toBeDisabled();
+});
+
 test('an administrator can select and drag a CRS.Simple point, preview it, save a draft and reload it', async ({
   page,
 }) => {
@@ -1047,8 +1062,15 @@ test('MAP-064 mission and hazard lifecycle remains independent from publication'
   await page.getByLabel('Coordenada Y').fill('1010');
   await expect(page.getByLabel('Estado funcional')).toHaveValue('active');
   await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect
+    .poll(() => backend.getEntity('entity-map064-bridge-hazard')?.lifecycle_status)
+    .toBe('active');
+  await expect(page.locator('.admin-map-entity__editor')).toHaveAttribute('aria-busy', 'false');
   await page.getByLabel('Estado funcional').selectOption('resolved');
   await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect
+    .poll(() => backend.getEntity('entity-map064-bridge-hazard')?.lifecycle_status)
+    .toBe('resolved');
   expect(backend.getEntity('entity-map064-bridge-hazard')).toMatchObject({
     id: 'entity-map064-bridge-hazard',
     slug: 'map064-bridge-hazard',
