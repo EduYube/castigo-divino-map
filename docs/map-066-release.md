@@ -44,6 +44,8 @@ Se comparan las métricas reproducibles de `npm run report:build` con el baselin
 - badge visible: **v1.1**;
 - `npm run verify:release-version` impide divergencia entre package, lockfile, UI, smoke y estado documental.
 
+Los scripts nuevos del gate se normalizan con la versión de Prettier fijada por el propio lockfile antes de considerar una CI candidata.
+
 ## Deploy y rollback
 
 El frontend se integra mediante PR normal y Pages despliega únicamente el SHA de master cuya CI termina verde. Un rollback de frontend usa `git revert` en una nueva PR; no se reescribe master. Las migraciones de base de datos ya aplicadas nunca se revierten ni se renombran: cualquier corrección de DB se realiza con una nueva migración forward-only. MAP-066 no debe volver a empujar migraciones históricas cuyo timestamp remoto difiera del nombre local; se compara por cambio ya desplegado y se añade una nueva migración solo si existe un delta real.
