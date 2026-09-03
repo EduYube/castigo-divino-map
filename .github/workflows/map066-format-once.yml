@@ -1,0 +1,44 @@
+name: MAP-066 format release scripts once
+
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.head_ref == 'agent/map-066-v1-1-release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: agent/map-066-v1-1-release
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format MAP-066 scripts
+        run: npx prettier --write scripts/verify-release-version.mjs scripts/test-map066-v1-v1-rehearsal.mjs
+
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/map066-format-once.yml
+
+      - name: Commit normalized files
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'style(MAP-066): apply pinned Prettier output'
+          git push origin HEAD:agent/map-066-v1-1-release
