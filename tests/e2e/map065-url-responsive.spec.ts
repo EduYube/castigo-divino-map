@@ -84,6 +84,46 @@ test('keeps layer state through degraded snapshot mode and recovery without dupl
   await expect(page.locator(`[data-pin-id="${MAP065_IDS.character}"]`)).toHaveCount(1);
 });
 
+test('keeps layer state while details open and close and while the map expands and restores', async ({
+  page,
+}) => {
+  await configureMap065Backend(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openMap065(page);
+  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+  await openMap065Layers(page);
+
+  const missionLayer = map065Layer(page, 'Misiones');
+  await missionLayer.uncheck();
+  await expect(missionLayer).not.toBeChecked();
+  await expect(map065Pin(page, MAP065_IDS.mission)).toHaveCount(0);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('layers'))
+    .toBe('character,location,region,hazard');
+
+  await map065Pin(page, MAP065_IDS.location).click();
+  const details = page.getByTestId('place-details');
+  await expect(details).toBeVisible();
+  await details.getByRole('button', { name: /Cerrar la ficha de Emplazamiento MAP065/i }).click();
+  await expect(details).toBeHidden();
+  await expect(missionLayer).not.toBeChecked();
+  await expect(map065Pin(page, MAP065_IDS.mission)).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Expandir mapa' }).click();
+  await expect(page.locator('.map-experience')).toHaveAttribute('data-map-expanded', 'true');
+  await expect(missionLayer).not.toBeChecked();
+  await expect(map065Pin(page, MAP065_IDS.mission)).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Restaurar tamaño del mapa' }).click();
+  await expect(page.locator('.map-experience')).toHaveAttribute('data-map-expanded', 'false');
+  await openMap065Layers(page);
+  await expect(missionLayer).not.toBeChecked();
+  await expect(map065Pin(page, MAP065_IDS.mission)).toHaveCount(0);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('layers'))
+    .toBe('character,location,region,hazard');
+});
+
 for (const width of [320, 390, 430]) {
   test(`layer panel stays keyboard-usable without horizontal overflow at ${width}px`, async ({
     page,
