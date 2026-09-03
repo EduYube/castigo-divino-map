@@ -32,8 +32,8 @@ jobs:
           old_heading = "getByRole('heading', { name: 'Personajes y emplazamientos' })"
           new_heading = "getByRole('heading', { name: 'Entidades del mapa' })"
           heading_count = text.count(old_heading)
-          if heading_count != 2:
-              raise SystemExit(f'expected 2 legacy heading assertions, found {heading_count}')
+          if heading_count != 3:
+              raise SystemExit(f'expected 3 legacy heading assertions, found {heading_count}')
           text = text.replace(old_heading, new_heading)
 
           old_coords = "  await page.getByLabel('Coordenada X').fill('1490');\n  await page.getByLabel('Coordenada Y').fill('1010');"
