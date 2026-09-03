@@ -4,62 +4,62 @@
 
 - Proyecto: **El Atlas de los Nuevos Dioses**.
 - Repositorio: `EduYube/castigo-divino-map`.
-- Versión estable actual: **v1.0** (`1.0.0`).
+- Versión estable objetivo de esta rama de release: **v1.1** (`1.1.0`).
 - URL pública: `https://eduyube.github.io/castigo-divino-map/`.
-- Release de consolidación: **MAP-052 / #148**.
-- Baseline funcional promovido: estado de `master` posterior a MAP-051, sin nuevas funcionalidades ni reinterpretación de datos.
-- Última actualización documental: **2026-08-25**.
+- Release gate: **MAP-066 / #162**.
+- Baseline preservado: v1.0, consolidada por **MAP-052 / #148**.
+- Baseline técnico de MAP-066: `master` posterior a MAP-065 (`9d71d845307481c646fd2c457e8249e94f963ba7`).
+- Última actualización documental: **2026-09-03**.
 
-La evidencia final dependiente del SHA —CI de `master`, workflow de Pages, smoke publicado y estado `github-pages/deployment`— se registra en #148 después del merge. No se incrusta el SHA final en este documento porque cualquier commit destinado únicamente a escribir ese SHA produciría un SHA distinto y volvería a disparar el ciclo de release.
+MAP-066 no se considera publicada hasta superar rehearsal v1.0→v1.1, CI, seguridad, checkpoint humano, merge, CI de `master`, Pages y smoke contra la URL realmente publicada. El SHA final y la evidencia operativa quedan registrados en GitHub (#162/#186) para no crear un commit circular dedicado únicamente a escribir su propio SHA.
 
-## Qué significa v1.0
+## Qué aporta v1.1
 
-v1.0 cierra formalmente la etapa Beta y convierte el producto existente en el baseline estable que deberán preservar las evoluciones v1.1. MAP-052 es una promoción de versión y documentación: no añade capacidades de producto.
+v1.1 consolida como release estable el trabajo de MAP-053 a MAP-065 sobre el baseline v1.0. Entre las capacidades nuevas ya integradas en el baseline de MAP-066 están:
 
-El baseline estable conserva, entre otras, estas capacidades ya publicadas:
+- dominio persistente multicampaña y campaña inicial compatible con v1.0;
+- administración y selector público de campaña con URL/deep links y navegación histórica;
+- aislamiento de runtime, solicitudes, catálogo y Modo Máster por campaña;
+- roster de personajes jugadores, disposiciones comprensibles y asociaciones narrativas explícitas;
+- clustering de proximidad y spiderfy accesible;
+- geometría persistente `point | polygon`, edición y render de regiones transparentes;
+- ficha compacta bajo el mapa en escritorio, manteniendo bottom sheet móvil;
+- notas públicas de jugadores con autoría declarada y moderación administrativa;
+- tipos `mission` y `hazard` con lifecycle propio;
+- control independiente de capas para personajes, emplazamientos puntuales, regiones, misiones y peligros.
 
-- mapa oficial remoto de Faerûn;
-- búsqueda por geografía, entidades, aliases y notas públicas;
-- filtros y navegación mediante URL/historial;
-- pines de personajes y emplazamientos, incluidos grupos en coordenadas coincidentes;
-- fichas compactas y fichas públicas completas;
-- retratos públicos cuando existen;
-- controles responsive y accesibilidad de teclado;
-- solicitudes públicas de nuevos pines;
-- administración autenticada y Modo Máster conforme a los permisos existentes;
-- catálogo persistente en Supabase;
-- snapshot público versionado y modo degradado cuando Supabase no responde;
-- recuperación explícita mediante retry.
+La geografía física sigue siendo global y compartida entre campañas. La autorización sigue siendo responsabilidad de PostgreSQL/RLS y de las RPC cerradas; la UI nunca concede permisos.
 
-## Compatibilidad y datos
+## Compatibilidad y migración desde v1.0
 
-MAP-052 no modifica ni recrea datos. En particular, permanecen intactos:
+El release gate ejecuta `npm run supabase:db:test:map066:upgrade`, que parte del último baseline SQL exacto de v1.0 (`20260811213000`), carga un dataset representativo previo al dominio multicampaña y aplica ordenadamente todas las migraciones posteriores.
 
-- IDs y slugs;
-- entidades, personajes y emplazamientos;
-- coordenadas y retratos;
-- categorías, etiquetas y aliases;
-- relaciones y notas;
-- disposiciones por jugador y audiencia `public`/`master`;
-- estados editoriales y solicitudes públicas;
-- `converted_entity_id` y demás referencias existentes;
-- rutas de Storage;
-- URLs públicas;
-- contenido funcional de `public/data/public-catalog.snapshot.json`.
+La comparación exige preservar sin recreación manual:
 
-No existe migración de base de datos para MAP-052 y no se ejecuta un seed de producción. El cambio de nombre de la release no requiere DDL, cambios de Auth, RLS, grants, policies ni Storage.
+- campaña inicial, entidades, IDs y slugs;
+- coordenadas y geometría derivada;
+- retratos y referencias Storage;
+- categorías, tags y aliases;
+- jugadores, disposiciones y asociaciones;
+- relaciones personaje-localización e historial/acontecimientos;
+- notas y tags de notas;
+- audiencia pública/Máster y estados editoriales;
+- solicitudes y `converted_entity_id`;
+- timestamps históricos relevantes.
+
+Las relaciones cross-campaign se bloquean en PostgreSQL. No se renombran ni reescriben migraciones históricas ya aplicadas; cualquier corrección de base de datos posterior es forward-only.
 
 ## Versionado
 
-La fuente canónica de versión de la aplicación es `package.json`, que declara `1.0.0`.
+La fuente canónica de versión es `package.json`, que declara `1.1.0`.
 
-La UI pública presenta `v1.0` en el badge y en el encabezado del mapa. El smoke de Pages verifica explícitamente esa identificación tanto en la experiencia normal como en los escenarios degradados.
+La UI pública presenta `v1.1` en badge y encabezado. `package-lock.json` mantiene la misma versión del paquete raíz y `npm run verify:release-version` comprueba que package, lockfile, UI, smoke de Pages y este estado documental no diverjan. Tanto el build normal como el build de Pages ejecutan ese gate.
 
-Los identificadores históricos o de compatibilidad que contienen `beta01`/`beta02` se preservan cuando forman parte de nombres de migraciones, fixtures, pruebas, contratos de datos o evidencia pasada. No se renombran porque hacerlo reescribiría historia o cambiaría el significado de contratos heredados.
+Los identificadores históricos o de compatibilidad que contienen `beta01`/`beta02` se preservan cuando forman parte de migraciones, fixtures, pruebas, contratos de datos o evidencia pasada.
 
 ## Calidad y release gate
 
-La validación ordinaria del repositorio sigue siendo la fuente de verdad:
+La validación ordinaria del repositorio sigue siendo la fuente de verdad y MAP-066 añade el rehearsal transversal/versionado sin relajar gates existentes:
 
 - `format:check`;
 - auditoría de credenciales versionadas;
@@ -67,39 +67,43 @@ La validación ordinaria del repositorio sigue siendo la fuente de verdad:
 - lint;
 - unit tests;
 - verificación del snapshot público;
-- build de GitHub Pages;
-- auditoría del artefacto;
-- métricas de build;
-- E2E completos;
+- TypeScript y build de GitHub Pages;
+- auditoría del artefacto y métricas de build;
+- E2E completos en los navegadores/proyectos configurados;
 - smoke local de Pages;
-- reconstrucción, lint, pgTAP/RLS y concurrencia de Supabase local.
+- reconstrucción y rehearsals históricos de Supabase;
+- `db lint --fail-on warning`;
+- pgTAP/RLS y negativas de autorización;
+- Storage HTTP y pruebas de concurrencia.
 
-Tras el merge, `.github/workflows/pages.yml` solo despliega el SHA de `master` cuya CI terminó correctamente. El workflow vuelve a verificar el snapshot contra Supabase, reconstruye el artefacto, hace smoke local, despliega Pages, ejecuta smoke contra la URL publicada y registra `github-pages/deployment` sobre el SHA desplegado.
+Tras el merge, `.github/workflows/pages.yml` despliega únicamente el SHA de `master` cuya CI terminó correctamente. El workflow vuelve a verificar el snapshot contra Supabase, reconstruye/audita el artefacto, hace smoke local, despliega Pages, ejecuta smoke contra la URL publicada y registra `github-pages/deployment` sobre el SHA desplegado.
 
-## Historial Beta preservado
+## Seguridad v1.1
 
-Beta 0.1 y Beta 0.2 siguen existiendo como releases históricas y como origen de contratos de compatibilidad. No se reescriben sus issues, PRs, migraciones, fixtures ni documentos de evidencia.
+MAP-066 revalida anon, authenticated no-admin y admin; campañas A/B; catálogo público y catálogo Máster efímero; snapshot/artifact; Storage de retratos; logout/expiración/401/403; y escritura pública de notas.
 
-La evidencia técnica de Beta 0.2 se conserva íntegramente en [`map-030-release.md`](map-030-release.md). MAP-030 / #49 está cerrado como completado; las referencias históricas a sus SHA, runs, migraciones y decisiones siguen siendo válidas para ese release.
+En una transición de campaña con Modo Máster ON, el contenido privado de A debe purgarse de memoria, DOM, búsqueda y fichas antes de solicitar/adoptar B. Una respuesta privada obsoleta nunca puede reintroducir A. No existe snapshot privado persistente.
 
-La arquitectura aprobada durante Beta 0.2 se mantiene documentada en [`architecture.md`](architecture.md) con su título y contexto originales. Del mismo modo, [`product-scope.md`](product-scope.md) continúa describiendo el alcance histórico de Beta 0.1.
+La autoría pública de jugador es una identidad declarada del roster de la campaña, no un login criptográficamente verificado del jugador. La RPC cerrada valida campaña/autor y mantiene fuera del alcance anónimo cualquier identidad de Máster.
 
-## Evidencia de v1.0
+## Snapshot y modo degradado
 
-La definición del release y la separación entre cambios actuales e historia Beta están en [`map-052-release.md`](map-052-release.md).
+El snapshot público versionado es un fallback de solo lectura. Conserva campañas públicas, geografía global, entidades/regiones/misiones/peligros públicos, notas, filtros y capas. Una escritura no se presenta como exitosa cuando el backend está offline.
 
-La evidencia final verificable del lanzamiento —PR, SHA final de `master`, CI, Pages, smoke publicado y cierre— queda registrada en #148 una vez completado el despliegue. Ese registro es el cierre operativo de MAP-052.
+La recuperación de Supabase mantiene la campaña seleccionada, no duplica entidades y no reutiliza secretos de la campaña anterior si la carga Máster de la nueva campaña falla temporalmente.
+
+## Historial v1.0 y Beta preservado
+
+v1.0 sigue siendo el baseline histórico estable desde el que se migra. Su definición de release se conserva en [`map-052-release.md`](map-052-release.md) y su cierre operativo en #148. MAP-052 no recreó datos ni añadió migraciones; promovió el estado posterior a MAP-051 como baseline estable.
+
+Beta 0.1 y Beta 0.2 continúan como releases históricas y origen de contratos de compatibilidad. No se reescriben sus issues, PRs, migraciones, fixtures ni documentos de evidencia. La evidencia técnica de Beta 0.2 permanece en [`map-030-release.md`](map-030-release.md) y [`product-scope.md`](product-scope.md) conserva el alcance histórico de Beta 0.1.
 
 ## Rollback
 
-MAP-052 no añade migraciones, por lo que una regresión introducida por el cambio de release puede retirarse mediante una PR de `git revert`, seguida de la CI y Pages normales. No se usa force-push ni se reescribe `master`.
+Una regresión de frontend de v1.1 se retira mediante una nueva PR de `git revert`, seguida de CI y Pages normales. No se hace force-push ni se reescribe `master`.
 
-El procedimiento operativo completo está en [`deployment-and-rollback.md`](deployment-and-rollback.md).
+La base de datos no usa migraciones inversas destructivas para volver a v1.0. Si una migración v1.1 desplegada requiere corrección, se crea una migración nueva forward-only que preserve datos e identidades. El procedimiento operativo completo está en [`deployment-and-rollback.md`](deployment-and-rollback.md) y el contrato específico de release en [`map-066-release.md`](map-066-release.md).
 
 ## Riesgos residuales
 
-MAP-052 no acepta deuda funcional nueva ni modifica el perfil de seguridad. Los riesgos y decisiones históricas de releases anteriores permanecen documentados en sus evidencias originales; promover la nomenclatura a v1.0 no los reinterpreta ni los oculta.
-
-## Estado v1.1 — MAP-066
-
-MAP-066 promueve el baseline posterior a MAP-065 a **v1.1 (1.1.0)** una vez superados rehearsal, seguridad, CI, checkpoint humano, merge y Pages. La fuente canónica de versión sigue siendo `package.json`; el badge público usa `v1.1` y `npm run verify:release-version` comprueba coherencia con lockfile, UI, smoke y este documento. Las secciones anteriores de v1.0 se conservan como evidencia histórica del baseline de partida.
+Los advisories de plataforma o rendimiento que no constituyan regresiones de v1.1 se documentan en el checkpoint humano y no se “corrigen” reescribiendo historia o ampliando el scope sin evidencia. Cualquier hallazgo real de pérdida de datos, fuga de secretos, aislamiento roto o regresión material bloquea la release hasta ser corregido.
