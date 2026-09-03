@@ -275,7 +275,7 @@ test('layers never expose Master counts and remain stable across Master ON, camp
   await search.fill(MASTER_MISSION_A_NAME);
   await expect(page.locator(`[data-search-result-id="${MASTER_MISSION_A_ID}"]`)).toHaveCount(0);
   await expect(page.locator('[data-place-search-status]')).toContainText(
-    'No hay resultados visibles',
+    'No hay lugares, personajes ni nombres geográficos',
   );
   await search.fill('');
 
