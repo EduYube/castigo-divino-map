@@ -612,7 +612,7 @@ test('an authorized administrator can open entity administration and preserves d
   await page.getByRole('button', { name: 'Editar Aster Guide' }).click();
   await expect(page.getByLabel('Categoría', { exact: true })).toHaveValue('category-people');
   await expect(page.getByLabel(/Notable · published/)).toBeChecked();
-  await expect(page.getByLabel(/Draft tag · draft/)).toBeDisabled();
+  await expect(page.getByLabel(/Draft tag · draft/)).toBeEnabled();
 });
 
 test('an administrator can select and drag a CRS.Simple point, preview it, save a draft and reload it', async ({
