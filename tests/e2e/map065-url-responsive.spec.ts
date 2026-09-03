@@ -27,21 +27,25 @@ test('canonical URL round-trips partial state and supports Back, Forward, reload
     .toBe('character,location,mission');
 
   await page.goBack();
+  await openMap065Layers(page);
   await expect(map065Layer(page, 'Regiones')).toBeChecked();
   await expect(map065Layer(page, 'Peligros/Alertas')).not.toBeChecked();
 
   await page.goForward();
+  await openMap065Layers(page);
   await expect(map065Layer(page, 'Regiones')).not.toBeChecked();
   await expect(map065Layer(page, 'Peligros/Alertas')).not.toBeChecked();
 
   await page.reload();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+  await openMap065Layers(page);
   await expect(map065Layer(page, 'Regiones')).not.toBeChecked();
   await expect(map065Layer(page, 'Peligros/Alertas')).not.toBeChecked();
 
   await page.goto('/?layers=hazard,unknown,character,hazard');
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
   await expect.poll(() => new URL(page.url()).searchParams.get('layers')).toBe('character,hazard');
+  await openMap065Layers(page);
   await expect(map065Layer(page, 'Personajes')).toBeChecked();
   await expect(map065Layer(page, 'Peligros/Alertas')).toBeChecked();
   await expect(map065Layer(page, 'Misiones')).not.toBeChecked();
@@ -61,6 +65,7 @@ test('keeps layer state through degraded snapshot mode and recovery without dupl
     'data-backend-state',
     'degraded',
   );
+  await openMap065Layers(page);
   await expect(map065Layer(page, 'Personajes')).toBeChecked();
   await expect(map065Layer(page, 'Emplazamientos puntuales')).not.toBeChecked();
 
@@ -70,6 +75,7 @@ test('keeps layer state through degraded snapshot mode and recovery without dupl
     'data-backend-state',
     'connected',
   );
+  await openMap065Layers(page);
   await expect(map065Layer(page, 'Personajes')).toBeChecked();
   await expect(map065Layer(page, 'Emplazamientos puntuales')).not.toBeChecked();
   await expect(map065Pin(page, MAP065_IDS.character)).toHaveCount(1);
@@ -99,6 +105,22 @@ for (const width of [320, 390, 430]) {
     );
   });
 }
+
+test('layer controls reflow and remain operable at the 200% zoom equivalent width', async ({
+  page,
+}) => {
+  await configureMap065Backend(page);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await openMap065(page);
+  await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+  await openMap065Layers(page);
+
+  const characters = map065Layer(page, 'Personajes');
+  await characters.uncheck();
+  await expect(characters).not.toBeChecked();
+  await expect(page.locator('[data-map-layers-summary]')).toHaveText('Capas · 4/5');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});
 
 test('layer controls remain perceivable and operable in forced-colors mode', async ({ page }) => {
   await configureMap065Backend(page);
