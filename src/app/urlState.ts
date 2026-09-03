@@ -6,6 +6,11 @@ import type {
 } from '../data/beta02-model';
 import { derivePublicFilterFacets } from '../data/filters';
 import type { CampaignCatalog, PlaceId } from '../data/model';
+import {
+  MAP_LAYER_IDS,
+  normalizeMapLayerIds,
+  type MapLayerId,
+} from '../domain/mapLayers';
 
 export interface PublicAppUrlState {
   readonly activePlaceId: PlaceId | null;
@@ -13,6 +18,7 @@ export interface PublicAppUrlState {
   readonly geographicNameId: GeographicNameId | null;
   readonly selectedCategoryIds: readonly CategoryId[];
   readonly selectedTagIds: readonly TagId[];
+  readonly activeLayerIds: readonly MapLayerId[];
 }
 
 export interface ParsedPublicAppUrlState {
@@ -32,6 +38,7 @@ export const EMPTY_PUBLIC_APP_URL_STATE: PublicAppUrlState = {
   geographicNameId: null,
   selectedCategoryIds: [],
   selectedTagIds: [],
+  activeLayerIds: MAP_LAYER_IDS,
 };
 
 const URL_PARAMETERS = {
@@ -41,6 +48,7 @@ const URL_PARAMETERS = {
   geographicName: 'geo',
   category: 'category',
   tag: 'tag',
+  layers: 'layers',
 } as const;
 
 function normalizeQuery(query: string): string {
@@ -97,6 +105,18 @@ function getFirstGeographicNameId(values: readonly string[]): GeographicNameId |
   return null;
 }
 
+function parseLayerIds(source: URL): readonly MapLayerId[] {
+  if (!source.searchParams.has(URL_PARAMETERS.layers)) return MAP_LAYER_IDS;
+  const tokens = source.searchParams
+    .getAll(URL_PARAMETERS.layers)
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (tokens.includes('none')) return [];
+  const normalized = normalizeMapLayerIds(tokens);
+  return normalized.length > 0 ? normalized : MAP_LAYER_IDS;
+}
+
 export function normalizePublicAppUrlState(
   catalog: CampaignCatalog,
   state: PublicAppUrlState,
@@ -115,6 +135,7 @@ export function normalizePublicAppUrlState(
       .filter(({ id }) => selectedCategoryIds.has(id))
       .map(({ id }) => id),
     selectedTagIds: facets.tags.filter(({ id }) => selectedTagIds.has(id)).map(({ id }) => id),
+    activeLayerIds: normalizeMapLayerIds(state.activeLayerIds),
   };
 }
 
@@ -137,6 +158,11 @@ export function serializePublicAppUrlState(
     if (category) parameters.append(URL_PARAMETERS.category, category.slug);
   });
   normalizedState.selectedTagIds.forEach((tagId) => parameters.append(URL_PARAMETERS.tag, tagId));
+  if (normalizedState.activeLayerIds.length === 0) {
+    parameters.set(URL_PARAMETERS.layers, 'none');
+  } else if (normalizedState.activeLayerIds.length !== MAP_LAYER_IDS.length) {
+    parameters.set(URL_PARAMETERS.layers, normalizedState.activeLayerIds.join(','));
+  }
   return parameters;
 }
 
@@ -193,6 +219,7 @@ export function parsePublicAppUrlState(
         .filter(({ id }) => categoryValues.has(id))
         .map(({ id }) => id),
       selectedTagIds: facets.tags.filter(({ id }) => tagValues.has(id)).map(({ id }) => id),
+      activeLayerIds: parseLayerIds(source),
     },
     beta02Catalog,
   );
@@ -219,6 +246,10 @@ export function arePublicAppUrlStatesEqual(
     normalizedLeft.selectedTagIds.length === normalizedRight.selectedTagIds.length &&
     normalizedLeft.selectedTagIds.every(
       (tagId, index) => tagId === normalizedRight.selectedTagIds[index],
+    ) &&
+    normalizedLeft.activeLayerIds.length === normalizedRight.activeLayerIds.length &&
+    normalizedLeft.activeLayerIds.every(
+      (layerId, index) => layerId === normalizedRight.activeLayerIds[index],
     )
   );
 }
