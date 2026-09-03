@@ -90,7 +90,7 @@ with checks as (
     exists (
       select 1 from public.character_location_events
       where character_id = 'entity-map053-upgrade-character'
-        and location_id = 'entity-map053-upgrade-location'
+        and location_entity_id = 'entity-map053-upgrade-location'
     ) as history_preserved,
     exists (
       select 1 from public.public_notes
