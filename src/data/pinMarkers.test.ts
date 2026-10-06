@@ -165,9 +165,7 @@ describe('createAtlasPinMarkerModels', () => {
     const singleRosterCatalog: PublicCatalogSnapshotV2 = {
       ...beta02Catalog,
       players: [beta02Catalog.players[1]!],
-      dispositions: [
-        { entityId: 'place-harbor', playerId: 'player-b', disposition: 'ally' },
-      ],
+      dispositions: [{ entityId: 'place-harbor', playerId: 'player-b', disposition: 'ally' }],
     };
 
     const zeroRosterHarbor = createAtlasPinMarkerModels(legacyCatalog, zeroRosterCatalog).find(
