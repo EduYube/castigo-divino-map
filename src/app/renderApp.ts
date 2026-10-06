@@ -68,8 +68,6 @@ export function renderApp(): string {
                 <div class="pin-legend__group" aria-label="Disposición por jugador">
                   <span class="pin-legend__item"><span class="pin-disposition pin-disposition--ally" aria-hidden="true">+</span>Aliado</span>
                   <span class="pin-legend__item"><span class="pin-disposition pin-disposition--enemy" aria-hidden="true">−</span>Enemigo</span>
-                  <span class="pin-legend__item"><span class="pin-disposition pin-disposition--neutral" aria-hidden="true">•</span>Neutral</span>
-                  <span class="pin-legend__item"><span class="pin-disposition pin-disposition--unknown" aria-hidden="true">?</span>Sin dato visible</span>
                 </div>
                 <p class="pin-legend__note">
                   La disposición es por jugador: varios símbolos en un pin representan perspectivas
@@ -96,9 +94,9 @@ export function renderApp(): string {
             resultados y pines con Tab y actívalos con Enter o la barra espaciadora. Activar un pin
             abre su ficha compacta. Un pin con contador agrupa entidades en la misma coordenada y
             abre una lista accesible. Los pines atenuados siguen siendo operables. Un círculo indica
-            personaje y un rombo, emplazamiento. Los símbolos más, menos, punto e interrogación
-            indican aliado, enemigo, neutral y sin dato visible. La disposición se expresa por
-            jugador y el color es solo una señal complementaria.
+            personaje y un rombo, emplazamiento. Los símbolos más y menos indican aliado y enemigo.
+            Las relaciones neutrales o sin dato no generan indicadores en el mapa. La disposición se
+            expresa por jugador y el color es solo una señal complementaria.
           </p>
         </div>
 

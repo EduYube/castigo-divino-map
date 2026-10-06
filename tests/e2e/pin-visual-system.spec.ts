@@ -186,9 +186,7 @@ async function openPinVisualMap(page: Page): Promise<void> {
   );
 }
 
-test('distinguishes character and location pins by shape and exposes per-player dispositions in text', async ({
-  page,
-}) => {
+test('distinguishes pin types and exposes only non-neutral map dispositions', async ({ page }) => {
   await openPinVisualMap(page);
 
   const character = page.locator('[data-testid="entity-pin"][data-pin-id="entity-scout"]');
@@ -198,8 +196,9 @@ test('distinguishes character and location pins by shape and exposes per-player 
   await expect(character.locator('.pin-visual')).toHaveClass(/pin-visual--character/);
   await expect(character).toHaveAttribute(
     'aria-label',
-    /Scout\. Personaje\. Relación con los personajes: Alicia: enemigo; Borin: neutral\./i,
+    /Scout\. Personaje\. Relación con los personajes: Alicia: enemigo\. Categoría: Asentamiento\./i,
   );
+  await expect(character).not.toHaveAttribute('aria-label', /Borin|neutral|sin configurar/i);
   await expect(location).toHaveAttribute('data-entity-type', 'location');
   await expect(location.locator('.pin-visual')).toHaveClass(/pin-visual--location/);
   await expect(location).toHaveAttribute(
@@ -208,7 +207,8 @@ test('distinguishes character and location pins by shape and exposes per-player 
   );
 
   await expect(character.locator('.pin-disposition--enemy')).toHaveText('−');
-  await expect(character.locator('.pin-disposition--neutral')).toHaveText('•');
+  await expect(character.locator('.pin-disposition')).toHaveCount(1);
+  await expect(character.locator('.pin-disposition--neutral')).toHaveCount(0);
   await expect(location.locator('.pin-disposition--ally')).toHaveText('+');
   await expect(page.locator('[data-pin-id="entity-search-only"]')).toHaveCount(0);
 
@@ -220,7 +220,8 @@ test('distinguishes character and location pins by shape and exposes per-player 
   await expect(legend).toContainText('Emplazamiento');
   await expect(legend).toContainText('Aliado');
   await expect(legend).toContainText('Enemigo');
-  await expect(legend).toContainText('Neutral');
+  await expect(legend).not.toContainText('Neutral');
+  await expect(legend).not.toContainText('Sin dato visible');
 });
 
 test('keeps selection and keyboard focus independent from type and disposition styling', async ({
@@ -274,8 +275,10 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await expect(options.nth(1)).toHaveAttribute('data-entity-type', 'character');
   await expect(options.nth(1)).toHaveAttribute(
     'aria-label',
-    /Harbor Guard\. Personaje\. Relación con los personajes: Alicia: enemigo; Borin: relación sin configurar/i,
+    /Harbor Guard\. Personaje\. Relación con los personajes: Alicia: enemigo\. Categoría: Asentamiento\./i,
   );
+  await expect(options.nth(1)).not.toHaveAttribute('aria-label', /Borin|neutral|sin configurar/i);
+  await expect(options.nth(1).locator('.pin-disposition')).toHaveCount(1);
 
   await options.first().click();
   const panel = page.getByTestId('place-details');

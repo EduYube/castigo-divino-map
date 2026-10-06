@@ -109,14 +109,94 @@ describe('createAtlasPinMarkerModels', () => {
     });
   });
 
-  it('keeps every player perspective and uses null only for missing projected rows', () => {
-    const hero = createAtlasPinMarkerModels(legacyCatalog, beta02Catalog).find(
-      ({ id }) => id === 'entity-hero',
-    );
+  it('renders only non-neutral configured relations in campaign roster order', () => {
+    const pins = createAtlasPinMarkerModels(legacyCatalog, beta02Catalog);
+    const harbor = pins.find(({ id }) => id === 'place-harbor');
+    const hero = pins.find(({ id }) => id === 'entity-hero');
 
+    expect(harbor?.dispositions).toEqual([
+      { playerId: 'player-a', playerName: 'A', disposition: 'ally' },
+    ]);
     expect(hero?.dispositions).toEqual([
       { playerId: 'player-a', playerName: 'A', disposition: 'enemy' },
-      { playerId: 'player-b', playerName: 'B', disposition: null },
+    ]);
+  });
+
+  it('renders two indicators when both roster relations are non-neutral', () => {
+    const twoRelationCatalog: PublicCatalogSnapshotV2 = {
+      ...beta02Catalog,
+      dispositions: [
+        { entityId: 'place-harbor', playerId: 'player-a', disposition: 'enemy' },
+        { entityId: 'place-harbor', playerId: 'player-b', disposition: 'ally' },
+      ],
+    };
+
+    const harbor = createAtlasPinMarkerModels(legacyCatalog, twoRelationCatalog).find(
+      ({ id }) => id === 'place-harbor',
+    );
+
+    expect(harbor?.dispositions).toEqual([
+      { playerId: 'player-a', playerName: 'A', disposition: 'enemy' },
+      { playerId: 'player-b', playerName: 'B', disposition: 'ally' },
+    ]);
+  });
+
+  it('renders no indicators when all roster relations are neutral', () => {
+    const neutralCatalog: PublicCatalogSnapshotV2 = {
+      ...beta02Catalog,
+      dispositions: [
+        { entityId: 'place-harbor', playerId: 'player-a', disposition: 'neutral' },
+        { entityId: 'place-harbor', playerId: 'player-b', disposition: 'neutral' },
+      ],
+    };
+
+    const harbor = createAtlasPinMarkerModels(legacyCatalog, neutralCatalog).find(
+      ({ id }) => id === 'place-harbor',
+    );
+
+    expect(harbor?.dispositions).toEqual([]);
+  });
+
+  it('supports zero and one-player campaign rosters without fixed slots', () => {
+    const zeroRosterCatalog: PublicCatalogSnapshotV2 = {
+      ...beta02Catalog,
+      players: [],
+    };
+    const singleRosterCatalog: PublicCatalogSnapshotV2 = {
+      ...beta02Catalog,
+      players: [beta02Catalog.players[1]!],
+      dispositions: [{ entityId: 'place-harbor', playerId: 'player-b', disposition: 'ally' }],
+    };
+
+    const zeroRosterHarbor = createAtlasPinMarkerModels(legacyCatalog, zeroRosterCatalog).find(
+      ({ id }) => id === 'place-harbor',
+    );
+    const singleRosterHarbor = createAtlasPinMarkerModels(legacyCatalog, singleRosterCatalog).find(
+      ({ id }) => id === 'place-harbor',
+    );
+
+    expect(zeroRosterHarbor?.dispositions).toEqual([]);
+    expect(singleRosterHarbor?.dispositions).toEqual([
+      { playerId: 'player-b', playerName: 'B', disposition: 'ally' },
+    ]);
+  });
+
+  it('ignores disposition rows for players outside the selected campaign roster', () => {
+    const scopedCatalog: PublicCatalogSnapshotV2 = {
+      ...beta02Catalog,
+      players: [beta02Catalog.players[1]!],
+      dispositions: [
+        { entityId: 'place-harbor', playerId: 'player-a', disposition: 'enemy' },
+        { entityId: 'place-harbor', playerId: 'player-b', disposition: 'ally' },
+      ],
+    };
+
+    const harbor = createAtlasPinMarkerModels(legacyCatalog, scopedCatalog).find(
+      ({ id }) => id === 'place-harbor',
+    );
+
+    expect(harbor?.dispositions).toEqual([
+      { playerId: 'player-b', playerName: 'B', disposition: 'ally' },
     ]);
   });
 
