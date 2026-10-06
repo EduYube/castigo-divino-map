@@ -277,10 +277,7 @@ test('opens all coincident pins as keyboard-operable options without changing th
     'aria-label',
     /Harbor Guard\. Personaje\. Relación con los personajes: Alicia: enemigo\. Categoría: Asentamiento\./i,
   );
-  await expect(options.nth(1)).not.toHaveAttribute(
-    'aria-label',
-    /Borin|neutral|sin configurar/i,
-  );
+  await expect(options.nth(1)).not.toHaveAttribute('aria-label', /Borin|neutral|sin configurar/i);
   await expect(options.nth(1).locator('.pin-disposition')).toHaveCount(1);
 
   await options.first().click();
