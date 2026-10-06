@@ -159,7 +159,7 @@ test('keeps dense marker clusters compact while preserving their full Leaflet hi
   await expect(page.locator('[data-spiderfied="true"]')).toHaveCount(groupCount);
 });
 
-test('keeps type, disposition, keyboard focus and selection usable inside the dense marker set', async ({
+test('keeps type, neutral-free indicators, keyboard focus and selection usable in dense pins', async ({
   page,
 }) => {
   await openDensityMap(page);
@@ -177,7 +177,9 @@ test('keeps type, disposition, keyboard focus and selection usable inside the de
   const character = page.locator('[data-pin-id="entity-density-pin-5"]');
   await expect(character).toBeVisible();
   await expect(character.locator('.pin-visual')).toHaveClass(/pin-visual--character/);
-  await expect(character.locator('.pin-disposition')).toBeVisible();
+  await expect(character.locator('.pin-disposition')).toHaveCount(0);
+  await expect(character.locator('.pin-visual__dispositions')).toHaveCount(0);
+  await expect(character).not.toHaveAttribute('aria-label', /neutral|Alicia/i);
 
   await character.focus();
   await expect(character).toBeFocused();
