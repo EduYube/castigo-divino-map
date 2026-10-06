@@ -152,7 +152,9 @@ describe('createAtlasPinMarkerModels', () => {
       createAtlasPinMarkerModels(legacyCatalog, singlePlayerCatalog).find(
         ({ id }) => id === 'place-harbor',
       )?.dispositions,
-    ).toEqual([{ playerId: 'player-b', playerName: 'B', disposition: 'enemy' }]);
+    ).toEqual([
+      { playerId: 'player-b', playerName: 'B', disposition: 'enemy' },
+    ]);
   });
 
   it('ignores disposition rows outside the selected campaign roster', () => {
