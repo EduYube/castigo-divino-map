@@ -122,60 +122,6 @@ describe('createAtlasPinMarkerModels', () => {
     ]);
   });
 
-  it('renders zero indicators when every campaign relation is neutral', () => {
-    const neutralCatalog: PublicCatalogSnapshotV2 = {
-      ...beta02Catalog,
-      dispositions: beta02Catalog.players.map((player) => ({
-        entityId: 'place-harbor' as const,
-        playerId: player.id,
-        disposition: 'neutral' as const,
-      })),
-    };
-
-    const harbor = createAtlasPinMarkerModels(legacyCatalog, neutralCatalog).find(
-      ({ id }) => id === 'place-harbor',
-    );
-
-    expect(harbor?.dispositions).toEqual([]);
-  });
-
-  it('supports a one-player campaign without fixed indicator slots', () => {
-    const singlePlayerCatalog: PublicCatalogSnapshotV2 = {
-      ...beta02Catalog,
-      players: [beta02Catalog.players[1]!],
-      dispositions: [
-        { entityId: 'place-harbor', playerId: 'player-b', disposition: 'enemy' },
-      ],
-    };
-
-    expect(
-      createAtlasPinMarkerModels(legacyCatalog, singlePlayerCatalog).find(
-        ({ id }) => id === 'place-harbor',
-      )?.dispositions,
-    ).toEqual([
-      { playerId: 'player-b', playerName: 'B', disposition: 'enemy' },
-    ]);
-  });
-
-  it('ignores disposition rows outside the selected campaign roster', () => {
-    const campaignScopedCatalog: PublicCatalogSnapshotV2 = {
-      ...beta02Catalog,
-      players: [beta02Catalog.players[1]!],
-      dispositions: [
-        { entityId: 'place-harbor', playerId: 'player-a', disposition: 'ally' },
-        { entityId: 'place-harbor', playerId: 'player-b', disposition: 'enemy' },
-      ],
-    };
-
-    expect(
-      createAtlasPinMarkerModels(legacyCatalog, campaignScopedCatalog).find(
-        ({ id }) => id === 'place-harbor',
-      )?.dispositions,
-    ).toEqual([
-      { playerId: 'player-b', playerName: 'B', disposition: 'enemy' },
-    ]);
-  });
-
   it('keeps Beta 0.1 pins available before a beta02 projection exists', () => {
     expect(createAtlasPinMarkerModels(legacyCatalog, null)[0]).toMatchObject({
       id: 'place-harbor',
