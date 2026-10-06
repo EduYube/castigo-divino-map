@@ -173,7 +173,11 @@ function createSinglePinMarkup(marker: AtlasPinMarkerModel): string {
   const lifecycleClass = marker.lifecycleStatus
     ? ` pin-visual--lifecycle-${marker.lifecycleStatus}`
     : '';
-  return `<span class="pin-visual ${type.className}${lifecycleClass}"><span class="pin-visual__type-symbol" aria-hidden="true">${type.symbol}</span><span class="pin-visual__dispositions" aria-hidden="true">${createDispositionMarkup(marker)}</span></span>`;
+  const dispositions = createDispositionMarkup(marker);
+  const dispositionMarkup = dispositions
+    ? `<span class="pin-visual__dispositions" aria-hidden="true">${dispositions}</span>`
+    : '';
+  return `<span class="pin-visual ${type.className}${lifecycleClass}"><span class="pin-visual__type-symbol" aria-hidden="true">${type.symbol}</span>${dispositionMarkup}</span>`;
 }
 
 function createSinglePinIcon(marker: AtlasPinMarkerModel): L.DivIcon {
@@ -216,7 +220,7 @@ function applyPortraitPin(
 ): void {
   const visual = document.createElement('span');
   const image = document.createElement('img');
-  const dispositions = document.createElement('span');
+  const dispositionMarkup = createDispositionMarkup(marker);
 
   const preservedClasses = preservedPinVisualClasses(element);
   visual.className = 'pin-visual pin-visual--character pin-visual--portrait';
@@ -228,11 +232,15 @@ function applyPortraitPin(
   image.height = 36;
   image.decoding = 'async';
   image.setAttribute('aria-hidden', 'true');
-  dispositions.className = 'pin-visual__dispositions';
-  dispositions.setAttribute('aria-hidden', 'true');
-  dispositions.innerHTML = createDispositionMarkup(marker);
   image.addEventListener('error', onDecodeFailure, { once: true });
-  visual.append(image, dispositions);
+  visual.append(image);
+  if (dispositionMarkup) {
+    const dispositions = document.createElement('span');
+    dispositions.className = 'pin-visual__dispositions';
+    dispositions.setAttribute('aria-hidden', 'true');
+    dispositions.innerHTML = dispositionMarkup;
+    visual.append(dispositions);
+  }
   element.replaceChildren(visual);
   element.dataset.portraitMarker = 'true';
 }
@@ -242,7 +250,7 @@ function describePin(marker: AtlasPinMarkerModel): string {
   const dispositions = describePlayerDispositions(marker.dispositions);
 
   const lifecycle = getEntityLifecycleLabel(marker.entityType, marker.lifecycleStatus ?? null);
-  return `${marker.name}. ${type.label}.${lifecycle ? ` Estado: ${lifecycle}.` : ''} Relación con los personajes: ${dispositions}. Categoría: ${marker.categoryName}.`;
+  return `${marker.name}. ${type.label}.${lifecycle ? ` Estado: ${lifecycle}.` : ''}${dispositions ? ` Relación con los personajes: ${dispositions}.` : ''} Categoría: ${marker.categoryName}.`;
 }
 
 function describeLegacyMarkerName(marker: AtlasPinMarkerModel): string {
@@ -252,7 +260,8 @@ function describeLegacyMarkerName(marker: AtlasPinMarkerModel): string {
 function describePinSemantics(marker: AtlasPinMarkerModel): string {
   const type = getPinTypeVisual(marker.entityType);
   const lifecycle = getEntityLifecycleLabel(marker.entityType, marker.lifecycleStatus ?? null);
-  return `${type.label}.${lifecycle ? ` Estado: ${lifecycle}.` : ''} Relación con los personajes: ${describePlayerDispositions(marker.dispositions)}.`;
+  const dispositions = describePlayerDispositions(marker.dispositions);
+  return `${type.label}.${lifecycle ? ` Estado: ${lifecycle}.` : ''}${dispositions ? ` Relación con los personajes: ${dispositions}.` : ''}`;
 }
 
 function nameZoomControls(control: L.Control.Zoom): void {
