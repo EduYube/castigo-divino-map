@@ -92,7 +92,10 @@ for (const viewport of VIEWPORTS) {
     await expect(hiddenInstructions).toContainText('Activar un pin abre su ficha compacta');
     await expect(hiddenInstructions).toContainText('círculo indica personaje');
     await expect(hiddenInstructions).toContainText('rombo, emplazamiento');
-    await expect(hiddenInstructions).toContainText('aliado, enemigo, neutral y sin dato visible');
+    await expect(hiddenInstructions).toContainText('más y menos indican aliado y enemigo');
+    await expect(hiddenInstructions).toContainText(
+      'Las relaciones neutrales o sin dato no generan indicadores en el mapa',
+    );
     await expect(map).toHaveAttribute('aria-describedby', /map-instructions/);
 
     const closedMetrics = await page.evaluate(({ width, height, label }) => {
@@ -130,8 +133,8 @@ for (const viewport of VIEWPORTS) {
     await expect(legend).toContainText('Emplazamiento');
     await expect(legend).toContainText('Aliado');
     await expect(legend).toContainText('Enemigo');
-    await expect(legend).toContainText('Neutral');
-    await expect(legend).toContainText('Sin dato visible');
+    await expect(legend).not.toContainText('Neutral');
+    await expect(legend).not.toContainText('Sin dato visible');
     await expect(panel).toContainText('La disposición es por jugador');
     await expect(panel).toContainText('sin depender del color ni del hover');
     await expectNoHorizontalOverflow(page);
