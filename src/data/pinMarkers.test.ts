@@ -171,7 +171,9 @@ describe('createAtlasPinMarkerModels', () => {
       createAtlasPinMarkerModels(legacyCatalog, campaignScopedCatalog).find(
         ({ id }) => id === 'place-harbor',
       )?.dispositions,
-    ).toEqual([{ playerId: 'player-b', playerName: 'B', disposition: 'enemy' }]);
+    ).toEqual([
+      { playerId: 'player-b', playerName: 'B', disposition: 'enemy' },
+    ]);
   });
 
   it('keeps Beta 0.1 pins available before a beta02 projection exists', () => {
