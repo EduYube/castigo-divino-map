@@ -48,14 +48,15 @@ function resolveBeta02Dispositions(
   catalog: PublicCatalogSnapshotV2,
   entityId: EntityId,
 ): readonly PinPlayerDispositionInput[] {
-  return catalog.players.map((player) => ({
-    playerId: player.id,
-    playerName: player.displayName,
-    disposition:
-      catalog.dispositions.find(
-        (entry) => entry.entityId === entityId && entry.playerId === player.id,
-      )?.disposition ?? null,
-  }));
+  return catalog.players.flatMap((player): readonly PinPlayerDispositionInput[] => {
+    const disposition = catalog.dispositions.find(
+      (entry) => entry.entityId === entityId && entry.playerId === player.id,
+    )?.disposition;
+
+    if (disposition !== 'ally' && disposition !== 'enemy') return [];
+
+    return [{ playerId: player.id, playerName: player.displayName, disposition }];
+  });
 }
 
 function resolveBeta02Associations(
