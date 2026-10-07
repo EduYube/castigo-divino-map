@@ -8,8 +8,6 @@ alter table public.players
 create unique index players_character_entity_identity_unique
   on public.players(character_entity_id) where character_entity_id is not null;
 
-grant select (character_entity_id) on table public.players to anon, authenticated;
-grant insert (character_entity_id), update (character_entity_id) on table public.players to authenticated;
 
 create or replace function private.validate_player_character_identity()
 returns trigger
