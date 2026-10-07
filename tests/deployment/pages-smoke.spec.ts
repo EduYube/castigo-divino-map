@@ -41,11 +41,21 @@ test('loads the v1.1 public experience from the repository subdirectory', async 
 }) => {
   const failedResponses: string[] = [];
   const requests: Request[] = [];
+  let portraitLoaded = false;
 
   page.on('request', (request) => requests.push(request));
   page.on('response', (response) => {
-    if (response.status() >= 400 && response.url() !== OFFICIAL_MAP_URL) {
-      failedResponses.push(`${response.status()} ${response.url()}`);
+    const url = response.url();
+    const isPortraitTransform =
+      url.includes('/storage/v1/render/image/authenticated/character-portraits/') &&
+      (response.status() === 403 || response.status() === 404);
+    const isPortraitResource =
+      url.includes('/storage/v1/render/image/authenticated/character-portraits/') ||
+      url.includes('/storage/v1/object/authenticated/character-portraits/');
+
+    if (isPortraitResource && response.ok()) portraitLoaded = true;
+    if (response.status() >= 400 && url !== OFFICIAL_MAP_URL && !isPortraitTransform) {
+      failedResponses.push(`${response.status()} ${url}`);
     }
   });
 
@@ -133,6 +143,7 @@ test('loads the v1.1 public experience from the repository subdirectory', async 
     return url.origin === applicationOrigin && /\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname);
   });
   expect(localRasterRequests).toEqual([]);
+  await expect.poll(() => portraitLoaded).toBe(true);
   expect(failedResponses).toEqual([]);
 
   await page.reload();
