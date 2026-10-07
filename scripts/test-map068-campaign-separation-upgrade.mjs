@@ -6,6 +6,7 @@ const BASE = '20260902111000';
 const A = '00000000-0000-4000-8000-000000000053';
 const B = '00000000-0000-4000-8000-000000000068';
 const V = 'entity-request-07d26371bbff42d9b91e076d099891b0';
+const MODERATOR = 'fc24e545-7352-4770-8288-7a382b29317f';
 
 function fail(message) {
   throw new Error(`MAP-068 campaign separation rehearsal failed: ${message}`);
@@ -138,15 +139,19 @@ insert into public.players (
   ('${A}','player-ura','ura','Ura','en','published','2026-08-27T12:40:57Z','2026-08-27T12:40:57Z','2026-08-27T12:40:57Z',1,'#1e3a8a'),
   ('${A}','player-veyra','veyra','Veyra','en','published','2026-08-27T12:40:57Z','2026-08-27T12:40:57Z','2026-08-27T12:40:57Z',2,'#9d174d');
 
+insert into auth.users (id)
+values ('${MODERATOR}')
+on conflict (id) do nothing;
+
 alter table public.public_requests disable trigger "20_validate_public_request";
 insert into public.public_requests (
   id,campaign_id,sender_name,proposed_name,entity_type,x,y,description,reason,request_status,
-  converted_entity_id,moderated_at,created_at,updated_at
+  moderator_user_id,converted_entity_id,moderated_at,created_at,updated_at
 ) values (
   '07d26371-bbff-42d9-b91e-076d099891b0','${A}','Veyra la Grandiosa','Veyra','character',
   1438.727724022,1837.31274570082,'Posición inicial Veyra (dudo entre neverwinter y lidian)',
-  'Inicio partida picara','converted','${V}','2026-08-12T11:04:17Z',
-  '2026-08-11T20:13:31Z','2026-08-12T11:04:17Z'
+  'Inicio partida picara','converted','${MODERATOR}','${V}','2026-08-12T11:04:17.344908Z',
+  '2026-08-11T20:13:31.09171Z','2026-08-12T11:04:17.344908Z'
 );
 alter table public.public_requests enable trigger "20_validate_public_request";
 
@@ -194,7 +199,11 @@ select jsonb_build_object(
   'entity_tag_id',(select id from public.entity_tags where id='entity-tag-432d9dc2a2b6dbd6a450f556'),
   'entity_tag_updated',(select updated_at from public.entity_tags where id='entity-tag-432d9dc2a2b6dbd6a450f556'),
   'request_id',(select id from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
+  'request_moderator',(select moderator_user_id::text from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
+  'request_moderation_note',(select moderation_note from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
   'request_converted_entity',(select converted_entity_id from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
+  'request_moderated_at',(select moderated_at from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
+  'request_created',(select created_at from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
   'request_updated',(select updated_at from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
   'aliases_count',(select count(*) from public.entity_aliases where entity_id='${V}'),
   'notes_count',(select count(*) from public.public_notes where entity_id='${V}' or author_player_id='player-veyra' or last_modifier_player_id='player-veyra'),
@@ -289,7 +298,11 @@ select jsonb_build_object(
   'entity_tag_id',(select id from public.entity_tags where id='entity-tag-432d9dc2a2b6dbd6a450f556'),
   'entity_tag_updated',(select updated_at from public.entity_tags where id='entity-tag-432d9dc2a2b6dbd6a450f556'),
   'request_id',(select id from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
+  'request_moderator',(select moderator_user_id::text from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
+  'request_moderation_note',(select moderation_note from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
   'request_converted_entity',(select converted_entity_id from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
+  'request_moderated_at',(select moderated_at from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
+  'request_created',(select created_at from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
   'request_updated',(select updated_at from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'),
   'aliases_count',(select count(*) from public.entity_aliases where entity_id='${V}'),
   'notes_count',(select count(*) from public.public_notes where entity_id='${V}' or author_player_id='player-veyra' or last_modifier_player_id='player-veyra'),
@@ -337,7 +350,11 @@ for (const key of [
   'entity_tag_id',
   'entity_tag_updated',
   'request_id',
+  'request_moderator',
+  'request_moderation_note',
   'request_converted_entity',
+  'request_moderated_at',
+  'request_created',
   'request_updated',
   'aliases_count',
   'notes_count',
