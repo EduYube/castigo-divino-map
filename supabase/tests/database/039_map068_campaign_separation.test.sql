@@ -15,7 +15,7 @@ exception
 end;
 $$;
 
-select plan(15);
+select plan(16);
 
 select is(
   (
@@ -304,6 +304,44 @@ select ok(
   $sql$),
   'generic character-location relation cannot cross campaigns'
 );
+
+alter table public.public_requests disable trigger "20_validate_public_request";
+
+select ok(
+  pg_temp.statement_fails($sql$
+    insert into public.public_requests (
+      id,
+      campaign_id,
+      sender_name,
+      proposed_name,
+      entity_type,
+      x,
+      y,
+      description,
+      reason,
+      request_status,
+      converted_entity_id,
+      moderated_at
+    )
+    values (
+      '00000000-0000-4000-8000-000000000068'::uuid,
+      '00000000-0000-4000-8000-000000000053',
+      'MAP068 Request',
+      'MAP068 Request',
+      'character',
+      690,
+      690,
+      'MAP068 cross-campaign conversion probe',
+      'MAP068 campaign integrity',
+      'converted',
+      'entity-map068-self',
+      pg_catalog.now()
+    )
+  $sql$),
+  'converted request cannot reference an entity from another campaign'
+);
+
+alter table public.public_requests enable trigger "20_validate_public_request";
 
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000099';
 set local "request.jwt.claims" =
