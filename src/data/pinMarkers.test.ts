@@ -200,6 +200,28 @@ describe('createAtlasPinMarkerModels', () => {
     ]);
   });
 
+  it('never renders a disposition toward the player’s explicit character identity', () => {
+    const selfCatalog: PublicCatalogSnapshotV2 = {
+      ...beta02Catalog,
+      players: [
+        { ...beta02Catalog.players[0]!, characterEntityId: 'entity-hero' },
+        beta02Catalog.players[1]!,
+      ],
+      dispositions: [
+        { entityId: 'entity-hero', playerId: 'player-a', disposition: 'ally' },
+        { entityId: 'entity-hero', playerId: 'player-b', disposition: 'enemy' },
+      ],
+    };
+
+    const hero = createAtlasPinMarkerModels(legacyCatalog, selfCatalog).find(
+      ({ id }) => id === 'entity-hero',
+    );
+
+    expect(hero?.dispositions).toEqual([
+      { playerId: 'player-b', playerName: 'B', disposition: 'enemy' },
+    ]);
+  });
+
   it('keeps Beta 0.1 pins available before a beta02 projection exists', () => {
     expect(createAtlasPinMarkerModels(legacyCatalog, null)[0]).toMatchObject({
       id: 'place-harbor',

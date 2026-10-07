@@ -15,7 +15,7 @@ const OFFICIAL_MAP_URL =
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
 const PUBLISHABLE_KEY = 'sb_publishable_map055_campaign_key';
 const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
-const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000054';
+const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000068';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -32,8 +32,8 @@ const CAMPAIGNS: readonly PublicCampaignV3[] = [
   },
   {
     id: CAMPAIGN_B_ID,
-    slug: 'campaign-b',
-    name: 'Campaña B',
+    slug: 'un-aliento-menos',
+    name: 'Un aliento menos',
     status: 'active',
     displayOrder: 1,
   },
@@ -69,7 +69,7 @@ function rowsFor(table: string, campaignId: string): readonly Record<string, unk
   const suffix = campaignId === CAMPAIGN_B_ID ? 'b' : 'a';
   const entityId = `place-campaign-${suffix}`;
   const categoryId = `category-campaign-${suffix}`;
-  const name = suffix === 'b' ? 'Beta Bastión' : 'Alpha Atalaya';
+  const name = suffix === 'b' ? 'Veyra' : 'Alpha Atalaya';
 
   switch (table) {
     case 'categories':
@@ -134,7 +134,7 @@ function snapshotCatalog(campaignId: string): PublicCampaignCatalogV3 {
         slug: `campaign-${suffix}-place`,
         entityType: 'location',
         visibility: 'pin',
-        name: suffix === 'b' ? 'Beta Bastión' : 'Alpha Atalaya',
+        name: suffix === 'b' ? 'Veyra' : 'Alpha Atalaya',
         nameLanguage: 'en',
         aliases: [
           {
@@ -305,7 +305,7 @@ async function expectCampaignA(page: Page): Promise<void> {
 }
 
 async function expectCampaignB(page: Page): Promise<void> {
-  await expect(page.getByLabel('Campaña', { exact: true })).toHaveValue('campaign-b');
+  await expect(page.getByLabel('Campaña', { exact: true })).toHaveValue('un-aliento-menos');
   await expect(
     page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-a"]'),
   ).toHaveCount(0);
@@ -339,14 +339,14 @@ test('A/B selection isolates map, search and details while URL Back/Forward rema
   await page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-a"]').click();
   await expect(page.getByTestId('place-details')).toContainText('Alpha Atalaya');
 
-  await selector.selectOption('campaign-b');
+  await selector.selectOption('un-aliento-menos');
   await expect(page).toHaveURL(/campaign=campaign-b/);
   await expect(page).not.toHaveURL(/place=/);
   await expectCampaignB(page);
   await expect(page.getByTestId('place-details')).not.toContainText('Alpha Atalaya');
 
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
-  await searchbox.fill('Beta Bastión');
+  await searchbox.fill('Veyra');
   await expect(page.locator('[data-search-result-id="place-campaign-b"]')).toBeVisible();
   await expect(page.locator('[data-search-result-id="place-campaign-a"]')).toHaveCount(0);
 
@@ -361,18 +361,18 @@ test('a public request submitted from B displays and persists campaign B explici
 }) => {
   const backend = await configureCampaignBackend(page);
   await page.goto('/');
-  await page.getByLabel('Campaña', { exact: true }).selectOption('campaign-b');
+  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
   await expectCampaignB(page);
 
   await page.getByRole('button', { name: 'Proponer un pin' }).click();
   await expect(page.locator('[data-public-pin-request-campaign-target]')).toContainText(
-    'Campaña destinataria:Campaña B',
+    'Campaña destinataria:Un aliento menos',
   );
   await fillPublicRequest(page, 'B');
   await page.getByRole('button', { name: 'Enviar solicitud para revisión' }).click();
 
   await expect(page.locator('[data-public-pin-request-status]')).toContainText(
-    'Solicitud enviada a Campaña B',
+    'Solicitud enviada a Un aliento menos',
   );
   await expect.poll(() => backend.getPublicRequests().length).toBe(1);
   expect(backend.getPublicRequests()[0]?.campaignId).toBe(CAMPAIGN_B_ID);
@@ -391,8 +391,8 @@ test('an empty open form follows A to B and B to A without a confirmation prompt
   const selector = page.getByLabel('Campaña', { exact: true });
   await expect(target).toContainText('Castigo Divino');
 
-  await selector.selectOption('campaign-b');
-  await expect(target).toContainText('Campaña B');
+  await selector.selectOption('un-aliento-menos');
+  await expect(target).toContainText('Un aliento menos');
   await expect(prompt).toBeHidden();
 
   await selector.selectOption('castigo-divino');
@@ -408,7 +408,7 @@ test('a partial A draft keeps A when the global selector moves to B and cancel i
   await page.getByRole('button', { name: 'Proponer un pin' }).click();
   await page.getByLabel('Nombre o apodo').fill('Borrador parcial A');
 
-  await page.getByLabel('Campaña', { exact: true }).selectOption('campaign-b');
+  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
   const prompt = page.locator('[data-public-pin-request-campaign-change]');
   await expect(prompt).toBeVisible();
   await expect(prompt).toContainText('sigue destinado a Castigo Divino');
@@ -448,12 +448,12 @@ test('a complete A draft can explicitly move to B without losing fields or posit
   await fillPublicRequest(page, 'Completo A');
   const position = await page.locator('[data-public-pin-request-position]').textContent();
 
-  await page.getByLabel('Campaña', { exact: true }).selectOption('campaign-b');
+  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
   await expect(page.locator('[data-public-pin-request-campaign-change]')).toBeVisible();
-  await page.getByRole('button', { name: 'Mover borrador a Campaña B' }).click();
+  await page.getByRole('button', { name: 'Mover borrador a Un aliento menos' }).click();
 
   await expect(page.locator('[data-public-pin-request-campaign-target]')).toContainText(
-    'Campaña B',
+    'Un aliento menos',
   );
   await expect(page.getByLabel('Nombre o apodo')).toHaveValue('Completo A visitante');
   await expect(page.getByLabel('Nombre propuesto del pin')).toHaveValue('Completo A propuesta');
@@ -479,7 +479,7 @@ test('a B draft switching back to A cannot submit until keep-or-move is resolved
   await expect(page.locator('[data-public-pin-request-status]')).toContainText(
     'Antes de enviar, decide',
   );
-  await expect(page.getByRole('button', { name: 'Conservar borrador en Campaña B' })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Conservar borrador en Un aliento menos' })).toBeFocused();
   expect(backend.getPublicRequests()).toHaveLength(0);
 
   await page.getByRole('button', { name: 'Mover borrador a Castigo Divino' }).click();
@@ -523,9 +523,9 @@ for (const width of [320, 390, 430, 768, 1280]) {
     await expect(selector).toBeVisible();
     await selector.focus();
     await expect(selector).toBeFocused();
-    await selector.selectOption('campaign-b');
+    await selector.selectOption('un-aliento-menos');
     await expectCampaignB(page);
-    await expect(page.locator('[data-campaign-status]')).toContainText('Campaña B');
+    await expect(page.locator('[data-campaign-status]')).toContainText('Un aliento menos');
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

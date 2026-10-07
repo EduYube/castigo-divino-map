@@ -60,6 +60,8 @@ export interface PublicPlayer {
   readonly nameLanguage: LanguageCode;
   /** MAP-054 persisted roster accent. Historic Beta 0.2 snapshots may omit it. */
   readonly accentColor?: string;
+  /** MAP-068 explicit player-character identity; null/absent means no character identity. */
+  readonly characterEntityId?: EntityId | null;
 }
 
 export interface PublicMapEntity {
