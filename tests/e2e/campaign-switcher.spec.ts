@@ -570,9 +570,7 @@ test('MAP-068 roster isolation drives ally, neutral and self indicators per acti
   await configureCampaignBackend(page);
   await page.goto('/?campaign=castigo-divino');
 
-  const castigoPin = page.locator(
-    '[data-testid="entity-pin"][data-entity-id="place-campaign-a"]',
-  );
+  const castigoPin = page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-a"]');
   await expect(castigoPin.locator('.pin-disposition')).toHaveCount(2);
   await expect(castigoPin.locator('.pin-disposition--ally')).toHaveCount(1);
   await expect(castigoPin.locator('.pin-disposition--enemy')).toHaveCount(1);
@@ -583,9 +581,7 @@ test('MAP-068 roster isolation drives ally, neutral and self indicators per acti
   await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
 
   const veyra = page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-b"]');
-  const ally = page.locator(
-    '[data-testid="entity-pin"][data-entity-id="place-campaign-b-ally"]',
-  );
+  const ally = page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-b-ally"]');
   const neutral = page.locator(
     '[data-testid="entity-pin"][data-entity-id="place-campaign-b-neutral"]',
   );
