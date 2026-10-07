@@ -216,7 +216,10 @@ export function parsePlayer(row: Record<string, unknown>, index: number): Parsed
     characterEntityId:
       row.character_entity_id === undefined
         ? null
-        : (expectNullableString(row.character_entity_id, `${path}.character_entity_id`) as PublicPlayer['characterEntityId']),
+        : (expectNullableString(
+            row.character_entity_id,
+            `${path}.character_entity_id`,
+          ) as PublicPlayer['characterEntityId']),
   };
 }
 
