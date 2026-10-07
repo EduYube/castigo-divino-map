@@ -479,7 +479,9 @@ test('a B draft switching back to A cannot submit until keep-or-move is resolved
   await expect(page.locator('[data-public-pin-request-status]')).toContainText(
     'Antes de enviar, decide',
   );
-  await expect(page.getByRole('button', { name: 'Conservar borrador en Un aliento menos' })).toBeFocused();
+  await expect(
+    page.getByRole('button', { name: 'Conservar borrador en Un aliento menos' }),
+  ).toBeFocused();
   expect(backend.getPublicRequests()).toHaveLength(0);
 
   await page.getByRole('button', { name: 'Mover borrador a Castigo Divino' }).click();
