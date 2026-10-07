@@ -305,6 +305,10 @@ select ok(
   'generic character-location relation cannot cross campaigns'
 );
 
+insert into auth.users (id)
+values ('00000000-0000-4000-8000-000000000099'::uuid)
+on conflict (id) do nothing;
+
 alter table public.public_requests disable trigger "20_validate_public_request";
 
 select ok(
@@ -320,6 +324,7 @@ select ok(
       description,
       reason,
       request_status,
+      moderator_user_id,
       converted_entity_id,
       moderated_at
     )
@@ -334,6 +339,7 @@ select ok(
       'MAP068 cross-campaign conversion probe',
       'MAP068 campaign integrity',
       'converted',
+      '00000000-0000-4000-8000-000000000099'::uuid,
       'entity-map068-self',
       pg_catalog.now()
     )
