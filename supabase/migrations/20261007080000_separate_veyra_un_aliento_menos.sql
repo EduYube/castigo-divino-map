@@ -316,6 +316,11 @@ begin
        select 1
        from public.campaign_geographic_entity_links
        where entity_id = veyra_entity
+     )
+     or exists (
+       select 1
+       from public.geographic_names
+       where entity_id = veyra_entity
      ) then
     raise exception 'MAP-068 found an unaudited Veyra dependency; review before migrating';
   end if;
