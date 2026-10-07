@@ -14,7 +14,7 @@ const PUBLISHABLE_KEY = 'sb_publishable_map056_campaign_key';
 const ACCESS_TOKEN = 'map056_admin_access_token';
 const REFRESH_TOKEN = 'map056_admin_refresh_token';
 const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
-const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000054';
+const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000068';
 const ARCHIVED_CAMPAIGN_ID = '00000000-0000-4000-8000-000000000056';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
@@ -95,12 +95,12 @@ const SCENARIOS: readonly Scenario[] = [
     name: 'Castigo Divino',
     categoryId: 'category-map056-a',
     requestId: '56000000-0000-4000-8000-0000000000a1',
-    otherSlug: 'campaign-b',
+    otherSlug: 'un-aliento-menos',
   },
   {
     campaignId: CAMPAIGN_B_ID,
-    slug: 'campaign-b',
-    name: 'Campaña B',
+    slug: 'un-aliento-menos',
+    name: 'Un aliento menos',
     categoryId: 'category-map056-b',
     requestId: '56000000-0000-4000-8000-0000000000b1',
     otherSlug: 'castigo-divino',
@@ -117,8 +117,8 @@ const CAMPAIGNS: readonly PublicCampaignV3[] = [
   },
   {
     id: CAMPAIGN_B_ID,
-    slug: 'campaign-b',
-    name: 'Campaña B',
+    slug: 'un-aliento-menos',
+    name: 'Un aliento menos',
     status: 'active',
     displayOrder: 1,
   },
