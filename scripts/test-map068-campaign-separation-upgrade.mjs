@@ -103,7 +103,8 @@ insert into public.categories (
 insert into public.map_entities (
   campaign_id,id,slug,entity_type,visibility,audience,name,name_language,summary,description,
   x,y,category_id,publication_status,created_at,updated_at
-) values ${entityValues};
+) values ${entityValues}
+on conflict (id) do nothing;
 
 alter table public.map_entities disable trigger "90_map_entity_updated_at";
 update public.map_entities
