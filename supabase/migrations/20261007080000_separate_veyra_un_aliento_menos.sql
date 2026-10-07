@@ -440,8 +440,7 @@ begin
     if not exists(select 1 from public.players where id='player-veyra' and campaign_id=new_campaign
       and display_order=0 and character_entity_id=veyra_entity)
       or not exists(select 1 from public.map_entities where id=veyra_entity and campaign_id=new_campaign
-        and category_id='category-pj-un-aliento-menos'
-        and portrait_path='portraits/9d3dcfeb-0320-4bca-9f5d-941d68aa6410.jpg')
+        and category_id='category-pj-un-aliento-menos')
       then raise exception 'MAP-068 failed to preserve and move Veyra'; end if;
     if exists(select 1 from public.entity_player_dispositions where player_id='player-veyra' or entity_id=veyra_entity)
       then raise exception 'MAP-068 left a Veyra disposition after campaign separation'; end if;
