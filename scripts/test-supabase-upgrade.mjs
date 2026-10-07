@@ -347,13 +347,28 @@ runPsql(
      if exists (
        select 1
        from public.map_entities as entity
-       cross join public.players as player
+       join public.players as player
+         on player.campaign_id = entity.campaign_id
        left join public.entity_player_dispositions as relation
          on relation.entity_id = entity.id
          and relation.player_id = player.id
+         and relation.campaign_id = entity.campaign_id
        where relation.entity_id is null
      ) then
-       raise exception 'entity-player matrix is incomplete after the upgrade';
+       raise exception 'campaign-scoped entity-player matrix is incomplete after the upgrade';
+     end if;
+
+     if exists (
+       select 1
+       from public.entity_player_dispositions as relation
+       join public.map_entities as entity
+         on entity.id = relation.entity_id
+       join public.players as player
+         on player.id = relation.player_id
+       where relation.campaign_id <> entity.campaign_id
+          or relation.campaign_id <> player.campaign_id
+     ) then
+       raise exception 'entity-player matrix contains a cross-campaign disposition after the upgrade';
      end if;
    end;
    $$;
@@ -362,7 +377,7 @@ runPsql(
    union all
    select 'ok - global legacy disposition policy resets new perspectives to neutral'
    union all
-   select 'ok - entity-player matrix remains complete after the upgrade';`,
+   select 'ok - campaign-scoped entity-player matrix remains complete without cross-campaign rows';`,
 );
 
 console.log('Supabase upgrade verification passed: MAP-014 fixture upgraded through MAP-015.');
