@@ -77,7 +77,11 @@ select is(
 set local role anon;
 
 select is((select count(*) from public.map_entities), 4::bigint, 'anon sees only published entities');
-select is((select count(*) from public.categories), 4::bigint, 'anon sees only published categories');
+select is(
+  (select count(*) from public.categories),
+  5::bigint,
+  'anon sees only published categories across the two active campaigns'
+);
 select is((select count(*) from public.tags), 5::bigint, 'anon sees only published tags');
 select is((select count(*) from public.players), 2::bigint, 'anon sees the two published player perspectives');
 select is(
