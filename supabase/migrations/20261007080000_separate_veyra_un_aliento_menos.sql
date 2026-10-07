@@ -1,6 +1,26 @@
 begin;
 
 alter table public.players add column character_entity_id text;
+
+-- character_entity_id is backend identity metadata, not part of the public roster contract.
+-- Replace the historical table-wide SELECT grants with the same explicit public columns so
+-- adding this column does not silently broaden anon/authenticated read access.
+revoke select on table public.players from anon, authenticated;
+grant select (
+  id,
+  slug,
+  display_name,
+  name_language,
+  publication_status,
+  published_at,
+  archived_at,
+  created_at,
+  updated_at,
+  campaign_id,
+  display_order,
+  accent_color
+) on table public.players to anon, authenticated;
+
 alter table public.players
   add constraint players_character_entity_campaign_fk
   foreign key (character_entity_id, campaign_id)
