@@ -515,8 +515,7 @@
           "id": "player-veyra",
           "slug": "veyra",
           "displayName": "Veyra",
-          "nameLanguage": "en",
-          "characterEntityId": "entity-request-07d26371bbff42d9b91e076d099891b0"
+          "nameLanguage": "en"
         }
       ],
       "entities": [
@@ -3480,6 +3479,6 @@
     }
   ],
   "generatedAt": "2026-10-07T08:00:00.000Z",
-  "sourceRevision": "sha256:e40d71d4b6ac23028f6fca9511137660f82975a4bc17a865c1ca16ad737c6f58",
-  "checksum": "sha256:e40d71d4b6ac23028f6fca9511137660f82975a4bc17a865c1ca16ad737c6f58"
+  "sourceRevision": "sha256:de24c7bb4b23402bab367db669c59d0fadab36d19f5e60fec260acb1da836b17",
+  "checksum": "sha256:de24c7bb4b23402bab367db669c59d0fadab36d19f5e60fec260acb1da836b17"
 }
