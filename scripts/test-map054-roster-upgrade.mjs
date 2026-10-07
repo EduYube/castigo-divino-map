@@ -269,11 +269,22 @@ runPsql(
   `do $$
    declare
      initial_campaign uuid := '${INITIAL_CAMPAIGN_ID}'::uuid;
+     veyra_campaign uuid := '00000000-0000-4000-8000-000000000068'::uuid;
+     veyra_entity text := 'entity-request-07d26371bbff42d9b91e076d099891b0';
    begin
      if (select count(*) from public.players
+         where lower(display_name) in ('skade', 'ura', 'veyra')) <> 3 then
+       raise exception 'historic roster identities were not materialised exactly once';
+     end if;
+
+     if (select count(*) from public.players
          where campaign_id = initial_campaign
-           and lower(display_name) in ('skade', 'ura', 'veyra')) <> 3 then
-       raise exception 'historic roster was not materialised exactly once';
+           and lower(display_name) in ('skade', 'ura')) <> 2
+        or exists (
+          select 1 from public.players
+          where campaign_id = initial_campaign and lower(display_name) = 'veyra'
+        ) then
+       raise exception 'MAP-068 did not leave the historic Castigo Divino roster as Skade/Ura';
      end if;
 
      if not exists (
@@ -306,49 +317,43 @@ runPsql(
      if not exists (
        select 1 from public.players
        where id = 'player-veyra'
-         and campaign_id = initial_campaign
+         and campaign_id = veyra_campaign
          and slug = 'veyra'
          and display_name = 'Veyra'
-         and display_order = 2
+         and display_order = 0
          and accent_color = '#9d174d'
          and publication_status = 'published'
+         and character_entity_id = veyra_entity
      ) then
-       raise exception 'Veyra roster row was not migrated correctly';
+       raise exception 'Veyra roster identity was not preserved in Un aliento menos';
      end if;
 
-     if (select count(*) from public.entity_player_dispositions
-         where campaign_id = initial_campaign
-           and player_id in ('player-skade-existing', 'player-ura', 'player-veyra')
-           and entity_id in (
-             'entity-skade',
-             'entity-ura',
-             'entity-request-07d26371bbff42d9b91e076d099891b0'
-           )) <> 9 then
-       raise exception 'roster disposition matrix is incomplete after migration';
+     if not exists (
+       select 1 from public.map_entities
+       where id = veyra_entity
+         and campaign_id = veyra_campaign
+         and name = 'Veyra'
+     ) then
+       raise exception 'Veyra entity identity was not preserved in Un aliento menos';
      end if;
 
      if not exists (
        select 1 from public.entity_player_dispositions
-       where player_id = 'player-skade-existing'
+       where campaign_id = initial_campaign
+         and player_id = 'player-skade-existing'
          and entity_id = 'entity-ura'
          and disposition = 'ally'
          and updated_at = '2026-07-02T00:00:00Z'::timestamptz
-     ) or not exists (
-       select 1 from public.entity_player_dispositions
-       where player_id = 'player-skade-existing'
-         and entity_id = 'entity-request-07d26371bbff42d9b91e076d099891b0'
-         and disposition = 'enemy'
-         and updated_at = '2026-07-02T00:00:00Z'::timestamptz
      ) then
-       raise exception 'existing Skade dispositions/history changed during migration';
+       raise exception 'existing same-campaign Skade disposition/history changed during migration';
      end if;
 
      if exists (
        select 1 from public.entity_player_dispositions
-       where player_id in ('player-ura', 'player-veyra')
-         and disposition <> 'neutral'
+       where player_id = 'player-veyra'
+          or entity_id = veyra_entity
      ) then
-       raise exception 'new roster members were not initialised neutrally';
+       raise exception 'Veyra dispositions that became cross-campaign/self survived MAP-068';
      end if;
    end;
    $$;`,
