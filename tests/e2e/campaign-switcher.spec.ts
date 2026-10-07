@@ -340,7 +340,7 @@ test('A/B selection isolates map, search and details while URL Back/Forward rema
   await expect(page.getByTestId('place-details')).toContainText('Alpha Atalaya');
 
   await selector.selectOption('un-aliento-menos');
-  await expect(page).toHaveURL(/campaign=campaign-b/);
+  await expect(page).toHaveURL(/campaign=un-aliento-menos/);
   await expect(page).not.toHaveURL(/place=/);
   await expectCampaignB(page);
   await expect(page.getByTestId('place-details')).not.toContainText('Alpha Atalaya');
@@ -470,7 +470,7 @@ test('a B draft switching back to A cannot submit until keep-or-move is resolved
   page,
 }) => {
   const backend = await configureCampaignBackend(page);
-  await page.goto('/?campaign=campaign-b');
+  await page.goto('/?campaign=un-aliento-menos');
   await page.getByRole('button', { name: 'Proponer un pin' }).click();
   await fillPublicRequest(page, 'Completo B');
 
@@ -493,7 +493,7 @@ test('degraded schema v3 keeps B selected and backend recovery does not reset it
   page,
 }) => {
   const backend = await configureCampaignBackend(page, { remoteAvailable: false });
-  await page.goto('/?campaign=campaign-b');
+  await page.goto('/?campaign=un-aliento-menos');
 
   await expectCampaignB(page);
   await expect(page.locator('[data-backend-status]')).toHaveAttribute(
@@ -507,7 +507,7 @@ test('degraded schema v3 keeps B selected and backend recovery does not reset it
     .poll(() => page.locator('[data-backend-status]').getAttribute('data-backend-state'))
     .toBe('connected');
   await expectCampaignB(page);
-  await expect(page).toHaveURL(/campaign=campaign-b/);
+  await expect(page).toHaveURL(/campaign=un-aliento-menos/);
 });
 
 for (const width of [320, 390, 430, 768, 1280]) {
