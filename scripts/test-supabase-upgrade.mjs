@@ -353,7 +353,8 @@ runPsql(
          on relation.entity_id = entity.id
          and relation.player_id = player.id
          and relation.campaign_id = entity.campaign_id
-       where relation.entity_id is null
+       where player.character_entity_id is distinct from entity.id
+         and relation.entity_id is null
      ) then
        raise exception 'campaign-scoped entity-player matrix is incomplete after the upgrade';
      end if;
