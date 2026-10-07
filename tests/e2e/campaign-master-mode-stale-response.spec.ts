@@ -8,7 +8,7 @@ const AUTH_KEY = 'sb_publishable_map055_stale_auth_key';
 const ADMIN_TOKEN = 'map055-stale-admin-token';
 const ADMIN_ID = '00000000-0000-4000-8000-000000000001';
 const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
-const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000054';
+const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000068';
 const MASTER_A_ID = 'entity-master-stale-a';
 const MASTER_B_ID = 'entity-master-current-b';
 const MASTER_A_NAME = 'MAP055 STALE SECRET A';
@@ -226,8 +226,8 @@ async function configureStaleBackend(page: Page): Promise<StaleBackend> {
             },
             {
               id: CAMPAIGN_B_ID,
-              slug: 'campaign-b',
-              name: 'Campaña B',
+              slug: 'un-aliento-menos',
+              name: 'Un aliento menos',
               status: 'active',
               display_order: 1,
             },
@@ -279,8 +279,8 @@ test('stale campaign A cannot re-enter the DOM when it resolves after campaign B
   await expect.poll(() => backend.getRequestedCampaigns()).toContain(CAMPAIGN_A_ID);
   await expect(page.locator('[data-master-mode]')).toHaveAttribute('data-state', 'loading');
 
-  await selector.selectOption('campaign-b');
-  await expect(selector).toHaveValue('campaign-b');
+  await selector.selectOption('un-aliento-menos');
+  await expect(selector).toHaveValue('un-aliento-menos');
   await expect.poll(() => backend.getRequestedCampaigns()).toContain(CAMPAIGN_B_ID);
   await expect.poll(() => backend.getCompletedCampaigns()).toContain(CAMPAIGN_B_ID);
 
