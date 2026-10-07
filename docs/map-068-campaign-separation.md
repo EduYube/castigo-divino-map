@@ -32,13 +32,15 @@ eventos ni vínculos geográficos de Veyra en el inventario auditado.
 ## Self y seguridad
 
 `players.character_entity_id` modela explícitamente player↔character mediante FK compuesta de
-campaña. La matriz omite esa pareja; enlazar identidad elimina una self-disposition preexistente y
-otro trigger impide recrearla. El renderer aplica la misma identidad como defensa adicional, sin
-hardcodes de Veyra.
+campaña y permanece fuera del catálogo público. La matriz omite esa pareja; enlazar identidad
+elimina una self-disposition preexistente y otro trigger impide recrearla. El renderer no necesita
+ningún hardcode ni filtro especial: simplemente no recibe una disposición self persistida.
 
 Las FKs compuestas existentes siguen protegiendo dispositions, associations, tags, notas,
 relaciones/eventos y requests. Solo tres FKs cíclicas se retiran dentro de la transacción de
-migración para mover las filas auditadas y se restauran antes del commit.
+migración para mover las filas auditadas y se restauran antes del commit. La migración admite
+instalaciones frescas y estados históricos compatibles, pero falla cerrada si aparecen dependencias
+de Veyra no clasificadas por la auditoría de producción.
 
 ## Snapshot y checkpoint
 
