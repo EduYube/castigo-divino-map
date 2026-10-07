@@ -203,7 +203,7 @@ export function parsePlayer(row: Record<string, unknown>, index: number): Parsed
   const path = `players[${index}]`;
   assertAllowedProperties(
     row,
-    ['id', 'slug', 'display_name', 'name_language', 'accent_color', 'character_entity_id'],
+    ['id', 'slug', 'display_name', 'name_language', 'accent_color'],
     path,
   );
 
@@ -213,13 +213,6 @@ export function parsePlayer(row: Record<string, unknown>, index: number): Parsed
     displayName: expectString(row.display_name, `${path}.display_name`),
     nameLanguage: expectEnum(row.name_language, `${path}.name_language`, ['en'] as const),
     accentColor: expectString(row.accent_color, `${path}.accent_color`, /^#[0-9a-f]{6}$/),
-    characterEntityId:
-      row.character_entity_id === undefined
-        ? null
-        : (expectNullableString(
-            row.character_entity_id,
-            `${path}.character_entity_id`,
-          ) as PublicPlayer['characterEntityId']),
   };
 }
 

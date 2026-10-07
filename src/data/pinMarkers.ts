@@ -49,8 +49,6 @@ function resolveBeta02Dispositions(
   entityId: EntityId,
 ): readonly PinPlayerDispositionInput[] {
   return catalog.players.flatMap((player): readonly PinPlayerDispositionInput[] => {
-    if (player.characterEntityId === entityId) return [];
-
     const disposition = catalog.dispositions.find(
       (entry) => entry.entityId === entityId && entry.playerId === player.id,
     )?.disposition;

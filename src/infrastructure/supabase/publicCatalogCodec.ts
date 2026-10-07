@@ -186,21 +186,9 @@ function assertReferences(snapshot: PublicCatalogContentV2): void {
     });
   });
 
-  snapshot.players.forEach((player) => {
-    if (player.characterEntityId == null) return;
-    const character = entitiesById.get(player.characterEntityId);
-    if (!character || character.entityType !== 'character') {
-      invalidResponse(`El jugador “${player.id}” referencia una identidad de personaje inválida.`);
-    }
-  });
-
   snapshot.dispositions.forEach((disposition) => {
     if (!entitiesById.has(disposition.entityId) || !playerIds.has(disposition.playerId)) {
       invalidResponse('Una disposición pública referencia un extremo ausente.');
-    }
-    const player = snapshot.players.find(({ id }) => id === disposition.playerId);
-    if (player?.characterEntityId === disposition.entityId) {
-      invalidResponse('Una disposición pública no puede apuntar al propio personaje del jugador.');
     }
   });
 
@@ -400,7 +388,7 @@ function snapshotPayloads(
     const path = `snapshot.players[${index}]`;
     assertAllowedProperties(
       player,
-      ['id', 'slug', 'displayName', 'nameLanguage', 'accentColor', 'characterEntityId'],
+      ['id', 'slug', 'displayName', 'nameLanguage', 'accentColor'],
       path,
     );
     return {
@@ -409,7 +397,6 @@ function snapshotPayloads(
       display_name: player.displayName,
       name_language: player.nameLanguage,
       accent_color: player.accentColor ?? HISTORIC_PLAYER_ACCENT,
-      character_entity_id: player.characterEntityId ?? null,
     };
   });
   const entityAliases: Record<string, unknown>[] = [];

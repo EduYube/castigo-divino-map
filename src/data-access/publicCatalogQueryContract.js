@@ -18,7 +18,7 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
   },
   players: {
     name: 'players',
-    select: 'id,slug,display_name,name_language,accent_color,character_entity_id',
+    select: 'id,slug,display_name,name_language,accent_color',
     order: 'id.asc',
     published: true,
     campaignScoped: true,

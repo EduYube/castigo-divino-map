@@ -117,12 +117,11 @@ export function buildPublicSnapshotContent(raw) {
     description,
   }));
   const players = publishedRows(raw.players ?? [], 'players').map(
-    ({ id, slug, display_name, name_language, character_entity_id }) => ({
+    ({ id, slug, display_name, name_language }) => ({
       id,
       slug,
       displayName: display_name,
       nameLanguage: name_language,
-      ...(character_entity_id == null ? {} : { characterEntityId: character_entity_id }),
     }),
   );
   const categoryIds = new Set(categories.map(({ id }) => id));
