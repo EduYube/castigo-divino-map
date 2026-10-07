@@ -135,8 +135,8 @@ function rowsFor(table: string, campaignId: string): readonly Record<string, unk
               summary: 'Canario ally.',
               description: 'Canario ally.',
               portrait_path: null,
-              x: 2450,
-              y: 1420,
+              x: 2850,
+              y: 1650,
               category_id: categoryId,
             },
             {
@@ -149,8 +149,8 @@ function rowsFor(table: string, campaignId: string): readonly Record<string, unk
               summary: 'Canario neutral.',
               description: 'Canario neutral.',
               portrait_path: null,
-              x: 2500,
-              y: 1440,
+              x: 3250,
+              y: 1900,
               category_id: categoryId,
             },
           ]
