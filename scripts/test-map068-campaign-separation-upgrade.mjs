@@ -79,6 +79,21 @@ const entityValues = entities
   .join(',\n');
 
 sql(`
+-- The clean baseline has historical public IDs reserved even though --no-seed
+-- leaves their rows absent. This rehearsal reconstructs the audited pre-MAP-068
+-- production state, so allow those exact historical rows to be materialised as
+-- fixture setup only. Re-enable lifecycle reservation guards before MAP-068 runs.
+alter table public.categories disable trigger "60_category_identifier";
+alter table public.categories disable trigger "70_category_reserve";
+alter table public.map_entities disable trigger "60_map_entity_identifier";
+alter table public.map_entities disable trigger "70_map_entity_reserve";
+alter table public.tags disable trigger "60_tag_identifier";
+alter table public.tags disable trigger "70_tag_reserve";
+alter table public.entity_tags disable trigger "60_entity_tag_identifier";
+alter table public.entity_tags disable trigger "70_entity_tag_reserve";
+alter table public.players disable trigger "60_player_identifier";
+alter table public.players disable trigger "70_player_reserve";
+
 insert into public.categories (
   campaign_id,id,slug,name,description,publication_status,published_at
 ) values
@@ -133,6 +148,17 @@ insert into public.public_requests (
   '2026-08-11T20:13:31Z','2026-08-12T11:04:17Z'
 );
 alter table public.public_requests enable trigger "20_validate_public_request";
+
+alter table public.categories enable trigger "60_category_identifier";
+alter table public.categories enable trigger "70_category_reserve";
+alter table public.map_entities enable trigger "60_map_entity_identifier";
+alter table public.map_entities enable trigger "70_map_entity_reserve";
+alter table public.tags enable trigger "60_tag_identifier";
+alter table public.tags enable trigger "70_tag_reserve";
+alter table public.entity_tags enable trigger "60_entity_tag_identifier";
+alter table public.entity_tags enable trigger "70_entity_tag_reserve";
+alter table public.players enable trigger "60_player_identifier";
+alter table public.players enable trigger "70_player_reserve";
 `);
 
 const before = JSON.parse(
