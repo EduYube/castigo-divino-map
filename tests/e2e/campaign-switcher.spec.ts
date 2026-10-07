@@ -81,23 +81,95 @@ function rowsFor(table: string, campaignId: string): readonly Record<string, unk
           description: `Categoría exclusiva de campaña ${suffix.toUpperCase()}`,
         },
       ];
+    case 'players':
+      return campaignId === CAMPAIGN_B_ID
+        ? [
+            {
+              id: 'player-veyra',
+              slug: 'veyra',
+              display_name: 'Veyra',
+              name_language: 'en',
+              accent_color: '#9d174d',
+            },
+          ]
+        : [
+            {
+              id: 'player-skade',
+              slug: 'skade',
+              display_name: 'Skade',
+              name_language: 'en',
+              accent_color: '#c2410c',
+            },
+            {
+              id: 'player-ura',
+              slug: 'ura',
+              display_name: 'Ura',
+              name_language: 'en',
+              accent_color: '#1e3a8a',
+            },
+          ];
     case 'map_entities':
-      return [
-        {
-          id: entityId,
-          slug: `campaign-${suffix}-place`,
-          entity_type: 'location',
-          visibility: 'pin',
-          name,
-          name_language: 'en',
-          summary: `Resumen exclusivo ${suffix.toUpperCase()}`,
-          description: `Descripción exclusiva ${suffix.toUpperCase()}`,
-          portrait_path: null,
-          x: suffix === 'b' ? 2400 : 900,
-          y: suffix === 'b' ? 1400 : 700,
-          category_id: categoryId,
-        },
-      ];
+      return campaignId === CAMPAIGN_B_ID
+        ? [
+            {
+              id: entityId,
+              slug: 'veyra',
+              entity_type: 'character',
+              visibility: 'pin',
+              name,
+              name_language: 'en',
+              summary: 'Veyra pertenece únicamente a Un aliento menos.',
+              description: 'Entidad de Veyra para aislamiento multicampaña.',
+              portrait_path: null,
+              x: 2400,
+              y: 1400,
+              category_id: categoryId,
+            },
+            {
+              id: 'place-campaign-b-ally',
+              slug: 'aliado-veyra',
+              entity_type: 'location',
+              visibility: 'pin',
+              name: 'Aliado de Veyra',
+              name_language: 'en',
+              summary: 'Canario ally.',
+              description: 'Canario ally.',
+              portrait_path: null,
+              x: 2450,
+              y: 1420,
+              category_id: categoryId,
+            },
+            {
+              id: 'place-campaign-b-neutral',
+              slug: 'neutral-veyra',
+              entity_type: 'location',
+              visibility: 'pin',
+              name: 'Neutral de Veyra',
+              name_language: 'en',
+              summary: 'Canario neutral.',
+              description: 'Canario neutral.',
+              portrait_path: null,
+              x: 2500,
+              y: 1440,
+              category_id: categoryId,
+            },
+          ]
+        : [
+            {
+              id: entityId,
+              slug: 'campaign-a-place',
+              entity_type: 'location',
+              visibility: 'pin',
+              name,
+              name_language: 'en',
+              summary: 'Resumen exclusivo A',
+              description: 'Descripción exclusiva A',
+              portrait_path: null,
+              x: 900,
+              y: 700,
+              category_id: categoryId,
+            },
+          ];
     case 'entity_aliases':
       return [
         {
@@ -107,6 +179,32 @@ function rowsFor(table: string, campaignId: string): readonly Record<string, unk
           value: `Alias ${suffix.toUpperCase()}`,
         },
       ];
+    case 'entity_player_dispositions':
+      return campaignId === CAMPAIGN_B_ID
+        ? [
+            {
+              entity_id: 'place-campaign-b-ally',
+              player_id: 'player-veyra',
+              disposition: 'ally',
+            },
+            {
+              entity_id: 'place-campaign-b-neutral',
+              player_id: 'player-veyra',
+              disposition: 'neutral',
+            },
+          ]
+        : [
+            {
+              entity_id: 'place-campaign-a',
+              player_id: 'player-skade',
+              disposition: 'ally',
+            },
+            {
+              entity_id: 'place-campaign-a',
+              player_id: 'player-ura',
+              disposition: 'enemy',
+            },
+          ];
     default:
       return [];
   }
@@ -116,42 +214,152 @@ function snapshotCatalog(campaignId: string): PublicCampaignCatalogV3 {
   const suffix = campaignId === CAMPAIGN_B_ID ? 'b' : 'a';
   const entityId = `place-campaign-${suffix}` as CampaignEntityId;
   const categoryId = `category-campaign-${suffix}` as CampaignCategoryId;
+  const categories = [
+    {
+      id: categoryId,
+      slug: `campaign-${suffix}`,
+      name: `Categoría ${suffix.toUpperCase()}`,
+      description: `Categoría exclusiva de campaña ${suffix.toUpperCase()}`,
+    },
+  ];
+
+  if (campaignId === CAMPAIGN_B_ID) {
+    return {
+      campaignId,
+      categories,
+      tags: [],
+      players: [
+        {
+          id: 'player-veyra',
+          slug: 'veyra',
+          displayName: 'Veyra',
+          nameLanguage: 'en',
+        },
+      ],
+      entities: [
+        {
+          id: entityId,
+          slug: 'veyra',
+          entityType: 'character',
+          visibility: 'pin',
+          name: 'Veyra',
+          nameLanguage: 'en',
+          aliases: [
+            {
+              id: 'alias-campaign-b',
+              entityId,
+              language: 'en',
+              value: 'Alias B',
+            },
+          ],
+          summary: 'Veyra pertenece únicamente a Un aliento menos.',
+          description: 'Entidad de Veyra para aislamiento multicampaña.',
+          coordinates: { x: 2400, y: 1400 },
+          categoryId,
+          tagIds: [],
+        },
+        {
+          id: 'place-campaign-b-ally' as CampaignEntityId,
+          slug: 'aliado-veyra',
+          entityType: 'location',
+          visibility: 'pin',
+          name: 'Aliado de Veyra',
+          nameLanguage: 'en',
+          aliases: [],
+          summary: 'Canario ally.',
+          description: 'Canario ally.',
+          coordinates: { x: 2450, y: 1420 },
+          categoryId,
+          tagIds: [],
+        },
+        {
+          id: 'place-campaign-b-neutral' as CampaignEntityId,
+          slug: 'neutral-veyra',
+          entityType: 'location',
+          visibility: 'pin',
+          name: 'Neutral de Veyra',
+          nameLanguage: 'en',
+          aliases: [],
+          summary: 'Canario neutral.',
+          description: 'Canario neutral.',
+          coordinates: { x: 2500, y: 1440 },
+          categoryId,
+          tagIds: [],
+        },
+      ],
+      dispositions: [
+        {
+          entityId: 'place-campaign-b-ally' as CampaignEntityId,
+          playerId: 'player-veyra',
+          disposition: 'ally',
+        },
+        {
+          entityId: 'place-campaign-b-neutral' as CampaignEntityId,
+          playerId: 'player-veyra',
+          disposition: 'neutral',
+        },
+      ],
+      associations: [],
+      characterLocationRelations: [],
+      notes: [],
+      characterLocationEvents: [],
+      geographicEntityLinks: [],
+    };
+  }
+
   return {
     campaignId,
-    categories: [
+    categories,
+    tags: [],
+    players: [
       {
-        id: categoryId,
-        slug: `campaign-${suffix}`,
-        name: `Categoría ${suffix.toUpperCase()}`,
-        description: `Categoría exclusiva de campaña ${suffix.toUpperCase()}`,
+        id: 'player-skade',
+        slug: 'skade',
+        displayName: 'Skade',
+        nameLanguage: 'en',
+      },
+      {
+        id: 'player-ura',
+        slug: 'ura',
+        displayName: 'Ura',
+        nameLanguage: 'en',
       },
     ],
-    tags: [],
-    players: [],
     entities: [
       {
         id: entityId,
-        slug: `campaign-${suffix}-place`,
+        slug: 'campaign-a-place',
         entityType: 'location',
         visibility: 'pin',
-        name: suffix === 'b' ? 'Veyra' : 'Alpha Atalaya',
+        name: 'Alpha Atalaya',
         nameLanguage: 'en',
         aliases: [
           {
-            id: `alias-campaign-${suffix}`,
+            id: 'alias-campaign-a',
             entityId,
             language: 'en',
-            value: `Alias ${suffix.toUpperCase()}`,
+            value: 'Alias A',
           },
         ],
-        summary: `Resumen exclusivo ${suffix.toUpperCase()}`,
-        description: `Descripción exclusiva ${suffix.toUpperCase()}`,
-        coordinates: { x: suffix === 'b' ? 2400 : 900, y: suffix === 'b' ? 1400 : 700 },
+        summary: 'Resumen exclusivo A',
+        description: 'Descripción exclusiva A',
+        coordinates: { x: 900, y: 700 },
         categoryId,
         tagIds: [],
       },
     ],
-    dispositions: [],
+    dispositions: [
+      {
+        entityId,
+        playerId: 'player-skade',
+        disposition: 'ally',
+      },
+      {
+        entityId,
+        playerId: 'player-ura',
+        disposition: 'enemy',
+      },
+    ],
     associations: [],
     characterLocationRelations: [],
     notes: [],
@@ -354,6 +562,46 @@ test('A/B selection isolates map, search and details while URL Back/Forward rema
   await expectCampaignA(page);
   await page.goForward();
   await expectCampaignB(page);
+});
+
+test('MAP-068 roster isolation drives ally, neutral and self indicators per active campaign', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await page.goto('/?campaign=castigo-divino');
+
+  const castigoPin = page.locator(
+    '[data-testid="entity-pin"][data-entity-id="place-campaign-a"]',
+  );
+  await expect(castigoPin.locator('.pin-disposition')).toHaveCount(2);
+  await expect(castigoPin.locator('.pin-disposition--ally')).toHaveCount(1);
+  await expect(castigoPin.locator('.pin-disposition--enemy')).toHaveCount(1);
+  await expect(castigoPin).toHaveAttribute('aria-label', /Skade: aliado/i);
+  await expect(castigoPin).toHaveAttribute('aria-label', /Ura: enemigo/i);
+  await expect(castigoPin).not.toHaveAttribute('aria-label', /Veyra:/i);
+
+  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
+
+  const veyra = page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-b"]');
+  const ally = page.locator(
+    '[data-testid="entity-pin"][data-entity-id="place-campaign-b-ally"]',
+  );
+  const neutral = page.locator(
+    '[data-testid="entity-pin"][data-entity-id="place-campaign-b-neutral"]',
+  );
+
+  await expect(veyra.locator('.pin-disposition')).toHaveCount(0);
+  await expect(veyra.locator('.pin-visual__dispositions')).toHaveCount(0);
+  await expect(veyra).not.toHaveAttribute('aria-label', /Relación con los personajes:/i);
+
+  await expect(ally.locator('.pin-disposition')).toHaveCount(1);
+  await expect(ally.locator('.pin-disposition--ally')).toHaveText('+');
+  await expect(ally).toHaveAttribute('aria-label', /Veyra: aliado/i);
+
+  await expect(neutral.locator('.pin-disposition')).toHaveCount(0);
+  await expect(neutral.locator('.pin-visual__dispositions')).toHaveCount(0);
+  await expect(neutral).not.toHaveAttribute('aria-label', /neutral/i);
+  await expect(neutral).not.toHaveAttribute('aria-label', /Skade:|Ura:/i);
 });
 
 test('a public request submitted from B displays and persists campaign B explicitly', async ({
