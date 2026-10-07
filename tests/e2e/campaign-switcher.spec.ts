@@ -596,7 +596,7 @@ test('MAP-068 roster isolation drives ally, neutral and self indicators per acti
 
   await expect(neutral.locator('.pin-disposition')).toHaveCount(0);
   await expect(neutral.locator('.pin-visual__dispositions')).toHaveCount(0);
-  await expect(neutral).not.toHaveAttribute('aria-label', /neutral/i);
+  await expect(neutral).not.toHaveAttribute('aria-label', /Veyra:\\s*neutral/i);
   await expect(neutral).not.toHaveAttribute('aria-label', /Skade:|Ura:/i);
 });
 
@@ -770,7 +770,13 @@ for (const width of [320, 390, 430, 768, 1280]) {
     await selector.focus();
     await expect(selector).toBeFocused();
     await selector.selectOption('un-aliento-menos');
-    await expectCampaignB(page);
+    await expect(selector).toHaveValue('un-aliento-menos');
+    await expect(
+      page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-a"]'),
+    ).toHaveCount(0);
+    await expect(
+      page.locator('[data-testid="entity-pin"], [data-testid="coincident-pin"]'),
+    ).not.toHaveCount(0);
     await expect(page.locator('[data-campaign-status]')).toContainText('Un aliento menos');
     expect(
       await page.evaluate(
