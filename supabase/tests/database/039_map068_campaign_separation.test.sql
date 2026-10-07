@@ -39,9 +39,10 @@ select has_column(
 select fk_ok(
   'public',
   'players',
-  'players_character_entity_campaign_fk',
+  array['character_entity_id', 'campaign_id'],
   'public',
   'map_entities',
+  array['id', 'campaign_id'],
   'player identity is campaign-bound'
 );
 
