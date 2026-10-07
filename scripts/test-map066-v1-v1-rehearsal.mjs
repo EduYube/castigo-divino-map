@@ -25,7 +25,18 @@ run(
 const sql = String.raw`
 with checks as (
   select
-    (select count(*) from public.campaigns) = 1 as one_campaign,
+    (
+      select count(*) = 2
+      from public.campaigns
+      where (id = '00000000-0000-4000-8000-000000000053'
+          and slug = 'castigo-divino'
+          and name = 'Castigo Divino'
+          and status = 'active')
+         or (id = '00000000-0000-4000-8000-000000000068'
+          and slug = 'un-aliento-menos'
+          and name = 'Un aliento menos'
+          and status = 'active')
+    ) and (select count(*) from public.campaigns) = 2 as campaign_set_complete,
     exists (
       select 1 from public.campaigns
       where id = '00000000-0000-4000-8000-000000000053'
