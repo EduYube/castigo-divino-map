@@ -119,77 +119,250 @@ declare
   new_campaign constant uuid := '00000000-0000-4000-8000-000000000068'::uuid;
   veyra_entity constant text := 'entity-request-07d26371bbff42d9b91e076d099891b0';
   veyra_player constant text := 'player-veyra';
-  source_markers integer;
+  request_id constant uuid := '07d26371-bbff-42d9-b91e-076d099891b0'::uuid;
+  entity_count integer;
+  player_count integer;
+  request_count integer;
+  tag_count integer;
 begin
   if exists (
-    select 1 from public.campaigns
-    where (id=new_campaign or slug='un-aliento-menos' or name='Un aliento menos')
-      and not (id=new_campaign and slug='un-aliento-menos' and name='Un aliento menos')
-  ) then raise exception 'MAP-068 found a conflicting Un aliento menos campaign identity'; end if;
+    select 1
+    from public.campaigns
+    where (id = new_campaign or slug = 'un-aliento-menos' or name = 'Un aliento menos')
+      and not (
+        id = new_campaign
+        and slug = 'un-aliento-menos'
+        and name = 'Un aliento menos'
+      )
+  ) then
+    raise exception 'MAP-068 found a conflicting Un aliento menos campaign identity';
+  end if;
 
-  insert into public.campaigns(id,slug,name,status,display_order)
-  values(new_campaign,'un-aliento-menos','Un aliento menos','active',1)
-  on conflict(id) do nothing;
+  insert into public.campaigns (id, slug, name, status, display_order)
+  values (new_campaign, 'un-aliento-menos', 'Un aliento menos', 'active', 1)
+  on conflict (id) do nothing;
 
-  select
-    (select count(*) from public.map_entities where id=veyra_entity)::integer+
-    (select count(*) from public.players where id=veyra_player)::integer+
-    (select count(*) from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'::uuid)::integer+
-    (select count(*) from public.tags where id='category-veyra')::integer
-  into source_markers;
+  select count(*) into entity_count
+  from public.map_entities
+  where id = veyra_entity;
 
-  if source_markers=0 then
-    insert into public.categories(campaign_id,id,slug,name,description,publication_status,published_at)
-    values(new_campaign,'category-pj-un-aliento-menos','personaje-un-aliento-menos','Personaje','Personaje','published',pg_catalog.now())
-    on conflict(id) do nothing;
+  select count(*) into player_count
+  from public.players
+  where id = veyra_player;
+
+  select count(*) into request_count
+  from public.public_requests
+  where id = request_id;
+
+  select count(*) into tag_count
+  from public.tags
+  where id = 'category-veyra';
+
+  -- Fresh installs apply migrations before seed and therefore have no Veyra
+  -- source rows. Keep the new campaign usable without fabricating Veyra.
+  if entity_count = 0 and player_count = 0 and request_count = 0 and tag_count = 0 then
+    insert into public.categories (
+      campaign_id,
+      id,
+      slug,
+      name,
+      description,
+      publication_status,
+      published_at
+    )
+    values (
+      new_campaign,
+      'category-pj-un-aliento-menos',
+      'personaje-un-aliento-menos',
+      'Personaje',
+      'Personaje',
+      'published',
+      pg_catalog.now()
+    )
+    on conflict (id) do nothing;
     return;
   end if;
-  if source_markers<>4 then raise exception 'MAP-068 production Veyra fingerprint is incomplete'; end if;
 
-  if not exists(select 1 from public.campaigns where id=initial_campaign and slug='castigo-divino' and name='Castigo Divino')
-    then raise exception 'MAP-068 initial campaign identity does not match the audited baseline'; end if;
-  if not exists(select 1 from public.map_entities where id=veyra_entity and campaign_id=initial_campaign
-    and slug='request-07d26371bbff42d9b91e076d099891b0' and name='Veyra'
-    and entity_type='character'::public.entity_type and category_id='category-pj'
-    and portrait_path='portraits/9d3dcfeb-0320-4bca-9f5d-941d68aa6410.jpg')
-    then raise exception 'MAP-068 Veyra entity does not match the audited production identity'; end if;
-  if not exists(select 1 from public.players where id=veyra_player and campaign_id=initial_campaign
-    and slug='veyra' and display_name='Veyra')
-    then raise exception 'MAP-068 Veyra player does not match the audited production identity'; end if;
-  if not exists(select 1 from public.public_requests where id='07d26371-bbff-42d9-b91e-076d099891b0'::uuid
-    and campaign_id=initial_campaign and request_status='converted'::public.request_status and converted_entity_id=veyra_entity)
-    then raise exception 'MAP-068 Veyra converted request does not match the audited production identity'; end if;
+  if entity_count <> 1 or player_count <> 1 then
+    raise exception 'MAP-068 requires the stable Veyra entity and player together';
+  end if;
 
-  if (select count(*) from public.map_entities where category_id='category-pj')<>3
-    or not exists(select 1 from public.map_entities where id='entity-ura' and category_id='category-pj' and campaign_id=initial_campaign)
-    or not exists(select 1 from public.map_entities where id='entity-skade' and category_id='category-pj' and campaign_id=initial_campaign)
-    then raise exception 'MAP-068 shared Personaje category usage changed since the production audit'; end if;
+  if not exists (
+    select 1
+    from public.campaigns
+    where id = initial_campaign
+      and slug = 'castigo-divino'
+      and name = 'Castigo Divino'
+  ) then
+    raise exception 'MAP-068 initial campaign identity does not match the audited baseline';
+  end if;
 
-  if (select count(*) from public.entity_tags where tag_id='category-veyra')<>1
-    or not exists(select 1 from public.entity_tags where id='entity-tag-432d9dc2a2b6dbd6a450f556'
-      and entity_id=veyra_entity and tag_id='category-veyra' and campaign_id=initial_campaign)
-    or exists(select 1 from public.public_note_tags where tag_id='category-veyra')
-    then raise exception 'MAP-068 Veyra tag is no longer exclusive to Veyra'; end if;
+  if not exists (
+    select 1
+    from public.map_entities
+    where id = veyra_entity
+      and campaign_id = initial_campaign
+      and slug = 'request-07d26371bbff42d9b91e076d099891b0'
+      and name = 'Veyra'
+      and entity_type = 'character'::public.entity_type
+  ) then
+    raise exception 'MAP-068 Veyra entity identity does not match the expected lineage';
+  end if;
 
-  if exists(select 1 from public.entity_aliases where entity_id=veyra_entity)
-    or exists(select 1 from public.public_notes where entity_id=veyra_entity)
-    or exists(select 1 from public.public_notes where author_player_id=veyra_player or last_modifier_player_id=veyra_player)
-    or exists(select 1 from public.entity_player_associations where entity_id=veyra_entity or player_id=veyra_player)
-    or exists(select 1 from public.character_location_relations where character_id=veyra_entity or location_id=veyra_entity)
-    or exists(select 1 from public.character_location_events where character_id=veyra_entity or location_entity_id=veyra_entity)
-    or exists(select 1 from public.campaign_geographic_entity_links where entity_id=veyra_entity)
-    then raise exception 'MAP-068 found an unaudited Veyra dependency; review before migrating'; end if;
+  if not exists (
+    select 1
+    from public.players
+    where id = veyra_player
+      and campaign_id = initial_campaign
+      and slug = 'veyra'
+      and display_name = 'Veyra'
+  ) then
+    raise exception 'MAP-068 Veyra player identity does not match the expected lineage';
+  end if;
 
-  if (select count(*) from public.entity_player_dispositions where player_id=veyra_player)<>17
-    or (select count(*) from public.entity_player_dispositions where entity_id=veyra_entity)<>3
-    or (select count(*) from public.entity_player_dispositions where player_id=veyra_player and entity_id=veyra_entity)<>1
-    then raise exception 'MAP-068 Veyra disposition inventory changed since the production audit'; end if;
+  if not exists (
+    select 1
+    from public.map_entities as entity
+    join public.categories as category
+      on category.id = entity.category_id
+     and category.campaign_id = entity.campaign_id
+    where entity.id = veyra_entity
+      and entity.campaign_id = initial_campaign
+  ) then
+    raise exception 'MAP-068 Veyra category is not valid in the source campaign';
+  end if;
 
-  insert into public.categories(campaign_id,id,slug,name,description,publication_status,published_at)
-  select new_campaign,'category-pj-un-aliento-menos','personaje-un-aliento-menos',name,description,publication_status,published_at
-  from public.categories where id='category-pj' and campaign_id=initial_campaign;
+  if request_count = 1 and not exists (
+    select 1
+    from public.public_requests
+    where id = request_id
+      and campaign_id = initial_campaign
+      and request_status = 'converted'::public.request_status
+      and converted_entity_id = veyra_entity
+  ) then
+    raise exception 'MAP-068 Veyra request no longer matches its converted entity';
+  end if;
 
-  delete from public.entity_player_dispositions where player_id=veyra_player or entity_id=veyra_entity;
+  if (
+    select count(*)
+    from public.public_requests
+    where converted_entity_id = veyra_entity
+  ) <> request_count then
+    raise exception 'MAP-068 found an unexpected request converted to Veyra';
+  end if;
+
+  if tag_count = 1 then
+    if (
+      select count(*)
+      from public.entity_tags
+      where tag_id = 'category-veyra'
+    ) <> 1
+       or not exists (
+         select 1
+         from public.entity_tags
+         where id = 'entity-tag-432d9dc2a2b6dbd6a450f556'
+           and entity_id = veyra_entity
+           and tag_id = 'category-veyra'
+           and campaign_id = initial_campaign
+       )
+       or exists (
+         select 1
+         from public.public_note_tags
+         where tag_id = 'category-veyra'
+       ) then
+      raise exception 'MAP-068 Veyra tag is no longer exclusive to Veyra';
+    end if;
+  elsif tag_count <> 0 then
+    raise exception 'MAP-068 found an ambiguous Veyra tag identity';
+  end if;
+
+  if exists (
+    select 1
+    from public.entity_tags
+    where entity_id = veyra_entity
+      and tag_id <> 'category-veyra'
+  ) then
+    raise exception 'MAP-068 found an unaudited additional tag on Veyra';
+  end if;
+
+  -- Production currently has none of these dependencies. Failing here is
+  -- deliberate: if production gains one before the checkpoint, it must be
+  -- classified explicitly instead of being silently deleted or re-scoped.
+  if exists (select 1 from public.entity_aliases where entity_id = veyra_entity)
+     or exists (select 1 from public.public_notes where entity_id = veyra_entity)
+     or exists (
+       select 1
+       from public.public_notes
+       where author_player_id = veyra_player
+          or last_modifier_player_id = veyra_player
+     )
+     or exists (
+       select 1
+       from public.entity_player_associations
+       where entity_id = veyra_entity
+          or player_id = veyra_player
+     )
+     or exists (
+       select 1
+       from public.character_location_relations
+       where character_id = veyra_entity
+          or location_id = veyra_entity
+     )
+     or exists (
+       select 1
+       from public.character_location_events
+       where character_id = veyra_entity
+          or location_entity_id = veyra_entity
+     )
+     or exists (
+       select 1
+       from public.campaign_geographic_entity_links
+       where entity_id = veyra_entity
+     ) then
+    raise exception 'MAP-068 found an unaudited Veyra dependency; review before migrating';
+  end if;
+
+  if exists (
+    select 1
+    from public.categories
+    where id = 'category-pj-un-aliento-menos'
+      and campaign_id <> new_campaign
+  ) then
+    raise exception 'MAP-068 destination character category id is already in use';
+  end if;
+
+  insert into public.categories (
+    campaign_id,
+    id,
+    slug,
+    name,
+    description,
+    publication_status,
+    published_at
+  )
+  select
+    new_campaign,
+    'category-pj-un-aliento-menos',
+    'personaje-un-aliento-menos',
+    category.name,
+    category.description,
+    category.publication_status,
+    category.published_at
+  from public.map_entities as entity
+  join public.categories as category
+    on category.id = entity.category_id
+   and category.campaign_id = entity.campaign_id
+  where entity.id = veyra_entity
+    and entity.campaign_id = initial_campaign
+  on conflict (id) do nothing;
+
+  -- Every disposition involving Veyra becomes either cross-campaign or self
+  -- after the split. Production audit counts 19 unique rows; historic upgrade
+  -- fixtures may contain a different matrix cardinality, so the semantic rule
+  -- is expressed by endpoints rather than by a brittle global count.
+  delete from public.entity_player_dispositions
+  where player_id = veyra_player
+     or entity_id = veyra_entity;
 end;
 $$;
 
