@@ -51,7 +51,9 @@ test('loads the v1.1 public experience from the repository subdirectory', async 
 
   await mockOfficialMap(page);
   await isolateLocalPagesFromSupabase(page);
-  const response = await page.goto('?campaign=un-aliento-menos&q=veyra&category=personaje-un-aliento-menos&tag=category-veyra');
+  const response = await page.goto(
+    '?campaign=un-aliento-menos&q=veyra&category=personaje-un-aliento-menos&tag=category-veyra',
+  );
 
   expect(response?.ok()).toBe(true);
   await expect(page).toHaveTitle(/Atlas de los Nuevos Dioses/i);
@@ -154,7 +156,9 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
   await page.setViewportSize({ width: 320, height: 740 });
   await mockOfficialMap(page, 503);
 
-  await page.goto('?campaign=un-aliento-menos&q=veyra&category=personaje-un-aliento-menos&tag=category-veyra');
+  await page.goto(
+    '?campaign=un-aliento-menos&q=veyra&category=personaje-un-aliento-menos&tag=category-veyra',
+  );
 
   const searchToggle = page.locator('[data-place-search-toggle]');
   const filtersToggle = page.locator('[data-place-filters-toggle]');
@@ -201,7 +205,9 @@ test('keeps v1.1 usable from the public snapshot when Supabase returns 503', asy
     await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
   });
 
-  const response = await page.goto('?campaign=un-aliento-menos&q=veyra&category=personaje-un-aliento-menos&tag=category-veyra');
+  const response = await page.goto(
+    '?campaign=un-aliento-menos&q=veyra&category=personaje-un-aliento-menos&tag=category-veyra',
+  );
   expect(response?.ok()).toBe(true);
 
   const backendStatus = page.locator('[data-backend-status]');
