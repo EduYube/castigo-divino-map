@@ -362,6 +362,18 @@ runPsql(
      moderated_at = excluded.moderated_at;
    alter table public.public_requests enable trigger "20_validate_public_request";
 
+   insert into public.players (
+     campaign_id, id, slug, display_name, name_language, publication_status
+   ) values (
+     '${INITIAL_CAMPAIGN_ID}',
+     'player-veyra',
+     'veyra',
+     'Veyra',
+     'en',
+     'published'
+   )
+   on conflict (id) do nothing;
+
    delete from public.entity_player_dispositions
    where player_id = 'player-veyra'
       or entity_id = 'entity-request-07d26371bbff42d9b91e076d099891b0';
