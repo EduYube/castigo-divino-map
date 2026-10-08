@@ -1,5 +1,10 @@
 import { publishPinPlayerAssociations } from '../app/pinPlayerAssociationRegistry';
-import type { EntityId, PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
+import type {
+  EntityId,
+  PublicCatalogSnapshotV2,
+  PublicMapEntity,
+  PublicSpatialMapEntity,
+} from './beta02-model';
 import { toLeafletSimpleCoordinate, type LeafletSimpleCoordinate } from './coordinates';
 import type { CampaignCatalog, PlaceId } from './model';
 import { isSpatialMapEntity } from '../domain/entitySpatiality';
