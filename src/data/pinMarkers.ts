@@ -2,6 +2,7 @@ import { publishPinPlayerAssociations } from '../app/pinPlayerAssociationRegistr
 import type { EntityId, PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
 import { toLeafletSimpleCoordinate, type LeafletSimpleCoordinate } from './coordinates';
 import type { CampaignCatalog, PlaceId } from './model';
+import { isSpatialMapEntity } from '../domain/entitySpatiality';
 import type {
   PinEntityType,
   PinPlayerAssociationInput,
@@ -170,7 +171,12 @@ export function createAtlasPinMarkerModels(
   });
 
   const supplementalPins = (beta02Catalog?.entities ?? [])
-    .filter((entity) => entity.visibility === 'pin' && !consumedEntityIds.has(entity.id))
+    .filter(
+      (entity) =>
+        isSpatialMapEntity(entity) &&
+        entity.visibility === 'pin' &&
+        !consumedEntityIds.has(entity.id),
+    )
     .map((entity): AtlasPinMarkerModel => {
       const category = beta02Catalog?.categories.find(({ id }) => id === entity.categoryId);
 
