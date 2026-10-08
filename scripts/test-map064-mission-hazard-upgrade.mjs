@@ -384,7 +384,7 @@ const contract = JSON.parse(
 
 if (
   JSON.stringify(contract.entity_types) !==
-  JSON.stringify(['character', 'location', 'mission', 'hazard'])
+  JSON.stringify(['character', 'location', 'mission', 'hazard', 'organization'])
 ) {
   fail(`unexpected entity_type enum after upgrade: ${JSON.stringify(contract.entity_types)}`);
 }
