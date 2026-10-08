@@ -39,6 +39,32 @@ function resetToBase() {
   );
 }
 
+function assertFailedMap068RolledBack(description) {
+  const state = JSON.parse(
+    sql(`
+select jsonb_build_object(
+  'destination_campaign_exists',
+  exists(select 1 from public.campaigns where id='${B}'::uuid),
+  'character_entity_column_exists',
+  exists(
+    select 1
+    from information_schema.columns
+    where table_schema='public'
+      and table_name='players'
+      and column_name='character_entity_id'
+  )
+)::text;
+`)
+      .split(/\r?\n/u)
+      .filter(Boolean)
+      .at(-1),
+  );
+
+  if (state.destination_campaign_exists || state.character_entity_column_exists) {
+    fail(`${description} left partial MAP-068 state: ${JSON.stringify(state)}`);
+  }
+}
+
 function applyMap068ExpectFailure(description, expectedText) {
   runExpectFailure(
     NPX,
@@ -46,6 +72,7 @@ function applyMap068ExpectFailure(description, expectedText) {
     description,
     expectedText,
   );
+  assertFailedMap068RolledBack(description);
 }
 
 function sql(query) {
@@ -427,6 +454,11 @@ applyMap068ExpectFailure(
 resetToBase();
 sql(auditedFixtureSql);
 sql(`
+-- This isolated corruption scenario deliberately removes the historical
+-- uniqueness guard so MAP-068 itself can prove it rejects a second request
+-- converted to Veyra. The following db reset restores the index.
+drop index public.public_requests_converted_entity_id_uidx;
+
 alter table public.public_requests disable trigger "20_validate_public_request";
 insert into public.public_requests (
   id,campaign_id,sender_name,proposed_name,entity_type,x,y,description,reason,request_status,
