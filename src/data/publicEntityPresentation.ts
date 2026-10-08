@@ -31,6 +31,14 @@ export interface PublicEntityPresentationRelation {
   readonly relationLabel: string;
 }
 
+export interface PublicEntityPresentationGenericRelation {
+  readonly id: PublicMapEntity['id'];
+  readonly slug: PublicMapEntity['slug'];
+  readonly name: string;
+  readonly entityType: PublicMapEntity['entityType'];
+  readonly relationLabel: string;
+}
+
 export interface PublicEntityPresentationAssociatedPlayer {
   readonly id: string;
   readonly name: string;
@@ -54,6 +62,7 @@ export interface PublicEntityPresentation {
   readonly notes: readonly PublicEntityPresentationNote[];
   readonly importantCharacters: readonly PublicEntityPresentationRelation[];
   readonly relatedLocations: readonly PublicEntityPresentationRelation[];
+  readonly relatedEntities: readonly PublicEntityPresentationGenericRelation[];
 }
 
 function resolveTag(tag: PublicTag): PublicEntityPresentationTag {
@@ -131,6 +140,23 @@ export function buildPublicEntityPresentation(
           relationLabel: getCharacterLocationRelationLabel(relation.relationStatus),
         }))
       : [];
+  const relatedEntities = (catalog.entityRelations ?? []).flatMap((relation) => {
+    const isLeft = relation.leftEntityId === entity.id;
+    const isRight = relation.rightEntityId === entity.id;
+    if (!isLeft && !isRight) return [];
+    const relatedId = isLeft ? relation.rightEntityId : relation.leftEntityId;
+    const related = catalog.entities.find(({ id }) => id === relatedId);
+    if (!related) return [];
+    return [
+      {
+        id: related.id,
+        slug: related.slug,
+        name: related.name,
+        entityType: related.entityType,
+        relationLabel: isLeft ? relation.leftLabel : relation.rightLabel,
+      },
+    ];
+  });
 
   return {
     entity,
@@ -141,5 +167,6 @@ export function buildPublicEntityPresentation(
     notes,
     importantCharacters,
     relatedLocations,
+    relatedEntities,
   };
 }
