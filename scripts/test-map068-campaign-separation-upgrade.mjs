@@ -19,6 +19,35 @@ function run(command, args, description) {
   if (result.status !== 0) fail(`${description} exited with status ${result.status ?? 'unknown'}`);
   return result.stdout.trim();
 }
+function runExpectFailure(command, args, description, expectedText) {
+  const result = spawnSync(command, args, { encoding: 'utf8', windowsHide: true });
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  if (result.error) fail(`${description}: ${result.error.message}`);
+  if (result.status === 0) fail(`${description} unexpectedly succeeded`);
+  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+  if (!output.includes(expectedText)) {
+    fail(`${description} failed for an unexpected reason; expected ${expectedText}`);
+  }
+}
+
+function resetToBase() {
+  run(
+    NPX,
+    ['--no-install', 'supabase', 'db', 'reset', '--local', '--version', BASE, '--no-seed'],
+    'resetting to pre-MAP-068',
+  );
+}
+
+function applyMap068ExpectFailure(description, expectedText) {
+  runExpectFailure(
+    NPX,
+    ['--no-install', 'supabase', 'migration', 'up', '--local'],
+    description,
+    expectedText,
+  );
+}
+
 function sql(query) {
   return run(
     'docker',
@@ -44,11 +73,7 @@ function sql(query) {
   );
 }
 
-run(
-  NPX,
-  ['--no-install', 'supabase', 'db', 'reset', '--local', '--version', BASE, '--no-seed'],
-  'resetting to pre-MAP-068',
-);
+resetToBase();
 
 const others = [
   'entity-agamen',
@@ -79,7 +104,7 @@ const entityValues = entities
   )
   .join(',\n');
 
-sql(`
+const auditedFixtureSql = `
 -- The clean baseline has historical public IDs reserved even though --no-seed
 -- leaves their rows absent. This rehearsal reconstructs the audited pre-MAP-068
 -- production state, so allow those exact historical rows to be materialised as
@@ -165,7 +190,9 @@ alter table public.entity_tags enable trigger "60_entity_tag_identifier";
 alter table public.entity_tags enable trigger "70_entity_tag_reserve";
 alter table public.players enable trigger "60_player_identifier";
 alter table public.players enable trigger "70_player_reserve";
-`);
+;
+
+sql(auditedFixtureSql);
 
 const before = JSON.parse(
   sql(`
@@ -370,6 +397,84 @@ for (const key of [
     fail(`preservation failed for ${key}`);
   }
 }
+
+// Fail-closed regression scenarios: each starts from an isolated pre-MAP-068
+// database so a failed migration cannot influence the next case.
+resetToBase();
+sql(`
+insert into public.players (
+  campaign_id,id,slug,display_name,name_language,publication_status,display_order,accent_color
+) values (
+  '${A}','player-map068-historical-sentinel','map068-historical-sentinel',
+  'Historical sentinel','en','draft',99,'#475569'
+);
+`);
+applyMap068ExpectFailure(
+  'rejecting historical campaign content with Veyra absent',
+  'MAP-068 requires the stable Veyra entity and player together',
+);
+
+resetToBase();
+sql(auditedFixtureSql);
+sql(`delete from public.public_requests
+where id='07d26371-bbff-42d9-b91e-076d099891b0'::uuid;`);
+applyMap068ExpectFailure(
+  'rejecting a missing audited Veyra request',
+  'MAP-068 requires the audited converted Veyra request',
+);
+
+resetToBase();
+sql(auditedFixtureSql);
+sql(`
+alter table public.public_requests disable trigger "20_validate_public_request";
+insert into public.public_requests (
+  id,campaign_id,sender_name,proposed_name,entity_type,x,y,description,reason,request_status,
+  moderator_user_id,converted_entity_id,moderated_at
+) values (
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','${A}','Duplicate Veyra request','Veyra duplicate',
+  'character',1438,1837,'duplicate','duplicate','converted','${MODERATOR}','${V}',pg_catalog.now()
+);
+alter table public.public_requests enable trigger "20_validate_public_request";
+`);
+applyMap068ExpectFailure(
+  'rejecting an additional request converted to Veyra',
+  'MAP-068 found an unexpected request converted to Veyra',
+);
+
+resetToBase();
+sql(auditedFixtureSql);
+sql(`delete from public.entity_player_dispositions
+where entity_id='entity-agamen' and player_id='player-veyra';`);
+applyMap068ExpectFailure(
+  'rejecting a missing audited Veyra disposition',
+  'MAP-068 Veyra disposition inventory changed since the production audit',
+);
+
+resetToBase();
+sql(auditedFixtureSql);
+sql(`
+insert into public.map_entities (
+  campaign_id,id,slug,entity_type,visibility,audience,name,name_language,summary,description,
+  x,y,category_id,publication_status
+) values (
+  '${A}','entity-map068-extra','map068-extra','character','pin','public','MAP068 extra','en',
+  '','',1800,1200,'category-other','draft'
+);
+`);
+applyMap068ExpectFailure(
+  'rejecting a twentieth Veyra disposition',
+  'MAP-068 Veyra disposition inventory changed since the production audit',
+);
+
+resetToBase();
+sql(auditedFixtureSql);
+sql(`update public.entity_player_dispositions
+set disposition='ally'
+where entity_id='entity-agamen' and player_id='player-veyra';`);
+applyMap068ExpectFailure(
+  'rejecting a changed audited Veyra disposition',
+  'MAP-068 Veyra disposition inventory changed since the production audit',
+);
 
 console.log(
   'MAP-068 rehearsal passed: 19 audited dispositions removed (18 cross-campaign + 1 self); stable Veyra identity/history preserved.',
