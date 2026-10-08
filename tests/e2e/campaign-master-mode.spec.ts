@@ -8,7 +8,7 @@ const AUTH_KEY = 'sb_publishable_map055_master_auth_key';
 const ADMIN_TOKEN = 'map055-master-admin-token';
 const ADMIN_ID = '00000000-0000-4000-8000-000000000001';
 const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
-const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000054';
+const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000068';
 const MASTER_A_ID = 'entity-master-campaign-a';
 const MASTER_B_ID = 'entity-master-campaign-b';
 const MASTER_A_NAME = 'MAP055 SECRETO A';
@@ -211,8 +211,8 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
             },
             {
               id: CAMPAIGN_B_ID,
-              slug: 'campaign-b',
-              name: 'Campaña B',
+              slug: 'un-aliento-menos',
+              name: 'Un aliento menos',
               status: 'active',
               display_order: 1,
             },
@@ -260,8 +260,8 @@ test('admin session survives A to B while Master Mode remains OFF and no private
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   expect(backend.getMasterCampaignRequests()).toEqual([]);
 
-  await selector.selectOption('campaign-b');
-  await expect(selector).toHaveValue('campaign-b');
+  await selector.selectOption('un-aliento-menos');
+  await expect(selector).toHaveValue('un-aliento-menos');
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByRole('button', { name: 'Administración' })).toBeVisible();
   await expect
@@ -291,7 +291,7 @@ test('Master Mode ON purges secret A before delayed secret B is adopted without 
   await resultA.click();
   await expect(page.getByTestId('place-details')).toContainText(MASTER_A_NAME);
 
-  await selector.selectOption('campaign-b');
+  await selector.selectOption('un-aliento-menos');
   await expect.poll(() => backend.getMasterCampaignRequests()).toContain(CAMPAIGN_B_ID);
 
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');

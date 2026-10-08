@@ -24,9 +24,17 @@ select is(
   'the v1.0 campaign has a deterministic stable id'
 );
 select is(
-  (select count(*) from public.categories where campaign_id <> '00000000-0000-4000-8000-000000000053'::uuid),
+  (
+    select count(*)
+    from public.categories
+    where campaign_id <> '00000000-0000-4000-8000-000000000053'::uuid
+      and not (
+        campaign_id = '00000000-0000-4000-8000-000000000068'::uuid
+        and id = 'category-pj-un-aliento-menos'
+      )
+  ),
   0::bigint,
-  'seeded categories default to the initial campaign'
+  'seeded categories stay in the initial campaign except the MAP-068 destination category'
 );
 select is(
   (select count(*) from public.map_entities where campaign_id <> '00000000-0000-4000-8000-000000000053'::uuid),

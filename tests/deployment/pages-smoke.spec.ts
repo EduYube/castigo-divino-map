@@ -8,6 +8,7 @@ const NEUTRAL_TEST_MAP = `
   </svg>
 `;
 const VEYRA_ENTITY_ID = 'entity-request-07d26371bbff42d9b91e076d099891b0';
+const VEYRA_PORTRAIT_PATH = 'portraits/9d3dcfeb-0320-4bca-9f5d-941d68aa6410.jpg';
 
 function isPublishedPages(): boolean {
   return Boolean(process.env.PAGES_URL);
@@ -41,17 +42,38 @@ test('loads the v1.1 public experience from the repository subdirectory', async 
 }) => {
   const failedResponses: string[] = [];
   const requests: Request[] = [];
+  let veyraPortraitLoaded = false;
 
   page.on('request', (request) => requests.push(request));
   page.on('response', (response) => {
-    if (response.status() >= 400 && response.url() !== OFFICIAL_MAP_URL) {
+    const url = new URL(response.url());
+    const veyraPortraitSuffix = `/character-portraits/${VEYRA_PORTRAIT_PATH}`;
+    const isVeyraPortraitTransform =
+      url.pathname.includes('/storage/v1/render/image/authenticated/') &&
+      url.pathname.endsWith(veyraPortraitSuffix);
+    const isVeyraPortraitObject =
+      url.pathname.includes('/storage/v1/object/authenticated/') &&
+      url.pathname.endsWith(veyraPortraitSuffix);
+    const isExpectedTransformFallback =
+      isVeyraPortraitTransform && (response.status() === 403 || response.status() === 404);
+
+    if ((isVeyraPortraitTransform || isVeyraPortraitObject) && response.ok()) {
+      veyraPortraitLoaded = true;
+    }
+    if (
+      response.status() >= 400 &&
+      response.url() !== OFFICIAL_MAP_URL &&
+      !isExpectedTransformFallback
+    ) {
       failedResponses.push(`${response.status()} ${response.url()}`);
     }
   });
 
   await mockOfficialMap(page);
   await isolateLocalPagesFromSupabase(page);
-  const response = await page.goto('?q=veyra&category=personaje&tag=category-veyra');
+  const response = await page.goto(
+    '?campaign=un-aliento-menos&q=veyra&category=personaje-un-aliento-menos&tag=category-veyra',
+  );
 
   expect(response?.ok()).toBe(true);
   await expect(page).toHaveTitle(/Atlas de los Nuevos Dioses/i);
@@ -131,6 +153,23 @@ test('loads the v1.1 public experience from the repository subdirectory', async 
     return url.origin === applicationOrigin && /\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname);
   });
   expect(localRasterRequests).toEqual([]);
+  await expect.poll(() => veyraPortraitLoaded).toBe(true);
+  const veyraPortrait = veyraPin.locator('img.pin-visual__portrait');
+  await expect(veyraPortrait).toHaveCount(1);
+  await expect
+    .poll(() =>
+      veyraPortrait.evaluate((image) => {
+        const portrait = image as HTMLImageElement;
+        const effectiveUrl = portrait.currentSrc || portrait.src;
+        return (
+          portrait.complete &&
+          portrait.naturalWidth > 0 &&
+          portrait.naturalHeight > 0 &&
+          effectiveUrl.startsWith('blob:')
+        );
+      }),
+    )
+    .toBe(true);
   expect(failedResponses).toEqual([]);
 
   await page.reload();
@@ -154,7 +193,9 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
   await page.setViewportSize({ width: 320, height: 740 });
   await mockOfficialMap(page, 503);
 
-  await page.goto('?q=veyra&category=personaje&tag=category-veyra');
+  await page.goto(
+    '?campaign=un-aliento-menos&q=veyra&category=personaje-un-aliento-menos&tag=category-veyra',
+  );
 
   const searchToggle = page.locator('[data-place-search-toggle]');
   const filtersToggle = page.locator('[data-place-filters-toggle]');
@@ -163,7 +204,7 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
     includeHidden: true,
   });
   const characterCategoryFilter = page.locator(
-    'input[data-place-filter-kind="category"][data-place-filter-id="category-pj"]',
+    'input[data-place-filter-kind="category"][data-place-filter-id="category-pj-un-aliento-menos"]',
   );
 
   await expect(page.getByText('v1.1', { exact: true })).toBeVisible();
@@ -201,7 +242,9 @@ test('keeps v1.1 usable from the public snapshot when Supabase returns 503', asy
     await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
   });
 
-  const response = await page.goto('?q=veyra&category=personaje&tag=category-veyra');
+  const response = await page.goto(
+    '?campaign=un-aliento-menos&q=veyra&category=personaje-un-aliento-menos&tag=category-veyra',
+  );
   expect(response?.ok()).toBe(true);
 
   const backendStatus = page.locator('[data-backend-status]');

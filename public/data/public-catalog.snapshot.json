@@ -7,6 +7,13 @@
       "name": "Castigo Divino",
       "status": "active",
       "displayOrder": 0
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000068",
+      "slug": "un-aliento-menos",
+      "name": "Un aliento menos",
+      "status": "active",
+      "displayOrder": 1
     }
   ],
   "campaignCatalogs": [
@@ -50,11 +57,6 @@
           "description": "Entidades relacionadas con Ura"
         },
         {
-          "id": "category-veyra",
-          "name": "Veyra",
-          "description": "Relacionado o perteneciente a Veyra"
-        },
-        {
           "id": "coastal",
           "name": "Costero",
           "description": "Lugar situado junto a la costa o relacionado con navegación marítima."
@@ -86,12 +88,6 @@
           "id": "player-ura",
           "slug": "ura",
           "displayName": "Ura",
-          "nameLanguage": "en"
-        },
-        {
-          "id": "player-veyra",
-          "slug": "veyra",
-          "displayName": "Veyra",
           "nameLanguage": "en"
         }
       ],
@@ -255,24 +251,6 @@
           "tagIds": ["category-ura"]
         },
         {
-          "id": "entity-request-07d26371bbff42d9b91e076d099891b0",
-          "slug": "request-07d26371bbff42d9b91e076d099891b0",
-          "entityType": "character",
-          "visibility": "pin",
-          "name": "Veyra",
-          "nameLanguage": "en",
-          "aliases": [],
-          "summary": "",
-          "description": "Posición inicial Veyra (dudo entre neverwinter y lidian)",
-          "portraitPath": "portraits/9d3dcfeb-0320-4bca-9f5d-941d68aa6410.jpg",
-          "coordinates": {
-            "x": 1425.88,
-            "y": 1855.21
-          },
-          "categoryId": "category-pj",
-          "tagIds": ["category-veyra"]
-        },
-        {
           "id": "entity-skade",
           "slug": "skade",
           "entityType": "character",
@@ -374,11 +352,6 @@
           "disposition": "neutral"
         },
         {
-          "entityId": "entity-agamen",
-          "playerId": "player-veyra",
-          "disposition": "neutral"
-        },
-        {
           "entityId": "entity-asentamiento-thar",
           "playerId": "player-skade",
           "disposition": "neutral"
@@ -386,11 +359,6 @@
         {
           "entityId": "entity-asentamiento-thar",
           "playerId": "player-ura",
-          "disposition": "neutral"
-        },
-        {
-          "entityId": "entity-asentamiento-thar",
-          "playerId": "player-veyra",
           "disposition": "neutral"
         },
         {
@@ -404,11 +372,6 @@
           "disposition": "neutral"
         },
         {
-          "entityId": "entity-bring",
-          "playerId": "player-veyra",
-          "disposition": "neutral"
-        },
-        {
           "entityId": "entity-captitan",
           "playerId": "player-skade",
           "disposition": "neutral"
@@ -416,11 +379,6 @@
         {
           "entityId": "entity-captitan",
           "playerId": "player-ura",
-          "disposition": "neutral"
-        },
-        {
-          "entityId": "entity-captitan",
-          "playerId": "player-veyra",
           "disposition": "neutral"
         },
         {
@@ -434,11 +392,6 @@
           "disposition": "neutral"
         },
         {
-          "entityId": "entity-jhonny",
-          "playerId": "player-veyra",
-          "disposition": "neutral"
-        },
-        {
           "entityId": "entity-masred",
           "playerId": "player-skade",
           "disposition": "neutral"
@@ -446,11 +399,6 @@
         {
           "entityId": "entity-masred",
           "playerId": "player-ura",
-          "disposition": "neutral"
-        },
-        {
-          "entityId": "entity-masred",
-          "playerId": "player-veyra",
           "disposition": "neutral"
         },
         {
@@ -464,11 +412,6 @@
           "disposition": "neutral"
         },
         {
-          "entityId": "entity-memnon",
-          "playerId": "player-veyra",
-          "disposition": "neutral"
-        },
-        {
           "entityId": "entity-myrath",
           "playerId": "player-skade",
           "disposition": "neutral"
@@ -476,11 +419,6 @@
         {
           "entityId": "entity-myrath",
           "playerId": "player-ura",
-          "disposition": "neutral"
-        },
-        {
-          "entityId": "entity-myrath",
-          "playerId": "player-veyra",
           "disposition": "neutral"
         },
         {
@@ -494,26 +432,6 @@
           "disposition": "neutral"
         },
         {
-          "entityId": "entity-ojos-tempestad",
-          "playerId": "player-veyra",
-          "disposition": "neutral"
-        },
-        {
-          "entityId": "entity-request-07d26371bbff42d9b91e076d099891b0",
-          "playerId": "player-skade",
-          "disposition": "neutral"
-        },
-        {
-          "entityId": "entity-request-07d26371bbff42d9b91e076d099891b0",
-          "playerId": "player-ura",
-          "disposition": "neutral"
-        },
-        {
-          "entityId": "entity-request-07d26371bbff42d9b91e076d099891b0",
-          "playerId": "player-veyra",
-          "disposition": "neutral"
-        },
-        {
           "entityId": "entity-skade",
           "playerId": "player-skade",
           "disposition": "neutral"
@@ -521,11 +439,6 @@
         {
           "entityId": "entity-skade",
           "playerId": "player-ura",
-          "disposition": "neutral"
-        },
-        {
-          "entityId": "entity-skade",
-          "playerId": "player-veyra",
           "disposition": "neutral"
         },
         {
@@ -539,11 +452,6 @@
           "disposition": "neutral"
         },
         {
-          "entityId": "entity-thalasis",
-          "playerId": "player-veyra",
-          "disposition": "neutral"
-        },
-        {
           "entityId": "entity-thar",
           "playerId": "player-skade",
           "disposition": "neutral"
@@ -551,11 +459,6 @@
         {
           "entityId": "entity-thar",
           "playerId": "player-ura",
-          "disposition": "neutral"
-        },
-        {
-          "entityId": "entity-thar",
-          "playerId": "player-veyra",
           "disposition": "neutral"
         },
         {
@@ -569,11 +472,6 @@
           "disposition": "neutral"
         },
         {
-          "entityId": "entity-tulu",
-          "playerId": "player-veyra",
-          "disposition": "neutral"
-        },
-        {
           "entityId": "entity-ura",
           "playerId": "player-skade",
           "disposition": "neutral"
@@ -581,11 +479,6 @@
         {
           "entityId": "entity-ura",
           "playerId": "player-ura",
-          "disposition": "neutral"
-        },
-        {
-          "entityId": "entity-ura",
-          "playerId": "player-veyra",
           "disposition": "neutral"
         }
       ],
@@ -596,6 +489,57 @@
           "relationStatus": "associated"
         }
       ],
+      "notes": [],
+      "characterLocationEvents": [],
+      "geographicEntityLinks": []
+    },
+    {
+      "campaignId": "00000000-0000-4000-8000-000000000068",
+      "categories": [
+        {
+          "id": "category-pj-un-aliento-menos",
+          "slug": "personaje-un-aliento-menos",
+          "name": "Personaje",
+          "description": "Personaje"
+        }
+      ],
+      "tags": [
+        {
+          "id": "category-veyra",
+          "name": "Veyra",
+          "description": "Relacionado o perteneciente a Veyra"
+        }
+      ],
+      "players": [
+        {
+          "id": "player-veyra",
+          "slug": "veyra",
+          "displayName": "Veyra",
+          "nameLanguage": "en"
+        }
+      ],
+      "entities": [
+        {
+          "id": "entity-request-07d26371bbff42d9b91e076d099891b0",
+          "slug": "request-07d26371bbff42d9b91e076d099891b0",
+          "entityType": "character",
+          "visibility": "pin",
+          "name": "Veyra",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "",
+          "description": "Posición inicial Veyra (dudo entre neverwinter y lidian)",
+          "portraitPath": "portraits/9d3dcfeb-0320-4bca-9f5d-941d68aa6410.jpg",
+          "coordinates": {
+            "x": 1425.88,
+            "y": 1855.21
+          },
+          "categoryId": "category-pj-un-aliento-menos",
+          "tagIds": ["category-veyra"]
+        }
+      ],
+      "dispositions": [],
+      "characterLocationRelations": [],
       "notes": [],
       "characterLocationEvents": [],
       "geographicEntityLinks": []
@@ -3534,7 +3478,7 @@
       "recommendedZoom": 0.75
     }
   ],
-  "generatedAt": "2026-08-27T13:17:50.708Z",
-  "sourceRevision": "sha256:e82455416df47ab4a4eb4db2185b2e58515501a1010f4b47ebd588966c3b71b4",
-  "checksum": "sha256:e82455416df47ab4a4eb4db2185b2e58515501a1010f4b47ebd588966c3b71b4"
+  "generatedAt": "2026-10-07T08:00:00.000Z",
+  "sourceRevision": "sha256:de24c7bb4b23402bab367db669c59d0fadab36d19f5e60fec260acb1da836b17",
+  "checksum": "sha256:de24c7bb4b23402bab367db669c59d0fadab36d19f5e60fec260acb1da836b17"
 }

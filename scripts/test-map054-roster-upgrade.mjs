@@ -1,9 +1,18 @@
 import { spawnSync } from 'node:child_process';
+import { renameSync } from 'node:fs';
 
 const DATABASE_CONTAINER = 'supabase_db_castigo-divino-map';
 const NPX_COMMAND = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const MAP053_BASELINE_VERSION = '20260825182000';
 const INITIAL_CAMPAIGN_ID = '00000000-0000-4000-8000-000000000053';
+const MAP068_MIGRATION = new URL(
+  '../supabase/migrations/20261007080000_separate_veyra_un_aliento_menos.sql',
+  import.meta.url,
+);
+const MAP068_HIDDEN = new URL(
+  '../supabase/migrations/20261007080000_separate_veyra_un_aliento_menos.sql.rehearsal-hidden',
+  import.meta.url,
+);
 
 function fail(message) {
   throw new Error(`MAP-054 roster upgrade rehearsal failed: ${message}`);
@@ -258,22 +267,229 @@ runPsql(
    alter table public.entity_player_dispositions enable trigger "90_entity_player_disposition_updated_at";`,
 );
 
+renameSync(MAP068_MIGRATION, MAP068_HIDDEN);
+try {
+  runCommand(
+    NPX_COMMAND,
+    ['--no-install', 'supabase', 'migration', 'up', '--local'],
+    'applying MAP-054 migrations through the pre-MAP-068 checkpoint',
+  );
+} finally {
+  renameSync(MAP068_HIDDEN, MAP068_MIGRATION);
+}
+
+runPsql(
+  containerName,
+  `
+   -- MAP-054's complete historic fixture predates the real production request
+   -- and full disposition inventory. Normalize only this local rehearsal to the
+   -- audited pre-MAP-068 checkpoint before testing the campaign split.
+
+   insert into auth.users (id)
+   values ('00000000-0000-4000-8000-000000000068')
+   on conflict (id) do nothing;
+
+   alter table public.map_entities disable trigger "60_map_entity_identifier";
+   alter table public.map_entities disable trigger "70_map_entity_reserve";
+
+   insert into public.map_entities (
+     campaign_id, id, slug, entity_type, visibility, audience, name, name_language,
+     summary, description, x, y, category_id, publication_status
+   )
+   select
+     '${INITIAL_CAMPAIGN_ID}'::uuid,
+     source.id,
+     'map054-' || source.ordinal,
+     'character'::public.entity_type,
+     'pin'::public.map_visibility,
+     'public'::public.entity_audience,
+     'MAP054 Veyra peer ' || source.ordinal,
+     'en',
+     '',
+     'Synthetic audited pre-MAP-068 compatibility fixture',
+     1500 + source.ordinal,
+     1000 + source.ordinal,
+     (select category_id
+      from public.map_entities
+      where id = 'entity-request-07d26371bbff42d9b91e076d099891b0'),
+     'published'::public.publication_status
+   from (
+     values
+       ('entity-agamen', 1),
+       ('entity-asentamiento-thar', 2),
+       ('entity-bring', 3),
+       ('entity-captitan', 4),
+       ('entity-jhonny', 5),
+       ('entity-masred', 6),
+       ('entity-memnon', 7),
+       ('entity-myrath', 8),
+       ('entity-ojos-tempestad', 9),
+       ('entity-thalasis', 10),
+       ('entity-thar', 11),
+       ('entity-tulu', 12),
+       ('place-demo-harbor', 13),
+       ('place-demo-pass', 14)
+   ) as source(id, ordinal)
+   on conflict (id) do nothing;
+
+   alter table public.map_entities enable trigger "60_map_entity_identifier";
+   alter table public.map_entities enable trigger "70_map_entity_reserve";
+
+   alter table public.public_requests disable trigger "20_validate_public_request";
+   insert into public.public_requests (
+     id, campaign_id, sender_name, proposed_name, entity_type, x, y, description, reason,
+     request_status, moderator_user_id, converted_entity_id, moderated_at
+   ) values (
+     '07d26371-bbff-42d9-b91e-076d099891b0',
+     '${INITIAL_CAMPAIGN_ID}',
+     'Veyra la Grandiosa',
+     'Veyra',
+     'character',
+     1438.727724022,
+     1837.31274570082,
+     'Posición inicial Veyra (dudo entre neverwinter y lidian)',
+     'Inicio partida picara',
+     'converted',
+     '00000000-0000-4000-8000-000000000068',
+     'entity-request-07d26371bbff42d9b91e076d099891b0',
+     pg_catalog.now()
+   )
+   on conflict (id) do update set
+     campaign_id = excluded.campaign_id,
+     request_status = excluded.request_status,
+     moderator_user_id = excluded.moderator_user_id,
+     converted_entity_id = excluded.converted_entity_id,
+     moderated_at = excluded.moderated_at;
+   alter table public.public_requests enable trigger "20_validate_public_request";
+
+   do $$
+   begin
+     if not exists (
+       select 1
+       from public.players
+       where id = 'player-veyra'
+         and campaign_id = '${INITIAL_CAMPAIGN_ID}'::uuid
+         and slug = 'veyra'
+         and display_name = 'Veyra'
+     ) or not exists (
+       select 1
+       from public.players
+       where id = 'player-ura'
+         and campaign_id = '${INITIAL_CAMPAIGN_ID}'::uuid
+         and slug = 'ura'
+         and display_name = 'Ura'
+     ) or not exists (
+       select 1
+       from public.players
+       where id = 'player-skade-existing'
+         and campaign_id = '${INITIAL_CAMPAIGN_ID}'::uuid
+         and slug = 'skade'
+         and display_name = 'Skade'
+     ) then
+       raise exception 'MAP-054 did not establish the expected historic roster before MAP-068';
+     end if;
+
+     if exists (select 1 from public.players where id = 'player-skade') then
+       raise exception 'MAP-054 checkpoint unexpectedly already contains player-skade';
+     end if;
+   end;
+   $$;
+
+   -- Production's audited disposition inventory references player-skade, while
+   -- this rehearsal intentionally preserves the historic Skade identity as
+   -- player-skade-existing. Materialize a draft endpoint only for the audited
+   -- MAP-068 checkpoint, then remove it again after the split.
+   alter table public.players disable trigger "60_player_identifier";
+   alter table public.players disable trigger "70_player_reserve";
+   insert into public.players (
+     campaign_id,
+     id,
+     slug,
+     display_name,
+     name_language,
+     publication_status,
+     display_order,
+     accent_color
+   ) values (
+     '${INITIAL_CAMPAIGN_ID}',
+     'player-skade',
+     'map068-audited-skade-endpoint',
+     'MAP068 audited Skade endpoint',
+     'en',
+     'draft',
+     99,
+     '#475569'
+   );
+   alter table public.players enable trigger "60_player_identifier";
+   alter table public.players enable trigger "70_player_reserve";
+
+   -- Player insertion expands the disposition matrix automatically. Strip that
+   -- synthetic matrix plus every Veyra endpoint before inserting the exact
+   -- audited 19-row production inventory.
+   delete from public.entity_player_dispositions
+   where player_id in ('player-veyra', 'player-skade')
+      or entity_id = 'entity-request-07d26371bbff42d9b91e076d099891b0';
+
+   insert into public.entity_player_dispositions (
+     entity_id, player_id, campaign_id, disposition
+   ) values
+     ('entity-agamen', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-asentamiento-thar', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-bring', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-captitan', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-jhonny', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-masred', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-memnon', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-myrath', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-ojos-tempestad', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-request-07d26371bbff42d9b91e076d099891b0', 'player-skade', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-request-07d26371bbff42d9b91e076d099891b0', 'player-ura', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-request-07d26371bbff42d9b91e076d099891b0', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-skade', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-thalasis', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-thar', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-tulu', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-ura', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('place-demo-harbor', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('place-demo-pass', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral');
+  `,
+);
+
 runCommand(
   NPX_COMMAND,
   ['--no-install', 'supabase', 'migration', 'up', '--local'],
-  'applying MAP-054 migrations to the complete historic fixture',
+  'applying MAP-068 after the complete historic roster checkpoint',
 );
 
 runPsql(
   containerName,
-  `do $$
+  `
+   delete from public.entity_player_dispositions
+   where player_id = 'player-skade';
+
+   delete from public.players
+   where id = 'player-skade'
+     and publication_status = 'draft';
+
+   do $$
    declare
      initial_campaign uuid := '${INITIAL_CAMPAIGN_ID}'::uuid;
+     veyra_campaign uuid := '00000000-0000-4000-8000-000000000068'::uuid;
+     veyra_entity text := 'entity-request-07d26371bbff42d9b91e076d099891b0';
    begin
      if (select count(*) from public.players
+         where lower(display_name) in ('skade', 'ura', 'veyra')) <> 3 then
+       raise exception 'historic roster identities were not materialised exactly once';
+     end if;
+
+     if (select count(*) from public.players
          where campaign_id = initial_campaign
-           and lower(display_name) in ('skade', 'ura', 'veyra')) <> 3 then
-       raise exception 'historic roster was not materialised exactly once';
+           and lower(display_name) in ('skade', 'ura')) <> 2
+        or exists (
+          select 1 from public.players
+          where campaign_id = initial_campaign and lower(display_name) = 'veyra'
+        ) then
+       raise exception 'MAP-068 did not leave the historic Castigo Divino roster as Skade/Ura';
      end if;
 
      if not exists (
@@ -306,49 +522,43 @@ runPsql(
      if not exists (
        select 1 from public.players
        where id = 'player-veyra'
-         and campaign_id = initial_campaign
+         and campaign_id = veyra_campaign
          and slug = 'veyra'
          and display_name = 'Veyra'
-         and display_order = 2
+         and display_order = 0
          and accent_color = '#9d174d'
          and publication_status = 'published'
+         and character_entity_id = veyra_entity
      ) then
-       raise exception 'Veyra roster row was not migrated correctly';
+       raise exception 'Veyra roster identity was not preserved in Un aliento menos';
      end if;
 
-     if (select count(*) from public.entity_player_dispositions
-         where campaign_id = initial_campaign
-           and player_id in ('player-skade-existing', 'player-ura', 'player-veyra')
-           and entity_id in (
-             'entity-skade',
-             'entity-ura',
-             'entity-request-07d26371bbff42d9b91e076d099891b0'
-           )) <> 9 then
-       raise exception 'roster disposition matrix is incomplete after migration';
+     if not exists (
+       select 1 from public.map_entities
+       where id = veyra_entity
+         and campaign_id = veyra_campaign
+         and name = 'Veyra'
+     ) then
+       raise exception 'Veyra entity identity was not preserved in Un aliento menos';
      end if;
 
      if not exists (
        select 1 from public.entity_player_dispositions
-       where player_id = 'player-skade-existing'
+       where campaign_id = initial_campaign
+         and player_id = 'player-skade-existing'
          and entity_id = 'entity-ura'
          and disposition = 'ally'
          and updated_at = '2026-07-02T00:00:00Z'::timestamptz
-     ) or not exists (
-       select 1 from public.entity_player_dispositions
-       where player_id = 'player-skade-existing'
-         and entity_id = 'entity-request-07d26371bbff42d9b91e076d099891b0'
-         and disposition = 'enemy'
-         and updated_at = '2026-07-02T00:00:00Z'::timestamptz
      ) then
-       raise exception 'existing Skade dispositions/history changed during migration';
+       raise exception 'existing same-campaign Skade disposition/history changed during migration';
      end if;
 
      if exists (
        select 1 from public.entity_player_dispositions
-       where player_id in ('player-ura', 'player-veyra')
-         and disposition <> 'neutral'
+       where player_id = 'player-veyra'
+          or entity_id = veyra_entity
      ) then
-       raise exception 'new roster members were not initialised neutrally';
+       raise exception 'Veyra dispositions that became cross-campaign/self survived MAP-068';
      end if;
    end;
    $$;`,

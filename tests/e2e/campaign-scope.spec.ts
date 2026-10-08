@@ -4,7 +4,7 @@ const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
 const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
-const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000054';
+const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000068';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -149,8 +149,8 @@ async function configureBackend(page: Page): Promise<void> {
             },
             {
               id: CAMPAIGN_B_ID,
-              slug: 'campaign-b',
-              name: 'Campaña B',
+              slug: 'un-aliento-menos',
+              name: 'Un aliento menos',
               status: 'active',
               display_order: 1,
             },
@@ -207,9 +207,9 @@ test('campaign switch removes invalid category/tag selections and never mixes sa
     page.locator('[data-testid="entity-pin"][data-entity-id="place-only-a"]'),
   ).toHaveAttribute('data-filter-match', 'true');
 
-  await selector.selectOption('campaign-b');
+  await selector.selectOption('un-aliento-menos');
 
-  await expect(selector).toHaveValue('campaign-b');
+  await expect(selector).toHaveValue('un-aliento-menos');
   await expect(category(page, 'category-only-a')).toHaveCount(0);
   await expect(tag(page, 'tag-only-a')).toHaveCount(0);
   await expect(category(page, 'category-shared-a')).toHaveCount(0);
@@ -250,9 +250,9 @@ test('global geographic names and aliases remain searchable across A and B', asy
     results.getByRole('button', { name: /Costa Global MAP055.*Lugar geográfico/i }),
   ).toBeVisible();
 
-  await selector.selectOption('campaign-b');
+  await selector.selectOption('un-aliento-menos');
 
-  await expect(selector).toHaveValue('campaign-b');
+  await expect(selector).toHaveValue('un-aliento-menos');
   await expect(searchbox).toHaveValue('Geografía Compartida MAP055');
   await searchbox.fill('');
   await searchbox.fill('Geografía Compartida MAP055');
@@ -262,7 +262,7 @@ test('global geographic names and aliases remain searchable across A and B', asy
   });
   await expect(globalResult).toBeVisible();
   await globalResult.click();
-  await expect(page).toHaveURL(/campaign=campaign-b/);
+  await expect(page).toHaveURL(/campaign=un-aliento-menos/);
   await expect(page).toHaveURL(/geo=geo-global-map055/);
   await expect(page.locator('[data-testid="entity-pin"][data-entity-id$="-a"]')).toHaveCount(0);
 });

@@ -7,7 +7,7 @@ const ACCESS_TOKEN = 'map054_e2e_access_token';
 const REFRESH_TOKEN = 'map054_e2e_refresh_token';
 const PUBLISHABLE_KEY = 'sb_publishable_map054_e2e_key';
 const INITIAL_CAMPAIGN_ID = '00000000-0000-4000-8000-000000000053';
-const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000540';
+const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000068';
 const PORTRAIT_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
   'base64',
@@ -30,8 +30,8 @@ const campaigns = [
   },
   {
     id: CAMPAIGN_B_ID,
-    slug: 'campana-b',
-    name: 'Campaña B',
+    slug: 'un-aliento-menos',
+    name: 'Un aliento menos',
     status: 'active',
     display_order: 1,
     archived_at: null,
@@ -56,21 +56,34 @@ const rosters = new Map<string, readonly Record<string, unknown>[]>([
         archived_at: null,
         updated_at: '2026-08-26T10:00:00.000Z',
       },
+      {
+        id: 'player-ura',
+        campaign_id: INITIAL_CAMPAIGN_ID,
+        slug: 'ura',
+        display_name: 'Ura',
+        name_language: 'en',
+        publication_status: 'published',
+        published_at: '2026-08-26T10:00:00.000Z',
+        display_order: 1,
+        accent_color: '#1e3a8a',
+        archived_at: null,
+        updated_at: '2026-08-26T10:00:00.000Z',
+      },
     ],
   ],
   [
     CAMPAIGN_B_ID,
     [
       {
-        id: 'player-b',
+        id: 'player-veyra',
         campaign_id: CAMPAIGN_B_ID,
-        slug: 'jugadora-b',
-        display_name: 'Jugadora B',
+        slug: 'veyra',
+        display_name: 'Veyra',
         name_language: 'en',
         publication_status: 'published',
         published_at: '2026-08-26T10:01:00.000Z',
         display_order: 0,
-        accent_color: '#1e3a8a',
+        accent_color: '#9d174d',
         archived_at: null,
         updated_at: '2026-08-26T10:01:00.000Z',
       },
@@ -223,6 +236,7 @@ async function login(page: Page): Promise<void> {
   ).toBeVisible();
   await expect(page.getByLabel('Campaña administrativa')).toHaveValue(INITIAL_CAMPAIGN_ID);
   await expect(page.getByText('Skade', { exact: true })).toBeVisible();
+  await expect(page.getByText('Ura', { exact: true })).toBeVisible();
 }
 
 function expectNoRuntimeErrors(errors: RuntimeErrors): void {
@@ -259,7 +273,7 @@ test('dirty roster edits cannot silently cross campaigns and focus is restored o
   });
   await page.getByLabel('Campaña administrativa').selectOption(CAMPAIGN_B_ID);
   await expect(page.getByLabel('Campaña administrativa')).toHaveValue(CAMPAIGN_B_ID);
-  await expect(page.getByText('Jugadora B', { exact: true })).toBeVisible();
+  await expect(page.getByText('Veyra', { exact: true })).toBeVisible();
   await expect(page.getByText('Skade', { exact: true })).toBeHidden();
   await expect(page.getByRole('heading', { name: 'Crear jugador' })).toBeHidden();
 
@@ -318,7 +332,7 @@ test('campaign transition discards old editors and blocks writes while the targe
   expect(mutationStatus).toBe(409);
 
   await expect(page.getByLabel('Campaña administrativa')).toHaveValue(CAMPAIGN_B_ID);
-  await expect(page.getByText('Jugadora B', { exact: true })).toBeVisible();
+  await expect(page.getByText('Veyra', { exact: true })).toBeVisible();
   expectNoRuntimeErrors(errors);
 });
 

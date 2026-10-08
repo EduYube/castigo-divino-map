@@ -15,7 +15,7 @@ const OFFICIAL_MAP_URL =
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
 const PUBLISHABLE_KEY = 'sb_publishable_map055_campaign_key';
 const CAMPAIGN_A_ID = '00000000-0000-4000-8000-000000000053';
-const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000054';
+const CAMPAIGN_B_ID = '00000000-0000-4000-8000-000000000068';
 const TEST_MAP = `
   <svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2329" viewBox="0 0 3600 2329">
     <rect width="3600" height="2329" fill="#d9d5ca" />
@@ -32,8 +32,8 @@ const CAMPAIGNS: readonly PublicCampaignV3[] = [
   },
   {
     id: CAMPAIGN_B_ID,
-    slug: 'campaign-b',
-    name: 'Campaña B',
+    slug: 'un-aliento-menos',
+    name: 'Un aliento menos',
     status: 'active',
     displayOrder: 1,
   },
@@ -69,7 +69,7 @@ function rowsFor(table: string, campaignId: string): readonly Record<string, unk
   const suffix = campaignId === CAMPAIGN_B_ID ? 'b' : 'a';
   const entityId = `place-campaign-${suffix}`;
   const categoryId = `category-campaign-${suffix}`;
-  const name = suffix === 'b' ? 'Beta Bastión' : 'Alpha Atalaya';
+  const name = suffix === 'b' ? 'Veyra' : 'Alpha Atalaya';
 
   switch (table) {
     case 'categories':
@@ -81,23 +81,95 @@ function rowsFor(table: string, campaignId: string): readonly Record<string, unk
           description: `Categoría exclusiva de campaña ${suffix.toUpperCase()}`,
         },
       ];
+    case 'players':
+      return campaignId === CAMPAIGN_B_ID
+        ? [
+            {
+              id: 'player-veyra',
+              slug: 'veyra',
+              display_name: 'Veyra',
+              name_language: 'en',
+              accent_color: '#9d174d',
+            },
+          ]
+        : [
+            {
+              id: 'player-skade',
+              slug: 'skade',
+              display_name: 'Skade',
+              name_language: 'en',
+              accent_color: '#c2410c',
+            },
+            {
+              id: 'player-ura',
+              slug: 'ura',
+              display_name: 'Ura',
+              name_language: 'en',
+              accent_color: '#1e3a8a',
+            },
+          ];
     case 'map_entities':
-      return [
-        {
-          id: entityId,
-          slug: `campaign-${suffix}-place`,
-          entity_type: 'location',
-          visibility: 'pin',
-          name,
-          name_language: 'en',
-          summary: `Resumen exclusivo ${suffix.toUpperCase()}`,
-          description: `Descripción exclusiva ${suffix.toUpperCase()}`,
-          portrait_path: null,
-          x: suffix === 'b' ? 2400 : 900,
-          y: suffix === 'b' ? 1400 : 700,
-          category_id: categoryId,
-        },
-      ];
+      return campaignId === CAMPAIGN_B_ID
+        ? [
+            {
+              id: entityId,
+              slug: 'veyra',
+              entity_type: 'character',
+              visibility: 'pin',
+              name,
+              name_language: 'en',
+              summary: 'Veyra pertenece únicamente a Un aliento menos.',
+              description: 'Entidad de Veyra para aislamiento multicampaña.',
+              portrait_path: null,
+              x: 2400,
+              y: 1400,
+              category_id: categoryId,
+            },
+            {
+              id: 'place-campaign-b-ally',
+              slug: 'aliado-veyra',
+              entity_type: 'location',
+              visibility: 'pin',
+              name: 'Aliado de Veyra',
+              name_language: 'en',
+              summary: 'Canario ally.',
+              description: 'Canario ally.',
+              portrait_path: null,
+              x: 2850,
+              y: 1650,
+              category_id: categoryId,
+            },
+            {
+              id: 'place-campaign-b-neutral',
+              slug: 'neutral-veyra',
+              entity_type: 'location',
+              visibility: 'pin',
+              name: 'Neutral de Veyra',
+              name_language: 'en',
+              summary: 'Canario neutral.',
+              description: 'Canario neutral.',
+              portrait_path: null,
+              x: 3250,
+              y: 1900,
+              category_id: categoryId,
+            },
+          ]
+        : [
+            {
+              id: entityId,
+              slug: 'campaign-a-place',
+              entity_type: 'location',
+              visibility: 'pin',
+              name,
+              name_language: 'en',
+              summary: 'Resumen exclusivo A',
+              description: 'Descripción exclusiva A',
+              portrait_path: null,
+              x: 900,
+              y: 700,
+              category_id: categoryId,
+            },
+          ];
     case 'entity_aliases':
       return [
         {
@@ -107,6 +179,32 @@ function rowsFor(table: string, campaignId: string): readonly Record<string, unk
           value: `Alias ${suffix.toUpperCase()}`,
         },
       ];
+    case 'entity_player_dispositions':
+      return campaignId === CAMPAIGN_B_ID
+        ? [
+            {
+              entity_id: 'place-campaign-b-ally',
+              player_id: 'player-veyra',
+              disposition: 'ally',
+            },
+            {
+              entity_id: 'place-campaign-b-neutral',
+              player_id: 'player-veyra',
+              disposition: 'neutral',
+            },
+          ]
+        : [
+            {
+              entity_id: 'place-campaign-a',
+              player_id: 'player-skade',
+              disposition: 'ally',
+            },
+            {
+              entity_id: 'place-campaign-a',
+              player_id: 'player-ura',
+              disposition: 'enemy',
+            },
+          ];
     default:
       return [];
   }
@@ -116,42 +214,152 @@ function snapshotCatalog(campaignId: string): PublicCampaignCatalogV3 {
   const suffix = campaignId === CAMPAIGN_B_ID ? 'b' : 'a';
   const entityId = `place-campaign-${suffix}` as CampaignEntityId;
   const categoryId = `category-campaign-${suffix}` as CampaignCategoryId;
+  const categories = [
+    {
+      id: categoryId,
+      slug: `campaign-${suffix}`,
+      name: `Categoría ${suffix.toUpperCase()}`,
+      description: `Categoría exclusiva de campaña ${suffix.toUpperCase()}`,
+    },
+  ];
+
+  if (campaignId === CAMPAIGN_B_ID) {
+    return {
+      campaignId,
+      categories,
+      tags: [],
+      players: [
+        {
+          id: 'player-veyra',
+          slug: 'veyra',
+          displayName: 'Veyra',
+          nameLanguage: 'en',
+        },
+      ],
+      entities: [
+        {
+          id: entityId,
+          slug: 'veyra',
+          entityType: 'character',
+          visibility: 'pin',
+          name: 'Veyra',
+          nameLanguage: 'en',
+          aliases: [
+            {
+              id: 'alias-campaign-b',
+              entityId,
+              language: 'en',
+              value: 'Alias B',
+            },
+          ],
+          summary: 'Veyra pertenece únicamente a Un aliento menos.',
+          description: 'Entidad de Veyra para aislamiento multicampaña.',
+          coordinates: { x: 2400, y: 1400 },
+          categoryId,
+          tagIds: [],
+        },
+        {
+          id: 'place-campaign-b-ally' as CampaignEntityId,
+          slug: 'aliado-veyra',
+          entityType: 'location',
+          visibility: 'pin',
+          name: 'Aliado de Veyra',
+          nameLanguage: 'en',
+          aliases: [],
+          summary: 'Canario ally.',
+          description: 'Canario ally.',
+          coordinates: { x: 2850, y: 1650 },
+          categoryId,
+          tagIds: [],
+        },
+        {
+          id: 'place-campaign-b-neutral' as CampaignEntityId,
+          slug: 'neutral-veyra',
+          entityType: 'location',
+          visibility: 'pin',
+          name: 'Neutral de Veyra',
+          nameLanguage: 'en',
+          aliases: [],
+          summary: 'Canario neutral.',
+          description: 'Canario neutral.',
+          coordinates: { x: 3250, y: 1900 },
+          categoryId,
+          tagIds: [],
+        },
+      ],
+      dispositions: [
+        {
+          entityId: 'place-campaign-b-ally' as CampaignEntityId,
+          playerId: 'player-veyra',
+          disposition: 'ally',
+        },
+        {
+          entityId: 'place-campaign-b-neutral' as CampaignEntityId,
+          playerId: 'player-veyra',
+          disposition: 'neutral',
+        },
+      ],
+      associations: [],
+      characterLocationRelations: [],
+      notes: [],
+      characterLocationEvents: [],
+      geographicEntityLinks: [],
+    };
+  }
+
   return {
     campaignId,
-    categories: [
+    categories,
+    tags: [],
+    players: [
       {
-        id: categoryId,
-        slug: `campaign-${suffix}`,
-        name: `Categoría ${suffix.toUpperCase()}`,
-        description: `Categoría exclusiva de campaña ${suffix.toUpperCase()}`,
+        id: 'player-skade',
+        slug: 'skade',
+        displayName: 'Skade',
+        nameLanguage: 'en',
+      },
+      {
+        id: 'player-ura',
+        slug: 'ura',
+        displayName: 'Ura',
+        nameLanguage: 'en',
       },
     ],
-    tags: [],
-    players: [],
     entities: [
       {
         id: entityId,
-        slug: `campaign-${suffix}-place`,
+        slug: 'campaign-a-place',
         entityType: 'location',
         visibility: 'pin',
-        name: suffix === 'b' ? 'Beta Bastión' : 'Alpha Atalaya',
+        name: 'Alpha Atalaya',
         nameLanguage: 'en',
         aliases: [
           {
-            id: `alias-campaign-${suffix}`,
+            id: 'alias-campaign-a',
             entityId,
             language: 'en',
-            value: `Alias ${suffix.toUpperCase()}`,
+            value: 'Alias A',
           },
         ],
-        summary: `Resumen exclusivo ${suffix.toUpperCase()}`,
-        description: `Descripción exclusiva ${suffix.toUpperCase()}`,
-        coordinates: { x: suffix === 'b' ? 2400 : 900, y: suffix === 'b' ? 1400 : 700 },
+        summary: 'Resumen exclusivo A',
+        description: 'Descripción exclusiva A',
+        coordinates: { x: 900, y: 700 },
         categoryId,
         tagIds: [],
       },
     ],
-    dispositions: [],
+    dispositions: [
+      {
+        entityId,
+        playerId: 'player-skade',
+        disposition: 'ally',
+      },
+      {
+        entityId,
+        playerId: 'player-ura',
+        disposition: 'enemy',
+      },
+    ],
     associations: [],
     characterLocationRelations: [],
     notes: [],
@@ -305,7 +513,7 @@ async function expectCampaignA(page: Page): Promise<void> {
 }
 
 async function expectCampaignB(page: Page): Promise<void> {
-  await expect(page.getByLabel('Campaña', { exact: true })).toHaveValue('campaign-b');
+  await expect(page.getByLabel('Campaña', { exact: true })).toHaveValue('un-aliento-menos');
   await expect(
     page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-a"]'),
   ).toHaveCount(0);
@@ -339,14 +547,14 @@ test('A/B selection isolates map, search and details while URL Back/Forward rema
   await page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-a"]').click();
   await expect(page.getByTestId('place-details')).toContainText('Alpha Atalaya');
 
-  await selector.selectOption('campaign-b');
-  await expect(page).toHaveURL(/campaign=campaign-b/);
+  await selector.selectOption('un-aliento-menos');
+  await expect(page).toHaveURL(/campaign=un-aliento-menos/);
   await expect(page).not.toHaveURL(/place=/);
   await expectCampaignB(page);
   await expect(page.getByTestId('place-details')).not.toContainText('Alpha Atalaya');
 
   const searchbox = page.getByRole('searchbox', { name: 'Buscar lugares' });
-  await searchbox.fill('Beta Bastión');
+  await searchbox.fill('Veyra');
   await expect(page.locator('[data-search-result-id="place-campaign-b"]')).toBeVisible();
   await expect(page.locator('[data-search-result-id="place-campaign-a"]')).toHaveCount(0);
 
@@ -356,23 +564,59 @@ test('A/B selection isolates map, search and details while URL Back/Forward rema
   await expectCampaignB(page);
 });
 
+test('MAP-068 roster isolation drives ally, neutral and self indicators per active campaign', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await page.goto('/?campaign=castigo-divino');
+
+  const castigoPin = page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-a"]');
+  await expect(castigoPin.locator('.pin-disposition')).toHaveCount(2);
+  await expect(castigoPin.locator('.pin-disposition--ally')).toHaveCount(1);
+  await expect(castigoPin.locator('.pin-disposition--enemy')).toHaveCount(1);
+  await expect(castigoPin).toHaveAttribute('aria-label', /Skade: aliado/i);
+  await expect(castigoPin).toHaveAttribute('aria-label', /Ura: enemigo/i);
+  await expect(castigoPin).not.toHaveAttribute('aria-label', /Veyra:/i);
+
+  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
+
+  const veyra = page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-b"]');
+  const ally = page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-b-ally"]');
+  const neutral = page.locator(
+    '[data-testid="entity-pin"][data-entity-id="place-campaign-b-neutral"]',
+  );
+
+  await expect(veyra.locator('.pin-disposition')).toHaveCount(0);
+  await expect(veyra.locator('.pin-visual__dispositions')).toHaveCount(0);
+  await expect(veyra).not.toHaveAttribute('aria-label', /Relación con los personajes:/i);
+
+  await expect(ally.locator('.pin-disposition')).toHaveCount(1);
+  await expect(ally.locator('.pin-disposition--ally')).toHaveText('+');
+  await expect(ally).toHaveAttribute('aria-label', /Veyra: aliado/i);
+
+  await expect(neutral.locator('.pin-disposition')).toHaveCount(0);
+  await expect(neutral.locator('.pin-visual__dispositions')).toHaveCount(0);
+  await expect(neutral).not.toHaveAttribute('aria-label', /Veyra:\\s*neutral/i);
+  await expect(neutral).not.toHaveAttribute('aria-label', /Skade:|Ura:/i);
+});
+
 test('a public request submitted from B displays and persists campaign B explicitly', async ({
   page,
 }) => {
   const backend = await configureCampaignBackend(page);
   await page.goto('/');
-  await page.getByLabel('Campaña', { exact: true }).selectOption('campaign-b');
+  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
   await expectCampaignB(page);
 
   await page.getByRole('button', { name: 'Proponer un pin' }).click();
   await expect(page.locator('[data-public-pin-request-campaign-target]')).toContainText(
-    'Campaña destinataria:Campaña B',
+    'Campaña destinataria:Un aliento menos',
   );
   await fillPublicRequest(page, 'B');
   await page.getByRole('button', { name: 'Enviar solicitud para revisión' }).click();
 
   await expect(page.locator('[data-public-pin-request-status]')).toContainText(
-    'Solicitud enviada a Campaña B',
+    'Solicitud enviada a Un aliento menos',
   );
   await expect.poll(() => backend.getPublicRequests().length).toBe(1);
   expect(backend.getPublicRequests()[0]?.campaignId).toBe(CAMPAIGN_B_ID);
@@ -391,8 +635,8 @@ test('an empty open form follows A to B and B to A without a confirmation prompt
   const selector = page.getByLabel('Campaña', { exact: true });
   await expect(target).toContainText('Castigo Divino');
 
-  await selector.selectOption('campaign-b');
-  await expect(target).toContainText('Campaña B');
+  await selector.selectOption('un-aliento-menos');
+  await expect(target).toContainText('Un aliento menos');
   await expect(prompt).toBeHidden();
 
   await selector.selectOption('castigo-divino');
@@ -408,7 +652,7 @@ test('a partial A draft keeps A when the global selector moves to B and cancel i
   await page.getByRole('button', { name: 'Proponer un pin' }).click();
   await page.getByLabel('Nombre o apodo').fill('Borrador parcial A');
 
-  await page.getByLabel('Campaña', { exact: true }).selectOption('campaign-b');
+  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
   const prompt = page.locator('[data-public-pin-request-campaign-change]');
   await expect(prompt).toBeVisible();
   await expect(prompt).toContainText('sigue destinado a Castigo Divino');
@@ -448,12 +692,12 @@ test('a complete A draft can explicitly move to B without losing fields or posit
   await fillPublicRequest(page, 'Completo A');
   const position = await page.locator('[data-public-pin-request-position]').textContent();
 
-  await page.getByLabel('Campaña', { exact: true }).selectOption('campaign-b');
+  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
   await expect(page.locator('[data-public-pin-request-campaign-change]')).toBeVisible();
-  await page.getByRole('button', { name: 'Mover borrador a Campaña B' }).click();
+  await page.getByRole('button', { name: 'Mover borrador a Un aliento menos' }).click();
 
   await expect(page.locator('[data-public-pin-request-campaign-target]')).toContainText(
-    'Campaña B',
+    'Un aliento menos',
   );
   await expect(page.getByLabel('Nombre o apodo')).toHaveValue('Completo A visitante');
   await expect(page.getByLabel('Nombre propuesto del pin')).toHaveValue('Completo A propuesta');
@@ -470,7 +714,7 @@ test('a B draft switching back to A cannot submit until keep-or-move is resolved
   page,
 }) => {
   const backend = await configureCampaignBackend(page);
-  await page.goto('/?campaign=campaign-b');
+  await page.goto('/?campaign=un-aliento-menos');
   await page.getByRole('button', { name: 'Proponer un pin' }).click();
   await fillPublicRequest(page, 'Completo B');
 
@@ -479,7 +723,9 @@ test('a B draft switching back to A cannot submit until keep-or-move is resolved
   await expect(page.locator('[data-public-pin-request-status]')).toContainText(
     'Antes de enviar, decide',
   );
-  await expect(page.getByRole('button', { name: 'Conservar borrador en Campaña B' })).toBeFocused();
+  await expect(
+    page.getByRole('button', { name: 'Conservar borrador en Un aliento menos' }),
+  ).toBeFocused();
   expect(backend.getPublicRequests()).toHaveLength(0);
 
   await page.getByRole('button', { name: 'Mover borrador a Castigo Divino' }).click();
@@ -493,7 +739,7 @@ test('degraded schema v3 keeps B selected and backend recovery does not reset it
   page,
 }) => {
   const backend = await configureCampaignBackend(page, { remoteAvailable: false });
-  await page.goto('/?campaign=campaign-b');
+  await page.goto('/?campaign=un-aliento-menos');
 
   await expectCampaignB(page);
   await expect(page.locator('[data-backend-status]')).toHaveAttribute(
@@ -507,7 +753,7 @@ test('degraded schema v3 keeps B selected and backend recovery does not reset it
     .poll(() => page.locator('[data-backend-status]').getAttribute('data-backend-state'))
     .toBe('connected');
   await expectCampaignB(page);
-  await expect(page).toHaveURL(/campaign=campaign-b/);
+  await expect(page).toHaveURL(/campaign=un-aliento-menos/);
 });
 
 for (const width of [320, 390, 430, 768, 1280]) {
@@ -523,9 +769,15 @@ for (const width of [320, 390, 430, 768, 1280]) {
     await expect(selector).toBeVisible();
     await selector.focus();
     await expect(selector).toBeFocused();
-    await selector.selectOption('campaign-b');
-    await expectCampaignB(page);
-    await expect(page.locator('[data-campaign-status]')).toContainText('Campaña B');
+    await selector.selectOption('un-aliento-menos');
+    await expect(selector).toHaveValue('un-aliento-menos');
+    await expect(
+      page.locator('[data-testid="entity-pin"][data-entity-id="place-campaign-a"]'),
+    ).toHaveCount(0);
+    await expect(
+      page.locator('[data-testid="entity-pin"], [data-testid="coincident-pin"]'),
+    ).not.toHaveCount(0);
+    await expect(page.locator('[data-campaign-status]')).toContainText('Un aliento menos');
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
