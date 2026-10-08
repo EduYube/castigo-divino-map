@@ -1,4 +1,8 @@
-import type { PublicCatalogSnapshotV2, PublicMapEntity, PublicSpatialMapEntity } from './beta02-model';
+import type {
+  PublicCatalogSnapshotV2,
+  PublicMapEntity,
+  PublicSpatialMapEntity,
+} from './beta02-model';
 import type { CampaignCatalog, CampaignCategory, CampaignPlace, PlaceId } from './model';
 
 const BETA01_PLACE_IDS = new Set<PlaceId>(['place-demo-harbor', 'place-demo-pass']);

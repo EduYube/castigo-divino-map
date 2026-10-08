@@ -1,8 +1,5 @@
 import type { SpatialEntityType } from '../data/beta02-model';
-import type {
-  MapEntityAudience,
-  PlayerDisposition,
-} from '../domain/adminMapEntities';
+import type { MapEntityAudience, PlayerDisposition } from '../domain/adminMapEntities';
 import {
   createPlayerDispositionVisuals,
   describePlayerDispositions,
