@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PublicMapEntity } from '../data/beta02-model';
+import type { PublicSpatialMapEntity } from '../data/beta02-model';
 import type { AtlasPinMarkerModel } from '../data/pinMarkers';
 import {
   filterAtlasMarkersByLayers,
@@ -9,9 +9,9 @@ import {
 } from './mapLayers';
 
 function entity(
-  entityType: PublicMapEntity['entityType'],
-  geometry: PublicMapEntity['geometry'],
-): PublicMapEntity {
+  entityType: PublicSpatialMapEntity['entityType'],
+  geometry: PublicSpatialMapEntity['geometry'],
+): PublicSpatialMapEntity {
   return {
     id: `entity-${entityType}`,
     slug: entityType,

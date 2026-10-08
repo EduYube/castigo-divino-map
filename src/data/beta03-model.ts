@@ -40,7 +40,7 @@ export interface PublicCampaignCatalogV3 {
   readonly entities: readonly PublicMapEntity[];
   readonly dispositions: readonly PublicEntityPlayerDisposition[];
   readonly associations: readonly PublicEntityPlayerAssociation[];
-  readonly entityRelations: readonly PublicEntityRelation[];
+  readonly entityRelations?: readonly PublicEntityRelation[];
   readonly characterLocationRelations: readonly PublicCharacterLocationRelation[];
   readonly notes: readonly PublicNote[];
   readonly characterLocationEvents: readonly PublicCharacterLocationEvent[];

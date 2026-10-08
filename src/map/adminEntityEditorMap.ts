@@ -1,3 +1,4 @@
+import { isSpatialEntityType } from '../domain/entitySpatiality';
 import L, { type LatLngBounds, type Map as LeafletMap, type Marker, type Polygon } from 'leaflet';
 
 import { fromLeafletSimpleCoordinate, toLeafletSimpleCoordinate } from '../data/coordinates';
@@ -50,6 +51,7 @@ function createEditorIcon(
   entityType: MapEntityType,
   dispositions: readonly PinPlayerDispositionInput[],
 ): L.DivIcon {
+  if (!isSpatialEntityType(entityType)) throw new Error('Non-spatial entity cannot have a marker.');
   const type = getPinTypeVisual(entityType);
   const dispositionMarkup = createPlayerDispositionVisuals(dispositions)
     .map(
@@ -243,6 +245,7 @@ export function mountAdminEntityEditorMap(
   const applyMarkerAccessibility = (): void => {
     const element = marker?.getElement();
     if (!element) return;
+    if (!isSpatialEntityType(currentEntityType)) return;
     const type = getPinTypeVisual(currentEntityType);
     element.tabIndex = 0;
     element.setAttribute('role', 'button');

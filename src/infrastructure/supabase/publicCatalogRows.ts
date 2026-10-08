@@ -36,7 +36,7 @@ export interface PublicCatalogTablePayloads {
   readonly entityTags: readonly Record<string, unknown>[];
   readonly dispositions: readonly Record<string, unknown>[];
   readonly associations: readonly Record<string, unknown>[];
-  readonly entityRelations: readonly Record<string, unknown>[];
+  readonly entityRelations?: readonly Record<string, unknown>[];
   readonly notes: readonly Record<string, unknown>[];
   readonly noteTags: readonly Record<string, unknown>[];
   readonly geographicNames: readonly Record<string, unknown>[];

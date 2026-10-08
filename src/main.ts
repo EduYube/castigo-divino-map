@@ -121,6 +121,8 @@ function describeSearchTarget(result: AtlasSearchResult): string {
       return `${result.name}, misión`;
     case 'hazard':
       return `${result.name}, peligro`;
+    case 'organization':
+      return `${result.name}, organización`;
   }
 }
 

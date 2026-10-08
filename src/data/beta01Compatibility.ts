@@ -1,11 +1,11 @@
-import type { PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
+import type { PublicCatalogSnapshotV2, PublicMapEntity, PublicSpatialMapEntity } from './beta02-model';
 import type { CampaignCatalog, CampaignCategory, CampaignPlace, PlaceId } from './model';
 
 const BETA01_PLACE_IDS = new Set<PlaceId>(['place-demo-harbor', 'place-demo-pass']);
 
 function isLegacyPlaceEntity(
   entity: PublicMapEntity,
-): entity is PublicMapEntity & { readonly id: PlaceId } {
+): entity is PublicSpatialMapEntity & { readonly id: PlaceId } {
   return (
     BETA01_PLACE_IDS.has(entity.id as PlaceId) &&
     entity.entityType === 'location' &&

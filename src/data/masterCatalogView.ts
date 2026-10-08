@@ -108,13 +108,14 @@ function buildMasterEntities(
       if (entity.x !== null || entity.y !== null || entity.geometry !== null) {
         throw new Error('Una organización Máster contiene datos cartográficos.');
       }
-      return common;
+      return { ...common, entityType: 'organization' as const, lifecycleStatus: null };
     }
     if (entity.x === null || entity.y === null || entity.geometry === null) {
       throw new Error('Una entidad cartográfica Máster carece de geometría.');
     }
     return {
       ...common,
+      entityType: entity.entityType,
       geometry: entity.geometry,
       coordinates: { x: entity.x, y: entity.y },
     };

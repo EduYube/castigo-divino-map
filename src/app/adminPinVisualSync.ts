@@ -1,6 +1,6 @@
+import type { SpatialEntityType } from '../data/beta02-model';
 import type {
   MapEntityAudience,
-  MapEntityType,
   PlayerDisposition,
 } from '../domain/adminMapEntities';
 import {
@@ -15,7 +15,7 @@ export interface AdminPinVisualSyncController {
   destroy(): void;
 }
 
-function readEntityType(root: ParentNode): MapEntityType {
+function readEntityType(root: ParentNode): SpatialEntityType {
   const value = root.querySelector<HTMLSelectElement>('[name="entityType"]')?.value;
   return value === 'character' ? 'character' : 'location';
 }
@@ -45,7 +45,7 @@ function readDispositions(root: ParentNode): readonly PinPlayerDispositionInput[
 
 function populatePinVisual(
   visual: HTMLElement,
-  entityType: MapEntityType,
+  entityType: SpatialEntityType,
   audience: MapEntityAudience,
   dispositions: readonly PinPlayerDispositionInput[],
 ): void {

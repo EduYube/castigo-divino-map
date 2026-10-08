@@ -1,16 +1,16 @@
 import { describe, expect, test } from 'vitest';
 
-import type { PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
+import type { PublicCatalogSnapshotV2, PublicSpatialMapEntity } from './beta02-model';
 import {
   getImportantCharactersForLocation,
   getRelatedLocationsForCharacter,
 } from './characterLocationRelations';
 
 function entity(
-  id: PublicMapEntity['id'],
+  id: PublicSpatialMapEntity['id'],
   name: string,
-  entityType: PublicMapEntity['entityType'],
-): PublicMapEntity {
+  entityType: PublicSpatialMapEntity['entityType'],
+): PublicSpatialMapEntity {
   return {
     id,
     slug: id.replace(/^entity-/, ''),

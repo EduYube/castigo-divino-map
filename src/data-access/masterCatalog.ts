@@ -92,7 +92,7 @@ export interface AuthorizedMasterCatalog {
   readonly players: readonly MasterCatalogPlayer[];
   readonly dispositions: readonly MasterCatalogDisposition[];
   readonly associations: readonly MasterCatalogAssociation[];
-  readonly entityRelations: readonly MasterCatalogEntityRelation[];
+  readonly entityRelations?: readonly MasterCatalogEntityRelation[];
   readonly relations: readonly MasterCatalogRelation[];
   readonly relationEntities: readonly MasterCatalogRelationEntity[];
 }

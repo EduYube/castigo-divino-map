@@ -134,6 +134,7 @@ function toCampaignCatalogV3(
     entities: catalog.entities,
     dispositions: catalog.dispositions,
     associations: catalog.associations ?? [],
+    entityRelations: catalog.entityRelations ?? [],
     characterLocationRelations: catalog.characterLocationRelations,
     notes: catalog.notes,
     characterLocationEvents: catalog.characterLocationEvents,

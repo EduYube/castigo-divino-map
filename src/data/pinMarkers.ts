@@ -91,9 +91,9 @@ function resolveBeta02Associations(
 function findStableBeta02Location(
   catalog: PublicCatalogSnapshotV2 | null,
   place: CampaignCatalog['places'][number],
-): PublicMapEntity | undefined {
+): PublicSpatialMapEntity | undefined {
   return catalog?.entities.find(
-    (entity) =>
+    (entity): entity is PublicSpatialMapEntity =>
       entity.entityType === 'location' && (entity.id === place.id || entity.slug === place.slug),
   );
 }
@@ -172,7 +172,7 @@ export function createAtlasPinMarkerModels(
 
   const supplementalPins = (beta02Catalog?.entities ?? [])
     .filter(
-      (entity) =>
+      (entity): entity is PublicSpatialMapEntity =>
         isSpatialMapEntity(entity) &&
         entity.visibility === 'pin' &&
         !consumedEntityIds.has(entity.id),

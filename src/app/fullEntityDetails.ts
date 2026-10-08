@@ -163,7 +163,7 @@ function appendNotes(parent: HTMLElement, details: FullEntityDetailModel): void 
 function appendEntityLink(
   parent: HTMLElement,
   sourceUrl: URL,
-  relation: FullEntityDetailModel['importantCharacters'][number],
+  relation: { readonly slug: string; readonly name: string },
 ): HTMLAnchorElement {
   const link = document.createElement('a');
   link.href = createFullEntityUrl(sourceUrl, relation.slug).href;
