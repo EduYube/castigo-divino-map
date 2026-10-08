@@ -18,9 +18,9 @@ export interface MasterCatalogEntity {
   readonly summary: string;
   readonly description: string;
   readonly portraitPath?: string | null;
-  readonly geometry: MapEntityGeometry;
-  readonly x: number;
-  readonly y: number;
+  readonly geometry: MapEntityGeometry | null;
+  readonly x: number | null;
+  readonly y: number | null;
   readonly categoryId: string;
   readonly updatedAt: string;
 }
@@ -63,6 +63,13 @@ export interface MasterCatalogAssociation {
   readonly playerId: string;
 }
 
+export interface MasterCatalogEntityRelation {
+  readonly leftEntityId: string;
+  readonly rightEntityId: string;
+  readonly leftLabel: string;
+  readonly rightLabel: string;
+}
+
 export interface MasterCatalogRelation {
   readonly characterId: string;
   readonly locationId: string;
@@ -85,6 +92,7 @@ export interface AuthorizedMasterCatalog {
   readonly players: readonly MasterCatalogPlayer[];
   readonly dispositions: readonly MasterCatalogDisposition[];
   readonly associations: readonly MasterCatalogAssociation[];
+  readonly entityRelations: readonly MasterCatalogEntityRelation[];
   readonly relations: readonly MasterCatalogRelation[];
   readonly relationEntities: readonly MasterCatalogRelationEntity[];
 }
