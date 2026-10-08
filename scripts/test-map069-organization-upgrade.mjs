@@ -1,13 +1,8 @@
-import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
 const DATABASE_CONTAINER = 'supabase_db_castigo-divino-map';
 const NPX_COMMAND = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const PRE_MAP069_VERSION = '20261007080000';
-const MAP069_MIGRATION = new URL(
-  '../supabase/migrations/20261008180000_add_nonspatial_organizations.sql',
-  import.meta.url,
-);
 
 function fail(message) {
   throw new Error(`MAP-069 organization upgrade verification failed: ${message}`);
@@ -82,7 +77,11 @@ select pg_catalog.jsonb_build_object(
 )::text;
 `);
 
-psql(readFileSync(MAP069_MIGRATION, 'utf8'));
+run(
+  NPX_COMMAND,
+  ['--no-install', 'supabase', 'migration', 'up', '--local'],
+  'applying MAP-069 through the normal migration ledger',
+);
 
 const after = psql(`
 select pg_catalog.jsonb_build_object(
