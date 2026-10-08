@@ -250,7 +250,7 @@ begin
     raise exception 'MAP-068 Veyra category is not valid in the source campaign';
   end if;
 
-  if request_count = 1 and not exists (
+  if request_count <> 1 or not exists (
     select 1
     from public.public_requests
     where id = request_id
@@ -258,14 +258,14 @@ begin
       and request_status = 'converted'::public.request_status
       and converted_entity_id = veyra_entity
   ) then
-    raise exception 'MAP-068 Veyra request no longer matches its converted entity';
+    raise exception 'MAP-068 requires the audited converted Veyra request';
   end if;
 
   if (
     select count(*)
     from public.public_requests
     where converted_entity_id = veyra_entity
-  ) <> request_count then
+  ) <> 1 then
     raise exception 'MAP-068 found an unexpected request converted to Veyra';
   end if;
 
@@ -380,9 +380,45 @@ begin
   on conflict (id) do nothing;
 
   -- Every disposition involving Veyra becomes either cross-campaign or self
-  -- after the split. Production audit counts 19 unique rows; historic upgrade
-  -- fixtures may contain a different matrix cardinality, so the semantic rule
-  -- is expressed by endpoints rather than by a brittle global count.
+  -- after the split. Fail closed against the exact production inventory audited
+  -- for MAP-068 so newly-added or changed relations are never silently deleted.
+  if (
+    select pg_catalog.jsonb_agg(
+      pg_catalog.jsonb_build_object(
+        'entity_id', disposition.entity_id,
+        'player_id', disposition.player_id,
+        'campaign_id', disposition.campaign_id,
+        'disposition', disposition.disposition
+      )
+      order by disposition.entity_id, disposition.player_id
+    )
+    from public.entity_player_dispositions as disposition
+    where disposition.player_id = veyra_player
+       or disposition.entity_id = veyra_entity
+  ) is distinct from pg_catalog.jsonb_build_array(
+    pg_catalog.jsonb_build_object('entity_id','entity-agamen','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-asentamiento-thar','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-bring','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-captitan','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-jhonny','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-masred','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-memnon','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-myrath','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-ojos-tempestad','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id',veyra_entity,'player_id','player-skade','campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id',veyra_entity,'player_id','player-ura','campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id',veyra_entity,'player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-skade','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-thalasis','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-thar','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-tulu','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','entity-ura','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','place-demo-harbor','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition),
+    pg_catalog.jsonb_build_object('entity_id','place-demo-pass','player_id',veyra_player,'campaign_id',initial_campaign,'disposition','neutral'::public.player_disposition)
+  ) then
+    raise exception 'MAP-068 Veyra disposition inventory changed since the production audit';
+  end if;
+
   delete from public.entity_player_dispositions
   where player_id = veyra_player
      or entity_id = veyra_entity;
