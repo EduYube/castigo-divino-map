@@ -140,6 +140,7 @@ describe('SupabasePublicCatalogRepository', () => {
       'entity_player_dispositions',
       'entity_player_associations',
       'character_location_relations',
+      'entity_relations',
       'campaign_geographic_entity_links',
     ]);
     urls
