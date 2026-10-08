@@ -7,6 +7,8 @@ import {
   type AdminCategoryReference,
   type AdminEntityAssociation,
   type AdminEntityDisposition,
+  type AdminEntityRelation,
+  type AdminEntityRelationReference,
   type AdminEntityTagLink,
   type AdminMapEntityDeleteBlockers,
   type AdminMapEntityDetail,
@@ -23,6 +25,7 @@ import {
   type PlayerDisposition,
 } from '../../domain/adminMapEntities';
 import { validateCharacterPortraitFile } from '../../domain/characterPortrait';
+import { isSpatialEntityType } from '../../domain/entitySpatiality';
 import {
   createPointMapGeometry,
   normalizeMapEntityGeometry,
@@ -100,6 +103,10 @@ function numberValue(row: Record<string, unknown>, field: string): number {
   return value;
 }
 
+function nullableNumberValue(row: Record<string, unknown>, field: string): number | null {
+  return row[field] === null ? null : numberValue(row, field);
+}
+
 function publicationStatus(value: unknown): MapEntityPublicationStatus {
   if (value === 'draft' || value === 'published' || value === 'archived') return value;
   throw new AdminMapEntityRepositoryError(
@@ -109,8 +116,15 @@ function publicationStatus(value: unknown): MapEntityPublicationStatus {
 }
 
 function entityType(value: unknown): MapEntityType {
-  if (value === 'character' || value === 'location' || value === 'mission' || value === 'hazard')
+  if (
+    value === 'character' ||
+    value === 'location' ||
+    value === 'mission' ||
+    value === 'hazard' ||
+    value === 'organization'
+  ) {
     return value;
+  }
   throw new AdminMapEntityRepositoryError(
     'invalid-response',
     'Supabase devolvió un tipo de entidad no válido.',
@@ -200,17 +214,39 @@ function geometryValue(
 
 function mapRecord(row: Record<string, unknown>): AdminMapEntityRecord {
   const recordEntityType = entityType(row.entity_type);
-  const x = numberValue(row, 'x');
-  const y = numberValue(row, 'y');
+  const x = nullableNumberValue(row, 'x');
+  const y = nullableNumberValue(row, 'y');
+  const recordVisibility = visibility(row.visibility);
+  const recordPortraitPath = row.portrait_path == null ? null : nullableString(row, 'portrait_path');
+  let geometry: MapEntityGeometry | null;
+
+  if (isSpatialEntityType(recordEntityType)) {
+    if (x === null || y === null) {
+      throw new AdminMapEntityRepositoryError(
+        'invalid-response',
+        'Supabase omitió coordenadas de una entidad cartográfica.',
+      );
+    }
+    geometry = geometryValue(row.geometry, recordEntityType, x, y);
+  } else {
+    if (x !== null || y !== null || row.geometry !== null || recordVisibility !== 'search_only') {
+      throw new AdminMapEntityRepositoryError(
+        'invalid-response',
+        'Supabase devolvió una organización con estado cartográfico incoherente.',
+      );
+    }
+    geometry = null;
+  }
+
   return {
     id: requiredString(row, 'id'),
     slug: requiredString(row, 'slug'),
     entityType: recordEntityType,
     lifecycleStatus: lifecycleStatus(row.lifecycleStatus ?? row.lifecycle_status, recordEntityType),
-    visibility: visibility(row.visibility),
+    visibility: recordVisibility,
     audience: audience(row.audience),
-    portraitPath: row.portrait_path == null ? null : nullableString(row, 'portrait_path'),
-    geometry: geometryValue(row.geometry, recordEntityType, x, y),
+    portraitPath: recordPortraitPath,
+    geometry,
     name: requiredString(row, 'name'),
     summary: typeof row.summary === 'string' ? row.summary : '',
     description: typeof row.description === 'string' ? row.description : '',
@@ -278,6 +314,39 @@ function mapAssociation(value: unknown): AdminEntityAssociation {
   };
 }
 
+function mapEntityRelation(value: unknown): AdminEntityRelation {
+  if (!isRecord(value)) {
+    throw new AdminMapEntityRepositoryError(
+      'invalid-response',
+      'Supabase devolvió relaciones genéricas no válidas.',
+    );
+  }
+  return {
+    otherEntityId: requiredString(value, 'other_entity_id'),
+    otherName: requiredString(value, 'other_name'),
+    otherEntityType: entityType(value.other_entity_type),
+    otherAudience: audience(value.other_audience),
+    ownLabel: requiredString(value, 'own_label'),
+    otherLabel: requiredString(value, 'other_label'),
+  };
+}
+
+function mapEntityRelationReference(value: unknown): AdminEntityRelationReference {
+  if (!isRecord(value)) {
+    throw new AdminMapEntityRepositoryError(
+      'invalid-response',
+      'Supabase devolvió referencias de relación no válidas.',
+    );
+  }
+  return {
+    id: requiredString(value, 'id'),
+    name: requiredString(value, 'name'),
+    entityType: entityType(value.entity_type),
+    audience: audience(value.audience),
+    publicationStatus: publicationStatus(value.publication_status),
+  };
+}
+
 function mapBlockers(value: unknown): AdminMapEntityDeleteBlockers {
   if (!isRecord(value)) {
     throw new AdminMapEntityRepositoryError(
@@ -294,6 +363,8 @@ function mapBlockers(value: unknown): AdminMapEntityDeleteBlockers {
     requests: numberValue(value, 'requests'),
     playerAssociations:
       value.player_associations === undefined ? 0 : numberValue(value, 'player_associations'),
+    entityRelations:
+      value.entity_relations === undefined ? 0 : numberValue(value, 'entity_relations'),
   };
 }
 
@@ -305,10 +376,14 @@ function mapDetail(payload: unknown): AdminMapEntityDetail {
     );
   }
   const associations = payload.associations ?? [];
+  const entityRelations = payload.entity_relations ?? [];
+  const relationEntities = payload.relation_entities ?? [];
   if (
     !Array.isArray(payload.tag_links) ||
     !Array.isArray(payload.dispositions) ||
-    !Array.isArray(associations)
+    !Array.isArray(associations) ||
+    !Array.isArray(entityRelations) ||
+    !Array.isArray(relationEntities)
   ) {
     throw new AdminMapEntityRepositoryError(
       'invalid-response',
@@ -320,7 +395,13 @@ function mapDetail(payload: unknown): AdminMapEntityDetail {
     tagLinks: payload.tag_links.map(mapTagLink),
     dispositions: payload.dispositions.map(mapDisposition),
     associations: associations.map(mapAssociation),
+    entityRelations: entityRelations.map(mapEntityRelation),
+    relationEntities: relationEntities.map(mapEntityRelationReference),
     relationsRevision: requiredString(payload, 'relations_revision'),
+    entityRelationsRevision:
+      payload.entity_relations_revision === undefined
+        ? undefined
+        : requiredString(payload, 'entity_relations_revision'),
     deleteBlockers: mapBlockers(payload.delete_blockers),
   };
 }
@@ -473,10 +554,15 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
     draft: AdminMapEntityDraft,
     options: { readonly signal: AbortSignal },
   ): Promise<AdminMapEntityDetail> {
-    const geometry = normalizeMapEntityGeometry(
-      draft.entityType,
-      draft.geometry ?? createPointMapGeometry({ x: draft.x, y: draft.y }),
-    );
+    const geometry =
+      draft.entityType === 'organization'
+        ? null
+        : draft.x === null || draft.y === null
+          ? null
+          : normalizeMapEntityGeometry(
+              draft.entityType,
+              draft.geometry ?? createPointMapGeometry({ x: draft.x, y: draft.y }),
+            );
     const response = await this.#request(
       new URL(`${this.#projectUrl}/rest/v1/rpc/admin_save_map_entity_v3`),
       {
@@ -485,6 +571,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
           p_id: draft.id,
           p_expected_updated_at: original?.record.updatedAt ?? null,
           p_expected_relations_revision: original?.relationsRevision ?? null,
+          p_expected_entity_relations_revision: original?.entityRelationsRevision ?? null,
           p_slug: draft.slug,
           p_entity_type: draft.entityType,
           p_visibility: draft.visibility,
@@ -500,6 +587,7 @@ export class SupabaseAdminMapEntityRepository implements AdminMapEntityRepositor
           p_dispositions: draft.dispositions,
           p_player_association_ids: [...(draft.playerAssociationIds ?? [])],
           p_lifecycle_status: draft.lifecycleStatus ?? null,
+          p_entity_relations: draft.entityRelations ?? [],
         }),
       },
       options.signal,
