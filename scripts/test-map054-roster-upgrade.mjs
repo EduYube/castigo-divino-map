@@ -362,20 +362,72 @@ runPsql(
      moderated_at = excluded.moderated_at;
    alter table public.public_requests enable trigger "20_validate_public_request";
 
+   do $
+   begin
+     if not exists (
+       select 1
+       from public.players
+       where id = 'player-veyra'
+         and campaign_id = '${INITIAL_CAMPAIGN_ID}'::uuid
+         and slug = 'veyra'
+         and display_name = 'Veyra'
+     ) or not exists (
+       select 1
+       from public.players
+       where id = 'player-ura'
+         and campaign_id = '${INITIAL_CAMPAIGN_ID}'::uuid
+         and slug = 'ura'
+         and display_name = 'Ura'
+     ) or not exists (
+       select 1
+       from public.players
+       where id = 'player-skade-existing'
+         and campaign_id = '${INITIAL_CAMPAIGN_ID}'::uuid
+         and slug = 'skade'
+         and display_name = 'Skade'
+     ) then
+       raise exception 'MAP-054 did not establish the expected historic roster before MAP-068';
+     end if;
+
+     if exists (select 1 from public.players where id = 'player-skade') then
+       raise exception 'MAP-054 checkpoint unexpectedly already contains player-skade';
+     end if;
+   end;
+   $;
+
+   -- Production's audited disposition inventory references player-skade, while
+   -- this rehearsal intentionally preserves the historic Skade identity as
+   -- player-skade-existing. Materialize a draft endpoint only for the audited
+   -- MAP-068 checkpoint, then remove it again after the split.
+   alter table public.players disable trigger "60_player_identifier";
+   alter table public.players disable trigger "70_player_reserve";
    insert into public.players (
-     campaign_id, id, slug, display_name, name_language, publication_status
+     campaign_id,
+     id,
+     slug,
+     display_name,
+     name_language,
+     publication_status,
+     display_order,
+     accent_color
    ) values (
      '${INITIAL_CAMPAIGN_ID}',
-     'player-veyra',
-     'veyra',
-     'Veyra',
+     'player-skade',
+     'map068-audited-skade-endpoint',
+     'MAP068 audited Skade endpoint',
      'en',
-     'published'
-   )
-   on conflict (id) do nothing;
+     'draft',
+     99,
+     '#475569'
+   );
+   alter table public.players enable trigger "60_player_identifier";
+   alter table public.players enable trigger "70_player_reserve";
 
+   -- Player insertion expands the disposition matrix automatically. Strip that
+   -- synthetic matrix plus every Veyra endpoint before inserting the exact
+   -- audited 19-row production inventory.
    delete from public.entity_player_dispositions
-   where player_id = 'player-veyra'
+   where player_id in ('player-veyra', 'player-skade')
       or entity_id = 'entity-request-07d26371bbff42d9b91e076d099891b0';
 
    insert into public.entity_player_dispositions (
@@ -411,7 +463,15 @@ runCommand(
 
 runPsql(
   containerName,
-  `do $$
+  `
+   delete from public.entity_player_dispositions
+   where player_id = 'player-skade';
+
+   delete from public.players
+   where id = 'player-skade'
+     and publication_status = 'draft';
+
+   do $
    declare
      initial_campaign uuid := '${INITIAL_CAMPAIGN_ID}'::uuid;
      veyra_campaign uuid := '00000000-0000-4000-8000-000000000068'::uuid;
