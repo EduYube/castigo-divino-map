@@ -59,6 +59,13 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
     published: false,
     campaignScoped: true,
   },
+  entityRelations: {
+    name: 'entity_relations',
+    select: 'left_entity_id,right_entity_id,left_label,right_label',
+    order: 'left_entity_id.asc,right_entity_id.asc',
+    published: false,
+    campaignScoped: true,
+  },
   characterLocationRelations: {
     name: 'character_location_relations',
     select: 'character_id,location_id,relation_status',
