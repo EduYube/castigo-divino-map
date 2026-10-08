@@ -362,7 +362,7 @@ runPsql(
      moderated_at = excluded.moderated_at;
    alter table public.public_requests enable trigger "20_validate_public_request";
 
-   do $
+   do $$
    begin
      if not exists (
        select 1
@@ -393,7 +393,7 @@ runPsql(
        raise exception 'MAP-054 checkpoint unexpectedly already contains player-skade';
      end if;
    end;
-   $;
+   $$;
 
    -- Production's audited disposition inventory references player-skade, while
    -- this rehearsal intentionally preserves the historic Skade identity as
@@ -471,7 +471,7 @@ runPsql(
    where id = 'player-skade'
      and publication_status = 'draft';
 
-   do $
+   do $$
    declare
      initial_campaign uuid := '${INITIAL_CAMPAIGN_ID}'::uuid;
      veyra_campaign uuid := '00000000-0000-4000-8000-000000000068'::uuid;
