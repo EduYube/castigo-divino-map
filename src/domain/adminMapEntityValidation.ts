@@ -5,6 +5,7 @@ import {
   getMapEntityLifecycleStatus,
   type MapEntityPublicationStatus,
 } from './adminMapEntities';
+import { isSpatialEntityType } from './entitySpatiality';
 import { isMapCoordinateWithinBounds } from './mapCoordinates';
 import {
   createPointMapGeometry,
@@ -81,38 +82,60 @@ export function validateAdminMapEntityDraft(
     setError(
       errors,
       'lifecycleStatus',
-      'Personajes y emplazamientos no tienen lifecycle funcional.',
+      'Este tipo de entidad no tiene lifecycle funcional.',
     );
   }
 
-  try {
-    const geometry = normalizeMapEntityGeometry(
-      draft.entityType,
-      draft.geometry ?? createPointMapGeometry(draft),
-    );
-    const representative = mapGeometryRepresentativePoint(geometry);
-    if (
-      geometry.kind === 'polygon' &&
-      (Math.abs(draft.x - representative.x) > REPRESENTATIVE_ROUNDING_TOLERANCE ||
-        Math.abs(draft.y - representative.y) > REPRESENTATIVE_ROUNDING_TOLERANCE)
-    ) {
-      setError(
-        errors,
-        'coordinates',
-        'Las coordenadas representativas de un área se derivan de su geometría.',
-      );
+  if (isSpatialEntityType(draft.entityType)) {
+    if (draft.x === null || draft.y === null) {
+      setError(errors, 'coordinates', 'Las entidades cartográficas necesitan coordenadas.');
+    } else {
+      const coordinate = { x: draft.x, y: draft.y };
+      try {
+        const geometry = normalizeMapEntityGeometry(
+          draft.entityType,
+          draft.geometry ?? createPointMapGeometry(coordinate),
+        );
+        const representative = mapGeometryRepresentativePoint(geometry);
+        if (
+          geometry.kind === 'polygon' &&
+          (Math.abs(draft.x - representative.x) > REPRESENTATIVE_ROUNDING_TOLERANCE ||
+            Math.abs(draft.y - representative.y) > REPRESENTATIVE_ROUNDING_TOLERANCE)
+        ) {
+          setError(
+            errors,
+            'coordinates',
+            'Las coordenadas representativas de un área se derivan de su geometría.',
+          );
+        }
+      } catch (error) {
+        setError(
+          errors,
+          'geometry',
+          error instanceof Error ? error.message : 'La geometría del mapa no es válida.',
+        );
+      }
+
+      if (!isMapCoordinateWithinBounds(coordinate)) {
+        setError(
+          errors,
+          'coordinates',
+          'Las coordenadas deben estar dentro de X 0–3600 e Y 0–2329.',
+        );
+      }
     }
-  } catch (error) {
-    setError(
-      errors,
-      'geometry',
-      error instanceof Error ? error.message : 'La geometría del mapa no es válida.',
-    );
+  } else {
+    if (draft.x !== null || draft.y !== null || draft.geometry != null) {
+      setError(errors, 'geometry', 'Una organización no puede tener coordenadas ni geometría.');
+    }
+    if (draft.visibility !== 'search_only') {
+      setError(errors, 'visibility', 'Una organización debe ser visible solo en catálogo/búsqueda.');
+    }
+    if (draft.portraitPath) {
+      setError(errors, 'portraitPath', 'Una organización no puede tener retrato cartográfico.');
+    }
   }
 
-  if (!isMapCoordinateWithinBounds(draft)) {
-    setError(errors, 'coordinates', 'Las coordenadas deben estar dentro de X 0–3600 e Y 0–2329.');
-  }
   if (draft.entityType !== 'character' && draft.portraitPath) {
     setError(errors, 'portraitPath', 'Solo los personajes pueden tener retrato.');
   }
@@ -143,42 +166,67 @@ export function validateAdminMapEntityDraft(
     }
   }
 
-  const associationIds = draft.playerAssociationIds ?? [];
-  const uniqueAssociationIds = new Set(associationIds);
-  if (uniqueAssociationIds.size !== associationIds.length) {
-    setError(errors, 'playerAssociationIds', 'Un personaje solo puede asociarse una vez.');
-  }
-  for (const playerId of uniqueAssociationIds) {
-    const player = references.players.find((candidate) => candidate.id === playerId);
-    if (!player || player.publicationStatus === 'archived') {
+  if (draft.entityType === 'organization') {
+    if ((draft.playerAssociationIds?.length ?? 0) > 0 || draft.dispositions.length > 0) {
+      setError(errors, 'dispositions', 'Las organizaciones no usan relaciones con jugadores.');
+    }
+  } else {
+    const associationIds = draft.playerAssociationIds ?? [];
+    const uniqueAssociationIds = new Set(associationIds);
+    if (uniqueAssociationIds.size !== associationIds.length) {
+      setError(errors, 'playerAssociationIds', 'Un personaje solo puede asociarse una vez.');
+    }
+    for (const playerId of uniqueAssociationIds) {
+      const player = references.players.find((candidate) => candidate.id === playerId);
+      if (!player || player.publicationStatus === 'archived') {
+        setError(
+          errors,
+          'playerAssociationIds',
+          'La selección contiene un personaje que ya no está disponible en esta campaña.',
+        );
+        break;
+      }
+    }
+
+    const dispositionIds = draft.dispositions.map(({ playerId }) => playerId);
+    const uniqueDispositionIds = new Set(dispositionIds);
+    const playerIds = new Set(references.players.map(({ id }) => id));
+    if (
+      uniqueDispositionIds.size !== dispositionIds.length ||
+      uniqueDispositionIds.size !== playerIds.size ||
+      [...playerIds].some((playerId) => !uniqueDispositionIds.has(playerId))
+    ) {
       setError(
         errors,
-        'playerAssociationIds',
-        'La selección contiene un personaje que ya no está disponible en esta campaña.',
+        'dispositions',
+        'Las relaciones ya no coinciden con los personajes jugadores actuales. Recarga el editor.',
       );
-      break;
+    } else if (draft.dispositions.some(({ disposition }) => !PLAYER_DISPOSITIONS.has(disposition))) {
+      setError(
+        errors,
+        'dispositions',
+        'Selecciona Aliado, Neutral o Enemigo para cada personaje jugador activo.',
+      );
     }
   }
 
-  const dispositionIds = draft.dispositions.map(({ playerId }) => playerId);
-  const uniqueDispositionIds = new Set(dispositionIds);
-  const playerIds = new Set(references.players.map(({ id }) => id));
+  const entityRelations = draft.entityRelations ?? [];
+  const relationTargets = entityRelations.map(({ targetEntityId }) => targetEntityId);
+  if (new Set(relationTargets).size !== relationTargets.length) {
+    setError(errors, 'entityRelations', 'No dupliques la misma entidad relacionada.');
+  }
   if (
-    uniqueDispositionIds.size !== dispositionIds.length ||
-    uniqueDispositionIds.size !== playerIds.size ||
-    [...playerIds].some((playerId) => !uniqueDispositionIds.has(playerId))
+    entityRelations.some(
+      ({ targetEntityId, ownLabel, targetLabel }) =>
+        !targetEntityId ||
+        targetEntityId === draft.id ||
+        ownLabel.trim().length === 0 ||
+        ownLabel.trim().length > 80 ||
+        targetLabel.trim().length === 0 ||
+        targetLabel.trim().length > 80,
+    )
   ) {
-    setError(
-      errors,
-      'dispositions',
-      'Las relaciones ya no coinciden con los personajes jugadores actuales. Recarga el editor.',
-    );
-  } else if (draft.dispositions.some(({ disposition }) => !PLAYER_DISPOSITIONS.has(disposition))) {
-    setError(
-      errors,
-      'dispositions',
-      'Selecciona Aliado, Neutral o Enemigo para cada personaje jugador activo.',
-    );
+    setError(errors, 'entityRelations', 'Revisa las entidades relacionadas y sus etiquetas.');
   }
 
   if (original) {
