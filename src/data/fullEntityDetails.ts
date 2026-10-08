@@ -41,6 +41,7 @@ export interface FullEntityDetailModel {
   readonly notes: PublicEntityPresentation['notes'];
   readonly importantCharacters: readonly PublicEntityPresentationRelation[];
   readonly relatedLocations: readonly PublicEntityPresentationRelation[];
+  readonly relatedEntities: PublicEntityPresentation['relatedEntities'];
   readonly locationHistory: readonly FullEntityLocationHistoryEntry[];
   readonly portraitPath: string | null;
   readonly publicUpdatedAt: string;
@@ -152,6 +153,7 @@ export function resolveFullEntityDetail(
     notes: presentation.notes,
     importantCharacters: presentation.importantCharacters,
     relatedLocations: presentation.relatedLocations,
+    relatedEntities: presentation.relatedEntities,
     locationHistory:
       entity.entityType === 'character' ? buildLocationHistory(catalog, entity.id) : [],
     portraitPath: entity.entityType === 'character' ? (entity.portraitPath ?? null) : null,
