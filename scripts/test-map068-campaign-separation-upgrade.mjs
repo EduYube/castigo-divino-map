@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { renameSync } from 'node:fs';
 
 const DB = 'supabase_db_castigo-divino-map';
 const NPX = process.platform === 'win32' ? 'npx.cmd' : 'npx';
@@ -7,6 +8,14 @@ const A = '00000000-0000-4000-8000-000000000053';
 const B = '00000000-0000-4000-8000-000000000068';
 const V = 'entity-request-07d26371bbff42d9b91e076d099891b0';
 const MODERATOR = 'fc24e545-7352-4770-8288-7a382b29317f';
+const MAP069_MIGRATION = new URL(
+  '../supabase/migrations/20261008180000_add_nonspatial_organizations.sql',
+  import.meta.url,
+);
+const MAP069_HIDDEN = new URL(
+  '../supabase/migrations/20261008180000_add_nonspatial_organizations.sql.rehearsal-hidden',
+  import.meta.url,
+);
 
 function fail(message) {
   throw new Error(`MAP-068 campaign separation rehearsal failed: ${message}`);
@@ -100,6 +109,8 @@ function sql(query) {
   );
 }
 
+renameSync(MAP069_MIGRATION, MAP069_HIDDEN);
+try {
 resetToBase();
 
 const others = [
@@ -512,3 +523,6 @@ applyMap068ExpectFailure(
 console.log(
   'MAP-068 rehearsal passed: 19 audited dispositions removed (18 cross-campaign + 1 self); stable Veyra identity/history preserved.',
 );
+} finally {
+  renameSync(MAP069_HIDDEN, MAP069_MIGRATION);
+}
