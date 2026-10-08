@@ -9,7 +9,9 @@ export type Slug = string;
 export type LanguageCode = 'en';
 export type GeographicNameAliasLanguageCode = LanguageCode | 'es';
 
-export type EntityType = 'character' | 'location' | 'mission' | 'hazard';
+export type SpatialEntityType = 'character' | 'location' | 'mission' | 'hazard';
+export type NonSpatialEntityType = 'organization';
+export type EntityType = SpatialEntityType | NonSpatialEntityType;
 export type EntityLifecycleStatus = 'active' | 'completed' | 'failed' | 'resolved';
 export type MapVisibility = 'pin' | 'search_only';
 export type PlayerDisposition = 'ally' | 'enemy' | 'neutral';
@@ -62,12 +64,9 @@ export interface PublicPlayer {
   readonly accentColor?: string;
 }
 
-export interface PublicMapEntity {
+interface PublicMapEntityBase {
   readonly id: EntityId;
   readonly slug: Slug;
-  readonly entityType: EntityType;
-  /** MAP-064 functional lifecycle; null/absent for character/location legacy snapshots. */
-  readonly lifecycleStatus?: EntityLifecycleStatus | null;
   readonly visibility: MapVisibility;
   readonly name: string;
   readonly nameLanguage: LanguageCode;
@@ -76,6 +75,14 @@ export interface PublicMapEntity {
   readonly description: string;
   /** MAP-045 stable private Storage reference; absent/null means no portrait. */
   readonly portraitPath?: string | null;
+  readonly categoryId: CategoryId;
+  readonly tagIds: readonly TagId[];
+}
+
+export interface PublicSpatialMapEntity extends PublicMapEntityBase {
+  readonly entityType: SpatialEntityType;
+  /** MAP-064 functional lifecycle; null/absent for character/location legacy snapshots. */
+  readonly lifecycleStatus?: EntityLifecycleStatus | null;
   /**
    * Historical snapshots before MAP-060 omit geometry and are interpreted as the
    * point at `coordinates`. New snapshots persist this canonical point/polygon.
@@ -83,9 +90,17 @@ export interface PublicMapEntity {
   readonly geometry?: PublicMapGeometry;
   /** Deterministic representative point; derived from geometry for polygons. */
   readonly coordinates: PublicCoordinate;
-  readonly categoryId: CategoryId;
-  readonly tagIds: readonly TagId[];
 }
+
+export interface PublicOrganizationEntity extends PublicMapEntityBase {
+  readonly entityType: 'organization';
+  readonly lifecycleStatus?: null;
+  /** Organizations are catalog entities and never carry map geometry. */
+  readonly geometry?: never;
+  readonly coordinates?: never;
+}
+
+export type PublicMapEntity = PublicSpatialMapEntity | PublicOrganizationEntity;
 
 export interface PublicEntityAlias {
   readonly id: string;
@@ -104,6 +119,14 @@ export interface PublicEntityPlayerDisposition {
 export interface PublicEntityPlayerAssociation {
   readonly entityId: EntityId;
   readonly playerId: PlayerId;
+}
+
+/** MAP-069 generic, campaign-scoped relation stored once and rendered from either endpoint. */
+export interface PublicEntityRelation {
+  readonly leftEntityId: EntityId;
+  readonly rightEntityId: EntityId;
+  readonly leftLabel: string;
+  readonly rightLabel: string;
 }
 
 export interface PublicCharacterLocationRelation {
@@ -193,6 +216,8 @@ export interface PublicCatalogSnapshotV2 {
   readonly dispositions: readonly PublicEntityPlayerDisposition[];
   /** Historic Beta 0.2 snapshots predate MAP-058 and may omit associations. */
   readonly associations?: readonly PublicEntityPlayerAssociation[];
+  /** Historic Beta 0.2 snapshots predate MAP-069 and may omit generic relations. */
+  readonly entityRelations?: readonly PublicEntityRelation[];
   readonly characterLocationRelations: readonly PublicCharacterLocationRelation[];
   readonly notes: readonly PublicNote[];
   readonly geographicNames: readonly PublicGeographicName[];
