@@ -48,6 +48,7 @@ import {
   isMapLayerEnabled,
   type MapLayerState,
 } from './domain/mapLayers';
+import { isSpatialMapEntity } from './domain/entitySpatiality';
 import { getPinTypeVisual } from './domain/pinVisualSystem';
 import {
   SupabaseCharacterPortraitResources,
@@ -424,9 +425,12 @@ function mountPublicExperience(
     if (result.type === 'geographic') return true;
     if (result.linkedEntityId && beta02Catalog) {
       const entity = beta02Catalog.entities.find(({ id }) => id === result.linkedEntityId);
-      if (entity) return isEntityVisibleForMapLayers(entity, mapLayerState);
+      if (entity) {
+        if (!isSpatialMapEntity(entity)) return true;
+        return isEntityVisibleForMapLayers(entity, mapLayerState);
+      }
     }
-    return isMapLayerEnabled(mapLayerState, result.type);
+    return result.type === 'organization' ? true : isMapLayerEnabled(mapLayerState, result.type);
   };
 
   const placeSearchController = mountPlaceSearch(app, {
@@ -451,6 +455,14 @@ function mountPublicExperience(
         return;
       }
 
+      if (result.linkedEntityId && result.coordinates === null && beta02Catalog) {
+        const entity = beta02Catalog.entities.find(({ id }) => id === result.linkedEntityId);
+        if (entity) {
+          window.location.assign(createFullEntityUrl(new URL(window.location.href), entity.slug).href);
+        }
+        return;
+      }
+
       if (activeSupplementalPin) {
         activeSupplementalPin = null;
         compactDetailsController.hide();
@@ -460,6 +472,7 @@ function mountPublicExperience(
       geographicNameId = result.type === 'geographic' ? (result.id as GeographicNameId) : null;
       selection.clear();
       updateMatchingPlaces();
+      if (result.coordinates === null) return;
       mapController.locateSearchTarget({
         coordinates: result.coordinates,
         searchExtent: result.searchExtent,
