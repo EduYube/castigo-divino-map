@@ -6,7 +6,13 @@ export function isEntityLifecycleStatusValid(
   entityType: EntityType,
   lifecycleStatus: EntityLifecycleStatus | null | undefined,
 ): boolean {
-  if (entityType === 'character' || entityType === 'location') return lifecycleStatus == null;
+  if (
+    entityType === 'character' ||
+    entityType === 'location' ||
+    entityType === 'organization'
+  ) {
+    return lifecycleStatus == null;
+  }
   if (entityType === 'mission') {
     return (
       lifecycleStatus === 'active' ||
