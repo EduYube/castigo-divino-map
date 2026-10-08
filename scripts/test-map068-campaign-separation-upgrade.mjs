@@ -190,7 +190,7 @@ alter table public.entity_tags enable trigger "60_entity_tag_identifier";
 alter table public.entity_tags enable trigger "70_entity_tag_reserve";
 alter table public.players enable trigger "60_player_identifier";
 alter table public.players enable trigger "70_player_reserve";
-;
+`;
 
 sql(auditedFixtureSql);
 
