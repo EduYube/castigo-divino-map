@@ -1,7 +1,17 @@
 import { spawnSync } from 'node:child_process';
+import { renameSync } from 'node:fs';
 
 const DATABASE_CONTAINER = 'supabase_db_castigo-divino-map';
 const NODE_COMMAND = process.execPath;
+const NPX_COMMAND = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const MAP068_MIGRATION = new URL(
+  '../supabase/migrations/20261007080000_separate_veyra_un_aliento_menos.sql',
+  import.meta.url,
+);
+const MAP068_HIDDEN = new URL(
+  '../supabase/migrations/20261007080000_separate_veyra_un_aliento_menos.sql.rehearsal-hidden',
+  import.meta.url,
+);
 
 function fail(message) {
   throw new Error(`MAP-066 v1.0 → v1.1 rehearsal failed: ${message}`);
@@ -16,10 +26,123 @@ function run(command, args, description) {
   return result.stdout.trim();
 }
 
+renameSync(MAP068_MIGRATION, MAP068_HIDDEN);
+try {
+  run(
+    NODE_COMMAND,
+    ['scripts/test-map053-v1-upgrade.mjs'],
+    'running the exact v1.0 baseline upgrade fixture through pre-MAP-068',
+  );
+} finally {
+  renameSync(MAP068_HIDDEN, MAP068_MIGRATION);
+}
+
+const checkpointSql = String.raw`
+-- MAP-066 validates the full v1.0 → v1.1 path, while MAP-068 deliberately
+-- fails closed against the audited production Veyra state. Normalize only
+-- this local rehearsal to that legitimate pre-MAP-068 checkpoint.
+
+insert into auth.users (id)
+values ('00000000-0000-4000-8000-000000000068')
+on conflict (id) do nothing;
+
+alter table public.map_entities disable trigger "60_map_entity_identifier";
+alter table public.map_entities disable trigger "70_map_entity_reserve";
+
+insert into public.map_entities (
+  campaign_id,id,slug,entity_type,visibility,audience,name,name_language,
+  summary,description,x,y,category_id,publication_status
+)
+select
+  '00000000-0000-4000-8000-000000000053'::uuid,
+  source.id,
+  'map066-' || source.ordinal,
+  'character'::public.entity_type,
+  'pin'::public.map_visibility,
+  'public'::public.entity_audience,
+  'MAP066 Veyra peer ' || source.ordinal,
+  'en',
+  '',
+  'Synthetic audited pre-MAP-068 compatibility fixture',
+  1500 + source.ordinal,
+  1000 + source.ordinal,
+  (select category_id from public.map_entities
+    where id='entity-request-07d26371bbff42d9b91e076d099891b0'),
+  'published'::public.publication_status
+from (
+  values
+    ('entity-agamen',1),('entity-asentamiento-thar',2),('entity-bring',3),
+    ('entity-captitan',4),('entity-jhonny',5),('entity-masred',6),
+    ('entity-memnon',7),('entity-myrath',8),('entity-ojos-tempestad',9),
+    ('entity-thalasis',10),('entity-thar',11),('entity-tulu',12),
+    ('place-demo-harbor',13),('place-demo-pass',14)
+) as source(id,ordinal)
+on conflict (id) do nothing;
+
+alter table public.map_entities enable trigger "60_map_entity_identifier";
+alter table public.map_entities enable trigger "70_map_entity_reserve";
+
+alter table public.public_requests disable trigger "20_validate_public_request";
+insert into public.public_requests (
+  id,campaign_id,sender_name,proposed_name,entity_type,x,y,description,reason,
+  request_status,moderator_user_id,converted_entity_id,moderated_at
+) values (
+  '07d26371-bbff-42d9-b91e-076d099891b0',
+  '00000000-0000-4000-8000-000000000053',
+  'Veyra la Grandiosa','Veyra','character',1438.727724022,1837.31274570082,
+  'Posición inicial Veyra (dudo entre neverwinter y lidian)','Inicio partida picara',
+  'converted','00000000-0000-4000-8000-000000000068',
+  'entity-request-07d26371bbff42d9b91e076d099891b0',pg_catalog.now()
+)
+on conflict (id) do update set
+  campaign_id=excluded.campaign_id,
+  request_status=excluded.request_status,
+  moderator_user_id=excluded.moderator_user_id,
+  converted_entity_id=excluded.converted_entity_id,
+  moderated_at=excluded.moderated_at;
+alter table public.public_requests enable trigger "20_validate_public_request";
+
+delete from public.entity_player_dispositions
+where player_id='player-veyra'
+   or entity_id='entity-request-07d26371bbff42d9b91e076d099891b0';
+
+insert into public.entity_player_dispositions(entity_id,player_id,campaign_id,disposition)
+values
+  ('entity-agamen','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-asentamiento-thar','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-bring','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-captitan','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-jhonny','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-masred','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-memnon','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-myrath','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-ojos-tempestad','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-request-07d26371bbff42d9b91e076d099891b0','player-skade','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-request-07d26371bbff42d9b91e076d099891b0','player-ura','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-request-07d26371bbff42d9b91e076d099891b0','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-skade','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-thalasis','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-thar','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-tulu','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('entity-ura','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('place-demo-harbor','player-veyra','00000000-0000-4000-8000-000000000053','neutral'),
+  ('place-demo-pass','player-veyra','00000000-0000-4000-8000-000000000053','neutral');
+`;
+
 run(
-  NODE_COMMAND,
-  ['scripts/test-map053-v1-upgrade.mjs'],
-  'running the exact v1.0 baseline upgrade fixture',
+  'docker',
+  [
+    'exec','--user','postgres',DATABASE_CONTAINER,'psql',
+    '--username','postgres','--dbname','postgres','--no-psqlrc',
+    '--set=ON_ERROR_STOP=1','--quiet','--command',checkpointSql,
+  ],
+  'preparing the audited pre-MAP-068 checkpoint',
+);
+
+run(
+  NPX_COMMAND,
+  ['--no-install','supabase','migration','up','--local'],
+  'applying MAP-068 after the v1.0 compatibility checkpoint',
 );
 
 const sql = String.raw`
