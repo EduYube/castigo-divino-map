@@ -35,16 +35,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Export MAP-069 formatted sources for repair
-        run: |
-          npx prettier --write src/app/adminMapEntities.ts src/app/fullEntityDetails.ts src/data/search.ts src/domain/adminMapEntityValidation.ts src/domain/entityLifecycle.ts src/infrastructure/supabase/adminMapEntityRepository.ts src/infrastructure/supabase/publicCatalogCodec.ts src/infrastructure/supabase/publicCatalogRows.ts src/main.ts scripts/public-snapshot-lib.mjs scripts/test-map054-roster-upgrade.mjs scripts/test-map068-campaign-separation-upgrade.mjs
-          for file in src/app/adminMapEntities.ts src/app/fullEntityDetails.ts src/data/search.ts src/domain/adminMapEntityValidation.ts src/domain/entityLifecycle.ts src/infrastructure/supabase/adminMapEntityRepository.ts src/infrastructure/supabase/publicCatalogCodec.ts src/infrastructure/supabase/publicCatalogRows.ts src/main.ts scripts/public-snapshot-lib.mjs scripts/test-map054-roster-upgrade.mjs scripts/test-map068-campaign-separation-upgrade.mjs; do
-            echo "MAP069_FORMAT_BEGIN:$file"
-            base64 -w0 "$file"
-            echo
-            echo "MAP069_FORMAT_END:$file"
-          done
-
       - name: Check formatting
         run: npm run format:check
 

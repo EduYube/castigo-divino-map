@@ -213,7 +213,9 @@ function appendGenericRelations(
   if (details.relatedEntities.length === 0) return;
   const section = appendSection(
     parent,
-    details.entityType === 'organization' ? 'Sedes y entidades relacionadas' : 'Entidades relacionadas',
+    details.entityType === 'organization'
+      ? 'Sedes y entidades relacionadas'
+      : 'Entidades relacionadas',
   );
   const list = document.createElement('ul');
   list.className = 'full-entity__relations';

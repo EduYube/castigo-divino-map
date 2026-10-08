@@ -458,7 +458,9 @@ function mountPublicExperience(
       if (result.linkedEntityId && result.coordinates === null && beta02Catalog) {
         const entity = beta02Catalog.entities.find(({ id }) => id === result.linkedEntityId);
         if (entity) {
-          window.location.assign(createFullEntityUrl(new URL(window.location.href), entity.slug).href);
+          window.location.assign(
+            createFullEntityUrl(new URL(window.location.href), entity.slug).href,
+          );
         }
         return;
       }

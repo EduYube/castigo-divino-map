@@ -217,7 +217,8 @@ function mapRecord(row: Record<string, unknown>): AdminMapEntityRecord {
   const x = nullableNumberValue(row, 'x');
   const y = nullableNumberValue(row, 'y');
   const recordVisibility = visibility(row.visibility);
-  const recordPortraitPath = row.portrait_path == null ? null : nullableString(row, 'portrait_path');
+  const recordPortraitPath =
+    row.portrait_path == null ? null : nullableString(row, 'portrait_path');
   let geometry: MapEntityGeometry | null;
 
   if (isSpatialEntityType(recordEntityType)) {

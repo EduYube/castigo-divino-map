@@ -338,7 +338,9 @@ export function mountAdminMapEntities(
       (row) => {
         const target = row.querySelector<HTMLSelectElement>('[data-entity-relation-target]');
         const ownLabel = row.querySelector<HTMLInputElement>('[data-entity-relation-own-label]');
-        const targetLabel = row.querySelector<HTMLInputElement>('[data-entity-relation-target-label]');
+        const targetLabel = row.querySelector<HTMLInputElement>(
+          '[data-entity-relation-target-label]',
+        );
         if (!target || !ownLabel || !targetLabel) return [];
         return [
           {
@@ -559,9 +561,7 @@ export function mountAdminMapEntities(
       ? detailToDraft(detail)
       : createEmptyMapEntityDraft(state.references, requestedEntityType);
     draftGeometry =
-      isSpatialEntityType(draft.entityType) &&
-      draft.x !== null &&
-      draft.y !== null
+      isSpatialEntityType(draft.entityType) && draft.x !== null && draft.y !== null
         ? (draft.geometry ??
           (isMapCoordinateWithinBounds({ x: draft.x, y: draft.y })
             ? createPointMapGeometry({ x: draft.x, y: draft.y })
@@ -839,15 +839,18 @@ export function mountAdminMapEntities(
       dispositionError = createElement('p', 'admin-map-entity__field-error');
       dispositionError.id = dispositionErrorId;
       dispositionError.setAttribute('aria-live', 'polite');
-  
+
       if (activePlayers.length === 0) {
         const noPlayers = createElement('p', 'admin-map-entity__help');
         noPlayers.textContent = 'No hay personajes jugadores configurados.';
         dispositionFieldset.append(noPlayers);
       }
-  
+
       for (const player of activePlayers) {
-        const wrapper = createElement('div', 'admin-map-entity__field admin-map-entity__disposition');
+        const wrapper = createElement(
+          'div',
+          'admin-map-entity__field admin-map-entity__disposition',
+        );
         const label = createElement('label', 'admin-map-entity__label');
         const select = createElement('select', 'admin-map-entity__control');
         const selected = draft.dispositions.find(
@@ -860,7 +863,7 @@ export function mountAdminMapEntities(
         select.dataset.playerId = player.id;
         select.setAttribute('data-testid', `admin-player-disposition-${player.id}`);
         select.setAttribute('aria-describedby', `${dispositionHelpId} ${dispositionErrorId}`);
-  
+
         if (!selected) {
           const missing = document.createElement('option');
           missing.value = '';
@@ -869,7 +872,7 @@ export function mountAdminMapEntities(
           missing.disabled = true;
           select.append(missing);
         }
-  
+
         for (const value of ['ally', 'neutral', 'enemy'] as const) {
           const option = document.createElement('option');
           option.value = value;
@@ -877,7 +880,7 @@ export function mountAdminMapEntities(
           option.selected = value === selected;
           select.append(option);
         }
-  
+
         const updateAccessibleName = (): void => {
           const disposition = select.value as PlayerDisposition;
           const labelText = select.value
@@ -893,7 +896,6 @@ export function mountAdminMapEntities(
       }
       dispositionFieldset.append(dispositionError);
       fields.append(dispositionFieldset);
-  
     }
 
     const relationFieldset = createElement('fieldset', 'admin-map-entity__fieldset');
@@ -911,11 +913,15 @@ export function mountAdminMapEntities(
 
     const relationCandidates = state.records
       .filter((record) => record.id !== draft.id && record.publicationStatus !== 'archived')
-      .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
+      .sort(
+        (left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id),
+      );
 
-    const appendRelationRow = (
-      relation: { targetEntityId: string; ownLabel: string; targetLabel: string },
-    ): void => {
+    const appendRelationRow = (relation: {
+      targetEntityId: string;
+      ownLabel: string;
+      targetLabel: string;
+    }): void => {
       const row = createElement('div', 'admin-map-entity__relation-row');
       row.dataset.entityRelationRow = '';
       const target = createElement('select', 'admin-map-entity__control');

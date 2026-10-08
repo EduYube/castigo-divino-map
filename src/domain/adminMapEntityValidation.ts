@@ -79,11 +79,7 @@ export function validateAdminMapEntityDraft(
       setError(errors, 'lifecycleStatus', 'Selecciona Activo o Resuelto para el peligro.');
     }
   } else if (draft.lifecycleStatus != null) {
-    setError(
-      errors,
-      'lifecycleStatus',
-      'Este tipo de entidad no tiene lifecycle funcional.',
-    );
+    setError(errors, 'lifecycleStatus', 'Este tipo de entidad no tiene lifecycle funcional.');
   }
 
   if (isSpatialEntityType(draft.entityType)) {
@@ -129,7 +125,11 @@ export function validateAdminMapEntityDraft(
       setError(errors, 'geometry', 'Una organización no puede tener coordenadas ni geometría.');
     }
     if (draft.visibility !== 'search_only') {
-      setError(errors, 'visibility', 'Una organización debe ser visible solo en catálogo/búsqueda.');
+      setError(
+        errors,
+        'visibility',
+        'Una organización debe ser visible solo en catálogo/búsqueda.',
+      );
     }
     if (draft.portraitPath) {
       setError(errors, 'portraitPath', 'Una organización no puede tener retrato cartográfico.');
@@ -201,7 +201,9 @@ export function validateAdminMapEntityDraft(
         'dispositions',
         'Las relaciones ya no coinciden con los personajes jugadores actuales. Recarga el editor.',
       );
-    } else if (draft.dispositions.some(({ disposition }) => !PLAYER_DISPOSITIONS.has(disposition))) {
+    } else if (
+      draft.dispositions.some(({ disposition }) => !PLAYER_DISPOSITIONS.has(disposition))
+    ) {
       setError(
         errors,
         'dispositions',

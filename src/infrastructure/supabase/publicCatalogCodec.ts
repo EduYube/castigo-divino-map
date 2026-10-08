@@ -36,12 +36,7 @@ type NormalizedPublicPlayer = PublicCatalogSnapshotV2['players'][number] & {
 
 type PublicCatalogContentV2 = Omit<
   PublicCatalogSnapshotV2,
-  | 'generatedAt'
-  | 'sourceRevision'
-  | 'checksum'
-  | 'players'
-  | 'associations'
-  | 'entityRelations'
+  'generatedAt' | 'sourceRevision' | 'checksum' | 'players' | 'associations' | 'entityRelations'
 > & {
   readonly players: readonly NormalizedPublicPlayer[];
   readonly associations: NonNullable<PublicCatalogSnapshotV2['associations']>;

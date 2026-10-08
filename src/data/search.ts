@@ -21,12 +21,7 @@ export interface PlaceSearchResult {
 }
 
 export type AtlasSearchResultType =
-  | 'geographic'
-  | 'character'
-  | 'location'
-  | 'mission'
-  | 'hazard'
-  | 'organization';
+  'geographic' | 'character' | 'location' | 'mission' | 'hazard' | 'organization';
 
 export interface AtlasSearchResult {
   readonly id: string;

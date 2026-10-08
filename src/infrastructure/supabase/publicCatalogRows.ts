@@ -305,7 +305,11 @@ export function parseEntityRelation(
   index: number,
 ): PublicEntityRelation {
   const path = `entity_relations[${index}]`;
-  assertAllowedProperties(row, ['left_entity_id', 'right_entity_id', 'left_label', 'right_label'], path);
+  assertAllowedProperties(
+    row,
+    ['left_entity_id', 'right_entity_id', 'left_label', 'right_label'],
+    path,
+  );
   const leftEntityId = expectString(
     row.left_entity_id,
     `${path}.left_entity_id`,
@@ -527,7 +531,10 @@ export function parseEntity(
   if (portraitPath !== null && parsedEntityType !== 'character') {
     invalidResponse(`${path}.portrait_path solo puede pertenecer a un personaje.`);
   }
-  const visibility = expectEnum(row.visibility, `${path}.visibility`, ['pin', 'search_only'] as const);
+  const visibility = expectEnum(row.visibility, `${path}.visibility`, [
+    'pin',
+    'search_only',
+  ] as const);
   const common = {
     id,
     slug: expectString(row.slug, `${path}.slug`, IDENTIFIER_PATTERNS.slug),

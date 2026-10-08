@@ -467,11 +467,11 @@ runPsql(
 
 renameSync(MAP069_MIGRATION, MAP069_HIDDEN);
 try {
-runCommand(
-  NPX_COMMAND,
-  ['--no-install', 'supabase', 'migration', 'up', '--local'],
-  'applying MAP-068 after the complete historic roster checkpoint',
-);
+  runCommand(
+    NPX_COMMAND,
+    ['--no-install', 'supabase', 'migration', 'up', '--local'],
+    'applying MAP-068 after the complete historic roster checkpoint',
+  );
 } finally {
   renameSync(MAP069_HIDDEN, MAP069_MIGRATION);
 }

@@ -654,7 +654,9 @@ export function assertPublicMulticampaignSnapshotContent(content) {
       `catalog ${catalog.campaignId} entity relations`,
     );
     requireUnique(
-      entityRelations.map(({ leftEntityId, rightEntityId }) => `${leftEntityId}\u0000${rightEntityId}`),
+      entityRelations.map(
+        ({ leftEntityId, rightEntityId }) => `${leftEntityId}\u0000${rightEntityId}`,
+      ),
       `catalog ${catalog.campaignId} entity relations`,
     );
     for (const relation of entityRelations) {
