@@ -1,9 +1,18 @@
 import { spawnSync } from 'node:child_process';
+import { renameSync } from 'node:fs';
 
 const DATABASE_CONTAINER = 'supabase_db_castigo-divino-map';
 const NPX_COMMAND = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const MAP053_BASELINE_VERSION = '20260825182000';
 const INITIAL_CAMPAIGN_ID = '00000000-0000-4000-8000-000000000053';
+const MAP068_MIGRATION = new URL(
+  '../supabase/migrations/20261007080000_separate_veyra_un_aliento_menos.sql',
+  import.meta.url,
+);
+const MAP068_HIDDEN = new URL(
+  '../supabase/migrations/20261007080000_separate_veyra_un_aliento_menos.sql.rehearsal-hidden',
+  import.meta.url,
+);
 
 function fail(message) {
   throw new Error(`MAP-054 roster upgrade rehearsal failed: ${message}`);
@@ -258,10 +267,134 @@ runPsql(
    alter table public.entity_player_dispositions enable trigger "90_entity_player_disposition_updated_at";`,
 );
 
+renameSync(MAP068_MIGRATION, MAP068_HIDDEN);
+try {
+  runCommand(
+    NPX_COMMAND,
+    ['--no-install', 'supabase', 'migration', 'up', '--local'],
+    'applying MAP-054 migrations through the pre-MAP-068 checkpoint',
+  );
+} finally {
+  renameSync(MAP068_HIDDEN, MAP068_MIGRATION);
+}
+
+runPsql(
+  containerName,
+  `
+   -- MAP-054's complete historic fixture predates the real production request
+   -- and full disposition inventory. Normalize only this local rehearsal to the
+   -- audited pre-MAP-068 checkpoint before testing the campaign split.
+
+   insert into auth.users (id)
+   values ('00000000-0000-4000-8000-000000000068')
+   on conflict (id) do nothing;
+
+   alter table public.map_entities disable trigger "60_map_entity_identifier";
+   alter table public.map_entities disable trigger "70_map_entity_reserve";
+
+   insert into public.map_entities (
+     campaign_id, id, slug, entity_type, visibility, audience, name, name_language,
+     summary, description, x, y, category_id, publication_status
+   )
+   select
+     '${INITIAL_CAMPAIGN_ID}'::uuid,
+     source.id,
+     'map054-' || source.ordinal,
+     'character'::public.entity_type,
+     'pin'::public.map_visibility,
+     'public'::public.entity_audience,
+     'MAP054 Veyra peer ' || source.ordinal,
+     'en',
+     '',
+     'Synthetic audited pre-MAP-068 compatibility fixture',
+     1500 + source.ordinal,
+     1000 + source.ordinal,
+     (select category_id
+      from public.map_entities
+      where id = 'entity-request-07d26371bbff42d9b91e076d099891b0'),
+     'published'::public.publication_status
+   from (
+     values
+       ('entity-agamen', 1),
+       ('entity-asentamiento-thar', 2),
+       ('entity-bring', 3),
+       ('entity-captitan', 4),
+       ('entity-jhonny', 5),
+       ('entity-masred', 6),
+       ('entity-memnon', 7),
+       ('entity-myrath', 8),
+       ('entity-ojos-tempestad', 9),
+       ('entity-thalasis', 10),
+       ('entity-thar', 11),
+       ('entity-tulu', 12),
+       ('place-demo-harbor', 13),
+       ('place-demo-pass', 14)
+   ) as source(id, ordinal)
+   on conflict (id) do nothing;
+
+   alter table public.map_entities enable trigger "60_map_entity_identifier";
+   alter table public.map_entities enable trigger "70_map_entity_reserve";
+
+   alter table public.public_requests disable trigger "20_validate_public_request";
+   insert into public.public_requests (
+     id, campaign_id, sender_name, proposed_name, entity_type, x, y, description, reason,
+     request_status, moderator_user_id, converted_entity_id, moderated_at
+   ) values (
+     '07d26371-bbff-42d9-b91e-076d099891b0',
+     '${INITIAL_CAMPAIGN_ID}',
+     'Veyra la Grandiosa',
+     'Veyra',
+     'character',
+     1438.727724022,
+     1837.31274570082,
+     'Posición inicial Veyra (dudo entre neverwinter y lidian)',
+     'Inicio partida picara',
+     'converted',
+     '00000000-0000-4000-8000-000000000068',
+     'entity-request-07d26371bbff42d9b91e076d099891b0',
+     pg_catalog.now()
+   )
+   on conflict (id) do update set
+     campaign_id = excluded.campaign_id,
+     request_status = excluded.request_status,
+     moderator_user_id = excluded.moderator_user_id,
+     converted_entity_id = excluded.converted_entity_id,
+     moderated_at = excluded.moderated_at;
+   alter table public.public_requests enable trigger "20_validate_public_request";
+
+   delete from public.entity_player_dispositions
+   where player_id = 'player-veyra'
+      or entity_id = 'entity-request-07d26371bbff42d9b91e076d099891b0';
+
+   insert into public.entity_player_dispositions (
+     entity_id, player_id, campaign_id, disposition
+   ) values
+     ('entity-agamen', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-asentamiento-thar', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-bring', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-captitan', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-jhonny', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-masred', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-memnon', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-myrath', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-ojos-tempestad', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-request-07d26371bbff42d9b91e076d099891b0', 'player-skade', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-request-07d26371bbff42d9b91e076d099891b0', 'player-ura', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-request-07d26371bbff42d9b91e076d099891b0', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-skade', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-thalasis', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-thar', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-tulu', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('entity-ura', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('place-demo-harbor', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral'),
+     ('place-demo-pass', 'player-veyra', '${INITIAL_CAMPAIGN_ID}', 'neutral');
+  `,
+);
+
 runCommand(
   NPX_COMMAND,
   ['--no-install', 'supabase', 'migration', 'up', '--local'],
-  'applying MAP-054 migrations to the complete historic fixture',
+  'applying MAP-068 after the complete historic roster checkpoint',
 );
 
 runPsql(
