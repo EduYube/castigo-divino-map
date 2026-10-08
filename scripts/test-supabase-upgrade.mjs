@@ -279,6 +279,12 @@ runPsql(
    values ('00000000-0000-4000-8000-000000000068')
    on conflict (id) do nothing;
 
+   -- These public IDs were legitimately used earlier in the historical lineage
+   -- and are now reserved. Reconstructing the audited pre-MAP-068 checkpoint is
+   -- fixture setup only, matching the dedicated MAP-068 rehearsal pattern.
+   alter table public.map_entities disable trigger "60_map_entity_identifier";
+   alter table public.map_entities disable trigger "70_map_entity_reserve";
+
    insert into public.map_entities (
      campaign_id,id,slug,entity_type,visibility,audience,name,name_language,
      summary,description,x,y,category_id,publication_status
@@ -307,6 +313,9 @@ runPsql(
        ('place-demo-harbor',13),('place-demo-pass',14)
    ) as source(id,ordinal)
    on conflict (id) do nothing;
+
+   alter table public.map_entities enable trigger "60_map_entity_identifier";
+   alter table public.map_entities enable trigger "70_map_entity_reserve";
 
    alter table public.public_requests disable trigger "20_validate_public_request";
    insert into public.public_requests (
