@@ -154,7 +154,22 @@ test('loads the v1.1 public experience from the repository subdirectory', async 
   });
   expect(localRasterRequests).toEqual([]);
   await expect.poll(() => veyraPortraitLoaded).toBe(true);
-  await expect(veyraPin.locator('img.pin-visual__portrait')).toHaveCount(1);
+  const veyraPortrait = veyraPin.locator('img.pin-visual__portrait');
+  await expect(veyraPortrait).toHaveCount(1);
+  await expect
+    .poll(() =>
+      veyraPortrait.evaluate((image, expectedPath) => {
+        const portrait = image as HTMLImageElement;
+        const effectiveUrl = portrait.currentSrc || portrait.src;
+        return (
+          portrait.complete &&
+          portrait.naturalWidth > 0 &&
+          portrait.naturalHeight > 0 &&
+          effectiveUrl.includes(expectedPath)
+        );
+      }, VEYRA_PORTRAIT_PATH),
+    )
+    .toBe(true);
   expect(failedResponses).toEqual([]);
 
   await page.reload();
