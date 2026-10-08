@@ -332,36 +332,56 @@ export function mountAdminMapEntities(
     return select;
   }
 
+  function readEntityRelations(): NonNullable<AdminMapEntityDraft['entityRelations']> {
+    return Array.from(form.querySelectorAll<HTMLElement>('[data-entity-relation-row]')).flatMap(
+      (row) => {
+        const target = row.querySelector<HTMLSelectElement>('[data-entity-relation-target]');
+        const ownLabel = row.querySelector<HTMLInputElement>('[data-entity-relation-own-label]');
+        const targetLabel = row.querySelector<HTMLInputElement>('[data-entity-relation-target-label]');
+        if (!target || !ownLabel || !targetLabel) return [];
+        return [
+          {
+            targetEntityId: target.value,
+            ownLabel: ownLabel.value,
+            targetLabel: targetLabel.value,
+          },
+        ];
+      },
+    );
+  }
+
   function readDraft(publicationStatus: MapEntityPublicationStatus): AdminMapEntityDraft {
     const input = (name: string): string => controls.get(name)?.input.value ?? '';
+    const draftEntityType = input('entityType') as MapEntityType;
+    const spatial = isSpatialEntityType(draftEntityType);
     const xInput = controls.get('x')?.input;
     const yInput = controls.get('y')?.input;
-    const x = xInput instanceof HTMLInputElement ? readNumber(xInput) : Number.NaN;
-    const y = yInput instanceof HTMLInputElement ? readNumber(yInput) : Number.NaN;
-    const coordinate = { x, y };
-    const pointFallback = isMapCoordinateWithinBounds(coordinate)
-      ? createPointMapGeometry(coordinate)
-      : undefined;
+    const x = spatial && xInput instanceof HTMLInputElement ? readNumber(xInput) : null;
+    const y = spatial && yInput instanceof HTMLInputElement ? readNumber(yInput) : null;
+    const coordinate =
+      x !== null && y !== null && isMapCoordinateWithinBounds({ x, y }) ? { x, y } : null;
+    const pointFallback = coordinate ? createPointMapGeometry(coordinate) : undefined;
     const associationCheckboxes = Array.from(
       form.querySelectorAll<HTMLInputElement>('[data-player-association-id]'),
     );
-    const playerAssociationIds =
-      associationCheckboxes.length > 0
+    const playerAssociationIds = spatial
+      ? associationCheckboxes.length > 0
         ? associationCheckboxes
             .filter((checkbox) => checkbox.checked)
             .map((checkbox) => checkbox.value)
         : (state.editorDetail?.associations ?? [])
-            .filter(({ publicationStatus }) => publicationStatus !== 'archived')
-            .map(({ playerId }) => playerId);
+            .filter(({ publicationStatus: status }) => status !== 'archived')
+            .map(({ playerId }) => playerId)
+      : [];
     return {
       id: input('id'),
       slug: input('slug'),
-      entityType: input('entityType') as MapEntityType,
+      entityType: draftEntityType,
       lifecycleStatus: (input('lifecycleStatus') || null) as MapEntityLifecycleStatus | null,
-      visibility: input('visibility') as MapVisibility,
+      visibility: spatial ? (input('visibility') as MapVisibility) : 'search_only',
       audience: state.pendingAudience,
-      portraitPath: state.editorDetail?.record.portraitPath ?? null,
-      geometry: draftGeometry ?? pointFallback,
+      portraitPath: spatial ? (state.editorDetail?.record.portraitPath ?? null) : null,
+      geometry: spatial ? (draftGeometry ?? pointFallback) : null,
       name: input('name'),
       summary: input('summary'),
       description: input('description'),
@@ -371,14 +391,17 @@ export function mountAdminMapEntities(
       tagIds: tagCheckboxes
         .filter((checkbox) => checkbox.checked)
         .map((checkbox) => checkbox.value),
-      dispositions: [
-        ...dispositionSelects.map((select) => ({
-          playerId: select.dataset.playerId ?? '',
-          disposition: select.value as PlayerDisposition,
-        })),
-        ...preservedDispositions,
-      ],
+      dispositions: spatial
+        ? [
+            ...dispositionSelects.map((select) => ({
+              playerId: select.dataset.playerId ?? '',
+              disposition: select.value as PlayerDisposition,
+            })),
+            ...preservedDispositions,
+          ]
+        : [],
       playerAssociationIds,
+      entityRelations: readEntityRelations(),
       publicationStatus,
     };
   }
