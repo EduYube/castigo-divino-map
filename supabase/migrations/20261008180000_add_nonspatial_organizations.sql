@@ -212,7 +212,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 begin
   if tg_table_name = 'map_entities' then
     if new.entity_type <> 'organization'::public.entity_type then
@@ -234,7 +234,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 -- Organizations never participate in the player-disposition subsystem.
 create function private.reject_organization_player_disposition()
