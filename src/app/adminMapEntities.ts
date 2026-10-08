@@ -459,24 +459,26 @@ export function mountAdminMapEntities(
         return `${player?.displayName ?? playerId}: ${getPinDispositionVisual(value).label}`;
       })
       .join(' · ');
-    const polygon = draft.geometry?.kind === 'polygon' ? draft.geometry : null;
-    const geometryLabel = polygon ? `Área/Región · ${polygon.vertices.length} vértices` : 'Punto';
-    const typeVisual = getPinTypeVisual(draft.entityType);
+    const spatial = isSpatialEntityType(draft.entityType);
+    const polygon = spatial && draft.geometry?.kind === 'polygon' ? draft.geometry : null;
+    const geometryLabel = !spatial
+      ? 'No cartográfica'
+      : polygon
+        ? `Área/Región · ${polygon.vertices.length} vértices`
+        : 'Punto';
     const lifecycleLabel = getEntityLifecycleLabel(draft.entityType, draft.lifecycleStatus ?? null);
-    const isFunctionalPin = draft.entityType === 'mission' || draft.entityType === 'hazard';
-    const previewTypeLabel = isFunctionalPin
-      ? `${typeVisual.label}${lifecycleLabel ? ` · ${lifecycleLabel}` : ''}`
-      : draft.entityType;
-    previewMarker.textContent = polygon
-      ? '◇'
-      : draft.visibility === 'pin'
-        ? isFunctionalPin
-          ? typeVisual.symbol
-          : '◆'
+    const previewTypeLabel = `${getEntityTypeLabel(draft.entityType)}${lifecycleLabel ? ` · ${lifecycleLabel}` : ''}`;
+    previewMarker.textContent =
+      spatial && draft.visibility === 'pin'
+        ? polygon
+          ? '◇'
+          : getPinTypeVisual(draft.entityType).symbol
         : '';
-    previewMarker.hidden = draft.visibility !== 'pin';
+    previewMarker.hidden = !spatial || draft.visibility !== 'pin';
     previewName.textContent = draft.name.trim() || 'Sin nombre';
-    previewMeta.textContent = `${previewTypeLabel} · ${geometryLabel} · ${category?.name ?? 'Sin categoría'} · X ${draft.x}, Y ${draft.y}${tagNames ? ` · ${tagNames}` : ''}${dispositions ? ` · ${dispositions}` : ''}`;
+    const coordinateMeta =
+      spatial && draft.x !== null && draft.y !== null ? ` · X ${draft.x}, Y ${draft.y}` : '';
+    previewMeta.textContent = `${previewTypeLabel} · ${geometryLabel} · ${category?.name ?? 'Sin categoría'}${coordinateMeta}${tagNames ? ` · ${tagNames}` : ''}${dispositions ? ` · ${dispositions}` : ''}`;
     previewDescription.textContent =
       draft.summary.trim() || draft.description.trim() || 'Sin resumen.';
     preview.hidden = false;
@@ -548,7 +550,14 @@ export function mountAdminMapEntities(
       ? detailToDraft(detail)
       : createEmptyMapEntityDraft(state.references, requestedEntityType);
     draftGeometry =
-      draft.geometry ?? (isMapCoordinateWithinBounds(draft) ? createPointMapGeometry(draft) : null);
+      isSpatialEntityType(draft.entityType) &&
+      draft.x !== null &&
+      draft.y !== null
+        ? (draft.geometry ??
+          (isMapCoordinateWithinBounds({ x: draft.x, y: draft.y })
+            ? createPointMapGeometry({ x: draft.x, y: draft.y })
+            : null))
+        : null;
     const existing = Boolean(detail);
     const activePlayers = state.references.players.filter(
       ({ publicationStatus }) => publicationStatus !== 'archived',
@@ -557,10 +566,7 @@ export function mountAdminMapEntities(
     preservedDispositions = draft.dispositions.filter(
       ({ playerId }) => !activePlayerIds.has(playerId),
     );
-    const createLabel =
-      draft.entityType === 'mission' || draft.entityType === 'hazard'
-        ? getPinTypeVisual(draft.entityType).label.toLocaleLowerCase('es')
-        : draft.entityType;
+    const createLabel = getEntityTypeLabel(draft.entityType).toLocaleLowerCase('es');
     editorHeading.textContent = existing ? `Editar ${draft.name}` : `Crear ${createLabel}`;
 
     addField({
@@ -587,6 +593,7 @@ export function mountAdminMapEntities(
         { value: 'location', label: 'Emplazamiento' },
         { value: 'mission', label: 'Misión' },
         { value: 'hazard', label: 'Peligro' },
+        { value: 'organization', label: 'Organización' },
       ],
     });
     addField({
@@ -727,12 +734,16 @@ export function mountAdminMapEntities(
     });
     addSelect({
       name: 'visibility',
-      label: 'Visibilidad cartográfica',
-      value: draft.visibility,
-      choices: [
-        { value: 'pin', label: 'Visible en el mapa' },
-        { value: 'search_only', label: 'Solo búsqueda' },
-      ],
+      label: draft.entityType === 'organization' ? 'Descubrimiento' : 'Visibilidad cartográfica',
+      value: draft.entityType === 'organization' ? 'search_only' : draft.visibility,
+      disabled: draft.entityType === 'organization',
+      choices:
+        draft.entityType === 'organization'
+          ? [{ value: 'search_only', label: 'Catálogo y búsqueda (sin marcador)' }]
+          : [
+              { value: 'pin', label: 'Visible en el mapa' },
+              { value: 'search_only', label: 'Solo búsqueda' },
+            ],
     });
     if (draft.entityType === 'location') {
       geometryKindSelect = addSelect({
@@ -749,28 +760,32 @@ export function mountAdminMapEntities(
     }
 
     const polygon = draftGeometry?.kind === 'polygon';
-    const x = addField({
-      name: 'x',
-      label: polygon ? 'Coordenada X representativa' : 'Coordenada X',
-      value: Number.isFinite(draft.x) ? String(draft.x) : '',
-      type: 'number',
-      required: true,
-      readOnly: polygon,
-      min: 0,
-      max: 3600,
-      step: 'any',
-    });
-    const y = addField({
-      name: 'y',
-      label: polygon ? 'Coordenada Y representativa' : 'Coordenada Y',
-      value: Number.isFinite(draft.y) ? String(draft.y) : '',
-      type: 'number',
-      required: true,
-      readOnly: polygon,
-      min: 0,
-      max: 2329,
-      step: 'any',
-    });
+    let x: HTMLInputElement | HTMLTextAreaElement | null = null;
+    let y: HTMLInputElement | HTMLTextAreaElement | null = null;
+    if (isSpatialEntityType(draft.entityType)) {
+      x = addField({
+        name: 'x',
+        label: polygon ? 'Coordenada X representativa' : 'Coordenada X',
+        value: draft.x !== null && Number.isFinite(draft.x) ? String(draft.x) : '',
+        type: 'number',
+        required: true,
+        readOnly: polygon,
+        min: 0,
+        max: 3600,
+        step: 'any',
+      });
+      y = addField({
+        name: 'y',
+        label: polygon ? 'Coordenada Y representativa' : 'Coordenada Y',
+        value: draft.y !== null && Number.isFinite(draft.y) ? String(draft.y) : '',
+        type: 'number',
+        required: true,
+        readOnly: polygon,
+        min: 0,
+        max: 2329,
+        step: 'any',
+      });
+    }
 
     const tagFieldset = createElement('fieldset', 'admin-map-entity__fieldset');
     const tagLegend = createElement('legend', 'admin-map-entity__legend');
@@ -883,8 +898,8 @@ export function mountAdminMapEntities(
       input.addEventListener('input', refreshValidation);
       input.addEventListener('change', refreshValidation);
     });
-    x.addEventListener('input', synchronizeMapFromInputs);
-    y.addEventListener('input', synchronizeMapFromInputs);
+    x?.addEventListener('input', synchronizeMapFromInputs);
+    y?.addEventListener('input', synchronizeMapFromInputs);
     geometryKindSelect?.addEventListener('change', () => {
       if (!geometryKindSelect || !mapController) return;
       const requestedKind = geometryKindSelect.value as MapEntityGeometry['kind'];
@@ -1031,8 +1046,15 @@ export function mountAdminMapEntities(
       const editButton = createElement('button', 'admin-map-entity__button');
       const itemArchiveButton = createElement('button', 'admin-map-entity__button');
       title.textContent = record.name;
-      const geometryLabel = record.geometry?.kind === 'polygon' ? 'región' : 'punto';
-      meta.textContent = `${record.id} · ${record.entityType} · ${geometryLabel} · ${record.publicationStatus} · (${record.x}, ${record.y})`;
+      const geometryLabel =
+        record.entityType === 'organization'
+          ? 'no cartográfica'
+          : record.geometry?.kind === 'polygon'
+            ? 'región'
+            : 'punto';
+      const coordinateLabel =
+        record.x === null || record.y === null ? '' : ` · (${record.x}, ${record.y})`;
+      meta.textContent = `${record.id} · ${getEntityTypeLabel(record.entityType)} · ${geometryLabel} · ${record.publicationStatus}${coordinateLabel}`;
       content.append(title, meta);
       editButton.type = 'button';
       editButton.textContent = 'Editar';
