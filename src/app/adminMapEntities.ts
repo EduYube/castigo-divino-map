@@ -136,6 +136,7 @@ export function mountAdminMapEntities(
   let preservedDispositions: AdminMapEntityDraft['dispositions'] = [];
   let tagError: HTMLParagraphElement | null = null;
   let dispositionError: HTMLParagraphElement | null = null;
+  let entityRelationError: HTMLParagraphElement | null = null;
   let restoreFocus: HTMLElement | null = null;
   let pendingConfirmation: PendingConfirmation | null = null;
   let pendingPortraitFile: File | null = null;
@@ -440,6 +441,13 @@ export function mountAdminMapEntities(
         select.setAttribute('aria-invalid', message ? 'true' : 'false'),
       );
     }
+    if (entityRelationError) {
+      const message = validation.fieldErrors.entityRelations ?? '';
+      entityRelationError.textContent = message;
+      form
+        .querySelectorAll<HTMLElement>('[data-entity-relation-input]')
+        .forEach((input) => input.setAttribute('aria-invalid', message ? 'true' : 'false'));
+    }
     return validation.valid;
   }
 
@@ -541,6 +549,7 @@ export function mountAdminMapEntities(
     preservedDispositions = [];
     tagError = null;
     dispositionError = null;
+    entityRelationError = null;
     fields.replaceChildren();
     preview.hidden = true;
     editorStatus.textContent = '';
@@ -809,85 +818,190 @@ export function mountAdminMapEntities(
     tagFieldset.append(tagError);
     fields.append(tagFieldset);
 
-    const dispositionFieldset = createElement(
-      'fieldset',
-      'admin-map-entity__fieldset admin-map-entity__dispositions',
-    );
-    const dispositionLegend = createElement('legend', 'admin-map-entity__legend');
-    const dispositionHelp = createElement('p', 'admin-map-entity__help');
-    const dispositionHelpId = 'admin-map-entity-dispositions-help';
-    const dispositionErrorId = 'admin-map-entity-dispositions-error';
-    dispositionLegend.textContent = 'Relación con los personajes';
-    dispositionHelp.id = dispositionHelpId;
-    dispositionHelp.textContent =
-      'Define cómo se relaciona esta entidad con cada personaje jugador activo de la campaña. Las relaciones históricas de jugadores archivados se conservan sin mostrarse aquí.';
-    dispositionFieldset.setAttribute(
-      'aria-describedby',
-      `${dispositionHelpId} ${dispositionErrorId}`,
-    );
-    dispositionFieldset.append(dispositionLegend, dispositionHelp);
-    dispositionError = createElement('p', 'admin-map-entity__field-error');
-    dispositionError.id = dispositionErrorId;
-    dispositionError.setAttribute('aria-live', 'polite');
-
-    if (activePlayers.length === 0) {
-      const noPlayers = createElement('p', 'admin-map-entity__help');
-      noPlayers.textContent = 'No hay personajes jugadores configurados.';
-      dispositionFieldset.append(noPlayers);
+    if (isSpatialEntityType(draft.entityType)) {
+      const dispositionFieldset = createElement(
+        'fieldset',
+        'admin-map-entity__fieldset admin-map-entity__dispositions',
+      );
+      const dispositionLegend = createElement('legend', 'admin-map-entity__legend');
+      const dispositionHelp = createElement('p', 'admin-map-entity__help');
+      const dispositionHelpId = 'admin-map-entity-dispositions-help';
+      const dispositionErrorId = 'admin-map-entity-dispositions-error';
+      dispositionLegend.textContent = 'Relación con los personajes';
+      dispositionHelp.id = dispositionHelpId;
+      dispositionHelp.textContent =
+        'Define cómo se relaciona esta entidad con cada personaje jugador activo de la campaña. Las relaciones históricas de jugadores archivados se conservan sin mostrarse aquí.';
+      dispositionFieldset.setAttribute(
+        'aria-describedby',
+        `${dispositionHelpId} ${dispositionErrorId}`,
+      );
+      dispositionFieldset.append(dispositionLegend, dispositionHelp);
+      dispositionError = createElement('p', 'admin-map-entity__field-error');
+      dispositionError.id = dispositionErrorId;
+      dispositionError.setAttribute('aria-live', 'polite');
+  
+      if (activePlayers.length === 0) {
+        const noPlayers = createElement('p', 'admin-map-entity__help');
+        noPlayers.textContent = 'No hay personajes jugadores configurados.';
+        dispositionFieldset.append(noPlayers);
+      }
+  
+      for (const player of activePlayers) {
+        const wrapper = createElement('div', 'admin-map-entity__field admin-map-entity__disposition');
+        const label = createElement('label', 'admin-map-entity__label');
+        const select = createElement('select', 'admin-map-entity__control');
+        const selected = draft.dispositions.find(
+          ({ playerId }) => playerId === player.id,
+        )?.disposition;
+        const id = `admin-map-entity-disposition-${player.id}`;
+        label.htmlFor = id;
+        label.textContent = player.displayName;
+        select.id = id;
+        select.dataset.playerId = player.id;
+        select.setAttribute('data-testid', `admin-player-disposition-${player.id}`);
+        select.setAttribute('aria-describedby', `${dispositionHelpId} ${dispositionErrorId}`);
+  
+        if (!selected) {
+          const missing = document.createElement('option');
+          missing.value = '';
+          missing.textContent = 'Relación sin configurar';
+          missing.selected = true;
+          missing.disabled = true;
+          select.append(missing);
+        }
+  
+        for (const value of ['ally', 'neutral', 'enemy'] as const) {
+          const option = document.createElement('option');
+          option.value = value;
+          option.textContent = getPinDispositionVisual(value).label;
+          option.selected = value === selected;
+          select.append(option);
+        }
+  
+        const updateAccessibleName = (): void => {
+          const disposition = select.value as PlayerDisposition;
+          const labelText = select.value
+            ? getPinDispositionVisual(disposition).label
+            : 'Relación sin configurar';
+          select.setAttribute('aria-label', `${player.displayName}: ${labelText}`);
+        };
+        updateAccessibleName();
+        select.addEventListener('change', updateAccessibleName);
+        wrapper.append(label, select);
+        dispositionFieldset.append(wrapper);
+        dispositionSelects.push(select);
+      }
+      dispositionFieldset.append(dispositionError);
+      fields.append(dispositionFieldset);
+  
     }
 
-    for (const player of activePlayers) {
-      const wrapper = createElement('div', 'admin-map-entity__field admin-map-entity__disposition');
-      const label = createElement('label', 'admin-map-entity__label');
-      const select = createElement('select', 'admin-map-entity__control');
-      const selected = draft.dispositions.find(
-        ({ playerId }) => playerId === player.id,
-      )?.disposition;
-      const id = `admin-map-entity-disposition-${player.id}`;
-      label.htmlFor = id;
-      label.textContent = player.displayName;
-      select.id = id;
-      select.dataset.playerId = player.id;
-      select.setAttribute('data-testid', `admin-player-disposition-${player.id}`);
-      select.setAttribute('aria-describedby', `${dispositionHelpId} ${dispositionErrorId}`);
+    const relationFieldset = createElement('fieldset', 'admin-map-entity__fieldset');
+    const relationLegend = createElement('legend', 'admin-map-entity__legend');
+    const relationHelp = createElement('p', 'admin-map-entity__help');
+    const relationRows = createElement('div', 'admin-map-entity__relation-rows');
+    const addRelationButton = createElement('button', 'admin-map-entity__button');
+    relationLegend.textContent = 'Relaciones con otras entidades';
+    relationHelp.textContent =
+      'Las relaciones se guardan una sola vez. Define cómo se describe el otro extremo desde esta ficha y cómo se describe esta entidad desde la ficha relacionada.';
+    addRelationButton.type = 'button';
+    addRelationButton.textContent = 'Añadir relación';
+    entityRelationError = createElement('p', 'admin-map-entity__field-error');
+    entityRelationError.setAttribute('aria-live', 'polite');
 
-      if (!selected) {
-        const missing = document.createElement('option');
-        missing.value = '';
-        missing.textContent = 'Relación sin configurar';
-        missing.selected = true;
-        missing.disabled = true;
-        select.append(missing);
-      }
+    const relationCandidates = state.records
+      .filter((record) => record.id !== draft.id && record.publicationStatus !== 'archived')
+      .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
 
-      for (const value of ['ally', 'neutral', 'enemy'] as const) {
+    const appendRelationRow = (
+      relation: { targetEntityId: string; ownLabel: string; targetLabel: string },
+    ): void => {
+      const row = createElement('div', 'admin-map-entity__relation-row');
+      row.dataset.entityRelationRow = '';
+      const target = createElement('select', 'admin-map-entity__control');
+      const ownLabel = createElement('input', 'admin-map-entity__control');
+      const targetLabel = createElement('input', 'admin-map-entity__control');
+      const removeButton = createElement('button', 'admin-map-entity__button');
+      target.dataset.entityRelationTarget = '';
+      target.dataset.entityRelationInput = '';
+      ownLabel.dataset.entityRelationOwnLabel = '';
+      ownLabel.dataset.entityRelationInput = '';
+      targetLabel.dataset.entityRelationTargetLabel = '';
+      targetLabel.dataset.entityRelationInput = '';
+      target.setAttribute('aria-label', 'Entidad relacionada');
+      ownLabel.setAttribute('aria-label', 'Etiqueta mostrada en esta ficha');
+      targetLabel.setAttribute('aria-label', 'Etiqueta mostrada en la ficha relacionada');
+      ownLabel.placeholder =
+        draft.entityType === 'organization' ? 'Sede / localización relacionada' : 'Relacionado con';
+      targetLabel.placeholder =
+        draft.entityType === 'organization' ? 'Organización' : 'Relacionado con';
+      ownLabel.maxLength = 80;
+      targetLabel.maxLength = 80;
+      const currentTarget = state.records.find(({ id }) => id === relation.targetEntityId);
+      const candidates =
+        currentTarget && currentTarget.publicationStatus === 'archived'
+          ? [currentTarget, ...relationCandidates]
+          : relationCandidates;
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = 'Selecciona una entidad';
+      target.append(emptyOption);
+      candidates.forEach((candidate) => {
+        if (Array.from(target.options).some((option) => option.value === candidate.id)) return;
         const option = document.createElement('option');
-        option.value = value;
-        option.textContent = getPinDispositionVisual(value).label;
-        option.selected = value === selected;
-        select.append(option);
-      }
+        option.value = candidate.id;
+        option.textContent = `${candidate.name} · ${getEntityTypeLabel(candidate.entityType)}`;
+        option.selected = candidate.id === relation.targetEntityId;
+        option.disabled = candidate.publicationStatus === 'archived';
+        target.append(option);
+      });
+      ownLabel.value = relation.ownLabel;
+      targetLabel.value = relation.targetLabel;
+      removeButton.type = 'button';
+      removeButton.textContent = 'Quitar relación';
+      removeButton.addEventListener('click', () => {
+        row.remove();
+        showFieldErrors(readDraft(currentTargetStatus()));
+      });
+      row.append(target, ownLabel, targetLabel, removeButton);
+      relationRows.append(row);
+    };
 
-      const updateAccessibleName = (): void => {
-        const disposition = select.value as PlayerDisposition;
-        const labelText = select.value
-          ? getPinDispositionVisual(disposition).label
-          : 'Relación sin configurar';
-        select.setAttribute('aria-label', `${player.displayName}: ${labelText}`);
-      };
-      updateAccessibleName();
-      select.addEventListener('change', updateAccessibleName);
-      wrapper.append(label, select);
-      dispositionFieldset.append(wrapper);
-      dispositionSelects.push(select);
-    }
-    dispositionFieldset.append(dispositionError);
-    fields.append(dispositionFieldset);
+    (draft.entityRelations ?? []).forEach(appendRelationRow);
+    addRelationButton.disabled = relationCandidates.length === 0;
+    addRelationButton.addEventListener('click', () => {
+      const firstCandidate = relationCandidates.find(
+        (candidate) =>
+          !readEntityRelations().some(({ targetEntityId }) => targetEntityId === candidate.id),
+      );
+      if (!firstCandidate) return;
+      appendRelationRow({
+        targetEntityId: firstCandidate.id,
+        ownLabel:
+          draft.entityType === 'organization' && firstCandidate.entityType === 'location'
+            ? 'Sede / localización relacionada'
+            : 'Relacionado con',
+        targetLabel:
+          draft.entityType === 'organization' && firstCandidate.entityType === 'location'
+            ? 'Organización'
+            : 'Relacionado con',
+      });
+      showFieldErrors(readDraft(currentTargetStatus()));
+    });
+    relationFieldset.append(
+      relationLegend,
+      relationHelp,
+      relationRows,
+      addRelationButton,
+      entityRelationError,
+    );
+    fields.append(relationFieldset);
 
     const allInputs = [
       ...Array.from(controls.values()).map(({ input }) => input),
       ...tagCheckboxes,
       ...dispositionSelects,
+      ...Array.from(form.querySelectorAll<HTMLElement>('[data-entity-relation-input]')),
     ];
     const refreshValidation = (): void => {
       const next = readDraft(currentTargetStatus());
