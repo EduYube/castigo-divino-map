@@ -416,7 +416,8 @@ applyMap068ExpectFailure(
 
 resetToBase();
 sql(auditedFixtureSql);
-sql(`delete from public.public_requests
+sql(`update public.public_requests
+set id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'::uuid
 where id='07d26371-bbff-42d9-b91e-076d099891b0'::uuid;`);
 applyMap068ExpectFailure(
   'rejecting a missing audited Veyra request',
