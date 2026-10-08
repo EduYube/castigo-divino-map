@@ -286,8 +286,13 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await panel.getByRole('button', { name: /Cerrar la ficha de Demonstration Harbor/i }).click();
   await expect(panel).toBeHidden();
   if ((await page.locator('[data-spiderfied="true"]').count()) > 0) {
+    // Escape belongs to the map keyboard handler, not the details-panel close button.
+    // Restore focus to a spiderfied pin before collapsing the group.
+    await options.first().focus();
     await page.keyboard.press('Escape');
   }
+  await expect(options).toHaveCount(0);
+  await expect(coincident).toHaveAttribute('aria-expanded', 'false');
   await expect(coincident).toBeVisible();
 
   await coincident.click();

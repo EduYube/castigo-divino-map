@@ -198,9 +198,9 @@ test('opening and closing character creation does not initialize or change catal
   await expect(createCatalog).toBeEnabled();
 
   await page.getByRole('button', { name: 'Crear personaje' }).click();
-  await expect(page.getByRole('heading', { name: 'Crear character' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Crear personaje' })).toBeVisible();
   await page.getByRole('button', { name: 'Cerrar editor' }).click();
-  await expect(page.getByRole('heading', { name: 'Crear character' })).toBeHidden();
+  await expect(page.getByRole('heading', { name: 'Crear personaje' })).toBeHidden();
 
   await expect(createCatalog).toBeEnabled();
   await openAndCancelCatalogEditor(page);

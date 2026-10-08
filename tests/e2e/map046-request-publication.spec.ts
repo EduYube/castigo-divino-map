@@ -504,7 +504,7 @@ async function createPublishedCatalog(
 
   if (includeCharacterNavigation) {
     await page.getByRole('button', { name: 'Crear personaje' }).click();
-    await expect(page.getByRole('heading', { name: 'Crear character' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Crear personaje' })).toBeVisible();
     await page.getByRole('button', { name: 'Cerrar editor' }).click();
   }
 
