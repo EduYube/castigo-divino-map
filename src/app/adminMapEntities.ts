@@ -1034,42 +1034,58 @@ export function mountAdminMapEntities(
     editor.hidden = false;
     list.hidden = true;
     empty.hidden = true;
-    synchronizeGeometryUi();
-    window.requestAnimationFrame(() => {
-      mapController = mountAdminEntityEditorMap(mapCanvas, {
-        coordinate: isMapCoordinateWithinBounds(draft) ? draft : null,
-        geometry: draftGeometry,
-        entityType: draft.entityType,
-        dispositions: draft.dispositions.map(({ playerId, disposition }) => ({
-          playerId,
-          playerName:
-            state.references.players.find(({ id }) => id === playerId)?.displayName ?? playerId,
-          disposition,
-        })),
-        onGeometryChange(geometry): void {
-          draftGeometry = geometry;
-          synchronizeGeometryUi();
-          const next = readDraft(currentTargetStatus());
-          const valid = showFieldErrors(next);
-          if (!preview.hidden && valid) renderPreview(next);
-        },
-        onCoordinateChange(coordinate): void {
-          synchronizeCoordinateInputs(coordinate);
-          const next = readDraft(currentTargetStatus());
-          const valid = showFieldErrors(next);
-          if (!preview.hidden && valid) renderPreview(next);
-        },
-        onImageStateChange(next): void {
-          mapStatus.textContent =
-            next === 'loading'
-              ? 'Cargando cartografía oficial…'
-              : next === 'ready'
-                ? 'Cartografía lista.'
-                : 'La imagen oficial no está disponible; la geometría sigue siendo editable.';
-        },
-      });
-      if (geometryKindSelect) geometryKindSelect.disabled = false;
+    const spatialEditor = isSpatialEntityType(draft.entityType);
+    mapRegion.hidden = !spatialEditor;
+    if (spatialEditor) {
       synchronizeGeometryUi();
+    } else {
+      mapHelp.textContent =
+        'Las organizaciones son entidades de catálogo y no tienen posición, geometría ni marcador.';
+      mapStatus.textContent = 'Sin representación cartográfica.';
+    }
+    window.requestAnimationFrame(() => {
+      if (spatialEditor) {
+        const initialCoordinate =
+          draft.x !== null &&
+          draft.y !== null &&
+          isMapCoordinateWithinBounds({ x: draft.x, y: draft.y })
+            ? { x: draft.x, y: draft.y }
+            : null;
+        mapController = mountAdminEntityEditorMap(mapCanvas, {
+          coordinate: initialCoordinate,
+          geometry: draftGeometry,
+          entityType: draft.entityType,
+          dispositions: draft.dispositions.map(({ playerId, disposition }) => ({
+            playerId,
+            playerName:
+              state.references.players.find(({ id }) => id === playerId)?.displayName ?? playerId,
+            disposition,
+          })),
+          onGeometryChange(geometry): void {
+            draftGeometry = geometry;
+            synchronizeGeometryUi();
+            const next = readDraft(currentTargetStatus());
+            const valid = showFieldErrors(next);
+            if (!preview.hidden && valid) renderPreview(next);
+          },
+          onCoordinateChange(coordinate): void {
+            synchronizeCoordinateInputs(coordinate);
+            const next = readDraft(currentTargetStatus());
+            const valid = showFieldErrors(next);
+            if (!preview.hidden && valid) renderPreview(next);
+          },
+          onImageStateChange(next): void {
+            mapStatus.textContent =
+              next === 'loading'
+                ? 'Cargando cartografía oficial…'
+                : next === 'ready'
+                  ? 'Cartografía lista.'
+                  : 'La imagen oficial no está disponible; la geometría sigue siendo editable.';
+          },
+        });
+        if (geometryKindSelect) geometryKindSelect.disabled = false;
+        synchronizeGeometryUi();
+      }
       const first = Array.from(controls.values()).find(
         ({ input }) =>
           !input.disabled &&
