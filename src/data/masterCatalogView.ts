@@ -6,6 +6,7 @@ import type {
   PublicCharacterLocationRelation,
   PublicEntityPlayerAssociation,
   PublicEntityPlayerDisposition,
+  PublicEntityRelation,
   PublicMapEntity,
   TagId,
 } from './beta02-model';
@@ -88,22 +89,34 @@ function buildMasterEntities(
         return typedTagId;
       });
 
-    return {
+    const common = {
       id,
       slug: entity.slug,
       entityType: entity.entityType,
-      lifecycleStatus: entity.lifecycleStatus,
+      lifecycleStatus: entity.lifecycleStatus ?? null,
       visibility: entity.visibility,
       name: entity.name,
-      nameLanguage: 'en',
+      nameLanguage: 'en' as const,
       aliases,
       summary: entity.summary,
       description: entity.description,
       portraitPath: entity.portraitPath ?? null,
-      geometry: entity.geometry,
-      coordinates: { x: entity.x, y: entity.y },
       categoryId,
       tagIds,
+    };
+    if (entity.entityType === 'organization') {
+      if (entity.x !== null || entity.y !== null || entity.geometry !== null) {
+        throw new Error('Una organización Máster contiene datos cartográficos.');
+      }
+      return common;
+    }
+    if (entity.x === null || entity.y === null || entity.geometry === null) {
+      throw new Error('Una entidad cartográfica Máster carece de geometría.');
+    }
+    return {
+      ...common,
+      geometry: entity.geometry,
+      coordinates: { x: entity.x, y: entity.y },
     };
   });
 }
@@ -141,6 +154,42 @@ function buildMasterAssociations(
       throw new Error('Una asociación privada referencia un jugador no publicado.');
     }
     return { entityId, playerId };
+  });
+}
+
+function buildAuthorizedEntityRelations(
+  publicCatalog: PublicCatalogSnapshotV2,
+  masterCatalog: AuthorizedMasterCatalog,
+  masterEntityIds: ReadonlySet<EntityId>,
+): readonly PublicEntityRelation[] {
+  const knownEntityIds = new Set([
+    ...publicCatalog.entities.map(({ id }) => id),
+    ...masterEntityIds,
+  ]);
+  const relations = masterCatalog.entityRelations.map((relation) => {
+    const leftEntityId = toEntityId(relation.leftEntityId);
+    const rightEntityId = toEntityId(relation.rightEntityId);
+    if (
+      leftEntityId >= rightEntityId ||
+      !knownEntityIds.has(leftEntityId) ||
+      !knownEntityIds.has(rightEntityId)
+    ) {
+      throw new Error('Una relación genérica Máster referencia extremos no disponibles.');
+    }
+    return {
+      leftEntityId,
+      rightEntityId,
+      leftLabel: relation.leftLabel,
+      rightLabel: relation.rightLabel,
+    };
+  });
+
+  const seen = new Set<string>();
+  return [...(publicCatalog.entityRelations ?? []), ...relations].filter((relation) => {
+    const key = `${relation.leftEntityId}\u0000${relation.rightEntityId}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
 }
 
@@ -203,6 +252,11 @@ export function createAuthorizedMasterCatalogView(
         ...(publicCatalog.associations ?? []),
         ...buildMasterAssociations(publicCatalog, masterCatalog, masterEntityIds),
       ],
+      entityRelations: buildAuthorizedEntityRelations(
+        publicCatalog,
+        masterCatalog,
+        masterEntityIds,
+      ),
       characterLocationRelations: buildAuthorizedRelations(
         publicCatalog,
         masterCatalog,
