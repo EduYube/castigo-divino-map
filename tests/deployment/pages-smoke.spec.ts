@@ -8,6 +8,7 @@ const NEUTRAL_TEST_MAP = `
   </svg>
 `;
 const VEYRA_ENTITY_ID = 'entity-request-07d26371bbff42d9b91e076d099891b0';
+const VEYRA_PORTRAIT_PATH = 'portraits/9d3dcfeb-0320-4bca-9f5d-941d68aa6410.jpg';
 
 function isPublishedPages(): boolean {
   return Boolean(process.env.PAGES_URL);
@@ -41,21 +42,30 @@ test('loads the v1.1 public experience from the repository subdirectory', async 
 }) => {
   const failedResponses: string[] = [];
   const requests: Request[] = [];
-  let portraitLoaded = false;
+  let veyraPortraitLoaded = false;
 
   page.on('request', (request) => requests.push(request));
   page.on('response', (response) => {
-    const url = response.url();
-    const isPortraitTransform =
-      url.includes('/storage/v1/render/image/authenticated/character-portraits/') &&
-      (response.status() === 403 || response.status() === 404);
-    const isPortraitResource =
-      url.includes('/storage/v1/render/image/authenticated/character-portraits/') ||
-      url.includes('/storage/v1/object/authenticated/character-portraits/');
+    const url = new URL(response.url());
+    const veyraPortraitSuffix = `/character-portraits/${VEYRA_PORTRAIT_PATH}`;
+    const isVeyraPortraitTransform =
+      url.pathname.includes('/storage/v1/render/image/authenticated/') &&
+      url.pathname.endsWith(veyraPortraitSuffix);
+    const isVeyraPortraitObject =
+      url.pathname.includes('/storage/v1/object/authenticated/') &&
+      url.pathname.endsWith(veyraPortraitSuffix);
+    const isExpectedTransformFallback =
+      isVeyraPortraitTransform && (response.status() === 403 || response.status() === 404);
 
-    if (isPortraitResource && response.ok()) portraitLoaded = true;
-    if (response.status() >= 400 && url !== OFFICIAL_MAP_URL && !isPortraitTransform) {
-      failedResponses.push(`${response.status()} ${url}`);
+    if ((isVeyraPortraitTransform || isVeyraPortraitObject) && response.ok()) {
+      veyraPortraitLoaded = true;
+    }
+    if (
+      response.status() >= 400 &&
+      response.url() !== OFFICIAL_MAP_URL &&
+      !isExpectedTransformFallback
+    ) {
+      failedResponses.push(`${response.status()} ${response.url()}`);
     }
   });
 
@@ -143,7 +153,8 @@ test('loads the v1.1 public experience from the repository subdirectory', async 
     return url.origin === applicationOrigin && /\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname);
   });
   expect(localRasterRequests).toEqual([]);
-  await expect.poll(() => portraitLoaded).toBe(true);
+  await expect.poll(() => veyraPortraitLoaded).toBe(true);
+  await expect(veyraPin.locator('img.pin-visual__portrait')).toHaveCount(1);
   expect(failedResponses).toEqual([]);
 
   await page.reload();
