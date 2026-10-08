@@ -312,7 +312,22 @@ begin
     raise exception using errcode = '42501', message = 'administrative authorization required';
   end if;
 
-  editor := public.admin_get_map_entity_editor_v7(p_campaign_id, p_entity_id);
+  -- V6 uses jsonb_set with SQL NULL geometry, which nullifies the entire
+  -- editor for non-spatial organizations. Start from the V5 catalog editor
+  -- and explicitly represent geometry/lifecycle as JSON null instead.
+  if exists (
+    select 1 from public.map_entities entity
+    where entity.id = p_entity_id and entity.campaign_id = p_campaign_id
+      and entity.entity_type = 'organization'::public.entity_type
+  ) then
+    editor := public.admin_get_map_entity_editor_v5(p_campaign_id, p_entity_id);
+    if editor is not null then
+      editor := pg_catalog.jsonb_set(editor, '{record,geometry}', 'null'::jsonb, true);
+      editor := pg_catalog.jsonb_set(editor, '{record,lifecycleStatus}', 'null'::jsonb, true);
+    end if;
+  else
+    editor := public.admin_get_map_entity_editor_v7(p_campaign_id, p_entity_id);
+  end if;
   if editor is null then
     return null;
   end if;

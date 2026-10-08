@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(14);
+select plan(16);
 
 select ok(
   'organization' = any(enum_range(null::public.entity_type)::text[]),
@@ -265,15 +265,12 @@ select ok(
   pg_temp.statement_fails_with_sqlstate($sql$
     insert into public.entity_player_dispositions (
       campaign_id, entity_id, player_id, disposition
-    )
-    select
+    ) values (
       '00000000-0000-4000-8000-000000000053',
       'entity-map069-org-public',
-      player.id,
+      'player-map069-unknown',
       'ally'
-    from public.players player
-    where player.campaign_id = '00000000-0000-4000-8000-000000000053'
-    limit 1
+    )
   $sql$, '23514'),
   'organization cannot participate in player dispositions'
 );
