@@ -147,7 +147,7 @@ function assertReferences(snapshot: PublicCatalogContentV2): void {
     'associations',
   );
   assertUnique(
-    snapshot.entityRelations.map(
+    (snapshot.entityRelations ?? []).map(
       ({ leftEntityId, rightEntityId }) => `${leftEntityId}\u0000${rightEntityId}`,
     ),
     'entityRelations',
@@ -206,7 +206,7 @@ function assertReferences(snapshot: PublicCatalogContentV2): void {
     }
   });
 
-  snapshot.entityRelations.forEach((relation) => {
+  (snapshot.entityRelations ?? []).forEach((relation) => {
     if (
       !entitiesById.has(relation.leftEntityId) ||
       !entitiesById.has(relation.rightEntityId) ||
@@ -350,7 +350,7 @@ function buildPublicCatalogContentV2(
   const entityTags = payloads.entityTags.map(parseEntityTag);
   const dispositions = payloads.dispositions.map(parseDisposition);
   const associations = payloads.associations.map(parseAssociation);
-  const entityRelations = payloads.entityRelations.map(parseEntityRelation);
+  const entityRelations = (payloads.entityRelations ?? []).map(parseEntityRelation);
   const characterLocationRelations = payloads.characterLocationRelations.map(
     parseCharacterLocationRelation,
   );

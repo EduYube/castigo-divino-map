@@ -49,7 +49,7 @@ describe('MAP-054 administrative campaign scoping', () => {
       SELECTED_CAMPAIGN,
     );
 
-    expect(scoped.url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v7')).toBe(true);
+    expect(scoped.url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v8')).toBe(true);
     expect(jsonBody(scoped.init)).toEqual({
       p_entity_id: 'entity-test',
       p_campaign_id: SELECTED_CAMPAIGN,
@@ -89,7 +89,7 @@ describe('MAP-054 administrative campaign scoping', () => {
       { method: 'POST', body: JSON.stringify({ p_id: 'entity-test' }) },
       SELECTED_CAMPAIGN,
     );
-    expect(save.url.pathname.endsWith('/rpc/admin_save_map_entity_v7')).toBe(true);
+    expect(save.url.pathname.endsWith('/rpc/admin_save_map_entity_v8')).toBe(true);
     expect(jsonBody(save.init).p_campaign_id).toBe(SELECTED_CAMPAIGN);
   });
 

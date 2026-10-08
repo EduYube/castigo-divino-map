@@ -201,7 +201,7 @@ describe('SupabaseMasterCatalogRepository', () => {
     if (!request) return;
 
     expect(request.method).toBe('POST');
-    expect(new URL(request.url).pathname).toBe('/rest/v1/rpc/admin_get_master_catalog_v6');
+    expect(new URL(request.url).pathname).toBe('/rest/v1/rpc/admin_get_master_catalog_v7');
     expect(request.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
     expect(request.headers.get('authorization')).toBe(`Bearer ${ACCESS_TOKEN}`);
     expect(request.headers.get('content-type')).toBe('application/json');
@@ -303,7 +303,7 @@ describe('SupabaseMasterCatalogRepository', () => {
       }),
     ).rejects.toMatchObject({ code, status });
 
-    expect(requestedPaths).toEqual(['/rest/v1/rpc/admin_get_master_catalog_v6']);
+    expect(requestedPaths).toEqual(['/rest/v1/rpc/admin_get_master_catalog_v7']);
   });
 
   test('fails closed when a functional Master entity has an invalid lifecycle', async () => {

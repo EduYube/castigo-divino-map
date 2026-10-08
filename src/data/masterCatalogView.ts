@@ -166,7 +166,7 @@ function buildAuthorizedEntityRelations(
     ...publicCatalog.entities.map(({ id }) => id),
     ...masterEntityIds,
   ]);
-  const relations = masterCatalog.entityRelations.map((relation) => {
+  const relations = (masterCatalog.entityRelations ?? []).map((relation) => {
     const leftEntityId = toEntityId(relation.leftEntityId);
     const rightEntityId = toEntityId(relation.rightEntityId);
     if (

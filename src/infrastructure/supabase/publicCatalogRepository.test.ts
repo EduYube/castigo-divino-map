@@ -101,7 +101,7 @@ describe('SupabasePublicCatalogRepository', () => {
     expect(result.source).toBe('supabase');
     expect(result.data.contract).toBe('beta03');
     expect(result.metadata.schemaVersion).toBe(3);
-    expect(requests).toHaveLength(16);
+    expect(requests).toHaveLength(17);
     requests.forEach((request) => {
       expect(request.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
       expect(request.headers.get('prefer')).toBe('count=exact');
@@ -176,7 +176,7 @@ describe('SupabasePublicCatalogRepository', () => {
       CAMPAIGN_B_ID,
     ]);
     expect(result.data.catalog.campaignCatalogs).toHaveLength(2);
-    expect(urls).toHaveLength(31);
+    expect(urls).toHaveLength(33);
 
     const scopedUrls = urls.filter((url) => !GLOBAL_TABLES.has(tableName(url)));
     expect(
@@ -496,8 +496,8 @@ describe('SupabasePublicCatalogRepository', () => {
       code: 'http-error',
       status: 503,
     });
-    expect(pendingRequests).toBe(14);
-    expect(abortedRequests).toBe(14);
+    expect(pendingRequests).toBe(15);
+    expect(abortedRequests).toBe(15);
   });
 
   test('normalizes an HTTP failure without exposing the response body', async () => {
