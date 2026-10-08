@@ -6,6 +6,7 @@ import type {
   PublicSearchExtent,
 } from './beta02-model';
 import type { CampaignCatalog, CampaignPlace, PlaceId } from './model';
+import { isSpatialMapEntity } from '../domain/entitySpatiality';
 import { normalizeSearchTerm } from './validate';
 
 export type PlaceSearchMatchKind = 'name' | 'alias' | 'note-title';
@@ -19,7 +20,13 @@ export interface PlaceSearchResult {
   readonly matchRank: PlaceSearchMatchRank;
 }
 
-export type AtlasSearchResultType = 'geographic' | 'character' | 'location' | 'mission' | 'hazard';
+export type AtlasSearchResultType =
+  | 'geographic'
+  | 'character'
+  | 'location'
+  | 'mission'
+  | 'hazard'
+  | 'organization';
 
 export interface AtlasSearchResult {
   readonly id: string;
@@ -28,7 +35,7 @@ export interface AtlasSearchResult {
   readonly matchKind: PlaceSearchMatchKind;
   readonly matchedText: string;
   readonly matchRank: PlaceSearchMatchRank;
-  readonly coordinates: PublicCoordinate;
+  readonly coordinates: PublicCoordinate | null;
   readonly searchExtent: PublicSearchExtent | null;
   readonly recommendedZoom: number | null;
   readonly legacyPlaceId: PlaceId | null;
@@ -164,6 +171,8 @@ function resultTypeRank(type: AtlasSearchResultType): number {
       return 3;
     case 'hazard':
       return 4;
+    case 'organization':
+      return 5;
   }
 }
 
@@ -293,7 +302,7 @@ export function searchPublicAtlas(
       matchKind: bestMatch.matchKind,
       matchedText: bestMatch.matchedText,
       matchRank: bestMatch.matchRank,
-      coordinates: entity.coordinates,
+      coordinates: isSpatialMapEntity(entity) ? entity.coordinates : null,
       searchExtent: null,
       recommendedZoom: null,
       legacyPlaceId: legacyPlace?.id ?? null,
