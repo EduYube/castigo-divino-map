@@ -12,6 +12,14 @@ const MAP068_HIDDEN = new URL(
   '../supabase/migrations/20261007080000_separate_veyra_un_aliento_menos.sql.rehearsal-hidden',
   import.meta.url,
 );
+const MAP069_MIGRATION = new URL(
+  '../supabase/migrations/20261008180000_add_nonspatial_organizations.sql',
+  import.meta.url,
+);
+const MAP069_HIDDEN = new URL(
+  '../supabase/migrations/20261008180000_add_nonspatial_organizations.sql.rehearsal-hidden',
+  import.meta.url,
+);
 
 function fail(message) {
   throw new Error(`MAP-066 v1.0 → v1.1 rehearsal failed: ${message}`);
@@ -27,6 +35,7 @@ function run(command, args, description) {
 }
 
 renameSync(MAP068_MIGRATION, MAP068_HIDDEN);
+renameSync(MAP069_MIGRATION, MAP069_HIDDEN);
 try {
   run(
     NODE_COMMAND,
@@ -35,6 +44,7 @@ try {
   );
 } finally {
   renameSync(MAP068_HIDDEN, MAP068_MIGRATION);
+  renameSync(MAP069_HIDDEN, MAP069_MIGRATION);
 }
 
 const checkpointSql = String.raw`
