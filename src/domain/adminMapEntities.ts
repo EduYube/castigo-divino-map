@@ -1,14 +1,14 @@
-import type { MapCoordinate } from './mapCoordinates';
+import type { EntityType } from '../data/beta02-model';
 import type { MapEntityGeometry } from './mapGeometry';
 
-export type MapEntityType = 'character' | 'location' | 'mission' | 'hazard';
+export type MapEntityType = EntityType;
 export type MapEntityLifecycleStatus = 'active' | 'completed' | 'failed' | 'resolved';
 export type MapVisibility = 'pin' | 'search_only';
 export type MapEntityAudience = 'public' | 'master';
 export type PlayerDisposition = 'ally' | 'enemy' | 'neutral';
 export type MapEntityPublicationStatus = 'draft' | 'published' | 'archived';
 
-export interface AdminMapEntityRecord extends MapCoordinate {
+export interface AdminMapEntityRecord {
   readonly id: string;
   readonly slug: string;
   readonly entityType: MapEntityType;
@@ -26,7 +26,9 @@ export interface AdminMapEntityRecord extends MapCoordinate {
    * MAP-060 persistent geometry. Older fixtures/snapshots omit it and therefore
    * represent the historical point at x/y.
    */
-  readonly geometry?: MapEntityGeometry;
+  readonly geometry?: MapEntityGeometry | null;
+  readonly x: number | null;
+  readonly y: number | null;
   readonly name: string;
   readonly summary: string;
   readonly description: string;
@@ -88,6 +90,24 @@ export interface AdminMapEntityDeleteBlockers {
   readonly requests: number;
   /** Missing only in legacy fixtures that predate MAP-058. */
   readonly playerAssociations?: number;
+  readonly entityRelations?: number;
+}
+
+export interface AdminEntityRelation {
+  readonly otherEntityId: string;
+  readonly otherName: string;
+  readonly otherEntityType: MapEntityType;
+  readonly otherAudience: MapEntityAudience;
+  readonly ownLabel: string;
+  readonly otherLabel: string;
+}
+
+export interface AdminEntityRelationReference {
+  readonly id: string;
+  readonly name: string;
+  readonly entityType: MapEntityType;
+  readonly audience: MapEntityAudience;
+  readonly publicationStatus: MapEntityPublicationStatus;
 }
 
 export interface AdminMapEntityDetail {
@@ -96,7 +116,10 @@ export interface AdminMapEntityDetail {
   readonly dispositions: readonly AdminEntityDisposition[];
   /** Missing only in legacy fixtures/responses that predate MAP-058. */
   readonly associations?: readonly AdminEntityAssociation[];
+  readonly entityRelations?: readonly AdminEntityRelation[];
+  readonly relationEntities?: readonly AdminEntityRelationReference[];
   readonly relationsRevision: string;
+  readonly entityRelationsRevision?: string;
   readonly deleteBlockers: AdminMapEntityDeleteBlockers;
 }
 
@@ -111,7 +134,13 @@ export interface AdminDispositionDraft {
   readonly disposition: PlayerDisposition;
 }
 
-export interface AdminMapEntityDraft extends MapCoordinate {
+export interface AdminEntityRelationDraft {
+  readonly targetEntityId: string;
+  readonly ownLabel: string;
+  readonly targetLabel: string;
+}
+
+export interface AdminMapEntityDraft {
   readonly id: string;
   readonly slug: string;
   readonly entityType: MapEntityType;
@@ -121,7 +150,9 @@ export interface AdminMapEntityDraft extends MapCoordinate {
   readonly audience?: MapEntityAudience;
   readonly portraitPath?: string | null;
   /** Missing means the historical point represented by x/y. */
-  readonly geometry?: MapEntityGeometry;
+  readonly geometry?: MapEntityGeometry | null;
+  readonly x: number | null;
+  readonly y: number | null;
   readonly name: string;
   readonly summary: string;
   readonly description: string;
@@ -129,6 +160,7 @@ export interface AdminMapEntityDraft extends MapCoordinate {
   readonly tagIds: readonly string[];
   readonly dispositions: readonly AdminDispositionDraft[];
   readonly playerAssociationIds?: readonly string[];
+  readonly entityRelations?: readonly AdminEntityRelationDraft[];
   readonly publicationStatus: MapEntityPublicationStatus;
 }
 
@@ -177,6 +209,11 @@ export function detailToDraft(detail: AdminMapEntityDetail): AdminMapEntityDraft
     playerAssociationIds: (detail.associations ?? [])
       .filter(({ publicationStatus }) => publicationStatus !== 'archived')
       .map(({ playerId }) => playerId),
+    entityRelations: (detail.entityRelations ?? []).map((relation) => ({
+      targetEntityId: relation.otherEntityId,
+      ownLabel: relation.ownLabel,
+      targetLabel: relation.otherLabel,
+    })),
     publicationStatus: detail.record.publicationStatus,
   };
 }
@@ -190,22 +227,26 @@ export function createEmptyMapEntityDraft(
     slug: '',
     entityType,
     lifecycleStatus: entityType === 'mission' || entityType === 'hazard' ? 'active' : null,
-    visibility: 'pin',
+    visibility: entityType === 'organization' ? 'search_only' : 'pin',
     audience: 'public',
     portraitPath: null,
     name: '',
     summary: '',
     description: '',
-    x: Number.NaN,
-    y: Number.NaN,
+    x: entityType === 'organization' ? null : Number.NaN,
+    y: entityType === 'organization' ? null : Number.NaN,
     categoryId:
       references.categories.find((category) => category.publicationStatus !== 'archived')?.id ?? '',
     tagIds: [],
-    dispositions: references.players.map((player) => ({
-      playerId: player.id,
-      disposition: 'neutral',
-    })),
+    dispositions:
+      entityType === 'organization'
+        ? []
+        : references.players.map((player) => ({
+            playerId: player.id,
+            disposition: 'neutral',
+          })),
     playerAssociationIds: [],
+    entityRelations: [],
     publicationStatus: 'draft',
   };
 }
