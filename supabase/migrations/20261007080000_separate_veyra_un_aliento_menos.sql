@@ -142,6 +142,7 @@ declare
   player_count integer;
   request_count integer;
   tag_count integer;
+  historic_campaign_has_content boolean;
 begin
   if exists (
     select 1
@@ -176,9 +177,38 @@ begin
   from public.tags
   where id = 'category-veyra';
 
+  -- Match the established MAP-054 clean-install boundary: before seed, the
+  -- migration-owned baseline may contain only the two MAP-028 demo entities.
+  -- Any other entity, any player or any request proves this is historical
+  -- content and must never be mistaken for a fresh install merely because
+  -- Veyra's four audited source records are missing.
+  select
+    exists (
+      select 1
+      from public.map_entities as entity
+      where entity.campaign_id = initial_campaign
+        and entity.id not in ('place-demo-harbor', 'place-demo-pass')
+    )
+    or exists (
+      select 1
+      from public.players as player
+      where player.campaign_id = initial_campaign
+    )
+    or exists (
+      select 1
+      from public.public_requests as request
+      where request.campaign_id = initial_campaign
+    )
+  into historic_campaign_has_content;
+
   -- Fresh installs apply migrations before seed and therefore have no Veyra
-  -- source rows. Keep the new campaign usable without fabricating Veyra.
-  if entity_count = 0 and player_count = 0 and request_count = 0 and tag_count = 0 then
+  -- source rows and no historical campaign content. Keep the new campaign
+  -- usable without fabricating Veyra.
+  if entity_count = 0
+     and player_count = 0
+     and request_count = 0
+     and tag_count = 0
+     and not historic_campaign_has_content then
     insert into public.categories (
       campaign_id,
       id,
