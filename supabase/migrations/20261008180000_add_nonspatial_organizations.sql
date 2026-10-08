@@ -187,7 +187,7 @@ using (
       and right_entity.publication_status = 'published'::public.publication_status
       and left_entity.audience = 'public'::public.entity_audience
       and right_entity.audience = 'public'::public.entity_audience
-      and campaign.status = 'active'::public.campaign_status
+      and campaign.status = 'active'
   )
 );
 
