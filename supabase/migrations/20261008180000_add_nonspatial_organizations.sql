@@ -206,6 +206,36 @@ grant select (campaign_id, left_entity_id, right_entity_id, left_label, right_la
   delete
   on public.entity_relations to authenticated;
 
+-- Exclude organizations from both automatic player-disposition insertion paths.
+create or replace function private.ensure_entity_player_dispositions()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+begin
+  if tg_table_name = 'map_entities' then
+    if new.entity_type <> 'organization'::public.entity_type then
+      insert into public.entity_player_dispositions(entity_id, player_id, campaign_id)
+      select new.id, player.id, new.campaign_id
+      from public.players as player
+      where player.campaign_id = new.campaign_id
+        and player.character_entity_id is distinct from new.id
+      on conflict (entity_id, player_id) do nothing;
+    end if;
+  elsif tg_table_name = 'players' then
+    insert into public.entity_player_dispositions(entity_id, player_id, campaign_id)
+    select entity.id, new.id, new.campaign_id
+    from public.map_entities as entity
+    where entity.campaign_id = new.campaign_id
+      and entity.entity_type <> 'organization'::public.entity_type
+      and new.character_entity_id is distinct from entity.id
+    on conflict (entity_id, player_id) do nothing;
+  end if;
+  return new;
+end;
+$;
+
 -- Organizations never participate in the player-disposition subsystem.
 create function private.reject_organization_player_disposition()
 returns trigger
