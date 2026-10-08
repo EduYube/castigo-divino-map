@@ -4,6 +4,7 @@ import {
   type MapCoordinate,
 } from './mapCoordinates';
 import type { MapEntityType } from './adminMapEntities';
+import { isSpatialEntityType } from './entitySpatiality';
 
 export const MAP_POLYGON_MAX_VERTICES = 64;
 const GEOMETRY_EPSILON = 1e-9;
@@ -141,6 +142,9 @@ export function normalizeMapEntityGeometry(
   entityType: MapEntityType,
   value: unknown,
 ): MapEntityGeometry {
+  if (!isSpatialEntityType(entityType)) {
+    throw new Error('Non-spatial entities cannot use map geometry.');
+  }
   if (!isRecord(value)) throw new Error('Map geometry must be an object.');
   if (value.kind === 'point') {
     return { kind: 'point', coordinates: coordinateFromUnknown(value.coordinates) };
