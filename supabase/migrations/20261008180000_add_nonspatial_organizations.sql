@@ -214,6 +214,8 @@ security definer
 set search_path = ''
 as $$
 begin
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('entity-player-disposition-matrix'));
+
   if tg_table_name = 'map_entities' then
     if new.entity_type <> 'organization'::public.entity_type then
       insert into public.entity_player_dispositions(entity_id, player_id, campaign_id)
@@ -231,6 +233,8 @@ begin
       and entity.entity_type <> 'organization'::public.entity_type
       and new.character_entity_id is distinct from entity.id
     on conflict (entity_id, player_id) do nothing;
+  else
+    raise exception using errcode = '0A000', message = 'unsupported disposition matrix trigger source';
   end if;
   return new;
 end;
@@ -535,7 +539,7 @@ begin
       if existing.entity_type is distinct from 'organization'::public.entity_type then
         raise exception using errcode = '23514', message = 'entity_type is immutable';
       end if;
-      current_editor := public.admin_get_map_entity_editor_v7(p_campaign_id, p_id);
+      current_editor := public.admin_get_map_entity_editor_v8(p_campaign_id, p_id);
       if p_expected_relations_revision is null
          or current_editor ->> 'relations_revision' is distinct from p_expected_relations_revision then
         raise exception using errcode = '40001', message = 'entity relations changed while the editor was open';

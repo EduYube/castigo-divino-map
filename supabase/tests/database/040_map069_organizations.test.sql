@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(16);
+select plan(18);
 
 select ok(
   'organization' = any(enum_range(null::public.entity_type)::text[]),
@@ -260,6 +260,50 @@ select ok(
   ) @> '[{"other_entity_id":"entity-map069-org-public","own_label":"Organización","other_label":"Sede / localización relacionada"}]'::jsonb,
   'admin editor renders the same stored relation from the building endpoint'
 );
+
+-- Verify the real v8 update path for existing non-spatial organizations.
+select lives_ok(
+  $sql$
+    select public.admin_save_map_entity_v8(
+      '00000000-0000-4000-8000-000000000053',
+      'entity-map069-org-public',
+      (select updated_at from public.map_entities where id = 'entity-map069-org-public'),
+      (select public.admin_get_map_entity_editor_v8(
+        '00000000-0000-4000-8000-000000000053', 'entity-map069-org-public'
+      ) ->> 'relations_revision'),
+      (select public.admin_get_map_entity_editor_v8(
+        '00000000-0000-4000-8000-000000000053', 'entity-map069-org-public'
+      ) ->> 'entity_relations_revision'),
+      'map069-org-public',
+      'organization'::public.entity_type,
+      'search_only'::public.map_visibility,
+      'public'::public.entity_audience,
+      null::text,
+      'MAP069 Public Organization',
+      'MAP069 Updated summary',
+      '',
+      null::jsonb,
+      'category-map069-a',
+      'published'::public.publication_status,
+      '{}'::text[],
+      '[]'::jsonb,
+      '{}'::text[],
+      null::public.entity_lifecycle_status,
+      '[{"targetEntityId":"place-map069-hall-a","ownLabel":"Sede / localización relacionada","targetLabel":"Organización"}]'::jsonb
+    )
+  $sql$,
+  'existing organization edits through v8 without spatial geometry'
+);
+
+select is(
+  (select summary from public.map_entities where id = 'entity-map069-org-public'),
+  'MAP069 Updated summary'::text,
+  'organization update persists while keeping its identity and relations'
+);
+
+-- The structural rejection trigger must run with an INSERT-capable role;
+-- frontend role grants/RLS are tested separately and may reject earlier.
+reset role;
 
 select ok(
   pg_temp.statement_fails_with_sqlstate($sql$

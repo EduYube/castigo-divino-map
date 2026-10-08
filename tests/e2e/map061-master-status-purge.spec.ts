@@ -169,7 +169,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (isAdmin && resource === 'rpc/admin_get_master_catalog_v6') {
+    if (isAdmin && resource === 'rpc/admin_get_master_catalog_v7') {
       if (denyMasterCatalog) {
         await route.fulfill({
           status: 403,
