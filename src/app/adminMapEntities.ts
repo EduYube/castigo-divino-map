@@ -24,6 +24,7 @@ import {
 import { isMapCoordinateWithinBounds } from '../domain/mapCoordinates';
 import { createPointMapGeometry, type MapEntityGeometry } from '../domain/mapGeometry';
 import { getEntityLifecycleLabel } from '../domain/entityLifecycle';
+import { getEntityTypeLabel, isSpatialEntityType } from '../domain/entitySpatiality';
 import { getPinDispositionVisual, getPinTypeVisual } from '../domain/pinVisualSystem';
 import {
   mountAdminEntityEditorMap,
@@ -86,6 +87,7 @@ export function mountAdminMapEntities(
   const createLocationButton = createElement('button', 'admin-map-entity__button');
   const createMissionButton = createElement('button', 'admin-map-entity__button');
   const createHazardButton = createElement('button', 'admin-map-entity__button');
+  const createOrganizationButton = createElement('button', 'admin-map-entity__button');
   const refreshButton = createElement('button', 'admin-map-entity__button');
   const status = createElement('p', 'admin-map-entity__status');
   const empty = createElement('p', 'admin-map-entity__empty');
@@ -147,7 +149,7 @@ export function mountAdminMapEntities(
   heading.id = 'admin-map-entity-heading';
   section.setAttribute('aria-labelledby', heading.id);
   intro.textContent =
-    'Edita la entidad completa, sus relaciones y su geometría. La previsualización no publica contenido.';
+    'Edita entidades de campaña, sus relaciones y, cuando son cartográficas, su geometría. La previsualización no publica contenido.';
 
   searchLabel.htmlFor = 'admin-map-entity-search';
   searchLabel.textContent = 'Buscar entidades';
@@ -163,6 +165,8 @@ export function mountAdminMapEntities(
   createMissionButton.textContent = 'Crear misión';
   createHazardButton.type = 'button';
   createHazardButton.textContent = 'Crear peligro';
+  createOrganizationButton.type = 'button';
+  createOrganizationButton.textContent = 'Crear organización';
   refreshButton.type = 'button';
   refreshButton.textContent = 'Recargar entidades';
   toolbar.append(
@@ -172,6 +176,7 @@ export function mountAdminMapEntities(
     createLocationButton,
     createMissionButton,
     createHazardButton,
+    createOrganizationButton,
     refreshButton,
   );
 
@@ -1045,6 +1050,7 @@ export function mountAdminMapEntities(
     createLocationButton.disabled = createCharacterButton.disabled;
     createMissionButton.disabled = createCharacterButton.disabled;
     createHazardButton.disabled = createCharacterButton.disabled;
+    createOrganizationButton.disabled = createCharacterButton.disabled;
     refreshButton.disabled = unavailable || busy;
     saveDraftButton.disabled = busy;
     previewButton.disabled = busy;
@@ -1147,6 +1153,11 @@ export function mountAdminMapEntities(
     restoreFocus = createHazardButton;
     controller.openCreate();
   };
+  const handleCreateOrganization = (): void => {
+    requestedEntityType = 'organization';
+    restoreFocus = createOrganizationButton;
+    controller.openCreate();
+  };
   const handleRefresh = (): void => void controller.reload();
   const handleSaveDraft = (): void => void saveWithStatus('draft');
   const handlePreview = (): void => {
@@ -1218,6 +1229,7 @@ export function mountAdminMapEntities(
   createLocationButton.addEventListener('click', handleCreateLocation);
   createMissionButton.addEventListener('click', handleCreateMission);
   createHazardButton.addEventListener('click', handleCreateHazard);
+  createOrganizationButton.addEventListener('click', handleCreateOrganization);
   refreshButton.addEventListener('click', handleRefresh);
   saveDraftButton.addEventListener('click', handleSaveDraft);
   previewButton.addEventListener('click', handlePreview);
@@ -1246,6 +1258,7 @@ export function mountAdminMapEntities(
       createLocationButton.removeEventListener('click', handleCreateLocation);
       createMissionButton.removeEventListener('click', handleCreateMission);
       createHazardButton.removeEventListener('click', handleCreateHazard);
+      createOrganizationButton.removeEventListener('click', handleCreateOrganization);
       refreshButton.removeEventListener('click', handleRefresh);
       saveDraftButton.removeEventListener('click', handleSaveDraft);
       previewButton.removeEventListener('click', handlePreview);
