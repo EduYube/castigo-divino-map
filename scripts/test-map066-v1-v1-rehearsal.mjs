@@ -132,16 +132,27 @@ values
 run(
   'docker',
   [
-    'exec','--user','postgres',DATABASE_CONTAINER,'psql',
-    '--username','postgres','--dbname','postgres','--no-psqlrc',
-    '--set=ON_ERROR_STOP=1','--quiet','--command',checkpointSql,
+    'exec',
+    '--user',
+    'postgres',
+    DATABASE_CONTAINER,
+    'psql',
+    '--username',
+    'postgres',
+    '--dbname',
+    'postgres',
+    '--no-psqlrc',
+    '--set=ON_ERROR_STOP=1',
+    '--quiet',
+    '--command',
+    checkpointSql,
   ],
   'preparing the audited pre-MAP-068 checkpoint',
 );
 
 run(
   NPX_COMMAND,
-  ['--no-install','supabase','migration','up','--local'],
+  ['--no-install', 'supabase', 'migration', 'up', '--local'],
   'applying MAP-068 after the v1.0 compatibility checkpoint',
 );
 
