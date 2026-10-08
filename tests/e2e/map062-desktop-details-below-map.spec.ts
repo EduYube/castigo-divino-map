@@ -407,10 +407,15 @@ test('1920 expanded keeps full horizontal map geometry, reuses one details regio
   await expectNoHorizontalOverflow(page);
 
   await toggleExpanded(page, true);
+  // The expanded layout synchronizes Leaflet in the next animation frame.
+  // Compare only settled views so an in-flight layout recalculation is not
+  // misidentified as a movement caused by closing the details panel.
+  await settleLayoutFrames(page);
   const viewBeforeClose = await readMapView(page);
   await panel.getByRole('button', { name: 'Cerrar la ficha de MAP062 Second Character' }).click();
   await expect(panel).toBeHidden();
   await expect(page.locator('.map-experience')).toHaveAttribute('data-map-expanded', 'true');
+  await settleLayoutFrames(page);
   expect(await readMapView(page)).toEqual(viewBeforeClose);
 });
 

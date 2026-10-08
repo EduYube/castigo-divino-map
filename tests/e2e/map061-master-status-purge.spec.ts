@@ -242,6 +242,9 @@ async function signIn(page: Page): Promise<void> {
   await page.getByLabel('Correo').fill('admin@example.invalid');
   await page.getByLabel('Contraseña').fill('correct horse battery staple');
   await page.getByRole('button', { name: 'Iniciar sesión' }).click();
+  // The dialog close button exists during authentication; on Firefox, the
+  // authorization RPC can still be in flight when that button is visible.
+  await expect(page.locator('[data-auth-phase]')).toHaveAttribute('data-auth-phase', 'authorized');
   const closeAccess = page.getByRole('button', { name: 'Cerrar acceso administrativo' });
   await expect(closeAccess).toBeVisible();
   await closeAccess.click();
