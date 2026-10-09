@@ -343,7 +343,8 @@ async function verifyV6V7LockOrdering(containerName) {
     if (v7Exit.code !== 0) fail(`v7 writer failed: ${v7Session.output || 'no output'}`);
     console.log('ok - v7 commits the lifecycle-aware mutation after the barrier is released');
 
-    v6Session.child.stdin.end('\\q\n');
+    // ON_ERROR_STOP=1 makes psql exit when the stale write is rejected.
+    // Writing \\q to a process that already exited can emit EPIPE on stdin.
     const v6Exit = await waitForExit(v6Session, 'queued v6 stale rejection');
     if (v6Exit.code === 0)
       fail('Queued legacy v6 writer unexpectedly succeeded after v7 committed.');
