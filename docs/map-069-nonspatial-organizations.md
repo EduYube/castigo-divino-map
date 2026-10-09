@@ -43,6 +43,18 @@ Una sede o edificio continúa siendo la entidad cartográfica apropiada, normalm
 
 Esto permite organization↔location, organization↔character y organization↔organization sin crear tablas especializadas ni una columna `organization_id`.
 
+**Concurrencia editorial.** Las escrituras `admin_save_map_entity_v8` serializan las relaciones
+por campaña mediante un advisory lock transaccional común, adquirido antes del lock por
+entidad. Los dos extremos de una misma relación no pueden superar simultáneamente
+la comprobación optimista de `entity_relations_revision`; la segunda transacción
+debe recibir conflicto de revisión obsoleta en lugar de sobrescribir cambios.
+
+**Archivado.** Las relaciones ya existentes permanecen almacenadas cuando uno de sus
+extremos se archiva. El editor puede conservar y guardar ese vínculo histórico sin
+perderlo por una edición de descripción u otros campos, pero no puede crear nuevos
+vínculos con destinos archivados. La política pública RLS deja de mostrar el
+vínculo cuando cualquiera de los dos extremos está archivado.
+
 ## Campaign isolation y visibilidad
 
 La campaña forma parte de la PK/FK lógica de `entity_relations`; una relación cross-campaign es inválida en PostgreSQL, no solo invisible en UI.

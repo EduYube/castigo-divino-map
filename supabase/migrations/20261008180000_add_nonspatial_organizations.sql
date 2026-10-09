@@ -477,6 +477,13 @@ begin
     raise exception using errcode = '23503', message = 'the selected category is unavailable in the selected campaign';
   end if;
 
+  -- Relations are shared by both endpoints. Serialize all v8 relation writes
+  -- within one campaign before taking an individual entity lock, so concurrent
+  -- edits from A and B cannot validate the same stale revision independently.
+  -- The campaign-scoped lock avoids blocking unrelated campaigns.
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('admin-entity-relations:' || p_campaign_id::text, 0)
+  );
   perform pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended('admin-map-entity:' || p_id, 0)
   );
@@ -590,7 +597,20 @@ begin
         select 1 from public.map_entities target
         where target.id = relation."targetEntityId"
           and target.campaign_id = p_campaign_id
-          and target.publication_status <> 'archived'::public.publication_status
+          and (
+            target.publication_status <> 'archived'::public.publication_status
+            or exists (
+              -- Previously recorded archived destinations may be retained,
+              -- but creating a NEW link to an archived target is forbidden.
+              select 1 from public.entity_relations previous
+              where previous.campaign_id = p_campaign_id
+                and (
+                  (previous.left_entity_id = p_id and previous.right_entity_id = target.id)
+                  or
+                  (previous.right_entity_id = p_id and previous.left_entity_id = target.id)
+                )
+            )
+          )
       )
   ) then
     raise exception using errcode = '23514', message = 'invalid generic entity relation';

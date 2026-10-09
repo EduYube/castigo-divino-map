@@ -16,7 +16,7 @@ exception
 end;
 $$;
 
-select plan(18);
+select plan(23);
 
 select ok(
   'organization' = any(enum_range(null::public.entity_type)::text[]),
@@ -336,6 +336,107 @@ select is(
   (select count(*) from public.entity_relations where left_entity_id = 'entity-map069-org-public'),
   1::bigint,
   'public generic relation is visible when both endpoints are public'
+);
+
+reset role;
+
+-- Archived endpoints are historical, not eligible as NEW relation targets.
+-- Existing links remain stored (and may be saved unchanged from the other
+-- endpoint) while RLS stops showing them to anonymous visitors.
+update public.map_entities
+set publication_status = 'archived'
+where id = 'place-map069-hall-a';
+
+set local role authenticated;
+
+select lives_ok(
+  $sql$
+    select public.admin_save_map_entity_v8(
+      '00000000-0000-4000-8000-000000000053',
+      'entity-map069-org-public',
+      (select updated_at from public.map_entities where id = 'entity-map069-org-public'),
+      (select public.admin_get_map_entity_editor_v8(
+        '00000000-0000-4000-8000-000000000053', 'entity-map069-org-public'
+      ) ->> 'relations_revision'),
+      (select public.admin_get_map_entity_editor_v8(
+        '00000000-0000-4000-8000-000000000053', 'entity-map069-org-public'
+      ) ->> 'entity_relations_revision'),
+      'map069-org-public',
+      'organization'::public.entity_type,
+      'search_only'::public.map_visibility,
+      'public'::public.entity_audience,
+      null::text,
+      'MAP069 Public Organization',
+      'MAP069 Saved with archived site',
+      '',
+      null::jsonb,
+      'category-map069-a',
+      'published'::public.publication_status,
+      '{}'::text[],
+      '[]'::jsonb,
+      '{}'::text[],
+      null::public.entity_lifecycle_status,
+      '[{"targetEntityId":"place-map069-hall-a","ownLabel":"Sede / localización relacionada","targetLabel":"Organización"}]'::jsonb
+    )
+  $sql$,
+  'an unrelated organization edit preserves its historical archived target'
+);
+
+select is(
+  (select count(*) from public.entity_relations
+   where left_entity_id = 'entity-map069-org-public'
+     and right_entity_id = 'place-map069-hall-a'),
+  1::bigint,
+  'saving the organization retains exactly one archived-endpoint relation'
+);
+
+select is(
+  (select summary from public.map_entities where id = 'entity-map069-org-public'),
+  'MAP069 Saved with archived site'::text,
+  'the unrelated description edit is persisted despite the archived target'
+);
+
+select ok(
+  pg_temp.statement_fails_with_sqlstate($sql$
+    select public.admin_save_map_entity_v8(
+      '00000000-0000-4000-8000-000000000053',
+      'entity-map069-org-master',
+      (select updated_at from public.map_entities where id = 'entity-map069-org-master'),
+      (select public.admin_get_map_entity_editor_v8(
+        '00000000-0000-4000-8000-000000000053', 'entity-map069-org-master'
+      ) ->> 'relations_revision'),
+      (select public.admin_get_map_entity_editor_v8(
+        '00000000-0000-4000-8000-000000000053', 'entity-map069-org-master'
+      ) ->> 'entity_relations_revision'),
+      'map069-org-master',
+      'organization'::public.entity_type,
+      'search_only'::public.map_visibility,
+      'master'::public.entity_audience,
+      null::text,
+      'MAP069 Master Organization',
+      '',
+      '',
+      null::jsonb,
+      'category-map069-a',
+      'published'::public.publication_status,
+      '{}'::text[],
+      '[]'::jsonb,
+      '{}'::text[],
+      null::public.entity_lifecycle_status,
+      '[{"targetEntityId":"place-map069-hall-a","ownLabel":"Archived location","targetLabel":"New master link"}]'::jsonb
+    )
+  $sql$, '23514'),
+  'a different organization cannot create a new relation to an archived target'
+);
+
+reset role;
+set local role anon;
+select is(
+  (select count(*) from public.entity_relations
+   where left_entity_id = 'entity-map069-org-public'
+     and right_entity_id = 'place-map069-hall-a'),
+  0::bigint,
+  'archived-endpoint historical relations stay invisible to anon RLS'
 );
 
 reset role;
