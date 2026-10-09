@@ -153,7 +153,6 @@ function stopSession(session) {
   if (session && !session.exited) session.child.kill();
 }
 
-
 function cleanFixtures() {
   runPsql(`delete from public.entity_relations
     where left_entity_id in (${sqlLiteral(ENTITY_A)}, ${sqlLiteral(ENTITY_B)})
