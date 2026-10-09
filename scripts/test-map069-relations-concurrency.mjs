@@ -217,7 +217,7 @@ async function main() {
     runPsql(`insert into public.categories
       (campaign_id, id, slug, name, description, publication_status)
       values (${sqlLiteral(CAMPAIGN_ID)}, ${sqlLiteral(CATEGORY_ID)},
-              'map069-lock', 'MAP069 Lock', '', 'published');
+              'map069-lock', 'MAP069 Lock', '', 'draft');
     insert into public.map_entities
       (campaign_id, id, slug, entity_type, visibility, audience, name, name_language,
        summary, description, x, y, category_id, publication_status)
