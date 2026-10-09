@@ -482,6 +482,7 @@
           "disposition": "neutral"
         }
       ],
+      "entityRelations": [],
       "characterLocationRelations": [
         {
           "characterId": "entity-agamen",
@@ -539,6 +540,7 @@
         }
       ],
       "dispositions": [],
+      "entityRelations": [],
       "characterLocationRelations": [],
       "notes": [],
       "characterLocationEvents": [],
@@ -3478,7 +3480,7 @@
       "recommendedZoom": 0.75
     }
   ],
-  "generatedAt": "2026-10-07T08:00:00.000Z",
-  "sourceRevision": "sha256:de24c7bb4b23402bab367db669c59d0fadab36d19f5e60fec260acb1da836b17",
-  "checksum": "sha256:de24c7bb4b23402bab367db669c59d0fadab36d19f5e60fec260acb1da836b17"
+  "generatedAt": "2026-10-09T10:41:05.870Z",
+  "sourceRevision": "sha256:ce1d861bbfc12153be799d5bb6f54b34a87c5a03e50830bb27aaef9ef4567de3",
+  "checksum": "sha256:ce1d861bbfc12153be799d5bb6f54b34a87c5a03e50830bb27aaef9ef4567de3"
 }
