@@ -6,6 +6,7 @@ import {
   type MasterCatalogCategory,
   type MasterCatalogDisposition,
   type MasterCatalogEntity,
+  type MasterCatalogEntityRelation,
   type MasterCatalogEntityTag,
   type MasterCatalogPlayer,
   type MasterCatalogRelation,
@@ -13,6 +14,7 @@ import {
   type MasterCatalogRepository,
 } from '../../data-access/masterCatalog';
 import { isEntityLifecycleStatusValid } from '../../domain/entityLifecycle';
+import { isSpatialEntityType } from '../../domain/entitySpatiality';
 import {
   mapGeometryRepresentativePoint,
   normalizeMapEntityGeometry,
@@ -91,7 +93,8 @@ function mapEntity(row: Record<string, unknown>): MasterCatalogEntity {
     entityType !== 'character' &&
     entityType !== 'location' &&
     entityType !== 'mission' &&
-    entityType !== 'hazard'
+    entityType !== 'hazard' &&
+    entityType !== 'organization'
   ) {
     throwInvalid();
   }
@@ -108,16 +111,27 @@ function mapEntity(row: Record<string, unknown>): MasterCatalogEntity {
   if (!isEntityLifecycleStatusValid(entityType, lifecycleStatus)) throwInvalid();
   if (visibility !== 'pin' && visibility !== 'search_only') throwInvalid();
   if (row.audience !== 'master') throwInvalid();
-  const x = numberField(row, 'x');
-  const y = numberField(row, 'y');
+  let x: number | null;
+  let y: number | null;
   let geometry: MasterCatalogEntity['geometry'];
-  try {
-    geometry = normalizeMapEntityGeometry(entityType, row.geometry);
-  } catch {
-    return throwInvalid();
+  if (isSpatialEntityType(entityType)) {
+    x = numberField(row, 'x');
+    y = numberField(row, 'y');
+    try {
+      geometry = normalizeMapEntityGeometry(entityType, row.geometry);
+    } catch {
+      return throwInvalid();
+    }
+    const representative = mapGeometryRepresentativePoint(geometry);
+    if (representative.x !== x || representative.y !== y) throwInvalid();
+  } else {
+    if (row.x !== null || row.y !== null || row.geometry !== null || visibility !== 'search_only') {
+      return throwInvalid();
+    }
+    x = null;
+    y = null;
+    geometry = null;
   }
-  const representative = mapGeometryRepresentativePoint(geometry);
-  if (representative.x !== x || representative.y !== y) throwInvalid();
   return {
     id: stringField(row, 'id'),
     slug: stringField(row, 'slug'),
@@ -186,6 +200,18 @@ function mapAssociation(row: Record<string, unknown>): MasterCatalogAssociation 
   };
 }
 
+function mapEntityRelation(row: Record<string, unknown>): MasterCatalogEntityRelation {
+  const leftEntityId = stringField(row, 'left_entity_id');
+  const rightEntityId = stringField(row, 'right_entity_id');
+  if (leftEntityId >= rightEntityId) throwInvalid();
+  return {
+    leftEntityId,
+    rightEntityId,
+    leftLabel: stringField(row, 'left_label'),
+    rightLabel: stringField(row, 'right_label'),
+  };
+}
+
 function mapRelation(row: Record<string, unknown>): MasterCatalogRelation {
   const relationStatus = row.relation_status;
   if (
@@ -226,6 +252,10 @@ function decodeCatalog(payload: unknown): AuthorizedMasterCatalog {
     players: arrayField(payload, 'players').map(mapPlayer),
     dispositions: arrayField(payload, 'dispositions').map(mapDisposition),
     associations: arrayField(payload, 'associations').map(mapAssociation),
+    entityRelations:
+      payload.entity_relations === undefined
+        ? []
+        : arrayField(payload, 'entity_relations').map(mapEntityRelation),
     relations: arrayField(payload, 'relations').map(mapRelation),
     relationEntities: arrayField(payload, 'relation_entities').map(mapRelationEntity),
   };
@@ -288,7 +318,7 @@ export class SupabaseMasterCatalogRepository implements MasterCatalogRepository 
       let response: Response;
       try {
         response = await this.#fetchImplementation(
-          new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_master_catalog_v6`),
+          new URL(`${this.#projectUrl}/rest/v1/rpc/admin_get_master_catalog_v7`),
           {
             method: 'POST',
             headers: {

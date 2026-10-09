@@ -2,6 +2,7 @@ import { createFullEntityUrl } from './fullEntityUrl';
 import { mountPublicNotes, type PublicNotesController } from './publicNotes';
 import type { FullEntityDetailModel } from '../data/fullEntityDetails';
 import { getEntityLifecycleLabel } from '../domain/entityLifecycle';
+import { getEntityTypeLabel, isSpatialEntityType } from '../domain/entitySpatiality';
 import { createPlayerDispositionVisuals, getPinTypeVisual } from '../domain/pinVisualSystem';
 import '../styles/public-notes.css';
 
@@ -162,7 +163,7 @@ function appendNotes(parent: HTMLElement, details: FullEntityDetailModel): void 
 function appendEntityLink(
   parent: HTMLElement,
   sourceUrl: URL,
-  relation: FullEntityDetailModel['importantCharacters'][number],
+  relation: { readonly slug: string; readonly name: string },
 ): HTMLAnchorElement {
   const link = document.createElement('a');
   link.href = createFullEntityUrl(sourceUrl, relation.slug).href;
@@ -176,6 +177,7 @@ function appendRelations(
   details: FullEntityDetailModel,
   sourceUrl: URL,
 ): void {
+  if (details.entityType !== 'location' && details.entityType !== 'character') return;
   const relations =
     details.entityType === 'location' ? details.importantCharacters : details.relatedLocations;
   const section = appendSection(
@@ -198,6 +200,29 @@ function appendRelations(
       relation.relationLabel,
     );
     status.dataset.relationStatus = relation.relationStatus;
+    list.append(item);
+  });
+  section.append(list);
+}
+
+function appendGenericRelations(
+  parent: HTMLElement,
+  details: FullEntityDetailModel,
+  sourceUrl: URL,
+): void {
+  if (details.relatedEntities.length === 0) return;
+  const section = appendSection(
+    parent,
+    details.entityType === 'organization'
+      ? 'Sedes y entidades relacionadas'
+      : 'Entidades relacionadas',
+  );
+  const list = document.createElement('ul');
+  list.className = 'full-entity__relations';
+  details.relatedEntities.forEach((relation) => {
+    const item = document.createElement('li');
+    appendEntityLink(item, sourceUrl, relation);
+    appendTextElement(item, 'span', 'full-entity__relation-status', relation.relationLabel);
     list.append(item);
   });
   section.append(list);
@@ -267,21 +292,24 @@ function appendPortrait(
 }
 
 function renderDetails(elements: FullEntityDetailsElements, details: FullEntityDetailModel): void {
-  const type = getPinTypeVisual(details.entityType);
+  const typeLabel = getEntityTypeLabel(details.entityType);
   elements.body.replaceChildren();
   elements.type.replaceChildren();
-  const shape = appendTextElement(
-    elements.type,
-    'span',
-    `full-entity__type-shape full-entity__type-shape--${details.entityType}`,
-    type.symbol,
-  );
-  shape.setAttribute('aria-hidden', 'true');
-  appendTextElement(elements.type, 'span', '', type.label);
+  if (isSpatialEntityType(details.entityType)) {
+    const type = getPinTypeVisual(details.entityType);
+    const shape = appendTextElement(
+      elements.type,
+      'span',
+      `full-entity__type-shape full-entity__type-shape--${details.entityType}`,
+      type.symbol,
+    );
+    shape.setAttribute('aria-hidden', 'true');
+  }
+  appendTextElement(elements.type, 'span', '', typeLabel);
   const lifecycleLabel = getEntityLifecycleLabel(details.entityType, details.lifecycleStatus);
   if (lifecycleLabel) {
     appendTextElement(elements.type, 'span', 'full-entity__lifecycle', ` · ${lifecycleLabel}`);
-    elements.type.setAttribute('aria-label', `${type.label}. Estado: ${lifecycleLabel}.`);
+    elements.type.setAttribute('aria-label', `${typeLabel}. Estado: ${lifecycleLabel}.`);
   } else {
     elements.type.removeAttribute('aria-label');
   }
@@ -299,6 +327,7 @@ function renderDetails(elements: FullEntityDetailsElements, details: FullEntityD
   appendDispositions(elements.body, details);
   appendNotes(elements.body, details);
   appendRelations(elements.body, details, new URL(window.location.href));
+  appendGenericRelations(elements.body, details, new URL(window.location.href));
   appendHistory(elements.body, details, new URL(window.location.href));
   const updateSection = appendSection(elements.body, 'Actualización pública');
   const updateText = document.createElement('p');

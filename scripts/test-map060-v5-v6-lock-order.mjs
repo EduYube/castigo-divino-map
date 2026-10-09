@@ -263,7 +263,8 @@ ${v6Call}
     if (v5Exit.code !== 0) fail(`v5 writer failed: ${v5.output}`);
     console.log('ok - v5 commits after the relation barrier is released');
 
-    v6.child.stdin.end('\\q\n');
+    // ON_ERROR_STOP=1 makes psql exit when the stale write is rejected.
+    // Writing \\q to a process that already exited can emit EPIPE on stdin.
     const v6Exit = await waitForExit(v6, 'v6 stale rejection');
     if (v6Exit.code === 0) fail('v6 unexpectedly committed with the stale pre-v5 updated_at');
     if (/deadlock detected/iu.test(v6.output) || /deadlock detected/iu.test(v5.output)) {

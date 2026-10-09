@@ -376,7 +376,8 @@ async function verifyV4V5LockOrdering(containerName) {
     }
     console.log('ok - v5 completes and commits after the barrier is released');
 
-    v4Session.child.stdin.end('\\q\n');
+    // ON_ERROR_STOP=1 makes psql exit when the stale write is rejected.
+    // Writing \\q to a process that already exited can emit EPIPE on stdin.
     const v4Exit = await waitForExit(v4Session, 'queued v4 stale rejection');
     if (v4Exit.code === 0) {
       fail('Queued v4 writer unexpectedly succeeded after v5 committed.');

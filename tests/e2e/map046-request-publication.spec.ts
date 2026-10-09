@@ -344,7 +344,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v7')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v8')) {
       const body = requestInfo.postDataJSON() as { p_entity_id?: string };
       const entity = entities.find(({ id }) => id === body.p_entity_id);
       await route.fulfill({
@@ -355,7 +355,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v7')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v8')) {
       const body = requestInfo.postDataJSON() as Record<string, unknown>;
       const geometry = body.p_geometry as {
         coordinates?: { x?: unknown; y?: unknown };
@@ -504,7 +504,7 @@ async function createPublishedCatalog(
 
   if (includeCharacterNavigation) {
     await page.getByRole('button', { name: 'Crear personaje' }).click();
-    await expect(page.getByRole('heading', { name: 'Crear character' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Crear personaje' })).toBeVisible();
     await page.getByRole('button', { name: 'Cerrar editor' }).click();
   }
 

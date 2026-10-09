@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { renameSync } from 'node:fs';
 
 const DB = 'supabase_db_castigo-divino-map';
 const NPX = process.platform === 'win32' ? 'npx.cmd' : 'npx';
@@ -7,6 +8,14 @@ const A = '00000000-0000-4000-8000-000000000053';
 const B = '00000000-0000-4000-8000-000000000068';
 const V = 'entity-request-07d26371bbff42d9b91e076d099891b0';
 const MODERATOR = 'fc24e545-7352-4770-8288-7a382b29317f';
+const MAP069_MIGRATION = new URL(
+  '../supabase/migrations/20261008180000_add_nonspatial_organizations.sql',
+  import.meta.url,
+);
+const MAP069_HIDDEN = new URL(
+  '../supabase/migrations/20261008180000_add_nonspatial_organizations.sql.rehearsal-hidden',
+  import.meta.url,
+);
 
 function fail(message) {
   throw new Error(`MAP-068 campaign separation rehearsal failed: ${message}`);
@@ -100,38 +109,40 @@ function sql(query) {
   );
 }
 
-resetToBase();
+renameSync(MAP069_MIGRATION, MAP069_HIDDEN);
+try {
+  resetToBase();
 
-const others = [
-  'entity-agamen',
-  'entity-asentamiento-thar',
-  'entity-bring',
-  'entity-captitan',
-  'entity-jhonny',
-  'entity-masred',
-  'entity-memnon',
-  'entity-myrath',
-  'entity-ojos-tempestad',
-  'entity-thalasis',
-  'entity-thar',
-  'entity-tulu',
-  'place-demo-harbor',
-  'place-demo-pass',
-];
-const entities = [
-  ['entity-skade', 'skade', 'Skade', 'category-pj'],
-  ['entity-ura', 'ura', 'Ura', 'category-pj'],
-  [V, 'request-07d26371bbff42d9b91e076d099891b0', 'Veyra', 'category-pj'],
-  ...others.map((id, index) => [id, `map068-${index}`, `MAP068 ${index}`, 'category-other']),
-];
-const entityValues = entities
-  .map(
-    ([id, slug, name, category], index) =>
-      `('${A}','${id}','${slug}','character','pin','public','${name}','en','','',${800 + index},${600 + index},'${category}','published','2026-08-12T11:04:17Z','2026-08-14T19:35:13Z')`,
-  )
-  .join(',\n');
+  const others = [
+    'entity-agamen',
+    'entity-asentamiento-thar',
+    'entity-bring',
+    'entity-captitan',
+    'entity-jhonny',
+    'entity-masred',
+    'entity-memnon',
+    'entity-myrath',
+    'entity-ojos-tempestad',
+    'entity-thalasis',
+    'entity-thar',
+    'entity-tulu',
+    'place-demo-harbor',
+    'place-demo-pass',
+  ];
+  const entities = [
+    ['entity-skade', 'skade', 'Skade', 'category-pj'],
+    ['entity-ura', 'ura', 'Ura', 'category-pj'],
+    [V, 'request-07d26371bbff42d9b91e076d099891b0', 'Veyra', 'category-pj'],
+    ...others.map((id, index) => [id, `map068-${index}`, `MAP068 ${index}`, 'category-other']),
+  ];
+  const entityValues = entities
+    .map(
+      ([id, slug, name, category], index) =>
+        `('${A}','${id}','${slug}','character','pin','public','${name}','en','','',${800 + index},${600 + index},'${category}','published','2026-08-12T11:04:17Z','2026-08-14T19:35:13Z')`,
+    )
+    .join(',\n');
 
-const auditedFixtureSql = `
+  const auditedFixtureSql = `
 -- The clean baseline has historical public IDs reserved even though --no-seed
 -- leaves their rows absent. This rehearsal reconstructs the audited pre-MAP-068
 -- production state, so allow those exact historical rows to be materialised as
@@ -219,10 +230,10 @@ alter table public.players enable trigger "60_player_identifier";
 alter table public.players enable trigger "70_player_reserve";
 `;
 
-sql(auditedFixtureSql);
+  sql(auditedFixtureSql);
 
-const before = JSON.parse(
-  sql(`
+  const before = JSON.parse(
+    sql(`
 select jsonb_build_object(
   'entity_id',(select id from public.map_entities where id='${V}'),
   'player_id',(select id from public.players where id='player-veyra'),
@@ -274,23 +285,23 @@ select jsonb_build_object(
   'unrelated_dispositions',(select coalesce(jsonb_agg(to_jsonb(d) order by d.entity_id,d.player_id),'[]'::jsonb) from public.entity_player_dispositions d where d.player_id<>'player-veyra' and d.entity_id<>'${V}')
 )::text;
 `)
-    .split(/\r?\n/u)
-    .filter(Boolean)
-    .at(-1),
-);
+      .split(/\r?\n/u)
+      .filter(Boolean)
+      .at(-1),
+  );
 
-if (
-  before.veyra_player_dispositions !== 17 ||
-  before.veyra_entity_dispositions !== 3 ||
-  before.veyra_union_dispositions !== 19
-) {
-  fail(`unexpected pre-migration disposition inventory: ${JSON.stringify(before)}`);
-}
+  if (
+    before.veyra_player_dispositions !== 17 ||
+    before.veyra_entity_dispositions !== 3 ||
+    before.veyra_union_dispositions !== 19
+  ) {
+    fail(`unexpected pre-migration disposition inventory: ${JSON.stringify(before)}`);
+  }
 
-run(NPX, ['--no-install', 'supabase', 'migration', 'up', '--local'], 'applying MAP-068');
+  run(NPX, ['--no-install', 'supabase', 'migration', 'up', '--local'], 'applying MAP-068');
 
-const after = JSON.parse(
-  sql(`
+  const after = JSON.parse(
+    sql(`
 with checks as (
   select
     (select count(*) from public.campaigns where id='${B}' and slug='un-aliento-menos' and name='Un aliento menos')=1 as campaign_created,
@@ -311,17 +322,17 @@ with checks as (
 )
 select to_jsonb(checks)::text from checks;
 `)
-    .split(/\r?\n/u)
-    .filter(Boolean)
-    .at(-1),
-);
+      .split(/\r?\n/u)
+      .filter(Boolean)
+      .at(-1),
+  );
 
-for (const [name, ok] of Object.entries(after)) {
-  if (ok !== true) fail(`postcondition failed: ${name}`);
-}
+  for (const [name, ok] of Object.entries(after)) {
+    if (ok !== true) fail(`postcondition failed: ${name}`);
+  }
 
-const preserved = JSON.parse(
-  sql(`
+  const preserved = JSON.parse(
+    sql(`
 select jsonb_build_object(
   'entity_id',(select id from public.map_entities where id='${V}'),
   'player_id',(select id from public.players where id='player-veyra'),
@@ -369,66 +380,66 @@ select jsonb_build_object(
   'unrelated_dispositions',(select coalesce(jsonb_agg(to_jsonb(d) order by d.entity_id,d.player_id),'[]'::jsonb) from public.entity_player_dispositions d where d.player_id<>'player-veyra' and d.entity_id<>'${V}')
 )::text;
 `)
-    .split(/\r?\n/u)
-    .filter(Boolean)
-    .at(-1),
-);
+      .split(/\r?\n/u)
+      .filter(Boolean)
+      .at(-1),
+  );
 
-for (const key of [
-  'entity_id',
-  'player_id',
-  'slug',
-  'name',
-  'normalized_name',
-  'x',
-  'y',
-  'geometry',
-  'portrait',
-  'audience',
-  'visibility',
-  'publication_status',
-  'published_at',
-  'summary',
-  'description',
-  'entity_created',
-  'entity_updated',
-  'player_slug',
-  'player_name',
-  'player_accent',
-  'player_publication_status',
-  'player_published_at',
-  'player_created',
-  'player_updated',
-  'tag_id',
-  'tag_updated',
-  'entity_tag_id',
-  'entity_tag_updated',
-  'request_id',
-  'request_moderator',
-  'request_moderation_note',
-  'request_converted_entity',
-  'request_moderated_at',
-  'request_created',
-  'request_updated',
-  'aliases_count',
-  'notes_count',
-  'note_tags_count',
-  'associations_count',
-  'relations_count',
-  'events_count',
-  'campaign_geo_links_count',
-  'geographic_names_count',
-  'unrelated_dispositions',
-]) {
-  if (JSON.stringify(before[key]) !== JSON.stringify(preserved[key])) {
-    fail(`preservation failed for ${key}`);
+  for (const key of [
+    'entity_id',
+    'player_id',
+    'slug',
+    'name',
+    'normalized_name',
+    'x',
+    'y',
+    'geometry',
+    'portrait',
+    'audience',
+    'visibility',
+    'publication_status',
+    'published_at',
+    'summary',
+    'description',
+    'entity_created',
+    'entity_updated',
+    'player_slug',
+    'player_name',
+    'player_accent',
+    'player_publication_status',
+    'player_published_at',
+    'player_created',
+    'player_updated',
+    'tag_id',
+    'tag_updated',
+    'entity_tag_id',
+    'entity_tag_updated',
+    'request_id',
+    'request_moderator',
+    'request_moderation_note',
+    'request_converted_entity',
+    'request_moderated_at',
+    'request_created',
+    'request_updated',
+    'aliases_count',
+    'notes_count',
+    'note_tags_count',
+    'associations_count',
+    'relations_count',
+    'events_count',
+    'campaign_geo_links_count',
+    'geographic_names_count',
+    'unrelated_dispositions',
+  ]) {
+    if (JSON.stringify(before[key]) !== JSON.stringify(preserved[key])) {
+      fail(`preservation failed for ${key}`);
+    }
   }
-}
 
-// Fail-closed regression scenarios: each starts from an isolated pre-MAP-068
-// database so a failed migration cannot influence the next case.
-resetToBase();
-sql(`
+  // Fail-closed regression scenarios: each starts from an isolated pre-MAP-068
+  // database so a failed migration cannot influence the next case.
+  resetToBase();
+  sql(`
 insert into public.players (
   campaign_id,id,slug,display_name,name_language,publication_status,display_order,accent_color
 ) values (
@@ -436,24 +447,24 @@ insert into public.players (
   'Historical sentinel','en','draft',99,'#475569'
 );
 `);
-applyMap068ExpectFailure(
-  'rejecting historical campaign content with Veyra absent',
-  'MAP-068 requires the stable Veyra entity and player together',
-);
+  applyMap068ExpectFailure(
+    'rejecting historical campaign content with Veyra absent',
+    'MAP-068 requires the stable Veyra entity and player together',
+  );
 
-resetToBase();
-sql(auditedFixtureSql);
-sql(`update public.public_requests
+  resetToBase();
+  sql(auditedFixtureSql);
+  sql(`update public.public_requests
 set id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'::uuid
 where id='07d26371-bbff-42d9-b91e-076d099891b0'::uuid;`);
-applyMap068ExpectFailure(
-  'rejecting a missing audited Veyra request',
-  'MAP-068 requires the audited converted Veyra request',
-);
+  applyMap068ExpectFailure(
+    'rejecting a missing audited Veyra request',
+    'MAP-068 requires the audited converted Veyra request',
+  );
 
-resetToBase();
-sql(auditedFixtureSql);
-sql(`
+  resetToBase();
+  sql(auditedFixtureSql);
+  sql(`
 -- This isolated corruption scenario deliberately removes the historical
 -- uniqueness guard so MAP-068 itself can prove it rejects a second request
 -- converted to Veyra. The following db reset restores the index.
@@ -469,23 +480,23 @@ insert into public.public_requests (
 );
 alter table public.public_requests enable trigger "20_validate_public_request";
 `);
-applyMap068ExpectFailure(
-  'rejecting an additional request converted to Veyra',
-  'MAP-068 found an unexpected request converted to Veyra',
-);
+  applyMap068ExpectFailure(
+    'rejecting an additional request converted to Veyra',
+    'MAP-068 found an unexpected request converted to Veyra',
+  );
 
-resetToBase();
-sql(auditedFixtureSql);
-sql(`delete from public.entity_player_dispositions
+  resetToBase();
+  sql(auditedFixtureSql);
+  sql(`delete from public.entity_player_dispositions
 where entity_id='entity-agamen' and player_id='player-veyra';`);
-applyMap068ExpectFailure(
-  'rejecting a missing audited Veyra disposition',
-  'MAP-068 Veyra disposition inventory changed since the production audit',
-);
+  applyMap068ExpectFailure(
+    'rejecting a missing audited Veyra disposition',
+    'MAP-068 Veyra disposition inventory changed since the production audit',
+  );
 
-resetToBase();
-sql(auditedFixtureSql);
-sql(`
+  resetToBase();
+  sql(auditedFixtureSql);
+  sql(`
 insert into public.map_entities (
   campaign_id,id,slug,entity_type,visibility,audience,name,name_language,summary,description,
   x,y,category_id,publication_status
@@ -494,21 +505,24 @@ insert into public.map_entities (
   '','',1800,1200,'category-other','draft'
 );
 `);
-applyMap068ExpectFailure(
-  'rejecting a twentieth Veyra disposition',
-  'MAP-068 Veyra disposition inventory changed since the production audit',
-);
+  applyMap068ExpectFailure(
+    'rejecting a twentieth Veyra disposition',
+    'MAP-068 Veyra disposition inventory changed since the production audit',
+  );
 
-resetToBase();
-sql(auditedFixtureSql);
-sql(`update public.entity_player_dispositions
+  resetToBase();
+  sql(auditedFixtureSql);
+  sql(`update public.entity_player_dispositions
 set disposition='ally'
 where entity_id='entity-agamen' and player_id='player-veyra';`);
-applyMap068ExpectFailure(
-  'rejecting a changed audited Veyra disposition',
-  'MAP-068 Veyra disposition inventory changed since the production audit',
-);
+  applyMap068ExpectFailure(
+    'rejecting a changed audited Veyra disposition',
+    'MAP-068 Veyra disposition inventory changed since the production audit',
+  );
 
-console.log(
-  'MAP-068 rehearsal passed: 19 audited dispositions removed (18 cross-campaign + 1 self); stable Veyra identity/history preserved.',
-);
+  console.log(
+    'MAP-068 rehearsal passed: 19 audited dispositions removed (18 cross-campaign + 1 self); stable Veyra identity/history preserved.',
+  );
+} finally {
+  renameSync(MAP069_HIDDEN, MAP069_MIGRATION);
+}

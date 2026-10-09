@@ -341,7 +341,8 @@ async function verifyV5V6LockOrdering(containerName) {
     if (v6Exit.code !== 0) fail(`v6 writer failed: ${v6Session.output || 'no output'}`);
     console.log('ok - v6 commits its geometry-aware write after the barrier is released');
 
-    v5Session.child.stdin.end('\\q\n');
+    // ON_ERROR_STOP=1 makes psql exit when the stale write is rejected.
+    // Writing \\q to a process that already exited can emit EPIPE on stdin.
     const v5Exit = await waitForExit(v5Session, 'queued v5 stale rejection');
     if (v5Exit.code === 0)
       fail('Queued legacy v5 writer unexpectedly succeeded after v6 committed.');

@@ -286,12 +286,22 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await panel.getByRole('button', { name: /Cerrar la ficha de Demonstration Harbor/i }).click();
   await expect(panel).toBeHidden();
   if ((await page.locator('[data-spiderfied="true"]').count()) > 0) {
+    // Escape belongs to the map keyboard handler, not the details-panel close button.
+    // Restore focus to a spiderfied pin before collapsing the group.
+    await options.first().focus();
     await page.keyboard.press('Escape');
   }
+  await expect(options).toHaveCount(0);
+  await expect(coincident).toHaveAttribute('aria-expanded', 'false');
   await expect(coincident).toBeVisible();
 
-  await coincident.click();
-  await page.getByTestId('coincident-pin-option').nth(1).click();
+  // A pointer click opens spiderfy and intentionally hides the cluster under
+  // Playwright's mouse before the click action can settle. Reopen through the
+  // keyboard contract, then exercise the member pin with a real pointer click.
+  await coincident.focus();
+  await page.keyboard.press('Enter');
+  await expect(options).toHaveCount(2);
+  await options.nth(1).click();
   await expect(panel).toBeVisible();
   await expect(panel).toHaveAttribute('data-entity-id', 'entity-harbor-guard');
   await expect(panel).toHaveAttribute('data-entity-type', 'character');

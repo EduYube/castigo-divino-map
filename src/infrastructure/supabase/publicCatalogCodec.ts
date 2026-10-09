@@ -16,6 +16,7 @@ import {
   parseCategory,
   parseDisposition,
   parseEntity,
+  parseEntityRelation,
   parseEntityAlias,
   parseEntityTag,
   parseGeographicAlias,
@@ -35,10 +36,11 @@ type NormalizedPublicPlayer = PublicCatalogSnapshotV2['players'][number] & {
 
 type PublicCatalogContentV2 = Omit<
   PublicCatalogSnapshotV2,
-  'generatedAt' | 'sourceRevision' | 'checksum' | 'players' | 'associations'
+  'generatedAt' | 'sourceRevision' | 'checksum' | 'players' | 'associations' | 'entityRelations'
 > & {
   readonly players: readonly NormalizedPublicPlayer[];
   readonly associations: NonNullable<PublicCatalogSnapshotV2['associations']>;
+  readonly entityRelations: NonNullable<PublicCatalogSnapshotV2['entityRelations']>;
 };
 
 function invalidResponse(message: string): never {
@@ -145,6 +147,12 @@ function assertReferences(snapshot: PublicCatalogContentV2): void {
     'associations',
   );
   assertUnique(
+    (snapshot.entityRelations ?? []).map(
+      ({ leftEntityId, rightEntityId }) => `${leftEntityId}\u0000${rightEntityId}`,
+    ),
+    'entityRelations',
+  );
+  assertUnique(
     snapshot.characterLocationRelations.map(
       ({ characterId, locationId }) => `${characterId}\u0000${locationId}`,
     ),
@@ -195,6 +203,16 @@ function assertReferences(snapshot: PublicCatalogContentV2): void {
   snapshot.associations.forEach((association) => {
     if (!entitiesById.has(association.entityId) || !playerIds.has(association.playerId)) {
       invalidResponse('Una asociación pública referencia un extremo ausente.');
+    }
+  });
+
+  (snapshot.entityRelations ?? []).forEach((relation) => {
+    if (
+      !entitiesById.has(relation.leftEntityId) ||
+      !entitiesById.has(relation.rightEntityId) ||
+      relation.leftEntityId >= relation.rightEntityId
+    ) {
+      invalidResponse('Una relación genérica pública referencia extremos ausentes o no canónicos.');
     }
   });
 
@@ -332,6 +350,7 @@ function buildPublicCatalogContentV2(
   const entityTags = payloads.entityTags.map(parseEntityTag);
   const dispositions = payloads.dispositions.map(parseDisposition);
   const associations = payloads.associations.map(parseAssociation);
+  const entityRelations = (payloads.entityRelations ?? []).map(parseEntityRelation);
   const characterLocationRelations = payloads.characterLocationRelations.map(
     parseCharacterLocationRelation,
   );
@@ -357,6 +376,7 @@ function buildPublicCatalogContentV2(
     entities,
     dispositions,
     associations,
+    entityRelations,
     characterLocationRelations,
     notes,
     geographicNames,
@@ -424,8 +444,13 @@ function snapshotPayloads(
       ],
       path,
     );
-    const coordinates = expectRecord(entity.coordinates, `${path}.coordinates`);
-    assertAllowedProperties(coordinates, ['x', 'y'], `${path}.coordinates`);
+    const coordinates =
+      entity.entityType === 'organization'
+        ? null
+        : expectRecord(entity.coordinates, `${path}.coordinates`);
+    if (coordinates) {
+      assertAllowedProperties(coordinates, ['x', 'y'], `${path}.coordinates`);
+    }
     expectRecords(entity.aliases, `${path}.aliases`).forEach((alias, aliasIndex) => {
       const aliasPath = `${path}.aliases[${aliasIndex}]`;
       assertAllowedProperties(alias, ['id', 'entityId', 'language', 'value'], aliasPath);
@@ -458,11 +483,13 @@ function snapshotPayloads(
       ...(Object.prototype.hasOwnProperty.call(entity, 'portraitPath')
         ? { portrait_path: entity.portraitPath ?? null }
         : {}),
-      x: coordinates.x,
-      y: coordinates.y,
-      ...(Object.prototype.hasOwnProperty.call(entity, 'geometry')
-        ? { geometry: entity.geometry }
-        : {}),
+      x: coordinates?.x ?? null,
+      y: coordinates?.y ?? null,
+      ...(entity.entityType === 'organization'
+        ? { geometry: null }
+        : Object.prototype.hasOwnProperty.call(entity, 'geometry')
+          ? { geometry: entity.geometry }
+          : {}),
       category_id: entity.categoryId,
     };
   });
@@ -486,6 +513,23 @@ function snapshotPayloads(
           return {
             entity_id: association.entityId,
             player_id: association.playerId,
+          };
+        });
+  const entityRelations =
+    record.entityRelations === undefined
+      ? []
+      : expectRecords(record.entityRelations, 'snapshot.entityRelations').map((relation, index) => {
+          const path = `snapshot.entityRelations[${index}]`;
+          assertAllowedProperties(
+            relation,
+            ['leftEntityId', 'rightEntityId', 'leftLabel', 'rightLabel'],
+            path,
+          );
+          return {
+            left_entity_id: relation.leftEntityId,
+            right_entity_id: relation.rightEntityId,
+            left_label: relation.leftLabel,
+            right_label: relation.rightLabel,
           };
         });
   const characterLocationRelations = relationSnapshotRows(record.characterLocationRelations);
@@ -631,6 +675,7 @@ function snapshotPayloads(
     entityTags,
     dispositions,
     associations,
+    entityRelations,
     characterLocationRelations,
     notes,
     noteTags,
@@ -678,6 +723,7 @@ export async function parsePublicCatalogSnapshotV2(
         'entities',
         'dispositions',
         'associations',
+        'entityRelations',
         'characterLocationRelations',
         'notes',
         'geographicNames',
@@ -715,6 +761,7 @@ export async function parsePublicCatalogSnapshotV2(
         'entities',
         'dispositions',
         'associations',
+        'entityRelations',
         'characterLocationRelations',
         'notes',
         'geographicNames',

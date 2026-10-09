@@ -24,6 +24,7 @@ import {
 import { isMapCoordinateWithinBounds } from '../domain/mapCoordinates';
 import { createPointMapGeometry, type MapEntityGeometry } from '../domain/mapGeometry';
 import { getEntityLifecycleLabel } from '../domain/entityLifecycle';
+import { getEntityTypeLabel, isSpatialEntityType } from '../domain/entitySpatiality';
 import { getPinDispositionVisual, getPinTypeVisual } from '../domain/pinVisualSystem';
 import {
   mountAdminEntityEditorMap,
@@ -86,6 +87,7 @@ export function mountAdminMapEntities(
   const createLocationButton = createElement('button', 'admin-map-entity__button');
   const createMissionButton = createElement('button', 'admin-map-entity__button');
   const createHazardButton = createElement('button', 'admin-map-entity__button');
+  const createOrganizationButton = createElement('button', 'admin-map-entity__button');
   const refreshButton = createElement('button', 'admin-map-entity__button');
   const status = createElement('p', 'admin-map-entity__status');
   const empty = createElement('p', 'admin-map-entity__empty');
@@ -134,6 +136,7 @@ export function mountAdminMapEntities(
   let preservedDispositions: AdminMapEntityDraft['dispositions'] = [];
   let tagError: HTMLParagraphElement | null = null;
   let dispositionError: HTMLParagraphElement | null = null;
+  let entityRelationError: HTMLParagraphElement | null = null;
   let restoreFocus: HTMLElement | null = null;
   let pendingConfirmation: PendingConfirmation | null = null;
   let pendingPortraitFile: File | null = null;
@@ -147,7 +150,7 @@ export function mountAdminMapEntities(
   heading.id = 'admin-map-entity-heading';
   section.setAttribute('aria-labelledby', heading.id);
   intro.textContent =
-    'Edita la entidad completa, sus relaciones y su geometría. La previsualización no publica contenido.';
+    'Edita entidades de campaña, sus relaciones y, cuando son cartográficas, su geometría. La previsualización no publica contenido.';
 
   searchLabel.htmlFor = 'admin-map-entity-search';
   searchLabel.textContent = 'Buscar entidades';
@@ -163,6 +166,8 @@ export function mountAdminMapEntities(
   createMissionButton.textContent = 'Crear misión';
   createHazardButton.type = 'button';
   createHazardButton.textContent = 'Crear peligro';
+  createOrganizationButton.type = 'button';
+  createOrganizationButton.textContent = 'Crear organización';
   refreshButton.type = 'button';
   refreshButton.textContent = 'Recargar entidades';
   toolbar.append(
@@ -172,6 +177,7 @@ export function mountAdminMapEntities(
     createLocationButton,
     createMissionButton,
     createHazardButton,
+    createOrganizationButton,
     refreshButton,
   );
 
@@ -327,36 +333,58 @@ export function mountAdminMapEntities(
     return select;
   }
 
+  function readEntityRelations(): NonNullable<AdminMapEntityDraft['entityRelations']> {
+    return Array.from(form.querySelectorAll<HTMLElement>('[data-entity-relation-row]')).flatMap(
+      (row) => {
+        const target = row.querySelector<HTMLSelectElement>('[data-entity-relation-target]');
+        const ownLabel = row.querySelector<HTMLInputElement>('[data-entity-relation-own-label]');
+        const targetLabel = row.querySelector<HTMLInputElement>(
+          '[data-entity-relation-target-label]',
+        );
+        if (!target || !ownLabel || !targetLabel) return [];
+        return [
+          {
+            targetEntityId: target.value,
+            ownLabel: ownLabel.value,
+            targetLabel: targetLabel.value,
+          },
+        ];
+      },
+    );
+  }
+
   function readDraft(publicationStatus: MapEntityPublicationStatus): AdminMapEntityDraft {
     const input = (name: string): string => controls.get(name)?.input.value ?? '';
+    const draftEntityType = input('entityType') as MapEntityType;
+    const spatial = isSpatialEntityType(draftEntityType);
     const xInput = controls.get('x')?.input;
     const yInput = controls.get('y')?.input;
-    const x = xInput instanceof HTMLInputElement ? readNumber(xInput) : Number.NaN;
-    const y = yInput instanceof HTMLInputElement ? readNumber(yInput) : Number.NaN;
-    const coordinate = { x, y };
-    const pointFallback = isMapCoordinateWithinBounds(coordinate)
-      ? createPointMapGeometry(coordinate)
-      : undefined;
+    const x = spatial && xInput instanceof HTMLInputElement ? readNumber(xInput) : null;
+    const y = spatial && yInput instanceof HTMLInputElement ? readNumber(yInput) : null;
+    const coordinate =
+      x !== null && y !== null && isMapCoordinateWithinBounds({ x, y }) ? { x, y } : null;
+    const pointFallback = coordinate ? createPointMapGeometry(coordinate) : undefined;
     const associationCheckboxes = Array.from(
       form.querySelectorAll<HTMLInputElement>('[data-player-association-id]'),
     );
-    const playerAssociationIds =
-      associationCheckboxes.length > 0
+    const playerAssociationIds = spatial
+      ? associationCheckboxes.length > 0
         ? associationCheckboxes
             .filter((checkbox) => checkbox.checked)
             .map((checkbox) => checkbox.value)
         : (state.editorDetail?.associations ?? [])
-            .filter(({ publicationStatus }) => publicationStatus !== 'archived')
-            .map(({ playerId }) => playerId);
+            .filter(({ publicationStatus: status }) => status !== 'archived')
+            .map(({ playerId }) => playerId)
+      : [];
     return {
       id: input('id'),
       slug: input('slug'),
-      entityType: input('entityType') as MapEntityType,
+      entityType: draftEntityType,
       lifecycleStatus: (input('lifecycleStatus') || null) as MapEntityLifecycleStatus | null,
-      visibility: input('visibility') as MapVisibility,
+      visibility: spatial ? (input('visibility') as MapVisibility) : 'search_only',
       audience: state.pendingAudience,
-      portraitPath: state.editorDetail?.record.portraitPath ?? null,
-      geometry: draftGeometry ?? pointFallback,
+      portraitPath: spatial ? (state.editorDetail?.record.portraitPath ?? null) : null,
+      geometry: spatial ? (draftGeometry ?? pointFallback) : null,
       name: input('name'),
       summary: input('summary'),
       description: input('description'),
@@ -366,14 +394,17 @@ export function mountAdminMapEntities(
       tagIds: tagCheckboxes
         .filter((checkbox) => checkbox.checked)
         .map((checkbox) => checkbox.value),
-      dispositions: [
-        ...dispositionSelects.map((select) => ({
-          playerId: select.dataset.playerId ?? '',
-          disposition: select.value as PlayerDisposition,
-        })),
-        ...preservedDispositions,
-      ],
+      dispositions: spatial
+        ? [
+            ...dispositionSelects.map((select) => ({
+              playerId: select.dataset.playerId ?? '',
+              disposition: select.value as PlayerDisposition,
+            })),
+            ...preservedDispositions,
+          ]
+        : [],
       playerAssociationIds,
+      entityRelations: readEntityRelations(),
       publicationStatus,
     };
   }
@@ -412,6 +443,13 @@ export function mountAdminMapEntities(
         select.setAttribute('aria-invalid', message ? 'true' : 'false'),
       );
     }
+    if (entityRelationError) {
+      const message = validation.fieldErrors.entityRelations ?? '';
+      entityRelationError.textContent = message;
+      form
+        .querySelectorAll<HTMLElement>('[data-entity-relation-input]')
+        .forEach((input) => input.setAttribute('aria-invalid', message ? 'true' : 'false'));
+    }
     return validation.valid;
   }
 
@@ -431,24 +469,26 @@ export function mountAdminMapEntities(
         return `${player?.displayName ?? playerId}: ${getPinDispositionVisual(value).label}`;
       })
       .join(' · ');
-    const polygon = draft.geometry?.kind === 'polygon' ? draft.geometry : null;
-    const geometryLabel = polygon ? `Área/Región · ${polygon.vertices.length} vértices` : 'Punto';
-    const typeVisual = getPinTypeVisual(draft.entityType);
+    const spatial = isSpatialEntityType(draft.entityType);
+    const polygon = spatial && draft.geometry?.kind === 'polygon' ? draft.geometry : null;
+    const geometryLabel = !spatial
+      ? 'No cartográfica'
+      : polygon
+        ? `Área/Región · ${polygon.vertices.length} vértices`
+        : 'Punto';
     const lifecycleLabel = getEntityLifecycleLabel(draft.entityType, draft.lifecycleStatus ?? null);
-    const isFunctionalPin = draft.entityType === 'mission' || draft.entityType === 'hazard';
-    const previewTypeLabel = isFunctionalPin
-      ? `${typeVisual.label}${lifecycleLabel ? ` · ${lifecycleLabel}` : ''}`
-      : draft.entityType;
-    previewMarker.textContent = polygon
-      ? '◇'
-      : draft.visibility === 'pin'
-        ? isFunctionalPin
-          ? typeVisual.symbol
-          : '◆'
+    const previewTypeLabel = `${getEntityTypeLabel(draft.entityType)}${lifecycleLabel ? ` · ${lifecycleLabel}` : ''}`;
+    previewMarker.textContent =
+      spatial && draft.visibility === 'pin'
+        ? polygon
+          ? '◇'
+          : getPinTypeVisual(draft.entityType).symbol
         : '';
-    previewMarker.hidden = draft.visibility !== 'pin';
+    previewMarker.hidden = !spatial || draft.visibility !== 'pin';
     previewName.textContent = draft.name.trim() || 'Sin nombre';
-    previewMeta.textContent = `${previewTypeLabel} · ${geometryLabel} · ${category?.name ?? 'Sin categoría'} · X ${draft.x}, Y ${draft.y}${tagNames ? ` · ${tagNames}` : ''}${dispositions ? ` · ${dispositions}` : ''}`;
+    const coordinateMeta =
+      spatial && draft.x !== null && draft.y !== null ? ` · X ${draft.x}, Y ${draft.y}` : '';
+    previewMeta.textContent = `${previewTypeLabel} · ${geometryLabel} · ${category?.name ?? 'Sin categoría'}${coordinateMeta}${tagNames ? ` · ${tagNames}` : ''}${dispositions ? ` · ${dispositions}` : ''}`;
     previewDescription.textContent =
       draft.summary.trim() || draft.description.trim() || 'Sin resumen.';
     preview.hidden = false;
@@ -511,6 +551,7 @@ export function mountAdminMapEntities(
     preservedDispositions = [];
     tagError = null;
     dispositionError = null;
+    entityRelationError = null;
     fields.replaceChildren();
     preview.hidden = true;
     editorStatus.textContent = '';
@@ -520,7 +561,12 @@ export function mountAdminMapEntities(
       ? detailToDraft(detail)
       : createEmptyMapEntityDraft(state.references, requestedEntityType);
     draftGeometry =
-      draft.geometry ?? (isMapCoordinateWithinBounds(draft) ? createPointMapGeometry(draft) : null);
+      isSpatialEntityType(draft.entityType) && draft.x !== null && draft.y !== null
+        ? (draft.geometry ??
+          (isMapCoordinateWithinBounds({ x: draft.x, y: draft.y })
+            ? createPointMapGeometry({ x: draft.x, y: draft.y })
+            : null))
+        : null;
     const existing = Boolean(detail);
     const activePlayers = state.references.players.filter(
       ({ publicationStatus }) => publicationStatus !== 'archived',
@@ -529,10 +575,7 @@ export function mountAdminMapEntities(
     preservedDispositions = draft.dispositions.filter(
       ({ playerId }) => !activePlayerIds.has(playerId),
     );
-    const createLabel =
-      draft.entityType === 'mission' || draft.entityType === 'hazard'
-        ? getPinTypeVisual(draft.entityType).label.toLocaleLowerCase('es')
-        : draft.entityType;
+    const createLabel = getEntityTypeLabel(draft.entityType).toLocaleLowerCase('es');
     editorHeading.textContent = existing ? `Editar ${draft.name}` : `Crear ${createLabel}`;
 
     addField({
@@ -559,6 +602,7 @@ export function mountAdminMapEntities(
         { value: 'location', label: 'Emplazamiento' },
         { value: 'mission', label: 'Misión' },
         { value: 'hazard', label: 'Peligro' },
+        { value: 'organization', label: 'Organización' },
       ],
     });
     addField({
@@ -699,12 +743,16 @@ export function mountAdminMapEntities(
     });
     addSelect({
       name: 'visibility',
-      label: 'Visibilidad cartográfica',
-      value: draft.visibility,
-      choices: [
-        { value: 'pin', label: 'Visible en el mapa' },
-        { value: 'search_only', label: 'Solo búsqueda' },
-      ],
+      label: draft.entityType === 'organization' ? 'Descubrimiento' : 'Visibilidad cartográfica',
+      value: draft.entityType === 'organization' ? 'search_only' : draft.visibility,
+      disabled: draft.entityType === 'organization',
+      choices:
+        draft.entityType === 'organization'
+          ? [{ value: 'search_only', label: 'Catálogo y búsqueda (sin marcador)' }]
+          : [
+              { value: 'pin', label: 'Visible en el mapa' },
+              { value: 'search_only', label: 'Solo búsqueda' },
+            ],
     });
     if (draft.entityType === 'location') {
       geometryKindSelect = addSelect({
@@ -721,28 +769,32 @@ export function mountAdminMapEntities(
     }
 
     const polygon = draftGeometry?.kind === 'polygon';
-    const x = addField({
-      name: 'x',
-      label: polygon ? 'Coordenada X representativa' : 'Coordenada X',
-      value: Number.isFinite(draft.x) ? String(draft.x) : '',
-      type: 'number',
-      required: true,
-      readOnly: polygon,
-      min: 0,
-      max: 3600,
-      step: 'any',
-    });
-    const y = addField({
-      name: 'y',
-      label: polygon ? 'Coordenada Y representativa' : 'Coordenada Y',
-      value: Number.isFinite(draft.y) ? String(draft.y) : '',
-      type: 'number',
-      required: true,
-      readOnly: polygon,
-      min: 0,
-      max: 2329,
-      step: 'any',
-    });
+    let x: HTMLInputElement | HTMLTextAreaElement | null = null;
+    let y: HTMLInputElement | HTMLTextAreaElement | null = null;
+    if (isSpatialEntityType(draft.entityType)) {
+      x = addField({
+        name: 'x',
+        label: polygon ? 'Coordenada X representativa' : 'Coordenada X',
+        value: draft.x !== null && Number.isFinite(draft.x) ? String(draft.x) : '',
+        type: 'number',
+        required: true,
+        readOnly: polygon,
+        min: 0,
+        max: 3600,
+        step: 'any',
+      });
+      y = addField({
+        name: 'y',
+        label: polygon ? 'Coordenada Y representativa' : 'Coordenada Y',
+        value: draft.y !== null && Number.isFinite(draft.y) ? String(draft.y) : '',
+        type: 'number',
+        required: true,
+        readOnly: polygon,
+        min: 0,
+        max: 2329,
+        step: 'any',
+      });
+    }
 
     const tagFieldset = createElement('fieldset', 'admin-map-entity__fieldset');
     const tagLegend = createElement('legend', 'admin-map-entity__legend');
@@ -766,85 +818,196 @@ export function mountAdminMapEntities(
     tagFieldset.append(tagError);
     fields.append(tagFieldset);
 
-    const dispositionFieldset = createElement(
-      'fieldset',
-      'admin-map-entity__fieldset admin-map-entity__dispositions',
-    );
-    const dispositionLegend = createElement('legend', 'admin-map-entity__legend');
-    const dispositionHelp = createElement('p', 'admin-map-entity__help');
-    const dispositionHelpId = 'admin-map-entity-dispositions-help';
-    const dispositionErrorId = 'admin-map-entity-dispositions-error';
-    dispositionLegend.textContent = 'Relación con los personajes';
-    dispositionHelp.id = dispositionHelpId;
-    dispositionHelp.textContent =
-      'Define cómo se relaciona esta entidad con cada personaje jugador activo de la campaña. Las relaciones históricas de jugadores archivados se conservan sin mostrarse aquí.';
-    dispositionFieldset.setAttribute(
-      'aria-describedby',
-      `${dispositionHelpId} ${dispositionErrorId}`,
-    );
-    dispositionFieldset.append(dispositionLegend, dispositionHelp);
-    dispositionError = createElement('p', 'admin-map-entity__field-error');
-    dispositionError.id = dispositionErrorId;
-    dispositionError.setAttribute('aria-live', 'polite');
+    if (isSpatialEntityType(draft.entityType)) {
+      const dispositionFieldset = createElement(
+        'fieldset',
+        'admin-map-entity__fieldset admin-map-entity__dispositions',
+      );
+      const dispositionLegend = createElement('legend', 'admin-map-entity__legend');
+      const dispositionHelp = createElement('p', 'admin-map-entity__help');
+      const dispositionHelpId = 'admin-map-entity-dispositions-help';
+      const dispositionErrorId = 'admin-map-entity-dispositions-error';
+      dispositionLegend.textContent = 'Relación con los personajes';
+      dispositionHelp.id = dispositionHelpId;
+      dispositionHelp.textContent =
+        'Define cómo se relaciona esta entidad con cada personaje jugador activo de la campaña. Las relaciones históricas de jugadores archivados se conservan sin mostrarse aquí.';
+      dispositionFieldset.setAttribute(
+        'aria-describedby',
+        `${dispositionHelpId} ${dispositionErrorId}`,
+      );
+      dispositionFieldset.append(dispositionLegend, dispositionHelp);
+      dispositionError = createElement('p', 'admin-map-entity__field-error');
+      dispositionError.id = dispositionErrorId;
+      dispositionError.setAttribute('aria-live', 'polite');
 
-    if (activePlayers.length === 0) {
-      const noPlayers = createElement('p', 'admin-map-entity__help');
-      noPlayers.textContent = 'No hay personajes jugadores configurados.';
-      dispositionFieldset.append(noPlayers);
-    }
-
-    for (const player of activePlayers) {
-      const wrapper = createElement('div', 'admin-map-entity__field admin-map-entity__disposition');
-      const label = createElement('label', 'admin-map-entity__label');
-      const select = createElement('select', 'admin-map-entity__control');
-      const selected = draft.dispositions.find(
-        ({ playerId }) => playerId === player.id,
-      )?.disposition;
-      const id = `admin-map-entity-disposition-${player.id}`;
-      label.htmlFor = id;
-      label.textContent = player.displayName;
-      select.id = id;
-      select.dataset.playerId = player.id;
-      select.setAttribute('data-testid', `admin-player-disposition-${player.id}`);
-      select.setAttribute('aria-describedby', `${dispositionHelpId} ${dispositionErrorId}`);
-
-      if (!selected) {
-        const missing = document.createElement('option');
-        missing.value = '';
-        missing.textContent = 'Relación sin configurar';
-        missing.selected = true;
-        missing.disabled = true;
-        select.append(missing);
+      if (activePlayers.length === 0) {
+        const noPlayers = createElement('p', 'admin-map-entity__help');
+        noPlayers.textContent = 'No hay personajes jugadores configurados.';
+        dispositionFieldset.append(noPlayers);
       }
 
-      for (const value of ['ally', 'neutral', 'enemy'] as const) {
+      for (const player of activePlayers) {
+        const wrapper = createElement(
+          'div',
+          'admin-map-entity__field admin-map-entity__disposition',
+        );
+        const label = createElement('label', 'admin-map-entity__label');
+        const select = createElement('select', 'admin-map-entity__control');
+        const selected = draft.dispositions.find(
+          ({ playerId }) => playerId === player.id,
+        )?.disposition;
+        const id = `admin-map-entity-disposition-${player.id}`;
+        label.htmlFor = id;
+        label.textContent = player.displayName;
+        select.id = id;
+        select.dataset.playerId = player.id;
+        select.setAttribute('data-testid', `admin-player-disposition-${player.id}`);
+        select.setAttribute('aria-describedby', `${dispositionHelpId} ${dispositionErrorId}`);
+
+        if (!selected) {
+          const missing = document.createElement('option');
+          missing.value = '';
+          missing.textContent = 'Relación sin configurar';
+          missing.selected = true;
+          missing.disabled = true;
+          select.append(missing);
+        }
+
+        for (const value of ['ally', 'neutral', 'enemy'] as const) {
+          const option = document.createElement('option');
+          option.value = value;
+          option.textContent = getPinDispositionVisual(value).label;
+          option.selected = value === selected;
+          select.append(option);
+        }
+
+        const updateAccessibleName = (): void => {
+          const disposition = select.value as PlayerDisposition;
+          const labelText = select.value
+            ? getPinDispositionVisual(disposition).label
+            : 'Relación sin configurar';
+          select.setAttribute('aria-label', `${player.displayName}: ${labelText}`);
+        };
+        updateAccessibleName();
+        select.addEventListener('change', updateAccessibleName);
+        wrapper.append(label, select);
+        dispositionFieldset.append(wrapper);
+        dispositionSelects.push(select);
+      }
+      dispositionFieldset.append(dispositionError);
+      fields.append(dispositionFieldset);
+    }
+
+    const relationFieldset = createElement('fieldset', 'admin-map-entity__fieldset');
+    const relationLegend = createElement('legend', 'admin-map-entity__legend');
+    const relationHelp = createElement('p', 'admin-map-entity__help');
+    const relationRows = createElement('div', 'admin-map-entity__relation-rows');
+    const addRelationButton = createElement('button', 'admin-map-entity__button');
+    relationLegend.textContent = 'Relaciones con otras entidades';
+    relationHelp.textContent =
+      'Las relaciones se guardan una sola vez. Define cómo se describe el otro extremo desde esta ficha y cómo se describe esta entidad desde la ficha relacionada.';
+    addRelationButton.type = 'button';
+    addRelationButton.textContent = 'Añadir relación';
+    entityRelationError = createElement('p', 'admin-map-entity__field-error');
+    entityRelationError.setAttribute('aria-live', 'polite');
+
+    const relationCandidates = state.records
+      .filter((record) => record.id !== draft.id && record.publicationStatus !== 'archived')
+      .sort(
+        (left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id),
+      );
+
+    const appendRelationRow = (relation: {
+      targetEntityId: string;
+      ownLabel: string;
+      targetLabel: string;
+    }): void => {
+      const row = createElement('div', 'admin-map-entity__relation-row');
+      row.dataset.entityRelationRow = '';
+      const target = createElement('select', 'admin-map-entity__control');
+      const ownLabel = createElement('input', 'admin-map-entity__control');
+      const targetLabel = createElement('input', 'admin-map-entity__control');
+      const removeButton = createElement('button', 'admin-map-entity__button');
+      target.dataset.entityRelationTarget = '';
+      target.dataset.entityRelationInput = '';
+      ownLabel.dataset.entityRelationOwnLabel = '';
+      ownLabel.dataset.entityRelationInput = '';
+      targetLabel.dataset.entityRelationTargetLabel = '';
+      targetLabel.dataset.entityRelationInput = '';
+      target.setAttribute('aria-label', 'Entidad relacionada');
+      ownLabel.setAttribute('aria-label', 'Etiqueta mostrada en esta ficha');
+      targetLabel.setAttribute('aria-label', 'Etiqueta mostrada en la ficha relacionada');
+      ownLabel.placeholder =
+        draft.entityType === 'organization' ? 'Sede / localización relacionada' : 'Relacionado con';
+      targetLabel.placeholder =
+        draft.entityType === 'organization' ? 'Organización' : 'Relacionado con';
+      ownLabel.maxLength = 80;
+      targetLabel.maxLength = 80;
+      const currentTarget = state.records.find(({ id }) => id === relation.targetEntityId);
+      const candidates =
+        currentTarget && currentTarget.publicationStatus === 'archived'
+          ? [currentTarget, ...relationCandidates]
+          : relationCandidates;
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = 'Selecciona una entidad';
+      target.append(emptyOption);
+      candidates.forEach((candidate) => {
+        if (Array.from(target.options).some((option) => option.value === candidate.id)) return;
         const option = document.createElement('option');
-        option.value = value;
-        option.textContent = getPinDispositionVisual(value).label;
-        option.selected = value === selected;
-        select.append(option);
-      }
+        option.value = candidate.id;
+        option.textContent = `${candidate.name} · ${getEntityTypeLabel(candidate.entityType)}`;
+        option.selected = candidate.id === relation.targetEntityId;
+        option.disabled = candidate.publicationStatus === 'archived';
+        target.append(option);
+      });
+      ownLabel.value = relation.ownLabel;
+      targetLabel.value = relation.targetLabel;
+      removeButton.type = 'button';
+      removeButton.textContent = 'Quitar relación';
+      removeButton.addEventListener('click', () => {
+        row.remove();
+        showFieldErrors(readDraft(currentTargetStatus()));
+      });
+      row.append(target, ownLabel, targetLabel, removeButton);
+      relationRows.append(row);
+    };
 
-      const updateAccessibleName = (): void => {
-        const disposition = select.value as PlayerDisposition;
-        const labelText = select.value
-          ? getPinDispositionVisual(disposition).label
-          : 'Relación sin configurar';
-        select.setAttribute('aria-label', `${player.displayName}: ${labelText}`);
-      };
-      updateAccessibleName();
-      select.addEventListener('change', updateAccessibleName);
-      wrapper.append(label, select);
-      dispositionFieldset.append(wrapper);
-      dispositionSelects.push(select);
-    }
-    dispositionFieldset.append(dispositionError);
-    fields.append(dispositionFieldset);
+    (draft.entityRelations ?? []).forEach(appendRelationRow);
+    addRelationButton.disabled = relationCandidates.length === 0;
+    addRelationButton.addEventListener('click', () => {
+      const firstCandidate = relationCandidates.find(
+        (candidate) =>
+          !readEntityRelations().some(({ targetEntityId }) => targetEntityId === candidate.id),
+      );
+      if (!firstCandidate) return;
+      appendRelationRow({
+        targetEntityId: firstCandidate.id,
+        ownLabel:
+          draft.entityType === 'organization' && firstCandidate.entityType === 'location'
+            ? 'Sede / localización relacionada'
+            : 'Relacionado con',
+        targetLabel:
+          draft.entityType === 'organization' && firstCandidate.entityType === 'location'
+            ? 'Organización'
+            : 'Relacionado con',
+      });
+      showFieldErrors(readDraft(currentTargetStatus()));
+    });
+    relationFieldset.append(
+      relationLegend,
+      relationHelp,
+      relationRows,
+      addRelationButton,
+      entityRelationError,
+    );
+    fields.append(relationFieldset);
 
     const allInputs = [
       ...Array.from(controls.values()).map(({ input }) => input),
       ...tagCheckboxes,
       ...dispositionSelects,
+      ...Array.from(form.querySelectorAll<HTMLElement>('[data-entity-relation-input]')),
     ];
     const refreshValidation = (): void => {
       const next = readDraft(currentTargetStatus());
@@ -855,8 +1018,8 @@ export function mountAdminMapEntities(
       input.addEventListener('input', refreshValidation);
       input.addEventListener('change', refreshValidation);
     });
-    x.addEventListener('input', synchronizeMapFromInputs);
-    y.addEventListener('input', synchronizeMapFromInputs);
+    x?.addEventListener('input', synchronizeMapFromInputs);
+    y?.addEventListener('input', synchronizeMapFromInputs);
     geometryKindSelect?.addEventListener('change', () => {
       if (!geometryKindSelect || !mapController) return;
       const requestedKind = geometryKindSelect.value as MapEntityGeometry['kind'];
@@ -877,42 +1040,58 @@ export function mountAdminMapEntities(
     editor.hidden = false;
     list.hidden = true;
     empty.hidden = true;
-    synchronizeGeometryUi();
-    window.requestAnimationFrame(() => {
-      mapController = mountAdminEntityEditorMap(mapCanvas, {
-        coordinate: isMapCoordinateWithinBounds(draft) ? draft : null,
-        geometry: draftGeometry,
-        entityType: draft.entityType,
-        dispositions: draft.dispositions.map(({ playerId, disposition }) => ({
-          playerId,
-          playerName:
-            state.references.players.find(({ id }) => id === playerId)?.displayName ?? playerId,
-          disposition,
-        })),
-        onGeometryChange(geometry): void {
-          draftGeometry = geometry;
-          synchronizeGeometryUi();
-          const next = readDraft(currentTargetStatus());
-          const valid = showFieldErrors(next);
-          if (!preview.hidden && valid) renderPreview(next);
-        },
-        onCoordinateChange(coordinate): void {
-          synchronizeCoordinateInputs(coordinate);
-          const next = readDraft(currentTargetStatus());
-          const valid = showFieldErrors(next);
-          if (!preview.hidden && valid) renderPreview(next);
-        },
-        onImageStateChange(next): void {
-          mapStatus.textContent =
-            next === 'loading'
-              ? 'Cargando cartografía oficial…'
-              : next === 'ready'
-                ? 'Cartografía lista.'
-                : 'La imagen oficial no está disponible; la geometría sigue siendo editable.';
-        },
-      });
-      if (geometryKindSelect) geometryKindSelect.disabled = false;
+    const spatialEditor = isSpatialEntityType(draft.entityType);
+    mapRegion.hidden = !spatialEditor;
+    if (spatialEditor) {
       synchronizeGeometryUi();
+    } else {
+      mapHelp.textContent =
+        'Las organizaciones son entidades de catálogo y no tienen posición, geometría ni marcador.';
+      mapStatus.textContent = 'Sin representación cartográfica.';
+    }
+    window.requestAnimationFrame(() => {
+      if (spatialEditor) {
+        const initialCoordinate =
+          draft.x !== null &&
+          draft.y !== null &&
+          isMapCoordinateWithinBounds({ x: draft.x, y: draft.y })
+            ? { x: draft.x, y: draft.y }
+            : null;
+        mapController = mountAdminEntityEditorMap(mapCanvas, {
+          coordinate: initialCoordinate,
+          geometry: draftGeometry,
+          entityType: draft.entityType,
+          dispositions: draft.dispositions.map(({ playerId, disposition }) => ({
+            playerId,
+            playerName:
+              state.references.players.find(({ id }) => id === playerId)?.displayName ?? playerId,
+            disposition,
+          })),
+          onGeometryChange(geometry): void {
+            draftGeometry = geometry;
+            synchronizeGeometryUi();
+            const next = readDraft(currentTargetStatus());
+            const valid = showFieldErrors(next);
+            if (!preview.hidden && valid) renderPreview(next);
+          },
+          onCoordinateChange(coordinate): void {
+            synchronizeCoordinateInputs(coordinate);
+            const next = readDraft(currentTargetStatus());
+            const valid = showFieldErrors(next);
+            if (!preview.hidden && valid) renderPreview(next);
+          },
+          onImageStateChange(next): void {
+            mapStatus.textContent =
+              next === 'loading'
+                ? 'Cargando cartografía oficial…'
+                : next === 'ready'
+                  ? 'Cartografía lista.'
+                  : 'La imagen oficial no está disponible; la geometría sigue siendo editable.';
+          },
+        });
+        if (geometryKindSelect) geometryKindSelect.disabled = false;
+        synchronizeGeometryUi();
+      }
       const first = Array.from(controls.values()).find(
         ({ input }) =>
           !input.disabled &&
@@ -1003,8 +1182,15 @@ export function mountAdminMapEntities(
       const editButton = createElement('button', 'admin-map-entity__button');
       const itemArchiveButton = createElement('button', 'admin-map-entity__button');
       title.textContent = record.name;
-      const geometryLabel = record.geometry?.kind === 'polygon' ? 'región' : 'punto';
-      meta.textContent = `${record.id} · ${record.entityType} · ${geometryLabel} · ${record.publicationStatus} · (${record.x}, ${record.y})`;
+      const geometryLabel =
+        record.entityType === 'organization'
+          ? 'no cartográfica'
+          : record.geometry?.kind === 'polygon'
+            ? 'región'
+            : 'punto';
+      const coordinateLabel =
+        record.x === null || record.y === null ? '' : ` · (${record.x}, ${record.y})`;
+      meta.textContent = `${record.id} · ${getEntityTypeLabel(record.entityType)} · ${geometryLabel} · ${record.publicationStatus}${coordinateLabel}`;
       content.append(title, meta);
       editButton.type = 'button';
       editButton.textContent = 'Editar';
@@ -1045,6 +1231,7 @@ export function mountAdminMapEntities(
     createLocationButton.disabled = createCharacterButton.disabled;
     createMissionButton.disabled = createCharacterButton.disabled;
     createHazardButton.disabled = createCharacterButton.disabled;
+    createOrganizationButton.disabled = createCharacterButton.disabled;
     refreshButton.disabled = unavailable || busy;
     saveDraftButton.disabled = busy;
     previewButton.disabled = busy;
@@ -1147,6 +1334,11 @@ export function mountAdminMapEntities(
     restoreFocus = createHazardButton;
     controller.openCreate();
   };
+  const handleCreateOrganization = (): void => {
+    requestedEntityType = 'organization';
+    restoreFocus = createOrganizationButton;
+    controller.openCreate();
+  };
   const handleRefresh = (): void => void controller.reload();
   const handleSaveDraft = (): void => void saveWithStatus('draft');
   const handlePreview = (): void => {
@@ -1218,6 +1410,7 @@ export function mountAdminMapEntities(
   createLocationButton.addEventListener('click', handleCreateLocation);
   createMissionButton.addEventListener('click', handleCreateMission);
   createHazardButton.addEventListener('click', handleCreateHazard);
+  createOrganizationButton.addEventListener('click', handleCreateOrganization);
   refreshButton.addEventListener('click', handleRefresh);
   saveDraftButton.addEventListener('click', handleSaveDraft);
   previewButton.addEventListener('click', handlePreview);
@@ -1246,6 +1439,7 @@ export function mountAdminMapEntities(
       createLocationButton.removeEventListener('click', handleCreateLocation);
       createMissionButton.removeEventListener('click', handleCreateMission);
       createHazardButton.removeEventListener('click', handleCreateHazard);
+      createOrganizationButton.removeEventListener('click', handleCreateOrganization);
       refreshButton.removeEventListener('click', handleRefresh);
       saveDraftButton.removeEventListener('click', handleSaveDraft);
       previewButton.removeEventListener('click', handlePreview);

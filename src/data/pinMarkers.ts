@@ -1,7 +1,13 @@
 import { publishPinPlayerAssociations } from '../app/pinPlayerAssociationRegistry';
-import type { EntityId, PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
+import type {
+  EntityId,
+  PublicCatalogSnapshotV2,
+  PublicMapEntity,
+  PublicSpatialMapEntity,
+} from './beta02-model';
 import { toLeafletSimpleCoordinate, type LeafletSimpleCoordinate } from './coordinates';
 import type { CampaignCatalog, PlaceId } from './model';
+import { isSpatialMapEntity } from '../domain/entitySpatiality';
 import type {
   PinEntityType,
   PinPlayerAssociationInput,
@@ -90,9 +96,9 @@ function resolveBeta02Associations(
 function findStableBeta02Location(
   catalog: PublicCatalogSnapshotV2 | null,
   place: CampaignCatalog['places'][number],
-): PublicMapEntity | undefined {
+): PublicSpatialMapEntity | undefined {
   return catalog?.entities.find(
-    (entity) =>
+    (entity): entity is PublicSpatialMapEntity =>
       entity.entityType === 'location' && (entity.id === place.id || entity.slug === place.slug),
   );
 }
@@ -170,7 +176,12 @@ export function createAtlasPinMarkerModels(
   });
 
   const supplementalPins = (beta02Catalog?.entities ?? [])
-    .filter((entity) => entity.visibility === 'pin' && !consumedEntityIds.has(entity.id))
+    .filter(
+      (entity): entity is PublicSpatialMapEntity =>
+        isSpatialMapEntity(entity) &&
+        entity.visibility === 'pin' &&
+        !consumedEntityIds.has(entity.id),
+    )
     .map((entity): AtlasPinMarkerModel => {
       const category = beta02Catalog?.categories.find(({ id }) => id === entity.categoryId);
 

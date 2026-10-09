@@ -145,7 +145,7 @@ async function openEntityEditor(page: Page): Promise<void> {
   const createCharacter = page.getByRole('button', { name: 'Crear personaje' });
   await expect(createCharacter).toBeEnabled();
   await createCharacter.click();
-  await expect(page.getByRole('heading', { name: 'Crear character' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Crear personaje' })).toBeVisible();
   await expect(page.getByTestId('admin-coordinate-map')).toBeVisible();
 }
 
@@ -245,7 +245,7 @@ for (const viewport of DESKTOP_VIEWPORTS) {
     await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
     await expect(entry).toBeFocused();
     await entry.click();
-    await expect(page.getByRole('heading', { name: 'Crear character' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Crear personaje' })).toBeVisible();
     await expect(map.locator('.leaflet-image-layer')).toBeVisible();
     await expect(page.getByTestId('admin-coordinate-marker')).toBeVisible();
 

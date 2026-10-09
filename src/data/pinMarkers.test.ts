@@ -216,7 +216,7 @@ describe('createAtlasPinMarkerModels', () => {
     const polygonCatalog: PublicCatalogSnapshotV2 = {
       ...beta02Catalog,
       entities: beta02Catalog.entities.map((entity) =>
-        entity.id === 'place-harbor'
+        entity.entityType === 'location' && entity.id === 'place-harbor'
           ? {
               ...entity,
               geometry: {
@@ -258,7 +258,7 @@ describe('createAtlasPinMarkerModels', () => {
     const searchOnlyPolygonCatalog: PublicCatalogSnapshotV2 = {
       ...beta02Catalog,
       entities: beta02Catalog.entities.map((entity) =>
-        entity.id === 'place-harbor'
+        entity.entityType === 'location' && entity.id === 'place-harbor'
           ? {
               ...entity,
               visibility: 'search_only' as const,

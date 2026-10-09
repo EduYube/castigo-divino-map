@@ -12,6 +12,14 @@ const MAP068_HIDDEN = new URL(
   '../supabase/migrations/20261007080000_separate_veyra_un_aliento_menos.sql.rehearsal-hidden',
   import.meta.url,
 );
+const MAP069_MIGRATION = new URL(
+  '../supabase/migrations/20261008180000_add_nonspatial_organizations.sql',
+  import.meta.url,
+);
+const MAP069_HIDDEN = new URL(
+  '../supabase/migrations/20261008180000_add_nonspatial_organizations.sql.rehearsal-hidden',
+  import.meta.url,
+);
 
 function fail(message) {
   throw new Error(`Supabase upgrade verification failed: ${message}`);
@@ -259,6 +267,7 @@ runPsql(
 );
 
 renameSync(MAP068_MIGRATION, MAP068_HIDDEN);
+renameSync(MAP069_MIGRATION, MAP069_HIDDEN);
 try {
   runCommand(
     NPX_COMMAND,
@@ -267,6 +276,7 @@ try {
   );
 } finally {
   renameSync(MAP068_HIDDEN, MAP068_MIGRATION);
+  renameSync(MAP069_HIDDEN, MAP069_MIGRATION);
 }
 
 runPsql(
@@ -365,11 +375,16 @@ runPsql(
   `,
 );
 
-runCommand(
-  NPX_COMMAND,
-  ['--no-install', 'supabase', 'migration', 'up', '--local'],
-  'applying MAP-068 to the audited compatibility checkpoint',
-);
+renameSync(MAP069_MIGRATION, MAP069_HIDDEN);
+try {
+  runCommand(
+    NPX_COMMAND,
+    ['--no-install', 'supabase', 'migration', 'up', '--local'],
+    'applying MAP-068 to the audited compatibility checkpoint',
+  );
+} finally {
+  renameSync(MAP069_HIDDEN, MAP069_MIGRATION);
+}
 
 runPsql(
   containerName,

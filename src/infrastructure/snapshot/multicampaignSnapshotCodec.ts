@@ -140,6 +140,7 @@ function parseCampaignCatalog(value: unknown, index: number): PublicCampaignCata
       'entities',
       'dispositions',
       'associations',
+      'entityRelations',
       'characterLocationRelations',
       'notes',
       'characterLocationEvents',
@@ -170,6 +171,13 @@ function parseCampaignCatalog(value: unknown, index: number): PublicCampaignCata
             item.associations,
             `${path}.associations`,
           ) as PublicCampaignCatalogV3['associations']),
+    entityRelations:
+      item.entityRelations === undefined
+        ? []
+        : (array(
+            item.entityRelations,
+            `${path}.entityRelations`,
+          ) as PublicCampaignCatalogV3['entityRelations']),
     characterLocationRelations: array(
       item.characterLocationRelations,
       `${path}.characterLocationRelations`,
@@ -211,6 +219,7 @@ function projectionContent(
     entities: catalog.entities,
     dispositions: catalog.dispositions,
     associations: catalog.associations,
+    entityRelations: catalog.entityRelations,
     characterLocationRelations: catalog.characterLocationRelations,
     notes: catalog.notes,
     geographicNames: geographicWithCampaignLink(geographicNames, catalog.geographicEntityLinks),

@@ -170,7 +170,7 @@ export function buildPublicSnapshotContent(raw) {
       summary,
       description,
       ...(portrait_path == null ? {} : { portraitPath: portrait_path }),
-      coordinates: { x, y },
+      ...(entity_type === 'organization' ? {} : { coordinates: { x, y } }),
       categoryId: category_id,
       tagIds: (tagsByEntity.get(id) ?? []).map(({ tag_id }) => tag_id),
     }),
@@ -181,6 +181,17 @@ export function buildPublicSnapshotContent(raw) {
       entityId: entity_id,
       playerId: player_id,
       disposition,
+    }));
+  const entityRelations = rows(raw.entityRelations ?? [], 'entityRelations')
+    .filter(
+      ({ left_entity_id, right_entity_id }) =>
+        entityIds.has(left_entity_id) && entityIds.has(right_entity_id),
+    )
+    .map(({ left_entity_id, right_entity_id, left_label, right_label }) => ({
+      leftEntityId: left_entity_id,
+      rightEntityId: right_entity_id,
+      leftLabel: left_label,
+      rightLabel: right_label,
     }));
   const characterLocationRelations = publishedRows(
     raw.characterLocationRelations ?? [],
@@ -315,6 +326,7 @@ export function buildPublicSnapshotContent(raw) {
     players,
     entities,
     dispositions,
+    entityRelations,
     characterLocationRelations,
     notes,
     geographicNames,
@@ -456,6 +468,7 @@ export function buildPublicMulticampaignSnapshotContent(raw) {
       players: content.players,
       entities: content.entities,
       dispositions: content.dispositions,
+      entityRelations: content.entityRelations,
       characterLocationRelations: content.characterLocationRelations,
       notes: content.notes,
       characterLocationEvents: content.characterLocationEvents,
@@ -516,6 +529,7 @@ export function upgradeLegacySnapshotContentV2(content) {
         players: rows(legacy.players ?? [], 'players'),
         entities,
         dispositions: rows(legacy.dispositions ?? [], 'dispositions'),
+        entityRelations: rows(legacy.entityRelations ?? [], 'entityRelations'),
         characterLocationRelations: rows(
           legacy.characterLocationRelations ?? [],
           'characterLocationRelations',
@@ -559,6 +573,7 @@ function projectCampaignCatalogToV2(content, campaignId) {
     players: rows(catalog.players ?? [], 'players'),
     entities: rows(catalog.entities ?? [], 'entities'),
     dispositions: rows(catalog.dispositions ?? [], 'dispositions'),
+    entityRelations: rows(catalog.entityRelations ?? [], 'entityRelations'),
     characterLocationRelations: rows(
       catalog.characterLocationRelations ?? [],
       'characterLocationRelations',
@@ -634,6 +649,25 @@ export function assertPublicMulticampaignSnapshotContent(content) {
     }
     const entities = rows(catalog.entities ?? [], `catalog ${catalog.campaignId} entities`);
     const entityById = new Map(entities.map((entity) => [entity.id, entity]));
+    const entityRelations = rows(
+      catalog.entityRelations ?? [],
+      `catalog ${catalog.campaignId} entity relations`,
+    );
+    requireUnique(
+      entityRelations.map(
+        ({ leftEntityId, rightEntityId }) => `${leftEntityId}\u0000${rightEntityId}`,
+      ),
+      `catalog ${catalog.campaignId} entity relations`,
+    );
+    for (const relation of entityRelations) {
+      if (
+        relation.leftEntityId >= relation.rightEntityId ||
+        !entityById.has(relation.leftEntityId) ||
+        !entityById.has(relation.rightEntityId)
+      ) {
+        throw new Error(`Catalog ${catalog.campaignId} contains an invalid entity relation.`);
+      }
+    }
     const links = rows(
       catalog.geographicEntityLinks ?? [],
       `catalog ${catalog.campaignId} geographic links`,

@@ -5,6 +5,7 @@ import type {
   PublicEntityAlias,
   PublicEntityPlayerAssociation,
   PublicEntityPlayerDisposition,
+  PublicEntityRelation,
   PublicGeographicName,
   PublicGeographicNameAlias,
   PublicMapEntity,
@@ -35,6 +36,7 @@ export interface PublicCatalogTablePayloads {
   readonly entityTags: readonly Record<string, unknown>[];
   readonly dispositions: readonly Record<string, unknown>[];
   readonly associations: readonly Record<string, unknown>[];
+  readonly entityRelations?: readonly Record<string, unknown>[];
   readonly notes: readonly Record<string, unknown>[];
   readonly noteTags: readonly Record<string, unknown>[];
   readonly geographicNames: readonly Record<string, unknown>[];
@@ -298,6 +300,37 @@ export function parseAssociation(
   };
 }
 
+export function parseEntityRelation(
+  row: Record<string, unknown>,
+  index: number,
+): PublicEntityRelation {
+  const path = `entity_relations[${index}]`;
+  assertAllowedProperties(
+    row,
+    ['left_entity_id', 'right_entity_id', 'left_label', 'right_label'],
+    path,
+  );
+  const leftEntityId = expectString(
+    row.left_entity_id,
+    `${path}.left_entity_id`,
+    IDENTIFIER_PATTERNS.entity,
+  ) as PublicEntityRelation['leftEntityId'];
+  const rightEntityId = expectString(
+    row.right_entity_id,
+    `${path}.right_entity_id`,
+    IDENTIFIER_PATTERNS.entity,
+  ) as PublicEntityRelation['rightEntityId'];
+  if (leftEntityId >= rightEntityId) {
+    invalidResponse(`${path} no está almacenada en orden canónico.`);
+  }
+  return {
+    leftEntityId,
+    rightEntityId,
+    leftLabel: expectString(row.left_label, `${path}.left_label`),
+    rightLabel: expectString(row.right_label, `${path}.right_label`),
+  };
+}
+
 export interface NoteTagRow {
   readonly noteId: PublicNote['id'];
   readonly tagId: PublicTag['id'];
@@ -458,6 +491,7 @@ export function parseEntity(
     'location',
     'mission',
     'hazard',
+    'organization',
   ] as const);
   const parsedLifecycle =
     row.lifecycle_status == null
@@ -469,7 +503,9 @@ export function parseEntity(
           'resolved',
         ] as const);
   if (
-    (parsedEntityType === 'character' || parsedEntityType === 'location') &&
+    (parsedEntityType === 'character' ||
+      parsedEntityType === 'location' ||
+      parsedEntityType === 'organization') &&
     parsedLifecycle !== null
   ) {
     invalidResponse(`${path}.lifecycle_status no corresponde a esta clase funcional.`);
@@ -495,23 +531,14 @@ export function parseEntity(
   if (portraitPath !== null && parsedEntityType !== 'character') {
     invalidResponse(`${path}.portrait_path solo puede pertenecer a un personaje.`);
   }
-  const coordinates = {
-    x: expectNumber(row.x, `${path}.x`, 0, 3600),
-    y: expectNumber(row.y, `${path}.y`, 0, 2329),
-  };
-  const geometry = parseEntityGeometry(
-    row.geometry,
-    `${path}.geometry`,
-    parsedEntityType,
-    coordinates,
-  );
-
-  return {
+  const visibility = expectEnum(row.visibility, `${path}.visibility`, [
+    'pin',
+    'search_only',
+  ] as const);
+  const common = {
     id,
     slug: expectString(row.slug, `${path}.slug`, IDENTIFIER_PATTERNS.slug),
-    entityType: parsedEntityType,
-    lifecycleStatus: parsedLifecycle,
-    visibility: expectEnum(row.visibility, `${path}.visibility`, ['pin', 'search_only'] as const),
+    visibility,
     name: expectString(row.name, `${path}.name`),
     nameLanguage: expectEnum(row.name_language, `${path}.name_language`, ['en'] as const),
     aliases: aliasesByEntity.get(id) ?? [],
@@ -524,14 +551,41 @@ export function parseEntity(
         ? row.description
         : invalidResponse(`${path}.description debe ser texto.`),
     ...(hasPortraitPath ? { portraitPath } : {}),
-    ...(geometry.kind === 'polygon' ? { geometry } : {}),
-    coordinates,
     categoryId: expectString(
       row.category_id,
       `${path}.category_id`,
       IDENTIFIER_PATTERNS.category,
     ) as PublicMapEntity['categoryId'],
     tagIds: (tagsByEntity.get(id) ?? []).map(({ tagId }) => tagId),
+  };
+
+  if (parsedEntityType === 'organization') {
+    if (row.x !== null || row.y !== null || row.geometry !== null) {
+      invalidResponse(`${path} no puede contener coordenadas ni geometría para una organización.`);
+    }
+    if (visibility !== 'search_only') {
+      invalidResponse(`${path}.visibility debe ser search_only para una organización.`);
+    }
+    return { ...common, entityType: 'organization', lifecycleStatus: null };
+  }
+
+  const coordinates = {
+    x: expectNumber(row.x, `${path}.x`, 0, 3600),
+    y: expectNumber(row.y, `${path}.y`, 0, 2329),
+  };
+  const geometry = parseEntityGeometry(
+    row.geometry,
+    `${path}.geometry`,
+    parsedEntityType,
+    coordinates,
+  );
+
+  return {
+    ...common,
+    entityType: parsedEntityType,
+    lifecycleStatus: parsedLifecycle,
+    ...(geometry.kind === 'polygon' ? { geometry } : {}),
+    coordinates,
   };
 }
 

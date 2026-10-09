@@ -137,6 +137,8 @@ function describeResultType(type: AtlasSearchResultType): string {
       return 'Misión';
     case 'hazard':
       return 'Peligro';
+    case 'organization':
+      return 'Organización';
   }
 }
 

@@ -372,7 +372,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v7')) {
+    if (url.pathname.endsWith('/rpc/admin_get_map_entity_editor_v8')) {
       const body = request.postDataJSON() as { p_entity_id?: string };
       await route.fulfill({
         status: 200,
@@ -382,7 +382,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       return;
     }
 
-    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v7')) {
+    if (url.pathname.endsWith('/rpc/admin_save_map_entity_v8')) {
       if (mode === 'network') {
         mode = 'normal';
         await route.abort('failed');
@@ -883,7 +883,7 @@ test('keyboard coordinate editing can create, publish and archive an emplacement
   await page.getByLabel('Coordenada X').fill('1200');
   await page.getByLabel('Coordenada Y').fill('900');
   await page.getByRole('button', { name: 'Previsualizar' }).click();
-  await expect(page.getByText(/location · Punto · Places · X 1200, Y 900/)).toBeVisible();
+  await expect(page.getByText(/Emplazamiento · Punto · Places · X 1200, Y 900/)).toBeVisible();
 
   await page.getByRole('button', { name: 'Publicar' }).click();
   await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
@@ -893,7 +893,9 @@ test('keyboard coordinate editing can create, publish and archive an emplacement
   await page.getByRole('button', { name: 'Archivar MAP-019 Harbor' }).click();
   await expect(page.getByRole('alertdialog')).toContainText('dejará de formar parte');
   await page.getByRole('button', { name: 'Archivar', exact: true }).click();
-  await expect(page.getByText(/place-map019-harbor · location · punto · archived/)).toBeVisible();
+  await expect(
+    page.getByText(/place-map019-harbor · Emplazamiento · punto · archived/),
+  ).toBeVisible();
   expect(backend.getEntity('place-map019-harbor')?.publication_status).toBe('archived');
 });
 

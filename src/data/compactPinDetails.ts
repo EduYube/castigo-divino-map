@@ -1,3 +1,4 @@
+import { isSpatialMapEntity } from '../domain/entitySpatiality';
 import type { EntityId, PublicCatalogSnapshotV2, PublicMapEntity } from './beta02-model';
 import type { CampaignCatalog, PlaceId } from './model';
 import type { AtlasPinMarkerModel } from './pinMarkers';
@@ -53,7 +54,7 @@ function buildBeta02Details(
   }
 
   const entity = catalog.entities.find(({ id }) => id === marker.entityId);
-  if (!entity) {
+  if (!entity || !isSpatialMapEntity(entity)) {
     return undefined;
   }
 

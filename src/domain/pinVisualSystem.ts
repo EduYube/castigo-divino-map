@@ -1,4 +1,6 @@
-export type PinEntityType = 'character' | 'location' | 'mission' | 'hazard';
+import type { SpatialEntityType } from '../data/beta02-model';
+
+export type PinEntityType = SpatialEntityType;
 export type PinDisposition = 'ally' | 'enemy' | 'neutral';
 export type PinDispositionState = PinDisposition | 'unknown';
 

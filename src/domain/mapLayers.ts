@@ -30,7 +30,8 @@ export function normalizeMapLayerState(state: MapLayerState): MapLayerState {
   return { activeLayerIds: normalizeMapLayerIds(state.activeLayerIds) };
 }
 
-export function getMapLayerForEntity(entity: PublicMapEntity): MapLayerId {
+export function getMapLayerForEntity(entity: PublicMapEntity): MapLayerId | null {
+  if (entity.entityType === 'organization') return null;
   if (entity.entityType === 'location' && entity.geometry?.kind === 'polygon') {
     return 'region';
   }
@@ -44,7 +45,7 @@ export function getMapLayerForMarker(marker: AtlasPinMarkerModel): MapLayerId {
 
 export function getMapLayerForSearchResult(result: AtlasSearchResult): MapLayerId | null {
   if (result.type === 'geographic') return null;
-  return result.type;
+  return result.type === 'organization' ? null : result.type;
 }
 
 export function isMapLayerEnabled(state: MapLayerState, layerId: MapLayerId): boolean {
@@ -55,7 +56,8 @@ export function isEntityVisibleForMapLayers(
   entity: PublicMapEntity,
   state: MapLayerState,
 ): boolean {
-  return isMapLayerEnabled(state, getMapLayerForEntity(entity));
+  const layer = getMapLayerForEntity(entity);
+  return layer !== null && isMapLayerEnabled(state, layer);
 }
 
 export function isMarkerVisibleForMapLayers(
