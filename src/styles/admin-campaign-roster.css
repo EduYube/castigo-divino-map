@@ -1,3 +1,41 @@
+.admin-campaign-session-context {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  margin-block: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border: 2px solid currentColor;
+  border-radius: 0.6rem;
+  background: var(--color-surface-muted, #f1f5f9);
+  overflow-wrap: anywhere;
+}
+
+.admin-campaign-session-context__heading,
+.admin-campaign-session-context__value,
+.admin-campaign-session-context__public,
+.admin-campaign-session-context__status {
+  margin: 0;
+}
+
+.admin-campaign-session-context__heading {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-campaign-session-context__name {
+  font-size: 1.05rem;
+}
+
+.admin-campaign-session-context__public,
+.admin-campaign-session-context__status {
+  font-size: 0.9rem;
+}
+
+.admin-campaign-session-context[data-transitioning='true'] {
+  border-style: dashed;
+}
+
 .admin-campaign-roster {
   display: grid;
   gap: 1rem;
@@ -218,5 +256,13 @@
     background: CanvasText;
     border-color: Canvas;
     outline-color: CanvasText;
+  }
+}
+
+@media (forced-colors: active) {
+  .admin-campaign-session-context {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
   }
 }

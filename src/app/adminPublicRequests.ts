@@ -108,6 +108,11 @@ export function mountAdminPublicRequests(
   let feedback = '';
   const moderationNoteDrafts = new Map<string, string>();
 
+  const syncDirtyState = (): void => {
+    if (moderationNoteDrafts.size > 0) section.dataset.adminDirty = 'true';
+    else delete section.dataset.adminDirty;
+  };
+
   const activeCampaignLabel = (): string => {
     const campaignId = adminCampaignContext.getCampaignId();
     const selector = root.querySelector<HTMLSelectElement>('#admin-campaign-context');
@@ -282,6 +287,7 @@ export function mountAdminPublicRequests(
       note.addEventListener('input', () => {
         if (note.value) moderationNoteDrafts.set(request.id, note.value);
         else moderationNoteDrafts.delete(request.id);
+        syncDirtyState();
       });
 
       const convertButton = createElement('button', 'admin-public-requests__primary');
@@ -340,6 +346,7 @@ export function mountAdminPublicRequests(
     for (const request of state.records) {
       if (request.requestStatus !== 'pending') moderationNoteDrafts.delete(request.id);
     }
+    syncDirtyState();
     const visible = filterAndSortAdminPublicRequests(state.records, selectedFilter, selectedSort);
     list.replaceChildren(...visible.map(renderCard));
     empty.hidden = visible.length !== 0 || state.phase === 'loading';
@@ -376,6 +383,7 @@ export function mountAdminPublicRequests(
         const succeeded = await controller.reject(action.request, action.moderationNote);
         if (succeeded) {
           moderationNoteDrafts.delete(action.request.id);
+          syncDirtyState();
           feedback = 'Solicitud rechazada. El historial de moderación se conserva.';
         }
         render(controller.getState());
@@ -388,6 +396,7 @@ export function mountAdminPublicRequests(
         return;
       }
       moderationNoteDrafts.delete(action.request.id);
+      syncDirtyState();
       feedback =
         'Borrador creado sin categoría ni etiquetas en la campaña activa. Debe revisarse en el editor antes de cualquier publicación.';
       render(controller.getState());
@@ -406,6 +415,14 @@ export function mountAdminPublicRequests(
       closeConfirmation();
     }
   };
+  const handleCampaignTransitionStarted = (): void => {
+    feedback = '';
+    moderationNoteDrafts.clear();
+    syncDirtyState();
+    pendingAction = null;
+    confirmation.hidden = true;
+    restoreFocus = null;
+  };
   const handlePublicDataStatus = (event: Event): void => {
     if (!isPublicDataStatusEvent(event)) return;
     const next = event.detail.backendState;
@@ -422,6 +439,10 @@ export function mountAdminPublicRequests(
   cancelButton.addEventListener('click', handleCancel);
   document.addEventListener('keydown', handleKeydown);
   window.addEventListener('atlas:public-data-status', handlePublicDataStatus);
+  window.addEventListener(
+    'atlas:admin-campaign-transition-started',
+    handleCampaignTransitionStarted,
+  );
 
   const unsubscribeController = controller.subscribe(render);
   const unsubscribeAuth = authController.subscribe((authState) => {
@@ -448,6 +469,10 @@ export function mountAdminPublicRequests(
       cancelButton.removeEventListener('click', handleCancel);
       document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('atlas:public-data-status', handlePublicDataStatus);
+      window.removeEventListener(
+        'atlas:admin-campaign-transition-started',
+        handleCampaignTransitionStarted,
+      );
       section.remove();
     },
   };

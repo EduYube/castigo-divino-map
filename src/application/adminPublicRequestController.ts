@@ -84,6 +84,17 @@ export class AdminPublicRequestController {
     if (!wasAvailable) void this.reload();
   }
 
+  prepareCampaignTransition(): void {
+    if (this.#destroyed) return;
+    this.#cancelActive();
+    this.#publish({
+      ...this.#state,
+      records: [],
+      phase: this.#canUse() ? 'loading' : 'blocked',
+      issue: null,
+    });
+  }
+
   async reload(): Promise<void> {
     if (!this.#canUse()) {
       this.#publishBlocked();

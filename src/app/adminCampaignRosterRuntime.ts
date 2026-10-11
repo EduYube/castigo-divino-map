@@ -135,7 +135,10 @@ function discardOtherOpenEditors(root: ParentNode, ownSection: HTMLElement | nul
 export function bootstrapAdminCampaignRosterRuntime(
   root: ParentNode,
   authController: AdminAuthController,
-  options: { readonly onCampaignChanged?: (campaignId: string) => void } = {},
+  options: {
+    readonly onCampaignTransitionStarted?: (campaignId: string) => void;
+    readonly onCampaignChanged?: (campaignId: string) => void;
+  } = {},
 ): AdminCampaignRosterRuntime {
   const rejectAuthorization = (status: 401 | 403): void => {
     authController.invalidateFromAdministrativeResponse(status);
@@ -154,6 +157,7 @@ export function bootstrapAdminCampaignRosterRuntime(
   const unsubscribeTransition = adminCampaignContext.subscribeTransition((transition) => {
     if (!transition) return;
     discardOtherOpenEditors(root, ownSection);
+    options.onCampaignTransitionStarted?.(transition.targetCampaignId);
     window.dispatchEvent(
       new CustomEvent('atlas:admin-campaign-transition-started', {
         detail: { campaignId: transition.targetCampaignId },

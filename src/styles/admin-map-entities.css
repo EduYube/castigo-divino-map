@@ -172,6 +172,15 @@ textarea.admin-map-entity__control {
   min-width: 0;
 }
 
+.admin-map-entity__nonspatial-notice {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.75rem;
+  border: 2px solid currentColor;
+  border-radius: 0.5rem;
+  overflow-wrap: anywhere;
+}
+
 .admin-map-entity__fieldset {
   grid-column: 1 / -1;
   margin: 0;

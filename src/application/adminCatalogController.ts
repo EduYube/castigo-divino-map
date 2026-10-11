@@ -16,6 +16,7 @@ import {
   normalizeAdminSearchText,
   validateAdminCatalogDraft,
 } from '../domain/adminCatalogValidation';
+import { isCampaignScopedAdminCatalogResource } from '../domain/adminCampaignUx';
 
 export type AdminCatalogSort = 'name' | 'id' | 'status';
 export type AdminCatalogSortDirection = 'asc' | 'desc';
@@ -168,6 +169,20 @@ export class AdminCatalogController {
 
   setQuery(query: string): void {
     this.#publishDerived({ ...this.#state, query });
+  }
+
+  prepareCampaignTransition(): void {
+    if (this.#destroyed || !isCampaignScopedAdminCatalogResource(this.#state.resourceKind)) return;
+    this.#cancelActive();
+    this.#publishDerived({
+      ...this.#state,
+      records: [],
+      entityReferences: [],
+      geographicNameReferences: [],
+      query: '',
+      phase: this.#canMutate() ? 'loading' : 'blocked',
+      issue: null,
+    });
   }
 
   setSort(sort: AdminCatalogSort, sortDirection: AdminCatalogSortDirection): void {
