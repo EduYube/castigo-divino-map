@@ -119,10 +119,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
   const entityTags = new Map<string, string[]>([['entity-aster-guide', ['notable']]]);
   const entityAssociations = new Map<string, string[]>();
   const dispositions = new Map<string, Record<string, Disposition>>([
-    [
-      'entity-aster-guide',
-      { 'player-skade': 'ally', 'player-ura': 'neutral' },
-    ],
+    ['entity-aster-guide', { 'player-skade': 'ally', 'player-ura': 'neutral' }],
   ]);
 
   const timestamp = (): string => `2026-08-07T12:00:${String(counter++).padStart(2, '0')}.000Z`;

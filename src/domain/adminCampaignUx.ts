@@ -12,11 +12,7 @@ export function resolveAdminCampaignName(
 export function isCampaignScopedAdminCatalogResource(
   resourceKind: AdminCatalogResourceKind,
 ): boolean {
-  return (
-    resourceKind === 'category' ||
-    resourceKind === 'tag' ||
-    resourceKind === 'entity-alias'
-  );
+  return resourceKind === 'category' || resourceKind === 'tag' || resourceKind === 'entity-alias';
 }
 
 export function describePublicAdminCampaignRelationship(
