@@ -229,5 +229,20 @@ describe('AdminCatalogController', () => {
     expect(saved).toBe(false);
     expect(repository.create).toHaveBeenCalledTimes(1);
     expect(controller.getState().issue?.code).toBe('conflict');
+    expect(controller.getState().phase).toBe('ready');
+    expect(controller.getState().records).toEqual([category]);
+
+    const updated = await controller.update(category, {
+      kind: 'category',
+      id: category.id,
+      slug: category.slug,
+      name: 'Cities after failed create',
+      description: category.description,
+      publicationStatus: category.publicationStatus,
+    });
+    expect(updated).toBe(true);
+    expect(controller.getState().records[0]?.kind).toBe('category');
+    expect(controller.getState().phase).toBe('ready');
+    expect(controller.getState().issue).toBeNull();
   });
 });

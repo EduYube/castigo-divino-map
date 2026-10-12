@@ -348,7 +348,19 @@ export class AdminCatalogController {
       this.#publishDerived({ ...this.#state, ...result, phase: 'ready', issue: null });
       return true;
     } catch (error) {
-      this.#handleFailure(error, active.generation);
+      if (!this.#isCurrent(active.generation)) return false;
+      const issue = toAdminCatalogIssue(error);
+      if (
+        issue.status === 401 ||
+        issue.status === 403 ||
+        issue.code === 'session-expired' ||
+        issue.code === 'unauthorized'
+      ) {
+        this.#handleFailure(error, active.generation);
+      } else {
+        // A failed write cannot invalidate the loaded records or disable retry/edit.
+        this.#publishDerived({ ...this.#state, phase: 'ready', issue });
+      }
       return false;
     }
   }

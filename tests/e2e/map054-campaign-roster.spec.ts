@@ -195,7 +195,13 @@ async function configureBackend(page: Page, options: BackendOptions = {}): Promi
     if (table === 'players') {
       const filter = url.searchParams.get('campaign_id') ?? '';
       const campaignId = filter.startsWith('eq.') ? filter.slice(3) : '';
-      if (campaignId === CAMPAIGN_B_ID && options.campaignBPlayerFailure) {
+      const adminRosterSelect =
+        'id,campaign_id,slug,display_name,publication_status,published_at,display_order,accent_color,archived_at,updated_at';
+      if (
+        campaignId === CAMPAIGN_B_ID &&
+        options.campaignBPlayerFailure &&
+        url.searchParams.get('select') === adminRosterSelect
+      ) {
         await route.fulfill({
           status: 503,
           contentType: 'application/json',
