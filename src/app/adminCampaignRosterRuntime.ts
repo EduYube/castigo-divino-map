@@ -137,6 +137,7 @@ export function bootstrapAdminCampaignRosterRuntime(
   authController: AdminAuthController,
   options: {
     readonly onCampaignTransitionStarted?: (campaignId: string) => void;
+    readonly onCampaignTransitionCancelled?: (campaignId: string) => void;
     readonly onCampaignChanged?: (campaignId: string) => void;
   } = {},
 ): AdminCampaignRosterRuntime {
@@ -154,8 +155,23 @@ export function bootstrapAdminCampaignRosterRuntime(
   );
   if (campaignNameLabel) campaignNameLabel.textContent = 'Nombre de campaña';
   const ownSection = root.querySelector<HTMLElement>('.admin-campaign-roster');
+  let transitionOriginCampaignId: string | null = null;
   const unsubscribeTransition = adminCampaignContext.subscribeTransition((transition) => {
-    if (!transition) return;
+    if (!transition) {
+      if (transitionOriginCampaignId === null) return;
+      const cancelled = adminCampaignContext.getCampaignId() === transitionOriginCampaignId;
+      transitionOriginCampaignId = null;
+      if (!cancelled) return;
+      const campaignId = adminCampaignContext.getCampaignId();
+      options.onCampaignTransitionCancelled?.(campaignId);
+      window.dispatchEvent(
+        new CustomEvent('atlas:admin-campaign-transition-cancelled', {
+          detail: { campaignId },
+        }),
+      );
+      return;
+    }
+    transitionOriginCampaignId = adminCampaignContext.getCampaignId();
     discardOtherOpenEditors(root, ownSection);
     options.onCampaignTransitionStarted?.(transition.targetCampaignId);
     window.dispatchEvent(

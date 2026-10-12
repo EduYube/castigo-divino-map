@@ -711,6 +711,19 @@ export function mountAdminCampaignRoster(
     sessionContext.dataset.transitioning = 'true';
     sessionContextStatus.textContent = `Cambiando campaña administrativa a ${targetName}…`;
   };
+  const handleAdminCampaignTransitionCancelled = (event: Event): void => {
+    if (!(event instanceof CustomEvent) || typeof event.detail?.campaignId !== 'string') return;
+    const name = resolveAdminCampaignName(
+      state.campaigns,
+      event.detail.campaignId,
+      event.detail.campaignId,
+    );
+    delete sessionContext.dataset.transitioning;
+    sessionContextName.textContent = name;
+    sessionContext.dataset.adminCampaignId = event.detail.campaignId;
+    sessionContextStatus.textContent =
+      `No se completó el cambio de campaña. Sigues editando ${name}.`;
+  };
   const handleAdminCampaignChanged = (event: Event): void => {
     if (!(event instanceof CustomEvent) || typeof event.detail?.campaignId !== 'string') return;
     const targetName = resolveAdminCampaignName(
@@ -759,6 +772,10 @@ export function mountAdminCampaignRoster(
     handleAdminCampaignTransitionStarted,
   );
   window.addEventListener('atlas:admin-campaign-changed', handleAdminCampaignChanged);
+  window.addEventListener(
+    'atlas:admin-campaign-transition-cancelled',
+    handleAdminCampaignTransitionCancelled,
+  );
   window.addEventListener('atlas:campaign-will-change', handlePublicCampaignWillChange);
 
   const unsubscribeRoster = controller.subscribe(render);
@@ -795,6 +812,10 @@ export function mountAdminCampaignRoster(
         handleAdminCampaignTransitionStarted,
       );
       window.removeEventListener('atlas:admin-campaign-changed', handleAdminCampaignChanged);
+      window.removeEventListener(
+        'atlas:admin-campaign-transition-cancelled',
+        handleAdminCampaignTransitionCancelled,
+      );
       window.removeEventListener('atlas:campaign-will-change', handlePublicCampaignWillChange);
       sessionContext.remove();
       section.remove();

@@ -212,7 +212,19 @@ export class AdminCampaignRosterController {
       return true;
     } catch (error) {
       this.#cancelTransition(transition);
-      this.#handleFailure(error, operation.generation);
+      if (!this.#isCurrent(operation.generation)) return false;
+      const issue = toAdminCampaignRosterIssue(error);
+      if (
+        issue.status === 401 ||
+        issue.status === 403 ||
+        issue.code === 'session-expired' ||
+        issue.code === 'unauthorized'
+      ) {
+        this.#handleFailure(error, operation.generation);
+      } else {
+        // A remains the confirmed campaign and its roster is still usable.
+        this.#publish({ ...this.#state, phase: 'ready', issue });
+      }
       return false;
     }
   }

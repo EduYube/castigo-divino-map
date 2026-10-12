@@ -147,6 +147,31 @@ describe('AdminCampaignRosterController', () => {
     expect(repository.listPlayers).toHaveBeenLastCalledWith(CAMPAIGN_B, expect.any(Object));
   });
 
+  it('keeps the original roster usable and emits rollback when the new roster fails', async () => {
+    const repository = new FakeRepository();
+    const context = new AdminCampaignContext();
+    const controller = new AdminCampaignRosterController(repository, context);
+    controller.setAccess(true, true);
+    await flush();
+
+    const transitions: Array<string | null> = [];
+    const unsubscribe = context.subscribeTransition((transition) => {
+      transitions.push(transition?.targetCampaignId ?? null);
+    });
+    repository.listPlayers.mockRejectedValueOnce(
+      new AdminCampaignRosterRepositoryError('backend-unavailable', 'Simulated outage'),
+    );
+    await expect(controller.selectCampaign(CAMPAIGN_B)).resolves.toBe(false);
+    expect(context.getCampaignId()).toBe(CAMPAIGN_A);
+    expect(context.isTransitioning()).toBe(false);
+    expect(transitions.slice(-2)).toEqual([CAMPAIGN_B, null]);
+    expect(controller.getState().selectedCampaignId).toBe(CAMPAIGN_A);
+    expect(controller.getState().players).toEqual([playerA]);
+    expect(controller.getState().phase).toBe('ready');
+    expect(controller.getState().issue?.message).toBe('Simulated outage');
+    unsubscribe();
+  });
+
   it('scopes roster creation and archival to the selected campaign', async () => {
     const repository = new FakeRepository();
     const context = new AdminCampaignContext();

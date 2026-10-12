@@ -1,4 +1,5 @@
 import type { AdminAuthController } from '../auth/adminAuthController';
+import { adminCampaignContext } from '../application/adminCampaignContext';
 import type {
   AdminCatalogController,
   AdminCatalogSort,
@@ -363,6 +364,7 @@ export function mountAdminCatalog(
   let state = catalogController.getState();
   let backendConnected = false;
   let original: AdminCatalogRecord | null = null;
+  let editorCampaignId: string | null = null;
   let restoreFocus: HTMLElement | null = null;
   let pendingConfirmation: {
     readonly action: 'archive' | 'delete';
@@ -465,6 +467,7 @@ export function mountAdminCatalog(
       empty.hidden = true;
     }
     original = null;
+    editorCampaignId = null;
     controls.clear();
     fields.replaceChildren();
     editorStatus.textContent = '';
@@ -492,6 +495,8 @@ export function mountAdminCatalog(
   }
 
   function renderEditor(record: AdminCatalogRecord | null, trigger: HTMLElement): void {
+    if (state.phase !== 'ready' || adminCampaignContext.isTransitioning()) return;
+    editorCampaignId = adminCampaignContext.getCampaignId();
     original = record;
     restoreFocus = trigger;
     controls.clear();
@@ -726,10 +731,14 @@ export function mountAdminCatalog(
       editButton.type = 'button';
       editButton.textContent = 'Editar';
       editButton.setAttribute('aria-label', `Editar ${getAdminRecordDisplayName(record)}`);
+      editButton.disabled = state.phase !== 'ready' || adminCampaignContext.isTransitioning();
       editButton.addEventListener('click', () => renderEditor(record, editButton));
       archiveButton.type = 'button';
       archiveButton.textContent = 'Archivar';
-      archiveButton.disabled = record.publicationStatus === 'archived';
+      archiveButton.disabled =
+        record.publicationStatus === 'archived' ||
+        state.phase !== 'ready' ||
+        adminCampaignContext.isTransitioning();
       archiveButton.setAttribute('aria-label', `Archivar ${getAdminRecordDisplayName(record)}`);
       archiveButton.addEventListener('click', () =>
         openConfirmation('archive', record, archiveButton),
@@ -760,7 +769,7 @@ export function mountAdminCatalog(
     for (const [kind, button] of resourceButtons) {
       const active = kind === state.resourceKind;
       button.setAttribute('aria-pressed', String(active));
-      button.disabled = state.phase === 'mutating';
+      button.disabled = state.phase === 'mutating' || adminCampaignContext.isTransitioning();
     }
     search.value = state.query;
     const currentSort = `${state.sort}:${state.sortDirection}`;
@@ -772,8 +781,8 @@ export function mountAdminCatalog(
     sort.disabled = search.disabled;
     newButton.disabled = unavailable || state.phase !== 'ready';
     refreshButton.disabled = unavailable || state.phase === 'loading' || state.phase === 'mutating';
-    saveButton.disabled = state.phase === 'mutating';
-    confirmButton.disabled = state.phase === 'mutating';
+    saveButton.disabled = state.phase !== 'ready' || adminCampaignContext.isTransitioning();
+    confirmButton.disabled = state.phase !== 'ready' || adminCampaignContext.isTransitioning();
 
     if (!state.authorized) {
       status.textContent = 'El CRUD permanece cerrado hasta autorizar la sesión.';
@@ -807,6 +816,14 @@ export function mountAdminCatalog(
   const handleCancel = (): void => closeEditor();
   const handleSubmit = (event: SubmitEvent): void => {
     event.preventDefault();
+    if (
+      state.phase !== 'ready' ||
+      adminCampaignContext.isTransitioning() ||
+      editorCampaignId !== adminCampaignContext.getCampaignId()
+    ) {
+      closeEditor();
+      return;
+    }
     if (!renderFieldErrors()) {
       const firstInvalid = Array.from(controls.values()).find(
         (control) => control.input.getAttribute('aria-invalid') === 'true',
@@ -833,6 +850,10 @@ export function mountAdminCatalog(
     });
   };
   const handleConfirm = (): void => {
+    if (state.phase !== 'ready' || adminCampaignContext.isTransitioning()) {
+      closeConfirmation();
+      return;
+    }
     const pending = pendingConfirmation;
     if (!pending) return;
     const request =
@@ -846,6 +867,10 @@ export function mountAdminCatalog(
     });
   };
   const handleDismiss = (): void => closeConfirmation();
+  const handleCampaignTransitionStarted = (): void => {
+    if (!editor.hidden) closeEditor();
+    if (!confirmation.hidden) closeConfirmation();
+  };
   const handlePublicDataStatus = (event: Event): void => {
     if (!isPublicDataStatusEvent(event)) return;
     const next = event.detail.backendState;
@@ -867,6 +892,10 @@ export function mountAdminCatalog(
   confirmButton.addEventListener('click', handleConfirm);
   dismissButton.addEventListener('click', handleDismiss);
   window.addEventListener('atlas:public-data-status', handlePublicDataStatus);
+  window.addEventListener(
+    'atlas:admin-campaign-transition-started',
+    handleCampaignTransitionStarted,
+  );
 
   const unsubscribeCatalog = catalogController.subscribe(render);
   const unsubscribeAuth = authController.subscribe((authState) => {
@@ -890,6 +919,10 @@ export function mountAdminCatalog(
       confirmButton.removeEventListener('click', handleConfirm);
       dismissButton.removeEventListener('click', handleDismiss);
       window.removeEventListener('atlas:public-data-status', handlePublicDataStatus);
+      window.removeEventListener(
+        'atlas:admin-campaign-transition-started',
+        handleCampaignTransitionStarted,
+      );
       section.remove();
     },
   };

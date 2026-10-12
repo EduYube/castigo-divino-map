@@ -98,6 +98,7 @@ interface RuntimeErrors {
 
 interface BackendOptions {
   readonly campaignBPlayerDelayMs?: number;
+  readonly campaignBPlayerFailure?: boolean;
 }
 
 function collectRuntimeErrors(page: Page): RuntimeErrors {
@@ -194,6 +195,14 @@ async function configureBackend(page: Page, options: BackendOptions = {}): Promi
     if (table === 'players') {
       const filter = url.searchParams.get('campaign_id') ?? '';
       const campaignId = filter.startsWith('eq.') ? filter.slice(3) : '';
+      if (campaignId === CAMPAIGN_B_ID && options.campaignBPlayerFailure) {
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'simulated campaign roster outage' }),
+        });
+        return;
+      }
       if (campaignId === CAMPAIGN_B_ID && options.campaignBPlayerDelayMs) {
         await new Promise((resolve) => setTimeout(resolve, options.campaignBPlayerDelayMs));
       }
@@ -384,6 +393,28 @@ test('campaign transition discards old editors and blocks writes while the targe
   await expect(page.getByLabel('Campaña administrativa')).toHaveValue(CAMPAIGN_B_ID);
   await expect(page.getByText('Veyra', { exact: true })).toBeVisible();
   expectNoRuntimeErrors(errors);
+});
+
+test('a failed campaign switch restores the original administrative scope and controllers', async ({
+  page,
+}) => {
+  await configureBackend(page, { campaignBPlayerFailure: true });
+  await page.goto('/');
+  await login(page);
+
+  const context = page.locator('[data-admin-campaign-session-context]');
+  await page.getByLabel('Campaña administrativa').selectOption(CAMPAIGN_B_ID);
+  await expect(context).toContainText('Sigues editando Castigo Divino');
+  await expect(context).not.toHaveAttribute('data-transitioning', 'true');
+  await expect(context).toContainText('Editando campaña: Castigo Divino');
+  await expect(page.getByLabel('Campaña administrativa')).toHaveValue(INITIAL_CAMPAIGN_ID);
+  await expect(page.getByText('Ura', { exact: true })).toBeVisible();
+  await expect(page.getByText('Veyra', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Crear jugador' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Crear', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Recargar relaciones' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Recargar solicitudes' })).toBeEnabled();
 });
 
 test('campaign roster workspace stays usable without horizontal overflow from 320 to 430 px', async ({

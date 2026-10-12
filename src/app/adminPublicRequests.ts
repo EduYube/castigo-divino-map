@@ -447,7 +447,15 @@ export function mountAdminPublicRequests(
   const unsubscribeController = controller.subscribe(render);
   const unsubscribeAuth = authController.subscribe((authState) => {
     controller.setAccess(authState.phase === 'authorized', backendConnected);
-    if (authState.phase !== 'authorized' && !confirmation.hidden) closeConfirmation();
+    if (authState.phase !== 'authorized') {
+      // Unsent administrative notes must not survive sign-out or revocation.
+      moderationNoteDrafts.clear();
+      syncDirtyState();
+      feedback = '';
+      pendingAction = null;
+      confirmation.hidden = true;
+      restoreFocus = null;
+    }
   });
   const unsubscribeCampaign = adminCampaignContext.subscribe(() => {
     feedback = '';

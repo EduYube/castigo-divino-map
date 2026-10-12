@@ -172,11 +172,14 @@ export class AdminCatalogController {
   }
 
   prepareCampaignTransition(): void {
-    if (this.#destroyed || !isCampaignScopedAdminCatalogResource(this.#state.resourceKind)) return;
+    if (this.#destroyed) return;
+    const scopedRecords = isCampaignScopedAdminCatalogResource(this.#state.resourceKind);
+    // Geographic names are global; their linked map_entities references are not.
+    if (!scopedRecords && this.#state.resourceKind !== 'geographic-name') return;
     this.#cancelActive();
     this.#publishDerived({
       ...this.#state,
-      records: [],
+      records: scopedRecords ? [] : this.#state.records,
       entityReferences: [],
       geographicNameReferences: [],
       query: '',

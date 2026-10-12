@@ -10,7 +10,9 @@ The admin shell now keeps a persistent, accessible context banner with the legib
 
 The existing campaign selector still owns the switch. Dirty forms across the admin shell participate in the guard, and moderation-note drafts now participate too even though they are not a form. Cancel keeps campaign, draft and selector focus. Accept begins one transition, discards local editors and drafts, synchronously purges campaign-scoped controller state, then commits only after the target roster has loaded.
 
-Global geographic-name resources are intentionally excluded from the campaign purge because physical geography remains global.
+Global geographic-name records remain global. Their linked `map_entities` references are invalidated at transition start and fetched again for the confirmed campaign, or for the original campaign if the target roster fails. Geographic editors are closed during switching; stale references cannot be used while loading.
+
+If the destination roster request fails, the context never commits to the new campaign: a transition-cancelled event resets the visible banner and reloads the four purged administrative controllers against the original scope. An ordinary roster error leaves the original roster usable; authorization failures retain the blocked-session behavior. Unsent moderation notes are also purged on logout or revocation.
 
 ## Roster, dispositions and associations
 
