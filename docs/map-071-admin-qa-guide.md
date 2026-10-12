@@ -494,8 +494,8 @@ Transcribe el estado de cada ID de la sección 3. Una línea sin evidencia perma
 Desde la raíz del repositorio ejecuta:
 
 ~~~sh
-node scripts/generate-admin-qa-pdf.mjs
-node scripts/generate-admin-qa-pdf.mjs --check
+node scripts/generate-admin-qa-pdf.cjs
+node scripts/generate-admin-qa-pdf.cjs --check
 ~~~
 
 El primer comando regenera **docs/map-071-admin-qa-guide.pdf** exclusivamente desde **docs/map-071-admin-qa-guide.md**. El segundo compara bytes y falla si el PDF versionado está desactualizado. No necesita navegador, aplicación propietaria, red ni dependencia adicional al bundle. El PDF usa tipografía estándar incrustada por referencia (Helvetica/Helvetica-Bold), texto seleccionable y páginas A4 con numeración; el Markdown conserva la fuente editorial.
