@@ -14,7 +14,7 @@ function generatePdf(markdown) {
   function clean(text) {
     return text
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
-      .replace(/[*_~]{2,}/g, '')
+      .replace(/\*\*/g, '').replace(/~~/g, '')
       .replace(/`/g, '')
       .replace(/[\u2018\u2019]/g, "'")
       .replace(/[\u201c\u201d]/g, '"')

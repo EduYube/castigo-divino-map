@@ -498,7 +498,7 @@ node scripts/generate-admin-qa-pdf.cjs
 node scripts/generate-admin-qa-pdf.cjs --check
 ~~~
 
-El primer comando regenera **docs/map-071-admin-qa-guide.pdf** exclusivamente desde **docs/map-071-admin-qa-guide.md**. El segundo compara bytes y falla si el PDF versionado está desactualizado. No necesita navegador, aplicación propietaria, red ni dependencia adicional al bundle. El PDF usa tipografía estándar incrustada por referencia (Helvetica/Helvetica-Bold), texto seleccionable y páginas A4 con numeración; el Markdown conserva la fuente editorial.
+El primer comando regenera **docs/map-071-admin-qa-guide.pdf** exclusivamente desde **docs/map-071-admin-qa-guide.md**. El segundo compara bytes y falla si el PDF versionado está desactualizado. No necesita navegador, aplicación propietaria, red ni dependencia adicional al bundle. El PDF usa fuentes PDF estándar (Helvetica/Helvetica-Bold), texto seleccionable y páginas A4 con numeración; el Markdown conserva la fuente editorial.
 
 **Límites de ejecución:** la guía documenta casos manuales, no acredita haberlos ejecutado ni autoriza mutaciones. Si no existen organizaciones, relaciones históricas o solicitudes de prueba, marca BLOCKED/N/A con motivo. No se requiere manipular datos reales, detener Supabase ni producir capturas de contenido Master. Un cambio futuro de contenido de campañas puede modificar las expectativas del roster actual sin cambiar el contrato multicampaña.
 
