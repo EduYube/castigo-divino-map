@@ -14,7 +14,7 @@ function generatePdf(markdown) {
   function clean(text) {
     return text
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
-      .replace(/\*\*/g, '').replace(/~~/g, '')
+      .replace(/\*\*/g, '').replace(/\*([^*]+)\*/g, '$1').replace(/~~/g, '')
       .replace(/`/g, '')
       .replace(/[\u2018\u2019]/g, "'")
       .replace(/[\u201c\u201d]/g, '"')
@@ -38,52 +38,49 @@ function generatePdf(markdown) {
       .replace(/\)/g, '\\)');
   }
 
-  function approxWidth(text, size, mono = false) {
-    let units = 0;
-    for (const c of clean(text)) {
-      if (mono) units += 0.6;
-      else if (c === ' ') units += 0.27;
-      else if ('il.,:;!|()[]'.includes(c)) units += 0.26;
-      else if ('MW@%QO'.includes(c)) units += 0.82;
-      else if ('frt'.includes(c)) units += 0.37;
-      else if ('ABCDEFGHJKLMNPRSTUVWXYZ'.includes(c)) units += 0.66;
-      else units += 0.52;
+
+  // PDF standard-font glyph advances for WinAnsi characters 32..255, in 1/1000 em.
+  const normalWidths = '278 278 355 556 556 889 667 191 333 333 389 584 278 333 278 278 556 556 556 556 556 556 556 556 556 556 278 278 584 584 584 556 1015 667 667 722 722 667 611 778 722 278 500 667 556 833 722 778 667 778 722 667 611 722 667 944 667 667 611 278 278 278 469 556 333 556 556 500 556 556 278 556 556 222 222 500 222 833 556 556 556 556 333 500 278 556 500 722 500 500 500 334 260 334 584 350 556 350 222 556 333 1000 556 556 333 1000 667 333 1000 350 611 350 350 222 222 333 333 350 556 1000 333 1000 500 333 944 350 500 667 278 333 556 556 556 556 260 556 333 737 370 556 584 333 737 333 400 584 333 333 333 556 537 278 333 333 365 556 834 834 834 611 667 667 667 667 667 667 1000 722 667 667 667 667 278 278 278 278 722 722 778 778 778 778 778 584 778 722 722 722 722 667 667 611 556 556 556 556 556 556 889 500 556 556 556 556 278 278 278 278 556 556 556 556 556 556 556 584 611 556 556 556 556 500 556 500'.split(' ').map(Number);
+  const boldWidths = '278 333 474 556 556 889 722 238 333 333 389 584 278 333 278 278 556 556 556 556 556 556 556 556 556 556 333 333 584 584 584 611 975 722 722 722 722 667 611 778 722 278 556 722 611 833 722 778 667 778 722 667 611 722 667 944 667 667 611 333 278 333 584 556 333 556 611 556 611 556 333 611 611 278 278 556 278 889 611 611 611 611 389 556 333 611 556 778 556 556 500 389 280 389 584 350 556 350 278 556 500 1000 556 556 333 1000 667 333 1000 350 611 350 350 278 278 500 500 350 556 1000 333 1000 556 333 944 350 500 667 278 333 556 556 556 556 280 556 333 737 370 556 584 333 737 333 400 584 333 333 333 611 556 278 333 333 365 556 834 834 834 611 722 722 722 722 722 722 1000 722 667 667 667 667 278 278 278 278 722 722 778 778 778 778 778 584 778 722 722 722 722 667 667 611 556 556 556 556 556 556 889 556 556 556 556 556 278 278 278 278 611 611 611 611 611 611 611 584 611 611 611 611 611 556 611 556'.split(' ').map(Number);
+  function textWidth(text, size, mono = false, bold = false) {
+    const widths = bold ? boldWidths : normalWidths;
+    let total = 0;
+    for (const char of clean(text)) {
+      const index = char.charCodeAt(0) - 32;
+      total += mono ? 600 : (index >= 0 && index < 224 ? widths[index] : 600);
     }
-    return units * size;
+    return total * size / 1000;
   }
 
-  function wrap(text, maxWidth, size, mono = false) {
+  function wrap(text, maxWidth, size, mono = false, bold = false) {
     const words = clean(text).split(' ').filter(Boolean);
     const lines = [];
     let current = '';
     for (const raw of words) {
       let word = raw;
-      while (approxWidth(word, size, mono) > maxWidth) {
+      while (textWidth(word, size, mono, bold) > maxWidth) {
         let part = '';
         for (const c of word) {
-          if (approxWidth(part + c, size, mono) > maxWidth && part) break;
+          if (textWidth(part + c, size, mono, bold) > maxWidth && part) break;
           part += c;
         }
-        if (current) {
-          lines.push(current);
-          current = '';
-        }
+        if (current) { lines.push(current); current = ''; }
         lines.push(part);
         word = word.slice(part.length);
       }
       if (!word) continue;
       const candidate = current ? current + ' ' + word : word;
-      if (approxWidth(candidate, size, mono) <= maxWidth) current = candidate;
-      else {
-        if (current) lines.push(current);
-        current = word;
-      }
+      if (textWidth(candidate, size, mono, bold) <= maxWidth) current = candidate;
+      else { if (current) lines.push(current); current = word; }
     }
     if (current) lines.push(current);
     return lines.length ? lines : [''];
   }
 
   function drawText(text, x, baseline, size, font = 'F1', rgb = '0.15 0.20 0.27') {
+    if (textWidth(text, size, font === 'F3', font === 'F2') > W - margin - x + 0.2) {
+      throw new Error(`Text exceeds content margin: ${text.slice(0, 50)}`);
+    }
     page.cmd.push(
       `${rgb} rg BT /${font} ${size.toFixed(2)} Tf 1 0 0 1 ${x.toFixed(2)} ${baseline.toFixed(2)} Tm (${quote(text)}) Tj ET`,
     );
@@ -128,7 +125,7 @@ function generatePdf(markdown) {
   function heading(level, text) {
     const size = level === 1 ? 18 : level === 2 ? 13.2 : 10.8;
     const lh = level === 1 ? 23 : level === 2 ? 19 : 15;
-    const lines = wrap(text, bodyWidth, size);
+    const lines = wrap(text, bodyWidth, size, false, true);
     need(15 + lines.length * lh + 15);
     y -= level === 1 ? 4 : level === 2 ? 13 : 11;
     for (const line of lines) {
@@ -166,35 +163,48 @@ function generatePdf(markdown) {
     y -= h + 8;
   }
 
+
   function table(rows) {
     if (!rows.length) return;
     const count = rows[0].length;
     const fractions =
       count === 2 ? [0.40, 0.60] : count === 3 ? [0.25, 0.40, 0.35] : [0.22, 0.40, 0.12, 0.26];
     const widths = fractions.map((fraction) => fraction * bodyWidth);
-    for (let r = 0; r < rows.length; r += 1) {
-      const cells = rows[r];
-      const wrapped = cells.map((cell, c) => wrap(cell, widths[c] - 12, 7.8));
+    const layout = rows.map((cells, r) => {
+      const wrapped = cells.map((cell, c) => wrap(cell, widths[c] - 12, 7.8, false, r === 0));
       const lineCount = Math.max(...wrapped.map((lines) => lines.length));
-      const height = Math.max(22, lineCount * 10.2 + 11);
-      need(height + 4);
-      if (r === 0) rect(margin, y - height, bodyWidth, height, '0.88 0.93 0.97');
+      return { wrapped, height: Math.max(22, lineCount * 10.2 + 11) };
+    });
+    const fits = (height) => y - height - 4 >= 62;
+    function drawRow(r, header = false) {
+      const { wrapped, height } = layout[r];
+      if (header) rect(margin, y - height, bodyWidth, height, '0.88 0.93 0.97');
       else if (r % 2 === 0) rect(margin, y - height, bodyWidth, height, '0.975 0.98 0.99');
       drawLine(margin, y - height, margin + bodyWidth, y - height, '0.80 0.85 0.90');
       let x = margin;
-      for (let c = 0; c < cells.length; c += 1) {
+      for (let c = 0; c < wrapped.length; c += 1) {
         for (let t = 0; t < wrapped[c].length; t += 1) {
-          drawText(
-            wrapped[c][t],
-            x + 6,
-            y - 12 - t * 10.2,
-            7.8,
-            r === 0 ? 'F2' : 'F1',
-          );
+          drawText(wrapped[c][t], x + 6, y - 12 - t * 10.2, 7.8, header ? 'F2' : 'F1');
         }
         x += widths[c];
       }
       y -= height;
+    }
+    for (let r = 0; r < rows.length; r += 1) {
+      if (r === 0) {
+        // Do not leave a heading isolated; keep first two rows together.
+        if (!fits(layout[0].height + (layout[1]?.height || 0))) newPage();
+      } else {
+        // Continue tables with the same column headings; keep final two rows together.
+        const finalPair = r === rows.length - 2 &&
+          !fits(layout[r].height + layout[r + 1].height);
+        if (!fits(layout[r].height) || finalPair) {
+          newPage();
+          drawRow(0, true);
+        }
+      }
+      if (!fits(layout[r].height)) throw new Error('Table row does not fit page');
+      drawRow(r, r === 0);
     }
     y -= 10;
   }
@@ -212,6 +222,14 @@ function generatePdf(markdown) {
       }
     }
     y -= 6;
+  }
+
+
+  const scenarioIDs = [...markdown.matchAll(/^### (QA-[A-Z0-9]+-\d{2})\b/gm)].map((match) => match[1]);
+  const checklistIDs = [...markdown.matchAll(/^\| (QA-[A-Z0-9]+-\d{2}) \|/gm)].map((match) => match[1]);
+  if (scenarioIDs.length !== 27 || new Set(scenarioIDs).size !== 27 ||
+      scenarioIDs.join('|') !== checklistIDs.join('|')) {
+    throw new Error('MAP-071 requires 27 scenarios and 27 matching checklist rows');
   }
 
   const lines = markdown.replace(/\r\n/g, '\n').split('\n');

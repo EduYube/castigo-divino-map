@@ -16,7 +16,7 @@ endobj
 << /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
 endobj
 6 0 obj
-<< /Length 7627 >>
+<< /Length 7625 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
@@ -29,9 +29,9 @@ stream
 0.11 0.26 0.40 rg BT /F1 9.15 Tf 1 0 0 1 58.00 707.00 Tm (borrar, moderar solicitudes o guardar relaciones son pruebas mutadoras: ejecútalas solo en un entorno o conjunto de) Tj ET
 0.11 0.26 0.40 rg BT /F1 9.15 Tf 1 0 0 1 58.00 694.00 Tm (datos expresamente autorizado, nunca con contenido temporal o «canary» en producción por defecto. No copies) Tj ET
 0.11 0.26 0.40 rg BT /F1 9.15 Tf 1 0 0 1 58.00 681.00 Tm (credenciales, tokens, datos privados de Master ni datos personales a capturas, issues o informes.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 647.00 Tm (Documento canónico: este Markdown. PDF: copia generada automáticamente, no edición independiente. Alcance: producto del) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 633.80 Tm (baseline MAP-070 y regresión administrativa candidata a v1.1.1; esta guía no constituye aprobación de release ni prueba ya) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 620.60 Tm (ejecutada.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 647.00 Tm (Documento canónico: este Markdown. PDF: copia generada automáticamente, no edición independiente. Alcance: producto) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 633.80 Tm (del baseline MAP-070 y regresión administrativa candidata a v1.1.1; esta guía no constituye aprobación de release ni) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 620.60 Tm (prueba ya ejecutada.) Tj ET
 0.12 0.32 0.51 rg BT /F2 13.20 Tf 1 0 0 1 46.00 589.60 Tm (1. Hoja de sesión y criterios) Tj ET
 0.88 0.93 0.97 rg 46.00 543.10 503.28 22.00 re f
 0.80 0.85 0.90 RG 0.5 w 46.00 543.10 m 549.28 543.10 l S
@@ -78,7 +78,7 @@ stream
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 215.50 Tm (roster, relaciones y solicitudes tienen contexto de campaña. Los nombres del roster reflejan el contenido actual y deben) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 202.30 Tm (revalidarse si se edita canónicamente.) Tj ET
 0.12 0.32 0.51 rg BT /F2 13.20 Tf 1 0 0 1 46.00 171.30 Tm (2. Quick smoke de 10-15 minutos \(P\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 146.80 Tm (Con cuenta administrativa autorizada y backend conectado, realiza la siguiente secuencia *sin guardar ni moderar nada*:) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 146.80 Tm (Con cuenta administrativa autorizada y backend conectado, realiza la siguiente secuencia sin guardar ni moderar nada:) Tj ET
 0.19 0.35 0.54 rg BT /F2 9.00 Tf 1 0 0 1 48.00 128.80 Tm (1.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 128.80 Tm (Abre el atlas y pulsa Administrar; inicia sesión. Comprueba estado autorizado, foco y ausencia de detalles internos en) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 115.80 Tm (errores.) Tj ET
@@ -94,58 +94,58 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 6 0 R >>
 endobj
 8 0 obj
-<< /Length 7117 >>
+<< /Length 7177 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
 0.19 0.35 0.54 rg BT /F2 9.00 Tf 1 0 0 1 48.00 779.00 Tm (4.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 779.00 Tm (Cambia a Un aliento menos: Veyra, nunca Ura ni Skade; comprueba que recargan lista de entidades, referencias, relaciones) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 766.00 Tm (y bandeja.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 779.00 Tm (Cambia a Un aliento menos: Veyra, nunca Ura ni Skade; comprueba que recargan lista de entidades, referencias,) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 766.00 Tm (relaciones y bandeja.) Tj ET
 0.19 0.35 0.54 rg BT /F2 9.00 Tf 1 0 0 1 48.00 750.50 Tm (5.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 750.50 Tm (Abre una ficha administrativa espacial de la campaña B sin editarla y verifica tipo, referencias y geografía.) Tj ET
 0.19 0.35 0.54 rg BT /F2 9.00 Tf 1 0 0 1 48.00 735.00 Tm (6.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 735.00 Tm (Abre una organización existente en la campaña que disponga de ella: aviso No cartográfica, sin X/Y, editor de mapa ni) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 722.00 Tm (controles de jugadores. Si no existe, marca esta línea BLOCKED, no crees un canary.) Tj ET
 0.19 0.35 0.54 rg BT /F2 9.00 Tf 1 0 0 1 48.00 706.50 Tm (7.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 706.50 Tm (Lee Relaciones con otras entidades de una ficha con relaciones: candidatos de B, etiquetas por extremo y tipos; si no hay) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 693.50 Tm (fixture real, BLOCKED.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 706.50 Tm (Lee Relaciones con otras entidades de una ficha con relaciones: candidatos de B, etiquetas por extremo y tipos; si no) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 693.50 Tm (hay fixture real, BLOCKED.) Tj ET
 0.19 0.35 0.54 rg BT /F2 9.00 Tf 1 0 0 1 48.00 678.00 Tm (8.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 678.00 Tm (Mantén campaña pública A y administrativa B: el banner ha de decir que la edición afecta únicamente a B.) Tj ET
 0.19 0.35 0.54 rg BT /F2 9.00 Tf 1 0 0 1 48.00 662.50 Tm (9.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 662.50 Tm (Vuelve a A; no deben quedar tarjetas ni jugadores de B bajo A.) Tj ET
 0.19 0.35 0.54 rg BT /F2 9.00 Tf 1 0 0 1 48.00 647.00 Tm (10.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 647.00 Tm (Sal de la administración; comprueba cierre del panel y ausencia de información privada o controles de escritura. Si se usó) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 634.00 Tm (Master Mode, sal también de él y confirma purge.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 647.00 Tm (Sal de la administración; comprueba cierre del panel y ausencia de información privada o controles de escritura. Si se) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 634.00 Tm (usó Master Mode, sal también de él y confirma purge.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 618.50 Tm (Decisión rápida: PASS en controles disponibles = «build aparentemente sano» \(no aprobación integral\). Un error de scope,) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 605.30 Tm (acceso indebido, Master purge, o mezcla A/B = «regresión administrativa importante»: FAIL, captura sin secretos y detener) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 592.10 Tm (cualquier QA mutadora. Lo no presente por falta de datos permanece BLOCKED, nunca PASS.) Tj ET
 0.12 0.32 0.51 rg BT /F2 13.20 Tf 1 0 0 1 46.00 561.10 Tm (3. Casos manuales detallados) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 536.60 Tm (Cada caso incluye objetivo, precondiciones, pasos, resultado esperado, evidencia y resultado registrable. Nunca uses una) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 523.40 Tm (prueba M para fabricar datos en producción.) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 494.40 Tm (QA-AUTH-01 - Entrada, autenticación, logout y foco \(P\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 473.90 Tm (Objetivo. Acceso administrativo únicamente tras autenticación y autorización; navegación y foco previsibles.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 455.90 Tm (Precondiciones. Atlas disponible; cuenta autorizada de prueba; sesión inicialmente cerrada.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 437.90 Tm (Pasos. 1. Con teclado abre Administrar. 2. Comprueba foco inicial del diálogo y nombres de campos. 3. Observa transición de) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 424.70 Tm (login/validación y completa el acceso con credenciales gestionadas fuera del informe. 4. Navega por la administración. 5.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 411.50 Tm (Cierra sesión; comprueba foco recuperado en el control útil. 6. Reabre y usa Escape para cerrar el diálogo sin autenticar.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 393.50 Tm (Resultado esperado. El diálogo anuncia estados sin exponer detalles de infraestructura; solo un usuario autorizado ve) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 380.30 Tm (controles administrativos operativos. Escape y logout dejan el atlas público usable y no muestran contenido de) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 367.10 Tm (administración/Master.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 349.10 Tm (Evidencia. Captura del shell sin datos personales, nota sobre foco y estado final.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 331.10 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 302.10 Tm (QA-AUTH-02 - Usuario sin permisos, sesión expirada y errores \(P/C\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 281.60 Tm (Objetivo. Fallo cerrado de autorización sin degradar el atlas.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 263.60 Tm (Precondiciones. Usuario no admin en entorno autorizado; fixture de expiración/revocación o sesión de prueba controlada; sin) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 250.40 Tm (uso de credenciales reales de terceros.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 232.40 Tm (Pasos. 1. Prueba login de usuario no autorizado y observa el estado. 2. Inspecciona que no se abre CRUD ni bandeja. 3. En) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 219.20 Tm (fixture/local simula sesión vencida o revocada y solicita una lectura protegida. 4. Comprueba bloqueo de acciones tras un) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 206.00 Tm (401/403 simulado. 5. Revisa texto visible de error.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 188.00 Tm (Resultado esperado. Login no implica autorización; estados no autorizado/caducado bloquean escritura. No aparecen) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 174.80 Tm (SQLSTATE, PostgREST, constraints, JWT ni trazas crudas; el mapa público sigue navegable.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 156.80 Tm (Evidencia. Estado UI anonimizado, método de simulación y ausencia de controles mutadores.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 138.80 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 109.80 Tm (QA-CAMP-01 - Banner y roster de ambas campañas \(P\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 89.30 Tm (Objetivo. Identificar inequívocamente el destino administrativo de una escritura.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 536.60 Tm (Cobertura controlada: 27 escenarios de QA, con un ID único por escenario y una fila correspondiente en la checklist de la) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 523.40 Tm (sección 4. No se deben omitir escenarios en la consolidación de MAP-072.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 505.40 Tm (Cada caso incluye objetivo, precondiciones, pasos, resultado esperado, evidencia y resultado registrable. Nunca uses una) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 492.20 Tm (prueba M para fabricar datos en producción.) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 463.20 Tm (QA-AUTH-01 - Entrada, autenticación, logout y foco \(P\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 442.70 Tm (Objetivo. Acceso administrativo únicamente tras autenticación y autorización; navegación y foco previsibles.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 424.70 Tm (Precondiciones. Atlas disponible; cuenta autorizada de prueba; sesión inicialmente cerrada.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 406.70 Tm (Pasos. 1. Con teclado abre Administrar. 2. Comprueba foco inicial del diálogo y nombres de campos. 3. Observa transición) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 393.50 Tm (de login/validación y completa el acceso con credenciales gestionadas fuera del informe. 4. Navega por la administración.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 380.30 Tm (5. Cierra sesión; comprueba foco recuperado en el control útil. 6. Reabre y usa Escape para cerrar el diálogo sin autenticar.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 362.30 Tm (Resultado esperado. El diálogo anuncia estados sin exponer detalles de infraestructura; solo un usuario autorizado ve) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 349.10 Tm (controles administrativos operativos. Escape y logout dejan el atlas público usable y no muestran contenido de) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 335.90 Tm (administración/Master.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 317.90 Tm (Evidencia. Captura del shell sin datos personales, nota sobre foco y estado final.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 299.90 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 270.90 Tm (QA-AUTH-02 - Usuario sin permisos, sesión expirada y errores \(P/C\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 250.40 Tm (Objetivo. Fallo cerrado de autorización sin degradar el atlas.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 232.40 Tm (Precondiciones. Usuario no admin en entorno autorizado; fixture de expiración/revocación o sesión de prueba controlada;) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 219.20 Tm (sin uso de credenciales reales de terceros.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 201.20 Tm (Pasos. 1. Prueba login de usuario no autorizado y observa el estado. 2. Inspecciona que no se abre CRUD ni bandeja. 3.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 188.00 Tm (En fixture/local simula sesión vencida o revocada y solicita una lectura protegida. 4. Comprueba bloqueo de acciones tras) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 174.80 Tm (un 401/403 simulado. 5. Revisa texto visible de error.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 156.80 Tm (Resultado esperado. Login no implica autorización; estados no autorizado/caducado bloquean escritura. No aparecen) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 143.60 Tm (SQLSTATE, PostgREST, constraints, JWT ni trazas crudas; el mapa público sigue navegable.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 125.60 Tm (Evidencia. Estado UI anonimizado, método de simulación y ausencia de controles mutadores.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 107.60 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
 0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 2 / 11) Tj ET
 endstream
@@ -154,50 +154,50 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 8 0 R >>
 endobj
 10 0 obj
-<< /Length 6476 >>
+<< /Length 6482 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 779.00 Tm (Precondiciones. Administración autorizada y campañas activas Castigo Divino/Un aliento menos.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 761.00 Tm (Pasos. 1. Lee banner Contexto administrativo, nombre y selector Campaña administrativa. 2. Selecciona Castigo Divino y lee) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 747.80 Tm (roster. 3. Selecciona Un aliento menos y vuelve a leer. 4. Compara el texto de campaña pública visible y su aviso de) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 734.60 Tm (divergencia. 5. Comprueba anuncio accesible del cambio \(región de estado\).) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 716.60 Tm (Resultado esperado. Castigo Divino = Ura y Skade, sin Veyra. Un aliento menos = Veyra, sin Ura ni Skade. El nombre legible y) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 703.40 Tm (contexto permanecen visibles; si público y admin divergen, el banner declara explícitamente qué campaña recibirá ediciones.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 690.20 Tm (Ningún jugador ajeno aparece como referent.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 672.20 Tm (Evidencia. Dos capturas de roster/banner \(sin información Master\).) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 654.20 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 625.20 Tm (QA-CAMP-02 - Cambio limpio A <-> B \(P\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 604.70 Tm (Objetivo. Invalidar por completo el contenido dependiente de campaña.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 586.70 Tm (Precondiciones. Sin editores ni notas pendientes; datos de lectura en ambas campañas.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 568.70 Tm (Pasos. 1. En A revisa roster, entidades, categorías/tags, aliases y bandeja de solicitudes \(si existen\). 2. Cambia a B. 3.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 555.50 Tm (Revisa las mismas secciones y el selector de targets de Relaciones con otras entidades. 4. Regresa a A y repite.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 537.50 Tm (Resultado esperado. El contexto no cambia parcialmente; roster, lista de entidades, referencias de aliases, relaciones y) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 524.30 Tm (bandeja corresponden exclusivamente a la campaña confirmada. Las fichas o confirmaciones antiguas no continúan abiertas) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 511.10 Tm (bajo el banner nuevo. Los registros de nombres geográficos físicos son globales, pero cualquier referencia de entidad) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 497.90 Tm (vinculada se invalida y se obtiene de nuevo para el contexto actual.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 479.90 Tm (Evidencia. Banner + selección + lista tras cada transición.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 461.90 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 432.90 Tm (QA-CAMP-03 - Borrador sin guardar: cancelar cambio \(P\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 412.40 Tm (Objetivo. Proteger el trabajo local al cancelar.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 394.40 Tm (Precondiciones. Formulario editable en A. Solo se escribe texto local, sin pulsar Guardar.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 376.40 Tm (Pasos. 1. Introduce una modificación claramente identificable en descripción o nota administrativa. 2. Intenta pasar de A a B.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 363.20 Tm (3. En la confirmación elige Cancelar. 4. Inspecciona campaña, contenido del campo, banner y foco.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 345.20 Tm (Resultado esperado. Permanece A, el borrador sigue íntegro, el foco vuelve a un control útil y el banner sigue indicando A; no) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 332.00 Tm (se emite una escritura.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 314.00 Tm (Evidencia. Valor de prueba no sensible antes/después y destino del foco.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 296.00 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 267.00 Tm (QA-CAMP-04 - Borrador sin guardar: aceptar descarte \(P\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 246.50 Tm (Objetivo. Evitar fugas de borradores entre campañas.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 228.50 Tm (Precondiciones. Como QA-CAMP-03, con un campo o nota sin guardar.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 210.50 Tm (Pasos. 1. Solicita cambio A -> B. 2. Acepta descartar. 3. Revisa banner, roster, entidades, referencias, relaciones y) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 197.30 Tm (solicitudes. 4. Vuelve a abrir el editor para verificar que no se ha trasladado el texto pendiente.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 179.30 Tm (Resultado esperado. La nueva campaña solo queda confirmada después de cargar el roster B; se limpia el borrador anterior y) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 166.10 Tm (se recargan todas las áreas dependientes. No se guarda el texto sin confirmar ni queda bajo B.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 148.10 Tm (Evidencia. Contexto final y ausencia del texto local.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 130.10 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 101.10 Tm (QA-CAMP-05 - Fallo de carga del destino y rollback \(C\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 80.60 Tm (Objetivo. Comprobar rollback atómico de un cambio de contexto fallido.) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 768.00 Tm (QA-CAMP-01 - Banner y roster de ambas campañas \(P\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 747.50 Tm (Objetivo. Identificar inequívocamente el destino administrativo de una escritura.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 729.50 Tm (Precondiciones. Administración autorizada y campañas activas Castigo Divino/Un aliento menos.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 711.50 Tm (Pasos. 1. Lee banner Contexto administrativo, nombre y selector Campaña administrativa. 2. Selecciona Castigo Divino y) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 698.30 Tm (lee roster. 3. Selecciona Un aliento menos y vuelve a leer. 4. Compara el texto de campaña pública visible y su aviso de) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 685.10 Tm (divergencia. 5. Comprueba anuncio accesible del cambio \(región de estado\).) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 667.10 Tm (Resultado esperado. Castigo Divino = Ura y Skade, sin Veyra. Un aliento menos = Veyra, sin Ura ni Skade. El nombre) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 653.90 Tm (legible y contexto permanecen visibles; si público y admin divergen, el banner declara explícitamente qué campaña recibirá) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 640.70 Tm (ediciones. Ningún jugador ajeno aparece como referent.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 622.70 Tm (Evidencia. Dos capturas de roster/banner \(sin información Master\).) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 604.70 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 575.70 Tm (QA-CAMP-02 - Cambio limpio A <-> B \(P\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 555.20 Tm (Objetivo. Invalidar por completo el contenido dependiente de campaña.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 537.20 Tm (Precondiciones. Sin editores ni notas pendientes; datos de lectura en ambas campañas.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 519.20 Tm (Pasos. 1. En A revisa roster, entidades, categorías/tags, aliases y bandeja de solicitudes \(si existen\). 2. Cambia a B. 3.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 506.00 Tm (Revisa las mismas secciones y el selector de targets de Relaciones con otras entidades. 4. Regresa a A y repite.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 488.00 Tm (Resultado esperado. El contexto no cambia parcialmente; roster, lista de entidades, referencias de aliases, relaciones y) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 474.80 Tm (bandeja corresponden exclusivamente a la campaña confirmada. Las fichas o confirmaciones antiguas no continúan) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 461.60 Tm (abiertas bajo el banner nuevo. Los registros de nombres geográficos físicos son globales, pero cualquier referencia de) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 448.40 Tm (entidad vinculada se invalida y se obtiene de nuevo para el contexto actual.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 430.40 Tm (Evidencia. Banner + selección + lista tras cada transición.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 412.40 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 383.40 Tm (QA-CAMP-03 - Borrador sin guardar: cancelar cambio \(P\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 362.90 Tm (Objetivo. Proteger el trabajo local al cancelar.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 344.90 Tm (Precondiciones. Formulario editable en A. Solo se escribe texto local, sin pulsar Guardar.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 326.90 Tm (Pasos. 1. Introduce una modificación claramente identificable en descripción o nota administrativa. 2. Intenta pasar de A a) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 313.70 Tm (B. 3. En la confirmación elige Cancelar. 4. Inspecciona campaña, contenido del campo, banner y foco.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 295.70 Tm (Resultado esperado. Permanece A, el borrador sigue íntegro, el foco vuelve a un control útil y el banner sigue indicando A;) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 282.50 Tm (no se emite una escritura.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 264.50 Tm (Evidencia. Valor de prueba no sensible antes/después y destino del foco.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 246.50 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 217.50 Tm (QA-CAMP-04 - Borrador sin guardar: aceptar descarte \(P\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 197.00 Tm (Objetivo. Evitar fugas de borradores entre campañas.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 179.00 Tm (Precondiciones. Como QA-CAMP-03, con un campo o nota sin guardar.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 161.00 Tm (Pasos. 1. Solicita cambio A -> B. 2. Acepta descartar. 3. Revisa banner, roster, entidades, referencias, relaciones y) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 147.80 Tm (solicitudes. 4. Vuelve a abrir el editor para verificar que no se ha trasladado el texto pendiente.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 129.80 Tm (Resultado esperado. La nueva campaña solo queda confirmada después de cargar el roster B; se limpia el borrador) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 116.60 Tm (anterior y se recargan todas las áreas dependientes. No se guarda el texto sin confirmar ni queda bajo B.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 98.60 Tm (Evidencia. Contexto final y ausencia del texto local.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 80.60 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
 0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 3 / 11) Tj ET
 endstream
@@ -206,52 +206,50 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 10 0 R >>
 endobj
 12 0 obj
-<< /Length 6974 >>
+<< /Length 6506 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 779.00 Tm (Precondiciones. Fixture/local capaz de fallar únicamente la lectura del roster B; NO bloquear el backend de producción.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 761.00 Tm (Pasos. 1. Con A operativa, prepara fallo controlado del roster destino B. 2. Cambia A -> B y espera mensaje accesible. 3.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 747.80 Tm (Restablece el fixture. 4. Comprueba banner A, roster A, listas y selector; recarga en A si es necesario.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 729.80 Tm (Resultado esperado. B nunca aparece confirmada con datos parciales de A; vuelve A y su roster utilizable. Un error de) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 716.60 Tm (autorización continúa con su bloqueo de seguridad correspondiente.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 698.60 Tm (Evidencia. Fixture empleado, texto de error, banner y roster recuperados.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 680.60 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 651.60 Tm (QA-CAT-01 - Categorías, etiquetas, aliases y nombres geográficos \(M\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 631.10 Tm (Objetivo. Validar el ciclo editorial del catálogo real sin confundir recursos de campaña y geografía global.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 613.10 Tm (Precondiciones. Dataset de QA autorizado con categoría, tag, entidad de prueba y nombre geográfico físico; limpieza) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 599.90 Tm (acordada.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 581.90 Tm (Pasos. 1. Abre cada recurso: categorías, etiquetas, nombres alternativos de entidad, nombres geográficos y sus aliases si) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 568.70 Tm (están disponibles. 2. Crea un borrador y provoca una validación \(nombre/slug inválido\). 3. Corrige, guarda y edita. 4.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 555.50 Tm (Inspecciona previsualización y publica solo si el dataset lo permite. 5. Archiva tras confirmación. 6. Revisa que el archivado) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 542.30 Tm (deje de comportarse como contenido activo.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 524.30 Tm (Resultado esperado. IDs/slugs estables según historial de publicación, validaciones por campo y estados) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 511.10 Tm (draft/published/archived visibles. Categorías, tags y aliases de entidad obedecen al scope admin; un nombre geográfico) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 497.90 Tm (físico es global, aunque su posible referencia a una entidad debe corresponder a la campaña actual. Sin publicar no aparece) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 484.70 Tm (como contenido público.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 466.70 Tm (Evidencia. IDs no personales, estados antes/después, validación y visualización de preview.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 448.70 Tm (Limpieza. Archivar registros publicados; eliminar físicamente solo borradores nunca publicados que el sistema permita y que) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 435.50 Tm (no tengan dependencias, según autorización.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 417.50 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 388.50 Tm (QA-CAT-02 - Bloqueos, conflictos y borrado excepcional \(M\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 368.00 Tm (Objetivo. Confirmar que un recurso referenciado no se elimina destructivamente.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 350.00 Tm (Precondiciones. Fixtures de QA con relaciones publicadas y borrador nunca publicado.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 332.00 Tm (Pasos. 1. Intenta archivar un recurso que soporte una relación publicada. 2. Observa confirmación/bloqueo. 3. Fuerza una) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 318.80 Tm (edición obsoleta con dos pestañas de prueba si existe fixture. 4. En borrador no publicado, observa disponibilidad de) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 305.60 Tm (eliminación física y sus restricciones.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 287.60 Tm (Resultado esperado. Conflicto o dependencia se explica con mensaje seguro; no hay cascadas ocultas ni sobrescritura) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 274.40 Tm (silenciosa. La eliminación física solo se ofrece cuando nunca se publicó y no hay referencias que la impidan; archivado es la) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 261.20 Tm (retirada ordinaria.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 243.20 Tm (Evidencia. Mensajes normalizados y estado final consistente.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 225.20 Tm (Limpieza. Revertir cambios de fixtures y archivar contenido publicado que corresponda.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 207.20 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 178.20 Tm (QA-ENTITY-01 - Editor de tipos cartográficos \(M\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 157.70 Tm (Objetivo. Verificar geometría obligatoria y editor visual para character, location, mission y hazard.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 139.70 Tm (Precondiciones. Dataset de QA, categoría válida y posición autorizada; no usar coordenadas ficticias en producción.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 121.70 Tm (Pasos. 1. En entidades crea un borrador de cada tipo Personaje, Emplazamiento, Misión y Peligro. 2. Revisa ID estable, Slug,) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 108.50 Tm (Nombre principal \(inglés\), categoría, etiquetas, audiencia y resumen. 3. Para misión/peligro inspecciona Estado funcional. 4.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 95.30 Tm (Deja vacías X/Y o geometría y observa rechazo. 5. Introduce coordenadas válidas \(X 0-3600; Y 0-2329\) y usa Geometría) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 82.10 Tm (sobre el mapa para punto y, donde aplique, Área/Región. 6. Comprueba preview y guarda borrador.) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 768.00 Tm (QA-CAMP-05 - Fallo de carga del destino y rollback \(C\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 747.50 Tm (Objetivo. Comprobar rollback atómico de un cambio de contexto fallido.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 729.50 Tm (Precondiciones. Fixture/local capaz de fallar únicamente la lectura del roster B; NO bloquear el backend de producción.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 711.50 Tm (Pasos. 1. Con A operativa, prepara fallo controlado del roster destino B. 2. Cambia A -> B y espera mensaje accesible. 3.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 698.30 Tm (Restablece el fixture. 4. Comprueba banner A, roster A, listas y selector; recarga en A si es necesario.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 680.30 Tm (Resultado esperado. B nunca aparece confirmada con datos parciales de A; vuelve A y su roster utilizable. Un error de) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 667.10 Tm (autorización continúa con su bloqueo de seguridad correspondiente.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 649.10 Tm (Evidencia. Fixture empleado, texto de error, banner y roster recuperados.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 631.10 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 602.10 Tm (QA-CAT-01 - Categorías, etiquetas, aliases y nombres geográficos \(M\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 581.60 Tm (Objetivo. Validar el ciclo editorial del catálogo real sin confundir recursos de campaña y geografía global.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 563.60 Tm (Precondiciones. Dataset de QA autorizado con categoría, tag, entidad de prueba y nombre geográfico físico; limpieza) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 550.40 Tm (acordada.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 532.40 Tm (Pasos. 1. Abre cada recurso: categorías, etiquetas, nombres alternativos de entidad, nombres geográficos y sus aliases si) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 519.20 Tm (están disponibles. 2. Crea un borrador y provoca una validación \(nombre/slug inválido\). 3. Corrige, guarda y edita. 4.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 506.00 Tm (Inspecciona previsualización y publica solo si el dataset lo permite. 5. Archiva tras confirmación. 6. Revisa que el archivado) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 492.80 Tm (deje de comportarse como contenido activo.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 474.80 Tm (Resultado esperado. IDs/slugs estables según historial de publicación, validaciones por campo y estados) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 461.60 Tm (draft/published/archived visibles. Categorías, tags y aliases de entidad obedecen al scope admin; un nombre geográfico) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 448.40 Tm (físico es global, aunque su posible referencia a una entidad debe corresponder a la campaña actual. Sin publicar no) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 435.20 Tm (aparece como contenido público.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 417.20 Tm (Evidencia. IDs no personales, estados antes/después, validación y visualización de preview.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 399.20 Tm (Limpieza. Archivar registros publicados; eliminar físicamente solo borradores nunca publicados que el sistema permita y) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 386.00 Tm (que no tengan dependencias, según autorización.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 368.00 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 339.00 Tm (QA-CAT-02 - Bloqueos, conflictos y borrado excepcional \(M\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 318.50 Tm (Objetivo. Confirmar que un recurso referenciado no se elimina destructivamente.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 300.50 Tm (Precondiciones. Fixtures de QA con relaciones publicadas y borrador nunca publicado.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 282.50 Tm (Pasos. 1. Intenta archivar un recurso que soporte una relación publicada. 2. Observa confirmación/bloqueo. 3. Fuerza una) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 269.30 Tm (edición obsoleta con dos pestañas de prueba si existe fixture. 4. En borrador no publicado, observa disponibilidad de) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 256.10 Tm (eliminación física y sus restricciones.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 238.10 Tm (Resultado esperado. Conflicto o dependencia se explica con mensaje seguro; no hay cascadas ocultas ni sobrescritura) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 224.90 Tm (silenciosa. La eliminación física solo se ofrece cuando nunca se publicó y no hay referencias que la impidan; archivado es) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 211.70 Tm (la retirada ordinaria.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 193.70 Tm (Evidencia. Mensajes normalizados y estado final consistente.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 175.70 Tm (Limpieza. Revertir cambios de fixtures y archivar contenido publicado que corresponda.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 157.70 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 128.70 Tm (QA-ENTITY-01 - Editor de tipos cartográficos \(M\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 108.20 Tm (Objetivo. Verificar geometría obligatoria y editor visual para character, location, mission y hazard.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 90.20 Tm (Precondiciones. Dataset de QA, categoría válida y posición autorizada; no usar coordenadas ficticias en producción.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
 0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 4 / 11) Tj ET
 endstream
@@ -260,51 +258,51 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 12 0 R >>
 endobj
 14 0 obj
-<< /Length 6693 >>
+<< /Length 6751 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 779.00 Tm (Resultado esperado. Ningún tipo espacial persiste sin coordenadas y geometría válidas; el punto o región y las coordenadas) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 765.80 Tm (representativas son coherentes, con validación visible. El tipo de entidad no cambia después de crearla.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 747.80 Tm (Evidencia. Preview con tipo y geometría, mensaje de coordenadas y estado draft.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 729.80 Tm (Limpieza. Retirar borradores de QA únicamente si la política de borrado los permite.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 711.80 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 682.80 Tm (QA-ENTITY-02 - Descubrimiento, publicación y archivado \(M\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 662.30 Tm (Objetivo. Ciclo de vida y visibilidad de la entidad.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 644.30 Tm (Precondiciones. Entidad espacial válida en dataset de QA.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 626.30 Tm (Pasos. 1. Compara pin y search_only mediante control de Visibilidad cartográfica. 2. Comprueba la preview antes de guardar. 3.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 613.10 Tm (Publica y verifica búsqueda/ficha pública exclusivamente en la campaña correspondiente; para search_only no esperes pin. 4.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 599.90 Tm (Archiva y comprueba retirada del contenido activo. 5. Verifica que un archived no sea target elegible para nuevas relaciones.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 581.90 Tm (Resultado esperado. Guardar draft no publica; published se descubre conforme a visibilidad; search_only no crea marcador;) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 568.70 Tm (archived no reaparece como activo.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 550.70 Tm (Evidencia. Estados y captura del mapa/búsqueda de QA sin datos privados.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 532.70 Tm (Limpieza. Archivar las entidades publicadas de prueba y verificar retirada.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 514.70 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 485.70 Tm (QA-ORG-01 - Organización no cartográfica \(P/M\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 465.20 Tm (Objetivo. Diferenciar organizaciones de emplazamientos.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 447.20 Tm (Precondiciones. P: organización existente legible; M: posibilidad de crear una en dataset autorizado.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 429.20 Tm (Pasos. 1. Abre/crea tipo Organización. 2. Comprueba aviso literal No cartográfica. 3. Busca campos X, Y, geometría, selector) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 416.00 Tm (de punto/región, canvas de mapa y marcadores. 4. Revisa descubrimiento, categoría, etiquetas, audiencia, lifecycle y) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 402.80 Tm (Relaciones con otras entidades. 5. Busca controles de dispositions y player associations. 6. En M enlaza una sede física) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 389.60 Tm (existente tipo location como relación genérica, sin asignar posición a organización.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 371.60 Tm (Resultado esperado. No aparecen X/Y ni mapa, geometry o marker; descubrimiento está fijado a catálogo/búsqueda) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 358.40 Tm (\(search_only\). No hay dispositions, player associations ni retrato cartográfico. Sí hay taxonomía, audiencia y relaciones) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 345.20 Tm (genéricas compatibles. La sede física se modela como una entidad location independiente relacionada con la organización;) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 332.00 Tm (nunca añadas coordenadas ficticias.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 314.00 Tm (Evidencia. Editor/preview No cartográfica y ficha sin pan/zoom al abrir desde búsqueda.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 296.00 Tm (Limpieza. M: retirar relación y archivar/retirar organización de QA conforme al ciclo permitido.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 278.00 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 249.00 Tm (QA-ROSTER-01 - Personajes jugadores / referents \(P/M\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 228.50 Tm (Objetivo. Garantizar roster de campaña sin contaminación cruzada.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 210.50 Tm (Precondiciones. Dos campañas y datos actuales; M solo si se editarán registros de roster en fixture.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 192.50 Tm (Pasos. 1. Lee cabecera Campañas y personajes jugadores. 2. Compara roster de A y B. 3. Comprueba que cada jugador está) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 179.30 Tm (ligado al personaje de su propia campaña. 4. En M revisa validación de nuevo jugador/orden/acento y cancela antes de) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 166.10 Tm (guardar si no hay autorización adicional.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 148.10 Tm (Resultado esperado. Solo Ura/Skade en A y Veyra en B; el roster no es una lista global de entidades ni de relaciones) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 134.90 Tm (genéricas. No se puede elegir un referent de otra campaña.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 116.90 Tm (Evidencia. Tabla breve A/B y captura anonimizada.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 98.90 Tm (Limpieza. Si el fixture se modificó, devolver su roster editorial a estado inicial.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 80.90 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 779.00 Tm (Pasos. 1. En entidades crea un borrador de cada tipo Personaje, Emplazamiento, Misión y Peligro. 2. Revisa ID estable,) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 765.80 Tm (Slug, Nombre principal \(inglés\), categoría, etiquetas, audiencia y resumen. 3. Para misión/peligro inspecciona Estado) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 752.60 Tm (funcional. 4. Deja vacías X/Y o geometría y observa rechazo. 5. Introduce coordenadas válidas \(X 0-3600; Y 0-2329\) y usa) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 739.40 Tm (Geometría sobre el mapa para punto y, donde aplique, Área/Región. 6. Comprueba preview y guarda borrador.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 721.40 Tm (Resultado esperado. Ningún tipo espacial persiste sin coordenadas y geometría válidas; el punto o región y las) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 708.20 Tm (coordenadas representativas son coherentes, con validación visible. El tipo de entidad no cambia después de crearla.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 690.20 Tm (Evidencia. Preview con tipo y geometría, mensaje de coordenadas y estado draft.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 672.20 Tm (Limpieza. Retirar borradores de QA únicamente si la política de borrado los permite.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 654.20 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 625.20 Tm (QA-ENTITY-02 - Descubrimiento, publicación y archivado \(M\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 604.70 Tm (Objetivo. Ciclo de vida y visibilidad de la entidad.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 586.70 Tm (Precondiciones. Entidad espacial válida en dataset de QA.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 568.70 Tm (Pasos. 1. Compara pin y search_only mediante control de Visibilidad cartográfica. 2. Comprueba la preview antes de) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 555.50 Tm (guardar. 3. Publica y verifica búsqueda/ficha pública exclusivamente en la campaña correspondiente; para search_only no) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 542.30 Tm (esperes pin. 4. Archiva y comprueba retirada del contenido activo. 5. Verifica que un archived no sea target elegible para) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 529.10 Tm (nuevas relaciones.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 511.10 Tm (Resultado esperado. Guardar draft no publica; published se descubre conforme a visibilidad; search_only no crea) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 497.90 Tm (marcador; archived no reaparece como activo.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 479.90 Tm (Evidencia. Estados y captura del mapa/búsqueda de QA sin datos privados.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 461.90 Tm (Limpieza. Archivar las entidades publicadas de prueba y verificar retirada.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 443.90 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 414.90 Tm (QA-ORG-01 - Organización no cartográfica \(P/M\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 394.40 Tm (Objetivo. Diferenciar organizaciones de emplazamientos.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 376.40 Tm (Precondiciones. P: organización existente legible; M: posibilidad de crear una en dataset autorizado.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 358.40 Tm (Pasos. 1. Abre/crea tipo Organización. 2. Comprueba aviso literal No cartográfica. 3. Busca campos X, Y, geometría,) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 345.20 Tm (selector de punto/región, canvas de mapa y marcadores. 4. Revisa descubrimiento, categoría, etiquetas, audiencia,) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 332.00 Tm (lifecycle y Relaciones con otras entidades. 5. Busca controles de dispositions y player associations. 6. En M enlaza una) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 318.80 Tm (sede física existente tipo location como relación genérica, sin asignar posición a organización.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 300.80 Tm (Resultado esperado. No aparecen X/Y ni mapa, geometry o marker; descubrimiento está fijado a catálogo/búsqueda) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 287.60 Tm (\(search_only\). No hay dispositions, player associations ni retrato cartográfico. Sí hay taxonomía, audiencia y relaciones) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 274.40 Tm (genéricas compatibles. La sede física se modela como una entidad location independiente relacionada con la organización;) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 261.20 Tm (nunca añadas coordenadas ficticias.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 243.20 Tm (Evidencia. Editor/preview No cartográfica y ficha sin pan/zoom al abrir desde búsqueda.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 225.20 Tm (Limpieza. M: retirar relación y archivar/retirar organización de QA conforme al ciclo permitido.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 207.20 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 178.20 Tm (QA-ROSTER-01 - Personajes jugadores / referents \(P/M\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 157.70 Tm (Objetivo. Garantizar roster de campaña sin contaminación cruzada.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 139.70 Tm (Precondiciones. Dos campañas y datos actuales; M solo si se editarán registros de roster en fixture.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 121.70 Tm (Pasos. 1. Lee cabecera Campañas y personajes jugadores. 2. Compara roster de A y B. 3. Comprueba que cada jugador) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 108.50 Tm (está ligado al personaje de su propia campaña. 4. En M revisa validación de nuevo jugador/orden/acento y cancela antes) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 95.30 Tm (de guardar si no hay autorización adicional.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
 0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 5 / 11) Tj ET
 endstream
@@ -313,50 +311,50 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 14 0 R >>
 endobj
 16 0 obj
-<< /Length 6468 >>
+<< /Length 6410 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 768.00 Tm (QA-DISP-01 - Dispositions \(P/M\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 747.50 Tm (Objetivo. Verificar disposiciones referidas únicamente a jugadores elegibles.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 729.50 Tm (Precondiciones. Entidad espacial editable de A/B con roster; M si se guardan valores.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 711.50 Tm (Pasos. 1. Abre Relación con los personajes. 2. En A verifica opciones Ura/Skade y ausencia de Veyra; en B verifica Veyra) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 698.30 Tm (sin Ura/Skade. 3. Revisa los valores ally / neutral / enemy presentados con sus etiquetas. 4. Comprueba que la sección se) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 685.10 Tm (distingue de Relaciones con otras entidades. 5. En M guarda y reabre una combinación autorizada.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 667.10 Tm (Resultado esperado. Neutral es un valor válido de edición; solo el roster de campaña participa. Una organización nunca ofrece) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 653.90 Tm (disposiciones. En el pin público pueden representarse solo ally/enemy aunque neutral se conserve en el editor.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 635.90 Tm (Evidencia. Selectores de roster y valores, sin nombres Master.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 617.90 Tm (Limpieza. Restaurar dispositions del fixture.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 599.90 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 570.90 Tm (QA-ASSOC-01 - Player associations \(P/M\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 550.40 Tm (Objetivo. Separar las asociaciones jugador-entidad de disposiciones y relaciones genéricas.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 532.40 Tm (Precondiciones. Entidad apta con controles de asociación y jugadores de la campaña.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 514.40 Tm (Pasos. 1. Abre asociación de jugadores de una entidad apta. 2. Inspecciona candidatos en A y B, rechazando referencias) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 501.20 Tm (cross-campaign. 3. Cambia campaña con panel abierto y observa cierre/recarga de controles. 4. Abre una organization y) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 488.00 Tm (comprueba ausencia del bloque.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 470.00 Tm (Resultado esperado. Candidatos solo de campaña administrativa; la transición desmonta asociaciones antiguas. Las) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 456.80 Tm (organizaciones no participan. Una asociación no crea automáticamente una generic entity relation.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 438.80 Tm (Evidencia. Capturas comparadas por campaña, sin datos privados.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 420.80 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 391.80 Tm (QA-REL-01 - Relaciones genéricas y etiquetas orientadas \(P/M\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 371.30 Tm (Objetivo. Garantizar relaciones entre entidades same-campaign, separadas del roster.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 353.30 Tm (Precondiciones. P: entidades ya relacionadas; M: fixtures con organization, location, character y, si es viable, dos) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 340.10 Tm (organizaciones.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 322.10 Tm (Pasos. 1. En el editor abre Relaciones con otras entidades, pulsa Añadir relación solo para inspeccionar candidatos \(sin) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 308.90 Tm (Guardar en P\). 2. Confirma que cada opción identifica tipo y solo entidades activas de campaña. 3. En M guarda) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 295.70 Tm (organization<->location, organization<->character y organization<->organization con dos etiquetas por extremo. 4. Abre) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 282.50 Tm (cada extremo y compara la etiqueta que ve cada ficha. 5. Comprueba que una relación no se duplica al visitarla desde el otro) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 269.30 Tm (lado.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 251.30 Tm (Resultado esperado. Ambos extremos de la misma campaña; etiquetas orientadas correctamente en ambas fichas; relación) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 238.10 Tm (única, independiente de dispositions y associations; tipo reconocible en el selector.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 220.10 Tm (Evidencia. Pareja de fichas, etiquetas y nombre/tipo de targets.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 202.10 Tm (Limpieza. Retirar relaciones de QA y archivar/retirar fixtures según autorización.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 184.10 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 155.10 Tm (QA-REL-02 - Targets archivados y cross-campaign \(P/M\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 134.60 Tm (Objetivo. Impedir nuevas relaciones inválidas conservando historial legible.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 116.60 Tm (Precondiciones. Fixtures con entidad archivada y relación histórica anterior; dos campañas.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 98.60 Tm (Pasos. 1. Abre editor en A y enumera targets nuevos. 2. Verifica que ninguna entidad de B está disponible. 3. Comprueba que) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 85.40 Tm (un target archivado no se ofrece para nuevas relaciones. 4. Abre una relación histórica conservada hacia target después) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 779.00 Tm (Resultado esperado. Solo Ura/Skade en A y Veyra en B; el roster no es una lista global de entidades ni de relaciones) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 765.80 Tm (genéricas. No se puede elegir un referent de otra campaña.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 747.80 Tm (Evidencia. Tabla breve A/B y captura anonimizada.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 729.80 Tm (Limpieza. Si el fixture se modificó, devolver su roster editorial a estado inicial.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 711.80 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 682.80 Tm (QA-DISP-01 - Dispositions \(P/M\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 662.30 Tm (Objetivo. Verificar disposiciones referidas únicamente a jugadores elegibles.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 644.30 Tm (Precondiciones. Entidad espacial editable de A/B con roster; M si se guardan valores.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 626.30 Tm (Pasos. 1. Abre Relación con los personajes. 2. En A verifica opciones Ura/Skade y ausencia de Veyra; en B verifica Veyra) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 613.10 Tm (sin Ura/Skade. 3. Revisa los valores ally / neutral / enemy presentados con sus etiquetas. 4. Comprueba que la sección se) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 599.90 Tm (distingue de Relaciones con otras entidades. 5. En M guarda y reabre una combinación autorizada.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 581.90 Tm (Resultado esperado. Neutral es un valor válido de edición; solo el roster de campaña participa. Una organización nunca) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 568.70 Tm (ofrece disposiciones. En el pin público pueden representarse solo ally/enemy aunque neutral se conserve en el editor.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 550.70 Tm (Evidencia. Selectores de roster y valores, sin nombres Master.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 532.70 Tm (Limpieza. Restaurar dispositions del fixture.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 514.70 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 485.70 Tm (QA-ASSOC-01 - Player associations \(P/M\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 465.20 Tm (Objetivo. Separar las asociaciones jugador-entidad de disposiciones y relaciones genéricas.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 447.20 Tm (Precondiciones. Entidad apta con controles de asociación y jugadores de la campaña.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 429.20 Tm (Pasos. 1. Abre asociación de jugadores de una entidad apta. 2. Inspecciona candidatos en A y B, rechazando referencias) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 416.00 Tm (cross-campaign. 3. Cambia campaña con panel abierto y observa cierre/recarga de controles. 4. Abre una organization y) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 402.80 Tm (comprueba ausencia del bloque.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 384.80 Tm (Resultado esperado. Candidatos solo de campaña administrativa; la transición desmonta asociaciones antiguas. Las) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 371.60 Tm (organizaciones no participan. Una asociación no crea automáticamente una generic entity relation.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 353.60 Tm (Evidencia. Capturas comparadas por campaña, sin datos privados.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 335.60 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 306.60 Tm (QA-REL-01 - Relaciones genéricas y etiquetas orientadas \(P/M\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 286.10 Tm (Objetivo. Garantizar relaciones entre entidades same-campaign, separadas del roster.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 268.10 Tm (Precondiciones. P: entidades ya relacionadas; M: fixtures con organization, location, character y, si es viable, dos) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 254.90 Tm (organizaciones.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 236.90 Tm (Pasos. 1. En el editor abre Relaciones con otras entidades, pulsa Añadir relación solo para inspeccionar candidatos \(sin) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 223.70 Tm (Guardar en P\). 2. Confirma que cada opción identifica tipo y solo entidades activas de campaña. 3. En M guarda) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 210.50 Tm (organization<->location, organization<->character y organization<->organization con dos etiquetas por extremo. 4. Abre) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 197.30 Tm (cada extremo y compara la etiqueta que ve cada ficha. 5. Comprueba que una relación no se duplica al visitarla desde el) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 184.10 Tm (otro lado.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 166.10 Tm (Resultado esperado. Ambos extremos de la misma campaña; etiquetas orientadas correctamente en ambas fichas; relación) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 152.90 Tm (única, independiente de dispositions y associations; tipo reconocible en el selector.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 134.90 Tm (Evidencia. Pareja de fichas, etiquetas y nombre/tipo de targets.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 116.90 Tm (Limpieza. Retirar relaciones de QA y archivar/retirar fixtures según autorización.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 98.90 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
 0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 6 / 11) Tj ET
 endstream
@@ -365,51 +363,51 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 16 0 R >>
 endobj
 18 0 obj
-<< /Length 6728 >>
+<< /Length 6731 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 779.00 Tm (archivado; observa representación en edición. 5. No intentes recrear el vínculo archivado.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 761.00 Tm (Resultado esperado. Ni cross-campaign ni target archivado pueden elegirse para nuevas relaciones. Una relación histórica) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 747.80 Tm (archivada sigue representada para no perderla al editar otros campos; su proyección pública puede ocultarse tras archivado.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 729.80 Tm (Evidencia. Opciones de selector y representación histórica, sin guardar en P.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 711.80 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 682.80 Tm (QA-REQ-01 - Bandeja, nota y rechazo \(P/M\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 662.30 Tm (Objetivo. Moderación confinada a la campaña de la solicitud.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 644.30 Tm (Precondiciones. P: solicitudes legibles en su campaña; M: solicitud pending de fixture, sin remitentes reales.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 626.30 Tm (Pasos. 1. En solicitudes públicas usa filtro Pendientes, orden por fecha y Recargar solicitudes. 2. Cambia de campaña y revisa) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 613.10 Tm (que ninguna tarjeta anterior permanezca. 3. En M redacta nota administrativa opcional, pulsa Rechazar, inspecciona) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 599.90 Tm (confirmación con campaña y confirma. 4. Reabre filtro Rechazadas.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 581.90 Tm (Resultado esperado. Solo solicitudes de la campaña admin; el rechazo queda terminal y conserva nota/historial. Necesita) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 568.70 Tm (cambios no es una acción existente. No hay datos de solicitudes accesibles a anon.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 550.70 Tm (Evidencia. Estado pending->rejected en dataset de QA y contexto de campaña.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 532.70 Tm (Limpieza. Las solicitudes terminales no se reabren ni borran por rutina; usar fixture descartable o restablecer dataset de QA) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 519.50 Tm (por medios autorizados fuera del flujo editorial.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 501.50 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 472.50 Tm (QA-REQ-02 - Conversión a borrador y publicación posterior \(M\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 452.00 Tm (Objetivo. Atomicidad y seguridad de una propuesta pública convertida.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 434.00 Tm (Precondiciones. Solicitud pending legítima de un fixture en campaña A o B; no enviar solicitudes canary a producción.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 416.00 Tm (Pasos. 1. En su campaña abre solicitud y Confirmar conversión a borrador. 2. Comprueba que Crear borrador no publica. 3.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 402.80 Tm (Abre el editor al que navega la interfaz; si falla apertura automática, recarga entidades sin convertir otra vez. 4. Revisa) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 389.60 Tm (campaña, estado draft, audiencia public \(no Master\), nombre/descripción/posición y categoría vacía. 5. Inspecciona tags,) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 376.40 Tm (dispositions, associations y relaciones vacías salvo edición posterior explícita. 6. Intenta publicar sin categoría y observa) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 363.20 Tm (bloqueo; asigna categoría válida de la campaña antes de publicar en M. 7. Revisa solicitud Convertidas y comprueba que no) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 350.00 Tm (puede reprocesarse.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 332.00 Tm (Resultado esperado. Una única entidad draft en campaña original, public, sin categoría/tags/player data/relaciones) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 318.80 Tm (inventadas. Publicación exige categoría; no hay conversión duplicada ni reuso de estado terminal.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 300.80 Tm (Evidencia. ID solicitud->borrador, estados, mensaje de validación y campaña \(sin datos personales\).) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 282.80 Tm (Limpieza. Mantener historial terminal; archivar contenido de prueba publicado, o restablecer fixture conforme al protocolo del) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 269.60 Tm (entorno.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 251.60 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 222.60 Tm (QA-REQ-03 - Nota de moderación pendiente y cambio de campaña \(P\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 202.10 Tm (Objetivo. Incluir borradores de notas en la protección dirty de MAP-070.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 184.10 Tm (Precondiciones. Solicitud pendiente de lectura en A; no se confirma ninguna moderación.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 166.10 Tm (Pasos. 1. Escribe nota sin guardar. 2. Solicita A->B y cancela: la nota y A deben persistir. 3. Repite A->B y acepta) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 152.90 Tm (descartar: se elimina nota local y se vacía bandeja A. 4. Regresa a A y comprueba que la nota descartada no reaparece. 5.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 139.70 Tm (Repite con logout si es seguro.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 121.70 Tm (Resultado esperado. Cancel conserva foco/contexto/nota; aceptar descarta y recarga con B; logout/revocación purga notas) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 108.50 Tm (no enviadas.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 90.50 Tm (Evidencia. Nota de texto inocuo local y banner antes/después.) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 768.00 Tm (QA-REL-02 - Targets archivados y cross-campaign \(P/M\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 747.50 Tm (Objetivo. Impedir nuevas relaciones inválidas conservando historial legible.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 729.50 Tm (Precondiciones. Fixtures con entidad archivada y relación histórica anterior; dos campañas.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 711.50 Tm (Pasos. 1. Abre editor en A y enumera targets nuevos. 2. Verifica que ninguna entidad de B está disponible. 3. Comprueba) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 698.30 Tm (que un target archivado no se ofrece para nuevas relaciones. 4. Abre una relación histórica conservada hacia target) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 685.10 Tm (después archivado; observa representación en edición. 5. No intentes recrear el vínculo archivado.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 667.10 Tm (Resultado esperado. Ni cross-campaign ni target archivado pueden elegirse para nuevas relaciones. Una relación histórica) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 653.90 Tm (archivada sigue representada para no perderla al editar otros campos; su proyección pública puede ocultarse tras) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 640.70 Tm (archivado.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 622.70 Tm (Evidencia. Opciones de selector y representación histórica, sin guardar en P.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 604.70 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 575.70 Tm (QA-REQ-01 - Bandeja, nota y rechazo \(P/M\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 555.20 Tm (Objetivo. Moderación confinada a la campaña de la solicitud.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 537.20 Tm (Precondiciones. P: solicitudes legibles en su campaña; M: solicitud pending de fixture, sin remitentes reales.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 519.20 Tm (Pasos. 1. En solicitudes públicas usa filtro Pendientes, orden por fecha y Recargar solicitudes. 2. Cambia de campaña y) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 506.00 Tm (revisa que ninguna tarjeta anterior permanezca. 3. En M redacta nota administrativa opcional, pulsa Rechazar, inspecciona) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 492.80 Tm (confirmación con campaña y confirma. 4. Reabre filtro Rechazadas.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 474.80 Tm (Resultado esperado. Solo solicitudes de la campaña admin; el rechazo queda terminal y conserva nota/historial. Necesita) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 461.60 Tm (cambios no es una acción existente. No hay datos de solicitudes accesibles a anon.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 443.60 Tm (Evidencia. Estado pending->rejected en dataset de QA y contexto de campaña.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 425.60 Tm (Limpieza. Las solicitudes terminales no se reabren ni borran por rutina; usar fixture descartable o restablecer dataset de QA) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 412.40 Tm (por medios autorizados fuera del flujo editorial.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 394.40 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 365.40 Tm (QA-REQ-02 - Conversión a borrador y publicación posterior \(M\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 344.90 Tm (Objetivo. Atomicidad y seguridad de una propuesta pública convertida.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 326.90 Tm (Precondiciones. Solicitud pending legítima de un fixture en campaña A o B; no enviar solicitudes canary a producción.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 308.90 Tm (Pasos. 1. En su campaña abre solicitud y Confirmar conversión a borrador. 2. Comprueba que Crear borrador no publica. 3.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 295.70 Tm (Abre el editor al que navega la interfaz; si falla apertura automática, recarga entidades sin convertir otra vez. 4. Revisa) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 282.50 Tm (campaña, estado draft, audiencia public \(no Master\), nombre/descripción/posición y categoría vacía. 5. Inspecciona tags,) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 269.30 Tm (dispositions, associations y relaciones vacías salvo edición posterior explícita. 6. Intenta publicar sin categoría y observa) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 256.10 Tm (bloqueo; asigna categoría válida de la campaña antes de publicar en M. 7. Revisa solicitud Convertidas y comprueba que) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 242.90 Tm (no puede reprocesarse.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 224.90 Tm (Resultado esperado. Una única entidad draft en campaña original, public, sin categoría/tags/player data/relaciones) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 211.70 Tm (inventadas. Publicación exige categoría; no hay conversión duplicada ni reuso de estado terminal.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 193.70 Tm (Evidencia. ID solicitud->borrador, estados, mensaje de validación y campaña \(sin datos personales\).) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 175.70 Tm (Limpieza. Mantener historial terminal; archivar contenido de prueba publicado, o restablecer fixture conforme al protocolo) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 162.50 Tm (del entorno.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 144.50 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 115.50 Tm (QA-REQ-03 - Nota de moderación pendiente y cambio de campaña \(P\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 95.00 Tm (Objetivo. Incluir borradores de notas en la protección dirty de MAP-070.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 77.00 Tm (Precondiciones. Solicitud pendiente de lectura en A; no se confirma ninguna moderación.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
 0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 7 / 11) Tj ET
 endstream
@@ -418,49 +416,50 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 18 0 R >>
 endobj
 20 0 obj
-<< /Length 6341 >>
+<< /Length 6415 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 779.00 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 750.00 Tm (QA-PUBLIC-01 - Campaña pública A y administrativa B \(P\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 729.50 Tm (Objetivo. Verificar que el selector público nunca decide el destino de escritura administrativa.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 711.50 Tm (Precondiciones. Ambas campañas activas; admin autorizado.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 693.50 Tm (Pasos. 1. Selecciona Castigo Divino públicamente. 2. En administración elige Un aliento menos. 3. Lee línea Campaña pública) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 680.30 Tm (visible en banner. 4. Abre formulario/editor administrativo sin guardar. 5. Cambia solo campaña pública y vuelve a leer) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 667.10 Tm (banner/selector admin.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 649.10 Tm (Resultado esperado. Texto de divergencia indica que la edición sigue afectando solo a Un aliento menos. La campaña admin no) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 635.90 Tm (cambia al cambiar la pública; ninguna solicitud ni relación de A se interpreta como B.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 617.90 Tm (Evidencia. Una captura conjunta de las dos selecciones \(sin Master\).) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 599.90 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 570.90 Tm (QA-MASTER-01 - Cambio de campaña y purge Master \(P/C\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 550.40 Tm (Objetivo. Evitar persistencia de contenido privado tras switch, logout o revocación.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 532.40 Tm (Precondiciones. Cuenta autorizada y datos Master en fixture seguro; capturas únicamente anonimizadas/privadas, nunca) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 519.20 Tm (compartidas públicamente.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 501.20 Tm (Pasos. 1. Activa Master Mode autorizado en A. 2. Abre ficha/búsqueda de un registro Master-only controlado. 3. Cambia a B) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 488.00 Tm (y confirma que detalles, búsquedas y listas de A desaparecen. 4. Sal o revoca Master Mode. 5. Verifica que no queda ficha ni) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 474.80 Tm (búsqueda Master-only abierta, incluso usando atrás/adelante. 6. Cierra sesión y revisa purge.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 456.80 Tm (Resultado esperado. Nada Master de A sobrevive bajo B, al salir de Master o al revocar sesión; nunca se inserta información) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 443.60 Tm (Master en snapshot o vista anónima.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 425.60 Tm (Evidencia. Solo estados «detalle cerrado/búsqueda sin resultado» y procedimiento, sin nombres/contenido Master.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 407.60 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 378.60 Tm (QA-NAV-01 - Search, deep links e historial \(P\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 358.10 Tm (Objetivo. Resolver cada entidad solo en su campaña.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 340.10 Tm (Precondiciones. Slugs públicos conocidos de ambas campañas; usar identificadores no privados.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 322.10 Tm (Pasos. 1. Busca una entidad de A y abre ficha. 2. Copia URL con ?campaign=... y ?entity=..., recarga y comprueba misma) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 308.90 Tm (campaña/ficha. 3. Usa atrás/adelante. 4. Cambia a B manteniendo ficha de A abierta. 5. Intenta URL de entidad A con) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 295.70 Tm (campaña B. 6. Busca organización publicada si existe y abre ficha.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 277.70 Tm (Resultado esperado. Refresh/history coherentes; al salir de A se cierra/invalida su ficha y no hay fallback cross-campaign.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 264.50 Tm (Si entidad no existe en B, no se resuelve en A por accidente. Abrir organización no reubica el mapa.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 246.50 Tm (Evidencia. URLs públicas sin datos privados, historial esperado y ausencia de fallback.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 228.50 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 199.50 Tm (QA-DEG-01 - Offline/degraded sin caída de producción \(C\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 179.00 Tm (Objetivo. El atlas público es usable desde snapshot mientras admin falla cerrado.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 161.00 Tm (Precondiciones. Entorno local, fixture o bloqueo de red en navegador de QA, sin provocar caída real de producción; snapshot) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 147.80 Tm (v3 disponible.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 129.80 Tm (Pasos. 1. Con sesión de QA controlada simula indisponibilidad pública/backend. 2. Refresca y usa catálogo, búsqueda, filtro y) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 116.60 Tm (ficha sobre el snapshot. 3. Busca/abre organización del snapshot si hay alguna. 4. Intenta acceder a guardar admin y observa) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 103.40 Tm (bloqueo, sin enviar mutaciones. 5. Revierte simulación y recarga.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 779.00 Tm (Pasos. 1. Escribe nota sin guardar. 2. Solicita A->B y cancela: la nota y A deben persistir. 3. Repite A->B y acepta) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 765.80 Tm (descartar: se elimina nota local y se vacía bandeja A. 4. Regresa a A y comprueba que la nota descartada no reaparece. 5.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 752.60 Tm (Repite con logout si es seguro.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 734.60 Tm (Resultado esperado. Cancel conserva foco/contexto/nota; aceptar descarta y recarga con B; logout/revocación purga notas) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 721.40 Tm (no enviadas.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 703.40 Tm (Evidencia. Nota de texto inocuo local y banner antes/después.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 685.40 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 656.40 Tm (QA-PUBLIC-01 - Campaña pública A y administrativa B \(P\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 635.90 Tm (Objetivo. Verificar que el selector público nunca decide el destino de escritura administrativa.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 617.90 Tm (Precondiciones. Ambas campañas activas; admin autorizado.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 599.90 Tm (Pasos. 1. Selecciona Castigo Divino públicamente. 2. En administración elige Un aliento menos. 3. Lee línea Campaña) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 586.70 Tm (pública visible en banner. 4. Abre formulario/editor administrativo sin guardar. 5. Cambia solo campaña pública y vuelve a) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 573.50 Tm (leer banner/selector admin.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 555.50 Tm (Resultado esperado. Texto de divergencia indica que la edición sigue afectando solo a Un aliento menos. La campaña) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 542.30 Tm (admin no cambia al cambiar la pública; ninguna solicitud ni relación de A se interpreta como B.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 524.30 Tm (Evidencia. Una captura conjunta de las dos selecciones \(sin Master\).) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 506.30 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 477.30 Tm (QA-MASTER-01 - Cambio de campaña y purge Master \(P/C\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 456.80 Tm (Objetivo. Evitar persistencia de contenido privado tras switch, logout o revocación.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 438.80 Tm (Precondiciones. Cuenta autorizada y datos Master en fixture seguro; capturas únicamente anonimizadas/privadas, nunca) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 425.60 Tm (compartidas públicamente.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 407.60 Tm (Pasos. 1. Activa Master Mode autorizado en A. 2. Abre ficha/búsqueda de un registro Master-only controlado. 3. Cambia a) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 394.40 Tm (B y confirma que detalles, búsquedas y listas de A desaparecen. 4. Sal o revoca Master Mode. 5. Verifica que no queda) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 381.20 Tm (ficha ni búsqueda Master-only abierta, incluso usando atrás/adelante. 6. Cierra sesión y revisa purge.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 363.20 Tm (Resultado esperado. Nada Master de A sobrevive bajo B, al salir de Master o al revocar sesión; nunca se inserta) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 350.00 Tm (información Master en snapshot o vista anónima.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 332.00 Tm (Evidencia. Solo estados «detalle cerrado/búsqueda sin resultado» y procedimiento, sin nombres/contenido Master.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 314.00 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 285.00 Tm (QA-NAV-01 - Search, deep links e historial \(P\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 264.50 Tm (Objetivo. Resolver cada entidad solo en su campaña.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 246.50 Tm (Precondiciones. Slugs públicos conocidos de ambas campañas; usar identificadores no privados.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 228.50 Tm (Pasos. 1. Busca una entidad de A y abre ficha. 2. Copia URL con ?campaign=... y ?entity=..., recarga y comprueba misma) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 215.30 Tm (campaña/ficha. 3. Usa atrás/adelante. 4. Cambia a B manteniendo ficha de A abierta. 5. Intenta URL de entidad A con) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 202.10 Tm (campaña B. 6. Busca organización publicada si existe y abre ficha.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 184.10 Tm (Resultado esperado. Refresh/history coherentes; al salir de A se cierra/invalida su ficha y no hay fallback cross-campaign.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 170.90 Tm (Si entidad no existe en B, no se resuelve en A por accidente. Abrir organización no reubica el mapa.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 152.90 Tm (Evidencia. URLs públicas sin datos privados, historial esperado y ausencia de fallback.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 134.90 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 105.90 Tm (QA-DEG-01 - Offline/degraded sin caída de producción \(C\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 85.40 Tm (Objetivo. El atlas público es usable desde snapshot mientras admin falla cerrado.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
 0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 8 / 11) Tj ET
 endstream
@@ -469,72 +468,71 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 20 0 R >>
 endobj
 22 0 obj
-<< /Length 7634 >>
+<< /Length 7440 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 779.00 Tm (Resultado esperado. Contenido público de snapshot utilizable, admin mutador bloqueado; no aparecen solicitudes/notas ni) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 765.80 Tm (Master privados en snapshot. Una organización se abre sin pan/zoom ni marker. Si el snapshot no contiene organizaciones,) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 752.60 Tm (registrar N/A para esa subcomprobación; nunca crear datos de producción.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 734.60 Tm (Evidencia. Estado degraded/offline, ficha pública y botones inactivos, sin datos sensibles.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 716.60 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 687.60 Tm (QA-RESP-01 - Responsive \(P\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 667.10 Tm (Objetivo. Usabilidad administrativa de pequeño a gran viewport.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 649.10 Tm (Precondiciones. DevTools o dispositivos equivalentes, cuenta autorizada, sin guardar cambios.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 631.10 Tm (Pasos. En cada ancho de la matriz, inspecciona banner, login, lista admin, editor, relaciones y moderación; desplázate) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 617.90 Tm (verticalmente, prueba teclado y botón de cerrar.) Tj ET
-0.88 0.93 0.97 rg 46.00 577.90 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 577.90 m 549.28 577.90 l S
-0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 52.00 587.90 Tm (Ancho) Tj ET
-0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 162.72 587.90 Tm (Banner/login) Tj ET
-0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 364.03 587.90 Tm (Lista/editor) Tj ET
-0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 424.43 587.90 Tm (Relaciones/moderación) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 555.90 m 549.28 555.90 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 565.90 Tm (320 px) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 565.90 Tm ([ ]) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 565.90 Tm ([ ]) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 565.90 Tm ([ ]) Tj ET
-0.975 0.98 0.99 rg 46.00 533.90 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 533.90 m 549.28 533.90 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 543.90 Tm (390 px) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 543.90 Tm ([ ]) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 543.90 Tm ([ ]) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 543.90 Tm ([ ]) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 511.90 m 549.28 511.90 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 521.90 Tm (430 px) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 521.90 Tm ([ ]) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 521.90 Tm ([ ]) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 521.90 Tm ([ ]) Tj ET
-0.975 0.98 0.99 rg 46.00 489.90 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 489.90 m 549.28 489.90 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 499.90 Tm (Desktop \(>=1024 px\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 499.90 Tm ([ ]) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 499.90 Tm ([ ]) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 499.90 Tm ([ ]) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 479.90 Tm (Resultado esperado. Sin overflow horizontal funcional, botones críticos alcanzables, etiquetas legibles,) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 466.70 Tm (controles/confirmaciones no tapados y contexto admin visible incluso con campaña distinta de la pública.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 448.70 Tm (Evidencia. Capturas sin datos privados de 320/390/430/desktop y anotación del primer control bloqueado, si lo hay.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 430.70 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 401.70 Tm (QA-A11Y-01 - Accesibilidad manual \(P\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 381.20 Tm (Objetivo. Operar las funciones principales sin ratón ni depender solo del color.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 363.20 Tm (Precondiciones. Navegador con teclado; opciones forced colors/reduced motion cuando disponibles.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 345.20 Tm (Pasos. 1. Navega con Tab/Shift+Tab y activa Administrar con Enter/Espacio. 2. Inspecciona foco inicial en login, etiquetas) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 332.00 Tm (y errores asociados. 3. Abre/cierra confirmación de descarte o moderación con Escape/Cancelar sin mutar y observa) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 318.80 Tm (restauración de foco. 4. Cambia campaña y verifica regiones de estado/aria-live \(opcional lector de pantalla\). 5. Prueba forced) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 305.60 Tm (colors y prefers-reduced-motion cuando sea viable. 6. Distingue iconos/estados sin depender solo del color.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 287.60 Tm (Resultado esperado. Orden y foco útiles; estados/cambios anunciables, confirmaciones comprensibles, labels explícitos y) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 274.40 Tm (controles operables. No declarar pasada una prueba de lector de pantalla que no se hizo.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 256.40 Tm (Evidencia. Secuencia de foco, modo de visualización y resultado de anuncio si efectivamente comprobado.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 238.40 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 209.40 Tm (QA-SEC-01 - Seguridad observable \(P/C\)) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 188.90 Tm (Objetivo. Revisión negativa de fugas visibles, no pentest ni auditoría SQL.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 170.90 Tm (Precondiciones. Navegación anónima, usuario no admin y cuenta autorizada en escenarios separados.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 152.90 Tm (Pasos. 1. En anónimo verifica ausencia de bandeja, CRUD y lectura Master. 2. En no admin comprueba mutaciones) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 139.70 Tm (inaccesibles. 3. Observa errores normalizados sin SQL ni constraints. 4. Examina UI y URL: no tokens administrativos ni) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 126.50 Tm (service-role; no copies valores en evidencia. 5. Tras logout/switch, vuelve a buscar fichas de campaña anterior o Master. 6.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 113.30 Tm (En fixture simula revocación e inspecciona limpieza.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 95.30 Tm (Resultado esperado. Sin controles operativos de escritura para anon/no admin, sin secretos en superficies visibles y sin) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 82.10 Tm (contenido Master o cross-campaign después de transición.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 779.00 Tm (Precondiciones. Entorno local, fixture o bloqueo de red en navegador de QA, sin provocar caída real de producción;) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 765.80 Tm (snapshot v3 disponible.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 747.80 Tm (Pasos. 1. Con sesión de QA controlada simula indisponibilidad pública/backend. 2. Refresca y usa catálogo, búsqueda,) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 734.60 Tm (filtro y ficha sobre el snapshot. 3. Busca/abre organización del snapshot si hay alguna. 4. Intenta acceder a guardar admin y) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 721.40 Tm (observa bloqueo, sin enviar mutaciones. 5. Revierte simulación y recarga.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 703.40 Tm (Resultado esperado. Contenido público de snapshot utilizable, admin mutador bloqueado; no aparecen solicitudes/notas ni) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 690.20 Tm (Master privados en snapshot. Una organización se abre sin pan/zoom ni marker. Si el snapshot no contiene) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 677.00 Tm (organizaciones, registrar N/A para esa subcomprobación; nunca crear datos de producción.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 659.00 Tm (Evidencia. Estado degraded/offline, ficha pública y botones inactivos, sin datos sensibles.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 641.00 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 612.00 Tm (QA-RESP-01 - Responsive \(P\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 591.50 Tm (Objetivo. Usabilidad administrativa de pequeño a gran viewport.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 573.50 Tm (Precondiciones. DevTools o dispositivos equivalentes, cuenta autorizada, sin guardar cambios.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 555.50 Tm (Pasos. En cada ancho de la matriz, inspecciona banner, login, lista admin, editor, relaciones y moderación; desplázate) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 542.30 Tm (verticalmente, prueba teclado y botón de cerrar.) Tj ET
+0.88 0.93 0.97 rg 46.00 502.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 502.30 m 549.28 502.30 l S
+0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 52.00 512.30 Tm (Ancho) Tj ET
+0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 162.72 512.30 Tm (Banner/login) Tj ET
+0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 364.03 512.30 Tm (Lista/editor) Tj ET
+0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 424.43 512.30 Tm (Relaciones/moderación) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 480.30 m 549.28 480.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 490.30 Tm (320 px) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 490.30 Tm ([ ]) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 490.30 Tm ([ ]) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 490.30 Tm ([ ]) Tj ET
+0.975 0.98 0.99 rg 46.00 458.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 458.30 m 549.28 458.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 468.30 Tm (390 px) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 468.30 Tm ([ ]) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 468.30 Tm ([ ]) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 468.30 Tm ([ ]) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 436.30 m 549.28 436.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 446.30 Tm (430 px) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 446.30 Tm ([ ]) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 446.30 Tm ([ ]) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 446.30 Tm ([ ]) Tj ET
+0.975 0.98 0.99 rg 46.00 414.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 414.30 m 549.28 414.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 424.30 Tm (Desktop \(>=1024 px\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 424.30 Tm ([ ]) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 424.30 Tm ([ ]) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 424.30 Tm ([ ]) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 404.30 Tm (Resultado esperado. Sin overflow horizontal funcional, botones críticos alcanzables, etiquetas legibles,) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 391.10 Tm (controles/confirmaciones no tapados y contexto admin visible incluso con campaña distinta de la pública.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 373.10 Tm (Evidencia. Capturas sin datos privados de 320/390/430/desktop y anotación del primer control bloqueado, si lo hay.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 355.10 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 326.10 Tm (QA-A11Y-01 - Accesibilidad manual \(P\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 305.60 Tm (Objetivo. Operar las funciones principales sin ratón ni depender solo del color.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 287.60 Tm (Precondiciones. Navegador con teclado; opciones forced colors/reduced motion cuando disponibles.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 269.60 Tm (Pasos. 1. Navega con Tab/Shift+Tab y activa Administrar con Enter/Espacio. 2. Inspecciona foco inicial en login, etiquetas y) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 256.40 Tm (errores asociados. 3. Abre/cierra confirmación de descarte o moderación con Escape/Cancelar sin mutar y observa) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 243.20 Tm (restauración de foco. 4. Cambia campaña y verifica regiones de estado/aria-live \(opcional lector de pantalla\). 5. Prueba) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 230.00 Tm (forced colors y prefers-reduced-motion cuando sea viable. 6. Distingue iconos/estados sin depender solo del color.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 212.00 Tm (Resultado esperado. Orden y foco útiles; estados/cambios anunciables, confirmaciones comprensibles, labels explícitos y) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 198.80 Tm (controles operables. No declarar pasada una prueba de lector de pantalla que no se hizo.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 180.80 Tm (Evidencia. Secuencia de foco, modo de visualización y resultado de anuncio si efectivamente comprobado.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 162.80 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 133.80 Tm (QA-SEC-01 - Seguridad observable \(P/C\)) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 113.30 Tm (Objetivo. Revisión negativa de fugas visibles, no pentest ni auditoría SQL.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 95.30 Tm (Precondiciones. Navegación anónima, usuario no admin y cuenta autorizada en escenarios separados.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
 0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 9 / 11) Tj ET
 endstream
@@ -543,164 +541,149 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 22 0 R >>
 endobj
 24 0 obj
-<< /Length 12014 >>
+<< /Length 11467 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 779.00 Tm (Evidencia. Lista de comprobaciones con afirmación «sin filtración visible» y capturas redactadas.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 761.00 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
-0.12 0.32 0.51 rg BT /F2 13.20 Tf 1 0 0 1 46.00 730.00 Tm (4. Checklist de release gate y findings) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 705.50 Tm (Transcribe el estado de cada ID de la sección 3. Una línea sin evidencia permanece BLOCKED. El quick smoke no reemplaza) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 692.30 Tm (esta checklist; MAP-072 debe decidir el gate con estos IDs y sus findings abiertos.) Tj ET
-0.88 0.93 0.97 rg 46.00 652.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 652.30 m 549.28 652.30 l S
-0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 52.00 662.30 Tm (ID estable) Tj ET
-0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 162.72 662.30 Tm (Garantía crítica) Tj ET
-0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 364.03 662.30 Tm (Carril) Tj ET
-0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 424.43 662.30 Tm (Estado / evidencia / issue) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 630.30 m 549.28 630.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 640.30 Tm (QA-AUTH-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 640.30 Tm (Acceso, logout y foco) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 640.30 Tm (P) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 640.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 608.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 608.30 m 549.28 608.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 618.30 Tm (QA-AUTH-02) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 618.30 Tm (Autorización/expiración segura) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 618.30 Tm (P/C) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 618.30 Tm (__________________) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 586.30 m 549.28 586.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 596.30 Tm (QA-CAMP-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 596.30 Tm (Banner y roster A/B) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 596.30 Tm (P) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 596.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 564.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 564.30 m 549.28 564.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 574.30 Tm (QA-CAMP-02) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 574.30 Tm (Cambio limpio sin contaminación) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 574.30 Tm (P) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 574.30 Tm (__________________) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 542.30 m 549.28 542.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 552.30 Tm (QA-CAMP-03) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 552.30 Tm (Dirty cancelar) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 552.30 Tm (P) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 552.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 520.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 520.30 m 549.28 520.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 530.30 Tm (QA-CAMP-04) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 530.30 Tm (Dirty descartar) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 530.30 Tm (P) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 530.30 Tm (__________________) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 498.30 m 549.28 498.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 508.30 Tm (QA-CAMP-05) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 508.30 Tm (Rollback del cambio fallido) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 508.30 Tm (C) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 508.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 476.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 476.30 m 549.28 476.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 486.30 Tm (QA-CAT-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 486.30 Tm (Taxonomía, alias y geografía global) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 486.30 Tm (M) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 486.30 Tm (__________________) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 454.30 m 549.28 454.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 464.30 Tm (QA-CAT-02) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 464.30 Tm (Bloqueos y borrado excepcional) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 464.30 Tm (M) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 464.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 432.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 432.30 m 549.28 432.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 442.30 Tm (QA-ENTITY-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 442.30 Tm (Tipos espaciales y geometría) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 442.30 Tm (M) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 442.30 Tm (__________________) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 410.30 m 549.28 410.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 420.30 Tm (QA-ENTITY-02) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 420.30 Tm (Draft/publish/archive y visibilidad) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 420.30 Tm (M) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 420.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 388.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 388.30 m 549.28 388.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 398.30 Tm (QA-ORG-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 398.30 Tm (Organization no cartográfica) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 398.30 Tm (P/M) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 398.30 Tm (__________________) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 366.30 m 549.28 366.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 376.30 Tm (QA-ROSTER-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 376.30 Tm (Roster same-campaign) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 376.30 Tm (P/M) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 376.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 344.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 344.30 m 549.28 344.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 354.30 Tm (QA-DISP-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 354.30 Tm (Dispositions del roster) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 354.30 Tm (P/M) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 354.30 Tm (__________________) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 322.30 m 549.28 322.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 332.30 Tm (QA-ASSOC-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 332.30 Tm (Player associations) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 332.30 Tm (P/M) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 332.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 300.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 300.30 m 549.28 300.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 310.30 Tm (QA-REL-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 310.30 Tm (Relación genérica orientada) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 310.30 Tm (P/M) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 310.30 Tm (__________________) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 278.30 m 549.28 278.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 288.30 Tm (QA-REL-02) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 288.30 Tm (Archivadas y cross-campaign) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 288.30 Tm (P/M) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 288.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 256.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 256.30 m 549.28 256.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 266.30 Tm (QA-REQ-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 266.30 Tm (Bandeja, nota, rechazo) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 266.30 Tm (P/M) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 266.30 Tm (__________________) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 234.30 m 549.28 234.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 244.30 Tm (QA-REQ-02) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 244.30 Tm (Conversión una sola vez) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 244.30 Tm (M) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 244.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 212.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 212.30 m 549.28 212.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 222.30 Tm (QA-REQ-03) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 222.30 Tm (Nota dirty y switch) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 222.30 Tm (P) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 222.30 Tm (__________________) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 190.30 m 549.28 190.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 200.30 Tm (QA-PUBLIC-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 200.30 Tm (Público A / admin B) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 200.30 Tm (P) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 200.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 168.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 168.30 m 549.28 168.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 178.30 Tm (QA-MASTER-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 178.30 Tm (Master purge y switch) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 178.30 Tm (P/C) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 178.30 Tm (__________________) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 146.30 m 549.28 146.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 156.30 Tm (QA-NAV-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 156.30 Tm (Search, links, historia) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 156.30 Tm (P) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 156.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 124.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 124.30 m 549.28 124.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 134.30 Tm (QA-DEG-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 134.30 Tm (Snapshot offline, admin bloqueado) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 134.30 Tm (C) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 134.30 Tm (__________________) Tj ET
-0.80 0.85 0.90 RG 0.5 w 46.00 102.30 m 549.28 102.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 112.30 Tm (QA-RESP-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 112.30 Tm (320/390/430/desktop) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 112.30 Tm (P) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 112.30 Tm (__________________) Tj ET
-0.975 0.98 0.99 rg 46.00 80.30 503.28 22.00 re f
-0.80 0.85 0.90 RG 0.5 w 46.00 80.30 m 549.28 80.30 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 90.30 Tm (QA-A11Y-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 90.30 Tm (Teclado, foco, avisos y contraste) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 90.30 Tm (P) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 90.30 Tm (__________________) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 779.00 Tm (Pasos. 1. En anónimo verifica ausencia de bandeja, CRUD y lectura Master. 2. En no admin comprueba mutaciones) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 765.80 Tm (inaccesibles. 3. Observa errores normalizados sin SQL ni constraints. 4. Examina UI y URL: no tokens administrativos ni) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 752.60 Tm (service-role; no copies valores en evidencia. 5. Tras logout/switch, vuelve a buscar fichas de campaña anterior o Master. 6.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 739.40 Tm (En fixture simula revocación e inspecciona limpieza.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 721.40 Tm (Resultado esperado. Sin controles operativos de escritura para anon/no admin, sin secretos en superficies visibles y sin) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 708.20 Tm (contenido Master o cross-campaign después de transición.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 690.20 Tm (Evidencia. Lista de comprobaciones con afirmación «sin filtración visible» y capturas redactadas.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 672.20 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
+0.12 0.32 0.51 rg BT /F2 13.20 Tf 1 0 0 1 46.00 641.20 Tm (4. Checklist de release gate y findings) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 616.70 Tm (Transcribe el estado de los 27 IDs de la sección 3 \(27 filas únicas de checklist\). Una línea sin evidencia permanece) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 603.50 Tm (BLOCKED. El quick smoke no reemplaza esta checklist; MAP-072 debe decidir el gate con estos IDs y sus findings) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 590.30 Tm (abiertos.) Tj ET
+0.88 0.93 0.97 rg 46.00 550.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 550.30 m 549.28 550.30 l S
+0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 52.00 560.30 Tm (ID estable) Tj ET
+0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 162.72 560.30 Tm (Garantía crítica) Tj ET
+0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 364.03 560.30 Tm (Carril) Tj ET
+0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 424.43 560.30 Tm (Estado / evidencia / issue) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 528.30 m 549.28 528.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 538.30 Tm (QA-AUTH-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 538.30 Tm (Acceso, logout y foco) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 538.30 Tm (P) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 538.30 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 506.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 506.30 m 549.28 506.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 516.30 Tm (QA-AUTH-02) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 516.30 Tm (Autorización/expiración segura) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 516.30 Tm (P/C) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 516.30 Tm (__________________) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 484.30 m 549.28 484.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 494.30 Tm (QA-CAMP-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 494.30 Tm (Banner y roster A/B) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 494.30 Tm (P) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 494.30 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 462.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 462.30 m 549.28 462.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 472.30 Tm (QA-CAMP-02) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 472.30 Tm (Cambio limpio sin contaminación) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 472.30 Tm (P) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 472.30 Tm (__________________) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 440.30 m 549.28 440.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 450.30 Tm (QA-CAMP-03) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 450.30 Tm (Dirty cancelar) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 450.30 Tm (P) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 450.30 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 418.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 418.30 m 549.28 418.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 428.30 Tm (QA-CAMP-04) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 428.30 Tm (Dirty descartar) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 428.30 Tm (P) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 428.30 Tm (__________________) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 396.30 m 549.28 396.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 406.30 Tm (QA-CAMP-05) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 406.30 Tm (Rollback del cambio fallido) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 406.30 Tm (C) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 406.30 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 374.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 374.30 m 549.28 374.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 384.30 Tm (QA-CAT-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 384.30 Tm (Taxonomía, alias y geografía global) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 384.30 Tm (M) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 384.30 Tm (__________________) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 352.30 m 549.28 352.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 362.30 Tm (QA-CAT-02) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 362.30 Tm (Bloqueos y borrado excepcional) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 362.30 Tm (M) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 362.30 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 330.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 330.30 m 549.28 330.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 340.30 Tm (QA-ENTITY-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 340.30 Tm (Tipos espaciales y geometría) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 340.30 Tm (M) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 340.30 Tm (__________________) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 308.30 m 549.28 308.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 318.30 Tm (QA-ENTITY-02) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 318.30 Tm (Draft/publish/archive y visibilidad) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 318.30 Tm (M) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 318.30 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 286.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 286.30 m 549.28 286.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 296.30 Tm (QA-ORG-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 296.30 Tm (Organization no cartográfica) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 296.30 Tm (P/M) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 296.30 Tm (__________________) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 264.30 m 549.28 264.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 274.30 Tm (QA-ROSTER-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 274.30 Tm (Roster same-campaign) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 274.30 Tm (P/M) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 274.30 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 242.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 242.30 m 549.28 242.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 252.30 Tm (QA-DISP-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 252.30 Tm (Dispositions del roster) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 252.30 Tm (P/M) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 252.30 Tm (__________________) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 220.30 m 549.28 220.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 230.30 Tm (QA-ASSOC-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 230.30 Tm (Player associations) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 230.30 Tm (P/M) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 230.30 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 198.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 198.30 m 549.28 198.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 208.30 Tm (QA-REL-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 208.30 Tm (Relación genérica orientada) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 208.30 Tm (P/M) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 208.30 Tm (__________________) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 176.30 m 549.28 176.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 186.30 Tm (QA-REL-02) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 186.30 Tm (Archivadas y cross-campaign) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 186.30 Tm (P/M) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 186.30 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 154.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 154.30 m 549.28 154.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 164.30 Tm (QA-REQ-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 164.30 Tm (Bandeja, nota, rechazo) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 164.30 Tm (P/M) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 164.30 Tm (__________________) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 132.30 m 549.28 132.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 142.30 Tm (QA-REQ-02) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 142.30 Tm (Conversión una sola vez) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 142.30 Tm (M) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 142.30 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 110.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 110.30 m 549.28 110.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 120.30 Tm (QA-REQ-03) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 120.30 Tm (Nota dirty y switch) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 120.30 Tm (P) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 120.30 Tm (__________________) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 88.30 m 549.28 88.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 98.30 Tm (QA-PUBLIC-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 98.30 Tm (Público A / admin B) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 98.30 Tm (P) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 98.30 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 66.30 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 66.30 m 549.28 66.30 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 76.30 Tm (QA-MASTER-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 76.30 Tm (Master purge y switch) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 76.30 Tm (P/C) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 76.30 Tm (__________________) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
 0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 10 / 11) Tj ET
 endstream
@@ -709,40 +692,68 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 24 0 R >>
 endobj
 26 0 obj
-<< /Length 4255 >>
+<< /Length 6304 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
+0.88 0.93 0.97 rg 46.00 757.00 503.28 22.00 re f
 0.80 0.85 0.90 RG 0.5 w 46.00 757.00 m 549.28 757.00 l S
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 767.00 Tm (QA-SEC-01) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 767.00 Tm (Seguridad observable) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 767.00 Tm (P/C) Tj ET
-0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 767.00 Tm (__________________) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 747.00 Tm (Resumen de sesión: PASS ____ · FAIL ____ · BLOCKED ____ · N/A ____.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 729.00 Tm (Findings relevantes \(ID, severidad, pasos, entorno/build, URL evidencia sin secretos\):) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 715.80 Tm (________________________________________________) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 697.80 Tm (Decisión de QA manual: [ ] sin regresiones importantes visibles [ ] bloqueada por findings [ ] incompleta/BLOCKED. Revisor /) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 684.60 Tm (fecha: __________________.) Tj ET
-0.12 0.32 0.51 rg BT /F2 13.20 Tf 1 0 0 1 46.00 653.60 Tm (5. Regeneración, límites y referencias) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 629.10 Tm (Desde la raíz del repositorio ejecuta:) Tj ET
-0.95 0.96 0.97 rg 46.00 605.60 503.28 12.20 re f
-0.15 0.20 0.27 rg BT /F3 8.20 Tf 1 0 0 1 55.00 609.10 Tm (node scripts/generate-admin-qa-pdf.cjs) Tj ET
-0.95 0.96 0.97 rg 46.00 593.40 503.28 12.20 re f
-0.15 0.20 0.27 rg BT /F3 8.20 Tf 1 0 0 1 55.00 596.90 Tm (node scripts/generate-admin-qa-pdf.cjs --check) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 578.70 Tm (El primer comando regenera docs/map-071-admin-qa-guide.pdf exclusivamente desde docs/map-071-admin-qa-guide.md. El) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 565.50 Tm (segundo compara bytes y falla si el PDF versionado está desactualizado. No necesita navegador, aplicación propietaria, red) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 552.30 Tm (ni dependencia adicional al bundle. El PDF usa fuentes PDF estándar \(Helvetica/Helvetica-Bold\), texto seleccionable y) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 539.10 Tm (páginas A4 con numeración; el Markdown conserva la fuente editorial.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 521.10 Tm (Límites de ejecución: la guía documenta casos manuales, no acredita haberlos ejecutado ni autoriza mutaciones. Si no) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 507.90 Tm (existen organizaciones, relaciones históricas o solicitudes de prueba, marca BLOCKED/N/A con motivo. No se requiere) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 494.70 Tm (manipular datos reales, detener Supabase ni producir capturas de contenido Master. Un cambio futuro de contenido de) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 481.50 Tm (campañas puede modificar las expectativas del roster actual sin cambiar el contrato multicampaña.) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 463.50 Tm (Documentación de contraste: Auth \(admin-auth.md\), Catálogo \(admin-catalog.md\), Entidades \(admin-map-entities.md\),) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 450.30 Tm (Moderación \(admin-public-request-moderation.md\), Separación de campañas \(map-068-campaign-separation.md\),) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 437.10 Tm (Organizaciones \(map-069-nonspatial-organizations.md\), UX multicampaña \(map-070-multicampaign-admin-ux.md\), Seguridad) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 423.90 Tm (\(security.md\) y Despliegue \(deployment-and-rollback.md\).) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 405.90 Tm (Atlas público: https://eduyube.github.io/castigo-divino-map/ - cualquier checklist de aprobación v1.1.1 pertenece a) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 392.70 Tm (MAP-072, no a este documento.) Tj ET
+0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 52.00 767.00 Tm (ID estable) Tj ET
+0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 162.72 767.00 Tm (Garantía crítica) Tj ET
+0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 364.03 767.00 Tm (Carril) Tj ET
+0.15 0.20 0.27 rg BT /F2 7.80 Tf 1 0 0 1 424.43 767.00 Tm (Estado / evidencia / issue) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 735.00 m 549.28 735.00 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 745.00 Tm (QA-NAV-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 745.00 Tm (Search, links, historia) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 745.00 Tm (P) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 745.00 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 713.00 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 713.00 m 549.28 713.00 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 723.00 Tm (QA-DEG-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 723.00 Tm (Snapshot offline, admin bloqueado) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 723.00 Tm (C) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 723.00 Tm (__________________) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 691.00 m 549.28 691.00 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 701.00 Tm (QA-RESP-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 701.00 Tm (320/390/430/desktop) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 701.00 Tm (P) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 701.00 Tm (__________________) Tj ET
+0.975 0.98 0.99 rg 46.00 669.00 503.28 22.00 re f
+0.80 0.85 0.90 RG 0.5 w 46.00 669.00 m 549.28 669.00 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 679.00 Tm (QA-A11Y-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 679.00 Tm (Teclado, foco, avisos y contraste) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 679.00 Tm (P) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 679.00 Tm (__________________) Tj ET
+0.80 0.85 0.90 RG 0.5 w 46.00 647.00 m 549.28 647.00 l S
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 52.00 657.00 Tm (QA-SEC-01) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 162.72 657.00 Tm (Seguridad observable) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 657.00 Tm (P/C) Tj ET
+0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 657.00 Tm (__________________) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 637.00 Tm (Resumen de sesión: PASS ____ · FAIL ____ · BLOCKED ____ · N/A ____.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 619.00 Tm (Findings relevantes \(ID, severidad, pasos, entorno/build, URL evidencia sin secretos\):) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 605.80 Tm (________________________________________________) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 587.80 Tm (Decisión de QA manual: [ ] sin regresiones importantes visibles [ ] bloqueada por findings [ ] incompleta/BLOCKED. Revisor) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 574.60 Tm (/ fecha: __________________.) Tj ET
+0.12 0.32 0.51 rg BT /F2 13.20 Tf 1 0 0 1 46.00 543.60 Tm (5. Regeneración, límites y referencias) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 519.10 Tm (Desde la raíz del repositorio ejecuta:) Tj ET
+0.95 0.96 0.97 rg 46.00 495.60 503.28 12.20 re f
+0.15 0.20 0.27 rg BT /F3 8.20 Tf 1 0 0 1 55.00 499.10 Tm (node scripts/generate-admin-qa-pdf.cjs) Tj ET
+0.95 0.96 0.97 rg 46.00 483.40 503.28 12.20 re f
+0.15 0.20 0.27 rg BT /F3 8.20 Tf 1 0 0 1 55.00 486.90 Tm (node scripts/generate-admin-qa-pdf.cjs --check) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 468.70 Tm (El primer comando regenera docs/map-071-admin-qa-guide.pdf exclusivamente desde docs/map-071-admin-qa-guide.md.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 455.50 Tm (El segundo compara bytes y falla si el PDF versionado está desactualizado. No necesita navegador, aplicación propietaria,) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 442.30 Tm (red ni dependencia adicional al bundle. El PDF usa fuentes PDF estándar \(Helvetica/Helvetica-Bold\), texto seleccionable y) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 429.10 Tm (páginas A4 con numeración; el Markdown conserva la fuente editorial.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 411.10 Tm (Límites de ejecución: la guía documenta casos manuales, no acredita haberlos ejecutado ni autoriza mutaciones. Si no) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 397.90 Tm (existen organizaciones, relaciones históricas o solicitudes de prueba, marca BLOCKED/N/A con motivo. No se requiere) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 384.70 Tm (manipular datos reales, detener Supabase ni producir capturas de contenido Master. Un cambio futuro de contenido de) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 371.50 Tm (campañas puede modificar las expectativas del roster actual sin cambiar el contrato multicampaña.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 353.50 Tm (Documentación de contraste: Auth \(admin-auth.md\), Catálogo \(admin-catalog.md\), Entidades \(admin-map-entities.md\),) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 340.30 Tm (Moderación \(admin-public-request-moderation.md\), Separación de campañas \(map-068-campaign-separation.md\),) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 327.10 Tm (Organizaciones \(map-069-nonspatial-organizations.md\), UX multicampaña \(map-070-multicampaign-admin-ux.md\),) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 313.90 Tm (Seguridad \(security.md\) y Despliegue \(deployment-and-rollback.md\).) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 295.90 Tm (Atlas público: https://eduyube.github.io/castigo-divino-map/ - cualquier checklist de aprobación v1.1.1 pertenece a) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 282.70 Tm (MAP-072, no a este documento.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
 0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 11 / 11) Tj ET
 endstream
@@ -759,29 +770,29 @@ xref
 0000000288 00000 n 
 0000000390 00000 n 
 0000000485 00000 n 
-0000008163 00000 n 
-0000008315 00000 n 
-0000015483 00000 n 
-0000015635 00000 n 
-0000022163 00000 n 
-0000022317 00000 n 
-0000029343 00000 n 
-0000029497 00000 n 
-0000036242 00000 n 
-0000036396 00000 n 
-0000042916 00000 n 
-0000043070 00000 n 
-0000049850 00000 n 
-0000050004 00000 n 
-0000056397 00000 n 
-0000056551 00000 n 
-0000064237 00000 n 
-0000064391 00000 n 
-0000076458 00000 n 
-0000076612 00000 n 
-0000080919 00000 n 
+0000008161 00000 n 
+0000008313 00000 n 
+0000015541 00000 n 
+0000015693 00000 n 
+0000022227 00000 n 
+0000022381 00000 n 
+0000028939 00000 n 
+0000029093 00000 n 
+0000035896 00000 n 
+0000036050 00000 n 
+0000042512 00000 n 
+0000042666 00000 n 
+0000049449 00000 n 
+0000049603 00000 n 
+0000056070 00000 n 
+0000056224 00000 n 
+0000063716 00000 n 
+0000063870 00000 n 
+0000075390 00000 n 
+0000075544 00000 n 
+0000081900 00000 n 
 trailer
 << /Size 28 /Root 1 0 R >>
 startxref
-81073
+82054
 %%EOF

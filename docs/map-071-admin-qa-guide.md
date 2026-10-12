@@ -42,6 +42,8 @@ Con cuenta administrativa autorizada y backend conectado, realiza la siguiente s
 
 ## 3. Casos manuales detallados
 
+**Cobertura controlada:** 27 escenarios de QA, con un ID único por escenario y una fila correspondiente en la checklist de la sección 4. No se deben omitir escenarios en la consolidación de MAP-072.
+
 Cada caso incluye objetivo, precondiciones, pasos, resultado esperado, evidencia y resultado registrable. **Nunca uses una prueba M para fabricar datos en producción.**
 
 ### QA-AUTH-01 — Entrada, autenticación, logout y foco (P)
@@ -451,7 +453,7 @@ Cada caso incluye objetivo, precondiciones, pasos, resultado esperado, evidencia
 
 ## 4. Checklist de release gate y findings
 
-Transcribe el estado de cada ID de la sección 3. Una línea sin evidencia permanece BLOCKED. El **quick smoke no reemplaza** esta checklist; MAP-072 debe decidir el gate con estos IDs y sus findings abiertos.
+Transcribe el estado de los **27 IDs** de la sección 3 (27 filas únicas de checklist). Una línea sin evidencia permanece BLOCKED. El **quick smoke no reemplaza** esta checklist; MAP-072 debe decidir el gate con estos IDs y sus findings abiertos.
 
 | ID estable | Garantía crítica | Carril | Estado / evidencia / issue |
 | --- | --- | --- | --- |
