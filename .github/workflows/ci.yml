@@ -35,6 +35,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify MAP-071 PDF matches Markdown
+        run: node scripts/generate-admin-qa-pdf.cjs --check
+
       - name: Check formatting
         run: npm run format:check
 
