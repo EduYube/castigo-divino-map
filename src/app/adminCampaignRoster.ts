@@ -721,8 +721,7 @@ export function mountAdminCampaignRoster(
     delete sessionContext.dataset.transitioning;
     sessionContextName.textContent = name;
     sessionContext.dataset.adminCampaignId = event.detail.campaignId;
-    sessionContextStatus.textContent =
-      `No se completó el cambio de campaña. Sigues editando ${name}.`;
+    sessionContextStatus.textContent = `No se completó el cambio de campaña. Sigues editando ${name}.`;
   };
   const handleAdminCampaignChanged = (event: Event): void => {
     if (!(event instanceof CustomEvent) || typeof event.detail?.campaignId !== 'string') return;
