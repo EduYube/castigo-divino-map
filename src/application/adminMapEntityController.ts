@@ -116,6 +116,21 @@ export class AdminMapEntityController {
     this.#publish({ ...this.#state, pendingAudience: audience });
   }
 
+  prepareCampaignTransition(): void {
+    if (this.#destroyed) return;
+    this.#cancelActive();
+    this.#publish({
+      ...this.#state,
+      records: [],
+      references: EMPTY_REFERENCES,
+      editorDetail: null,
+      creating: false,
+      phase: this.#canMutate() ? 'loading' : 'blocked',
+      issue: null,
+      pendingAudience: 'public',
+    });
+  }
+
   async reload(): Promise<void> {
     if (!this.#canMutate()) {
       this.#publishBlocked();

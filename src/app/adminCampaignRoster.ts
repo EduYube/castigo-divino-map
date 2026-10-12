@@ -1,4 +1,9 @@
 import type { AdminAuthController } from '../auth/adminAuthController';
+import {
+  describePublicAdminCampaignRelationship,
+  resolveAdminCampaignName,
+} from '../domain/adminCampaignUx';
+import { getCurrentPublicCampaignSelection } from './campaignSelection';
 import type { AdminCampaignRosterController } from '../application/adminCampaignRosterController';
 import type { BackendState } from '../data-access/publicCatalog';
 import {
@@ -77,6 +82,12 @@ export function mountAdminCampaignRoster(
   summary.textContent =
     'Modo administrativo activo. La campaña seleccionada delimita todas las ediciones dependientes del dominio.';
 
+  const sessionContext = createElement('aside', 'admin-campaign-session-context');
+  const sessionContextHeading = createElement('h3', 'admin-campaign-session-context__heading');
+  const sessionContextValue = createElement('p', 'admin-campaign-session-context__value');
+  const sessionContextName = createElement('strong', 'admin-campaign-session-context__name');
+  const sessionPublicContext = createElement('p', 'admin-campaign-session-context__public');
+  const sessionContextStatus = createElement('p', 'admin-campaign-session-context__status');
   const section = createElement('section', 'admin-campaign-roster');
   const heading = createElement('h3', 'admin-campaign-roster__heading');
   const intro = createElement('p', 'admin-campaign-roster__intro');
@@ -145,6 +156,24 @@ export function mountAdminCampaignRoster(
   let editingPlayer: AdminPlayerRecord | null = null;
   let editorFocus: HTMLElement | null = null;
 
+  sessionContextHeading.id = 'admin-campaign-session-context-heading';
+  sessionContextHeading.textContent = 'Contexto administrativo';
+  sessionContext.setAttribute('aria-labelledby', sessionContextHeading.id);
+  sessionContext.dataset.adminCampaignSessionContext = '';
+  const editingLabel = document.createElement('span');
+  editingLabel.textContent = 'Editando campaña: ';
+  sessionContextValue.append(editingLabel, sessionContextName);
+  sessionContextStatus.setAttribute('role', 'status');
+  sessionContextStatus.setAttribute('aria-live', 'polite');
+  sessionContextStatus.setAttribute('aria-atomic', 'true');
+  sessionContext.append(
+    sessionContextHeading,
+    sessionContextValue,
+    sessionPublicContext,
+    sessionContextStatus,
+  );
+  adminShell.insertBefore(sessionContext, summary.nextSibling);
+
   heading.id = 'admin-campaign-roster-heading';
   heading.textContent = 'Campañas y personajes jugadores';
   intro.textContent =
@@ -178,7 +207,7 @@ export function mountAdminCampaignRoster(
   archivedCampaignSection.append(archivedCampaignHeading, archivedCampaignList);
   campaignLists.append(activeCampaignSection, archivedCampaignSection);
 
-  rosterHeading.textContent = 'Roster de la campaña seleccionada';
+  rosterHeading.textContent = 'Personajes jugadores / referents de la campaña administrativa';
   newPlayerButton.type = 'button';
   newPlayerButton.textContent = 'Crear jugador';
   rosterToolbar.append(newPlayerButton);
@@ -337,14 +366,18 @@ export function mountAdminCampaignRoster(
     form.dataset.adminDirty = String(serializeForm(form) !== snapshot.serialized);
   }
 
-  function hasDirtyAdminForm(): boolean {
-    return Array.from(adminShell.querySelectorAll<HTMLFormElement>('form')).some(
+  function hasDirtyAdminState(): boolean {
+    const dirtyForms = Array.from(adminShell.querySelectorAll<HTMLFormElement>('form')).some(
       (form) => formIsVisible(form) && form.dataset.adminDirty === 'true',
     );
+    const dirtyRegions = Array.from(
+      adminShell.querySelectorAll<HTMLElement>('[data-admin-dirty="true"]:not(form)'),
+    ).some((element) => !element.closest('[hidden]'));
+    return dirtyForms || dirtyRegions;
   }
 
   function confirmCampaignChange(): boolean {
-    if (!hasDirtyAdminForm()) return true;
+    if (!hasDirtyAdminState()) return true;
     return window.confirm(
       'Hay cambios administrativos sin guardar. ¿Quieres descartarlos y cambiar de campaña?',
     );
@@ -430,6 +463,14 @@ export function mountAdminCampaignRoster(
     });
   }
 
+  function requestCampaignChange(campaignId: string): void {
+    if (campaignId === state.selectedCampaignId) return;
+    if (!confirmCampaignChange()) return;
+    closeCampaignEditor();
+    closePlayerEditor();
+    void controller.selectCampaign(campaignId);
+  }
+
   function createCampaignCard(campaign: AdminCampaignRecord): HTMLLIElement {
     const item = createElement('li', 'admin-campaign-roster__card');
     const title = createElement('div', 'admin-campaign-roster__card-title');
@@ -452,10 +493,7 @@ export function mountAdminCampaignRoster(
     selectButton.textContent =
       campaign.id === state.selectedCampaignId ? 'Seleccionada' : 'Seleccionar';
     selectButton.disabled = campaign.id === state.selectedCampaignId || state.phase === 'mutating';
-    selectButton.addEventListener('click', () => {
-      if (!confirmCampaignChange()) return;
-      void controller.selectCampaign(campaign.id);
-    });
+    selectButton.addEventListener('click', () => requestCampaignChange(campaign.id));
     editButton.type = 'button';
     editButton.textContent = 'Editar';
     editButton.disabled = state.phase === 'mutating';
@@ -520,9 +558,29 @@ export function mountAdminCampaignRoster(
     return item;
   }
 
+  function renderSessionContext(selected: AdminCampaignRecord | null): void {
+    const publicSelection = getCurrentPublicCampaignSelection();
+    const adminName = selected
+      ? selected.name
+      : resolveAdminCampaignName(
+          state.campaigns,
+          state.selectedCampaignId,
+          'Sin campaña seleccionada',
+        );
+    sessionContextName.textContent = adminName;
+    sessionContext.dataset.adminCampaignId = state.selectedCampaignId;
+    sessionPublicContext.textContent = describePublicAdminCampaignRelationship(
+      state.campaigns,
+      state.selectedCampaignId,
+      publicSelection.id,
+      publicSelection.slug,
+    );
+  }
+
   function render(): void {
     state = controller.getState();
     const selected = state.campaigns.find(({ id }) => id === state.selectedCampaignId) ?? null;
+    renderSessionContext(selected);
     const currentSelectValue = campaignSelect.value;
     campaignSelect.replaceChildren();
     for (const campaign of state.campaigns) {
@@ -544,7 +602,7 @@ export function mountAdminCampaignRoster(
     archivedCampaignSection.hidden = !state.campaigns.some(({ status }) => status === 'archived');
 
     rosterSummary.textContent = selected
-      ? `${selected.name}: ${state.players.filter(({ publicationStatus }) => publicationStatus !== 'archived').length} activos y ${state.players.filter(({ publicationStatus }) => publicationStatus === 'archived').length} archivados.`
+      ? `${selected.name}: ${state.players.filter(({ publicationStatus }) => publicationStatus !== 'archived').length} referents activos y ${state.players.filter(({ publicationStatus }) => publicationStatus === 'archived').length} archivados. Este roster alimenta disposiciones y asociaciones de la campaña administrativa.`
       : 'Selecciona una campaña.';
     playerList.replaceChildren(...state.players.map(createPlayerCard));
     emptyPlayers.hidden = state.players.length !== 0 || state.phase === 'loading';
@@ -643,6 +701,46 @@ export function mountAdminCampaignRoster(
       updateDirtyState(form);
     }
   };
+  const handleAdminCampaignTransitionStarted = (event: Event): void => {
+    if (!(event instanceof CustomEvent) || typeof event.detail?.campaignId !== 'string') return;
+    const targetName = resolveAdminCampaignName(
+      state.campaigns,
+      event.detail.campaignId,
+      event.detail.campaignId,
+    );
+    sessionContext.dataset.transitioning = 'true';
+    sessionContextStatus.textContent = `Cambiando campaña administrativa a ${targetName}…`;
+  };
+  const handleAdminCampaignTransitionCancelled = (event: Event): void => {
+    if (!(event instanceof CustomEvent) || typeof event.detail?.campaignId !== 'string') return;
+    const name = resolveAdminCampaignName(
+      state.campaigns,
+      event.detail.campaignId,
+      event.detail.campaignId,
+    );
+    delete sessionContext.dataset.transitioning;
+    sessionContextName.textContent = name;
+    sessionContext.dataset.adminCampaignId = event.detail.campaignId;
+    sessionContextStatus.textContent = `No se completó el cambio de campaña. Sigues editando ${name}.`;
+  };
+  const handleAdminCampaignChanged = (event: Event): void => {
+    if (!(event instanceof CustomEvent) || typeof event.detail?.campaignId !== 'string') return;
+    const targetName = resolveAdminCampaignName(
+      state.campaigns,
+      event.detail.campaignId,
+      event.detail.campaignId,
+    );
+    delete sessionContext.dataset.transitioning;
+    sessionContextName.textContent = targetName;
+    sessionContext.dataset.adminCampaignId = event.detail.campaignId;
+    sessionContextStatus.textContent = `Campaña administrativa cambiada a ${targetName}.`;
+  };
+  const handlePublicCampaignWillChange = (): void => {
+    queueMicrotask(() => {
+      const selected = state.campaigns.find(({ id }) => id === state.selectedCampaignId) ?? null;
+      renderSessionContext(selected);
+    });
+  };
   const handlePublicDataStatus = (event: Event): void => {
     if (!isPublicDataStatusEvent(event)) return;
     const next = event.detail.backendState;
@@ -668,6 +766,16 @@ export function mountAdminCampaignRoster(
   adminShell.addEventListener('input', handleFormChange);
   adminShell.addEventListener('change', handleFormChange);
   window.addEventListener('atlas:public-data-status', handlePublicDataStatus);
+  window.addEventListener(
+    'atlas:admin-campaign-transition-started',
+    handleAdminCampaignTransitionStarted,
+  );
+  window.addEventListener('atlas:admin-campaign-changed', handleAdminCampaignChanged);
+  window.addEventListener(
+    'atlas:admin-campaign-transition-cancelled',
+    handleAdminCampaignTransitionCancelled,
+  );
+  window.addEventListener('atlas:campaign-will-change', handlePublicCampaignWillChange);
 
   const unsubscribeRoster = controller.subscribe(render);
   const unsubscribeAuth = authController.subscribe((authState) => {
@@ -698,6 +806,17 @@ export function mountAdminCampaignRoster(
       adminShell.removeEventListener('input', handleFormChange);
       adminShell.removeEventListener('change', handleFormChange);
       window.removeEventListener('atlas:public-data-status', handlePublicDataStatus);
+      window.removeEventListener(
+        'atlas:admin-campaign-transition-started',
+        handleAdminCampaignTransitionStarted,
+      );
+      window.removeEventListener('atlas:admin-campaign-changed', handleAdminCampaignChanged);
+      window.removeEventListener(
+        'atlas:admin-campaign-transition-cancelled',
+        handleAdminCampaignTransitionCancelled,
+      );
+      window.removeEventListener('atlas:campaign-will-change', handlePublicCampaignWillChange);
+      sessionContext.remove();
       section.remove();
     },
   };

@@ -578,6 +578,14 @@ export function mountAdminMapEntities(
     const createLabel = getEntityTypeLabel(draft.entityType).toLocaleLowerCase('es');
     editorHeading.textContent = existing ? `Editar ${draft.name}` : `Crear ${createLabel}`;
 
+    if (draft.entityType === 'organization') {
+      const nonSpatialNotice = createElement('p', 'admin-map-entity__nonspatial-notice');
+      nonSpatialNotice.dataset.nonspatialOrganization = '';
+      nonSpatialNotice.textContent =
+        'No cartográfica: esta organización vive en catálogo/búsqueda. No tiene coordenadas, geometría ni marcador; una sede física se modela como una entidad de emplazamiento relacionada.';
+      fields.append(nonSpatialNotice);
+    }
+
     addField({
       name: 'id',
       label: 'ID estable',
@@ -830,7 +838,7 @@ export function mountAdminMapEntities(
       dispositionLegend.textContent = 'Relación con los personajes';
       dispositionHelp.id = dispositionHelpId;
       dispositionHelp.textContent =
-        'Define cómo se relaciona esta entidad con cada personaje jugador activo de la campaña. Las relaciones históricas de jugadores archivados se conservan sin mostrarse aquí.';
+        'Estos controles son disposiciones respecto a los personajes jugadores / referents del roster de la campaña administrativa activa. No son relaciones entre entidades. Neutral sigue siendo una disposición válida; los jugadores archivados se conservan históricamente sin mostrarse aquí.';
       dispositionFieldset.setAttribute(
         'aria-describedby',
         `${dispositionHelpId} ${dispositionErrorId}`,
@@ -905,7 +913,7 @@ export function mountAdminMapEntities(
     const addRelationButton = createElement('button', 'admin-map-entity__button');
     relationLegend.textContent = 'Relaciones con otras entidades';
     relationHelp.textContent =
-      'Las relaciones se guardan una sola vez. Define cómo se describe el otro extremo desde esta ficha y cómo se describe esta entidad desde la ficha relacionada.';
+      'Solo se ofrecen entidades de la campaña administrativa activa. Estas relaciones son independientes del roster y de las disposiciones: se guardan una sola vez, con etiquetas orientadas por extremo. Un target archivado histórico puede seguir representándose, pero no se ofrece para relaciones nuevas.';
     addRelationButton.type = 'button';
     addRelationButton.textContent = 'Añadir relación';
     entityRelationError = createElement('p', 'admin-map-entity__field-error');
@@ -1396,6 +1404,14 @@ export function mountAdminMapEntities(
       handleDismiss();
     }
   };
+  const handleCampaignTransitionStarted = (): void => {
+    query = '';
+    search.value = '';
+    pendingConfirmation = null;
+    confirmation.hidden = true;
+    restoreFocus = null;
+    preview.hidden = true;
+  };
   const handlePublicDataStatus = (event: Event): void => {
     if (!isPublicDataStatusEvent(event)) return;
     const next = event.detail.backendState;
@@ -1422,6 +1438,10 @@ export function mountAdminMapEntities(
   dismissButton.addEventListener('click', handleDismiss);
   document.addEventListener('keydown', handleKeydown);
   window.addEventListener('atlas:public-data-status', handlePublicDataStatus);
+  window.addEventListener(
+    'atlas:admin-campaign-transition-started',
+    handleCampaignTransitionStarted,
+  );
 
   const unsubscribeController = controller.subscribe(render);
   const unsubscribeAuth = authController.subscribe((authState) => {
@@ -1451,6 +1471,10 @@ export function mountAdminMapEntities(
       dismissButton.removeEventListener('click', handleDismiss);
       document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('atlas:public-data-status', handlePublicDataStatus);
+      window.removeEventListener(
+        'atlas:admin-campaign-transition-started',
+        handleCampaignTransitionStarted,
+      );
       clearPortraitPreviewUrl();
       draftGeometry = null;
       geometryKindSelect = null;

@@ -165,6 +165,51 @@ describe('AdminCatalogController', () => {
     expect(controller.getState().records[0]?.id).toBe('safe-harbor');
   });
 
+  it('retains global geographic names but discards and reloads campaign location references', async () => {
+    const repository = new FakeRepository();
+    const geographicName: AdminCatalogRecord = {
+      kind: 'geographic-name',
+      id: 'geo-harbor',
+      slug: 'harbor',
+      name: 'Harbor',
+      language: 'en',
+      x: 800,
+      y: 600,
+      recommendedZoom: null,
+      entityId: null,
+      publicationStatus: 'draft',
+      publishedAt: null,
+      updatedAt: '2026-08-07T10:00:00.000Z',
+    };
+    const a: AdminEntityReference = {
+      id: 'location-a',
+      name: 'Location A',
+      entityType: 'location',
+      publicationStatus: 'published',
+    };
+    const b: AdminEntityReference = { ...a, id: 'location-b', name: 'Location B' };
+    repository.list.mockImplementation(async (kind) =>
+      kind === 'geographic-name' ? [geographicName] : [category],
+    );
+    repository.listEntityReferences.mockResolvedValueOnce([a]).mockResolvedValueOnce([b]);
+    const controller = new AdminCatalogController(repository);
+    controller.setAccess(true, true);
+    await flush();
+    controller.selectResource('geographic-name');
+    await flush();
+
+    expect(controller.getState().records).toEqual([geographicName]);
+    expect(controller.getState().entityReferences).toEqual([a]);
+    controller.prepareCampaignTransition();
+    expect(controller.getState().records).toEqual([geographicName]);
+    expect(controller.getState().entityReferences).toEqual([]);
+    expect(controller.getState().phase).toBe('loading');
+    await controller.reload();
+    expect(controller.getState().records).toEqual([geographicName]);
+    expect(controller.getState().entityReferences).toEqual([b]);
+    expect(controller.getState().phase).toBe('ready');
+  });
+
   it('does not retry a failed mutation and exposes normalized conflict errors', async () => {
     const repository = new FakeRepository();
     repository.create.mockRejectedValue(new AdminCatalogRepositoryError('conflict', 'conflict'));
@@ -184,5 +229,20 @@ describe('AdminCatalogController', () => {
     expect(saved).toBe(false);
     expect(repository.create).toHaveBeenCalledTimes(1);
     expect(controller.getState().issue?.code).toBe('conflict');
+    expect(controller.getState().phase).toBe('ready');
+    expect(controller.getState().records).toEqual([category]);
+
+    const updated = await controller.update(category, {
+      kind: 'category',
+      id: category.id,
+      slug: category.slug,
+      name: 'Cities after failed create',
+      description: category.description,
+      publicationStatus: category.publicationStatus,
+    });
+    expect(updated).toBe(true);
+    expect(controller.getState().records[0]?.kind).toBe('category');
+    expect(controller.getState().phase).toBe('ready');
+    expect(controller.getState().issue).toBeNull();
   });
 });

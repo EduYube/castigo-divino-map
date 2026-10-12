@@ -16,6 +16,7 @@ import {
   normalizeAdminSearchText,
   validateAdminCatalogDraft,
 } from '../domain/adminCatalogValidation';
+import { isCampaignScopedAdminCatalogResource } from '../domain/adminCampaignUx';
 
 export type AdminCatalogSort = 'name' | 'id' | 'status';
 export type AdminCatalogSortDirection = 'asc' | 'desc';
@@ -168,6 +169,23 @@ export class AdminCatalogController {
 
   setQuery(query: string): void {
     this.#publishDerived({ ...this.#state, query });
+  }
+
+  prepareCampaignTransition(): void {
+    if (this.#destroyed) return;
+    const scopedRecords = isCampaignScopedAdminCatalogResource(this.#state.resourceKind);
+    // Geographic names are global; their linked map_entities references are not.
+    if (!scopedRecords && this.#state.resourceKind !== 'geographic-name') return;
+    this.#cancelActive();
+    this.#publishDerived({
+      ...this.#state,
+      records: scopedRecords ? [] : this.#state.records,
+      entityReferences: [],
+      geographicNameReferences: [],
+      query: '',
+      phase: this.#canMutate() ? 'loading' : 'blocked',
+      issue: null,
+    });
   }
 
   setSort(sort: AdminCatalogSort, sortDirection: AdminCatalogSortDirection): void {
@@ -330,7 +348,19 @@ export class AdminCatalogController {
       this.#publishDerived({ ...this.#state, ...result, phase: 'ready', issue: null });
       return true;
     } catch (error) {
-      this.#handleFailure(error, active.generation);
+      if (!this.#isCurrent(active.generation)) return false;
+      const issue = toAdminCatalogIssue(error);
+      if (
+        issue.status === 401 ||
+        issue.status === 403 ||
+        issue.code === 'session-expired' ||
+        issue.code === 'unauthorized'
+      ) {
+        this.#handleFailure(error, active.generation);
+      } else {
+        // A failed write cannot invalidate the loaded records or disable retry/edit.
+        this.#publishDerived({ ...this.#state, phase: 'ready', issue });
+      }
       return false;
     }
   }

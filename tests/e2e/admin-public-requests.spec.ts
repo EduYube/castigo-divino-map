@@ -393,6 +393,30 @@ test('the admin inbox filters and sorts request details without exposing a needs
   await expect(page.getByText('Historical rejection.')).toBeVisible();
 });
 
+test('logout clears unsent moderation drafts before signing in again in the same tab', async ({
+  page,
+}) => {
+  await configureBackend(page);
+  await page.goto('/');
+  await loginAndConnect(page);
+
+  const note = page
+    .getByRole('heading', { name: 'Newer Requested Character' })
+    .locator('..')
+    .getByLabel('Nota administrativa (opcional)');
+  await note.fill('Private unsent moderation text');
+  await expect(note).toHaveValue('Private unsent moderation text');
+  await expect(page.locator('.admin-public-requests[data-admin-dirty]')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+  await expect(page.locator('.admin-public-requests[data-admin-dirty]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible();
+  await page.getByLabel('Correo').fill('admin@example.invalid');
+  await page.getByLabel('Contraseña').fill('test-password');
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click();
+  await expect(note).toHaveValue('');
+});
+
 test('rejecting requires confirmation, stores the optional note and cannot accidentally run twice', async ({
   page,
 }) => {

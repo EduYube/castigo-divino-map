@@ -98,6 +98,7 @@ interface RuntimeErrors {
 
 interface BackendOptions {
   readonly campaignBPlayerDelayMs?: number;
+  readonly campaignBPlayerFailure?: boolean;
 }
 
 function collectRuntimeErrors(page: Page): RuntimeErrors {
@@ -194,6 +195,20 @@ async function configureBackend(page: Page, options: BackendOptions = {}): Promi
     if (table === 'players') {
       const filter = url.searchParams.get('campaign_id') ?? '';
       const campaignId = filter.startsWith('eq.') ? filter.slice(3) : '';
+      const adminRosterSelect =
+        'id,campaign_id,slug,display_name,publication_status,published_at,display_order,accent_color,archived_at,updated_at';
+      if (
+        campaignId === CAMPAIGN_B_ID &&
+        options.campaignBPlayerFailure &&
+        url.searchParams.get('select') === adminRosterSelect
+      ) {
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'simulated campaign roster outage' }),
+        });
+        return;
+      }
       if (campaignId === CAMPAIGN_B_ID && options.campaignBPlayerDelayMs) {
         await new Promise((resolve) => setTimeout(resolve, options.campaignBPlayerDelayMs));
       }
@@ -237,6 +252,9 @@ async function login(page: Page): Promise<void> {
   await expect(page.getByLabel('Campaña administrativa')).toHaveValue(INITIAL_CAMPAIGN_ID);
   await expect(page.getByText('Skade', { exact: true })).toBeVisible();
   await expect(page.getByText('Ura', { exact: true })).toBeVisible();
+  const context = page.locator('[data-admin-campaign-session-context]');
+  await expect(context).toContainText('Editando campaña: Castigo Divino');
+  await expect(context).toContainText('Campaña pública visible: Castigo Divino');
 }
 
 function expectNoRuntimeErrors(errors: RuntimeErrors): void {
@@ -276,6 +294,12 @@ test('dirty roster edits cannot silently cross campaigns and focus is restored o
   await expect(page.getByText('Veyra', { exact: true })).toBeVisible();
   await expect(page.getByText('Skade', { exact: true })).toBeHidden();
   await expect(page.getByRole('heading', { name: 'Crear jugador' })).toBeHidden();
+  await expect(page.locator('[data-admin-campaign-session-context]')).toContainText(
+    'Editando campaña: Un aliento menos',
+  );
+  await expect(page.locator('[data-admin-campaign-session-context]')).toContainText(
+    'La edición sigue afectando solo a Un aliento menos',
+  );
 
   await newPlayer.click();
   await expect(name).toBeFocused();
@@ -292,6 +316,47 @@ test('dirty roster edits cannot silently cross campaigns and focus is restored o
 
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
   await expect(newPlayer).toBeFocused();
+  expectNoRuntimeErrors(errors);
+});
+
+test('entity referents and organizations stay scoped to the active administrative campaign', async ({
+  page,
+}) => {
+  const errors = collectRuntimeErrors(page);
+  await configureBackend(page);
+  await page.goto('/');
+  await login(page);
+
+  await page.getByRole('button', { name: 'Crear personaje' }).click();
+  await expect(page.getByTestId('admin-player-disposition-player-skade')).toBeVisible();
+  await expect(page.getByTestId('admin-player-disposition-player-ura')).toBeVisible();
+  await expect(page.getByTestId('admin-player-disposition-player-veyra')).toHaveCount(0);
+  await expect(page.getByTestId('admin-player-association-player-skade')).toBeVisible();
+  await expect(page.getByTestId('admin-player-association-player-ura')).toBeVisible();
+  await expect(page.getByTestId('admin-player-association-player-veyra')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Cerrar editor' }).click();
+
+  await page.getByLabel('Campaña administrativa').selectOption(CAMPAIGN_B_ID);
+  await expect(page.getByText('Veyra', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Crear personaje' }).click();
+  await expect(page.getByTestId('admin-player-disposition-player-veyra')).toBeVisible();
+  await expect(page.getByTestId('admin-player-disposition-player-skade')).toHaveCount(0);
+  await expect(page.getByTestId('admin-player-disposition-player-ura')).toHaveCount(0);
+  await expect(page.getByTestId('admin-player-association-player-veyra')).toBeVisible();
+  await expect(page.getByTestId('admin-player-association-player-skade')).toHaveCount(0);
+  await expect(page.getByTestId('admin-player-association-player-ura')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Cerrar editor' }).click();
+
+  await page.getByRole('button', { name: 'Crear organización' }).click();
+  await expect(page.locator('[data-nonspatial-organization]')).toContainText('No cartográfica');
+  await expect(page.getByLabel('Descubrimiento')).toBeDisabled();
+  await expect(page.getByLabel('Descubrimiento')).toHaveValue('search_only');
+  await expect(page.getByLabel('Coordenada X')).toHaveCount(0);
+  await expect(page.getByLabel('Coordenada Y')).toHaveCount(0);
+  await expect(page.getByTestId('admin-coordinate-map')).toBeHidden();
+  await expect(page.locator('[data-player-associations]')).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Relación con los personajes' })).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Relaciones con otras entidades' })).toBeVisible();
   expectNoRuntimeErrors(errors);
 });
 
@@ -336,6 +401,28 @@ test('campaign transition discards old editors and blocks writes while the targe
   expectNoRuntimeErrors(errors);
 });
 
+test('a failed campaign switch restores the original administrative scope and controllers', async ({
+  page,
+}) => {
+  await configureBackend(page, { campaignBPlayerFailure: true });
+  await page.goto('/');
+  await login(page);
+
+  const context = page.locator('[data-admin-campaign-session-context]');
+  await page.getByLabel('Campaña administrativa').selectOption(CAMPAIGN_B_ID);
+  await expect(context).toContainText('Sigues editando Castigo Divino');
+  await expect(context).not.toHaveAttribute('data-transitioning', 'true');
+  await expect(context).toContainText('Editando campaña: Castigo Divino');
+  await expect(page.getByLabel('Campaña administrativa')).toHaveValue(INITIAL_CAMPAIGN_ID);
+  await expect(page.getByText('Ura', { exact: true })).toBeVisible();
+  await expect(page.getByText('Veyra', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Crear jugador' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Crear', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Recargar relaciones' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Recargar solicitudes' })).toBeEnabled();
+});
+
 test('campaign roster workspace stays usable without horizontal overflow from 320 to 430 px', async ({
   page,
 }) => {
@@ -347,7 +434,13 @@ test('campaign roster workspace stays usable without horizontal overflow from 32
   for (const width of [320, 430]) {
     await page.setViewportSize({ width, height: 900 });
     const roster = page.locator('.admin-campaign-roster');
+    const context = page.locator('[data-admin-campaign-session-context]');
     await expect(roster).toBeVisible();
+    await expect(context).toBeVisible();
+    expect(
+      await context.evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+      `MAP-070 campaign context should not overflow at ${width}px`,
+    ).toBe(true);
     expect(
       await roster.evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
       `MAP-054 roster should not overflow at ${width}px`,

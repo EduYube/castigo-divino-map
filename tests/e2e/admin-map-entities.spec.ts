@@ -94,12 +94,6 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       publication_status: 'published',
       accent_color: '#1e3a8a',
     },
-    {
-      id: 'player-veyra',
-      display_name: 'Veyra',
-      publication_status: 'published',
-      accent_color: '#9d174d',
-    },
   ];
   const entities: EntityRow[] = [
     {
@@ -125,10 +119,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
   const entityTags = new Map<string, string[]>([['entity-aster-guide', ['notable']]]);
   const entityAssociations = new Map<string, string[]>();
   const dispositions = new Map<string, Record<string, Disposition>>([
-    [
-      'entity-aster-guide',
-      { 'player-skade': 'ally', 'player-ura': 'neutral', 'player-veyra': 'enemy' },
-    ],
+    ['entity-aster-guide', { 'player-skade': 'ally', 'player-ura': 'neutral' }],
   ]);
 
   const timestamp = (): string => `2026-08-07T12:00:${String(counter++).padStart(2, '0')}.000Z`;
@@ -632,10 +623,8 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await page.getByLabel(/Notable · published/).check();
   const skade = page.getByTestId('admin-player-disposition-player-skade');
   const ura = page.getByTestId('admin-player-disposition-player-ura');
-  const veyra = page.getByTestId('admin-player-disposition-player-veyra');
   await expect(skade).toHaveAttribute('aria-label', 'Skade: Neutral');
   await expect(ura).toHaveAttribute('aria-label', 'Ura: Neutral');
-  await expect(veyra).toHaveAttribute('aria-label', 'Veyra: Neutral');
 
   const skadeAssociation = page.getByTestId('admin-player-association-player-skade');
   const uraAssociation = page.getByTestId('admin-player-association-player-ura');
@@ -657,7 +646,6 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await ura.selectOption('ally');
   await expect(skade).toHaveAttribute('aria-label', 'Skade: Enemigo');
   await expect(ura).toHaveAttribute('aria-label', 'Ura: Aliado');
-  await expect(veyra).toHaveAttribute('aria-label', 'Veyra: Neutral');
 
   const map = page.getByTestId('admin-coordinate-map');
   await expect(map).toHaveClass(/leaflet-container/);
@@ -722,7 +710,6 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   await expect(page.getByLabel('Nombre principal (inglés)')).toHaveValue('MAP-019 Character');
   await expect(page.getByTestId('admin-player-disposition-player-skade')).toHaveValue('enemy');
   await expect(page.getByTestId('admin-player-disposition-player-ura')).toHaveValue('ally');
-  await expect(page.getByTestId('admin-player-disposition-player-veyra')).toHaveValue('neutral');
 
   await page.getByRole('button', { name: 'Publicar' }).click();
   await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
@@ -740,7 +727,6 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   ).toBeVisible();
   await expect(panel.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();
   await expect(panel.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
-  await expect(panel.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
 
   const fullAction = panel.getByRole('link', {
     name: 'Abrir ficha completa de MAP-019 Character en una pestaña nueva',
@@ -753,7 +739,6 @@ test('an administrator can select and drag a CRS.Simple point, preview it, save 
   ).toBeVisible();
   await expect(page.getByRole('listitem', { name: 'Skade: Enemigo' })).toBeVisible();
   await expect(page.getByRole('listitem', { name: 'Ura: Aliado' })).toBeVisible();
-  await expect(page.getByRole('listitem', { name: 'Veyra: Neutral' })).toBeVisible();
 });
 
 for (const width of [320, 390, 430]) {

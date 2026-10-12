@@ -223,7 +223,7 @@ function createAssociationFieldset(): {
   help.className = 'admin-map-entity__help';
   help.id = 'admin-map-entity-associations-help';
   help.textContent =
-    'Asociación narrativa independiente de Aliado, Neutral o Enemigo. Puedes seleccionar cero, uno o varios personajes activos de esta campaña.';
+    'Asociación narrativa con personajes jugadores / referents del roster de la campaña administrativa activa. Es independiente de Aliado, Neutral o Enemigo y de las relaciones entre entidades.';
   list.className = 'admin-map-entity__association-list';
   list.setAttribute('aria-describedby', help.id);
   status.className = 'admin-map-entity__association-status';
@@ -279,8 +279,14 @@ async function enhanceVisibleEditor(): Promise<void> {
   if (!editor || editor.querySelector('[data-player-associations]')) return;
 
   const idInput = editor.querySelector<HTMLInputElement>('#admin-map-entity-field-id');
+  const entityType = editor.querySelector<HTMLSelectElement>('#admin-map-entity-field-entityType');
   const fields = editor.querySelector<HTMLElement>('.admin-map-entity__fields');
-  if (!idInput || !fields) return;
+  if (!idInput || !entityType || !fields) return;
+  if (entityType.value === 'organization') {
+    currentSelection = null;
+    editor.querySelector('[data-player-associations]')?.remove();
+    return;
+  }
 
   const { fieldset, list, status } = createAssociationFieldset();
   const dispositions = fields.querySelector('.admin-map-entity__dispositions');
@@ -322,10 +328,15 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       attributes: true,
       attributeFilter: ['hidden'],
     });
-    adminCampaignContext.subscribe(() => {
+    const purgeAssociationUi = (): void => {
       activeAbort?.abort();
+      activeAbort = null;
       currentSelection = null;
       document.querySelector('[data-player-associations]')?.remove();
+    };
+    window.addEventListener('atlas:admin-campaign-transition-started', purgeAssociationUi);
+    adminCampaignContext.subscribe(() => {
+      purgeAssociationUi();
       scheduleEnhancement();
     });
     scheduleEnhancement();

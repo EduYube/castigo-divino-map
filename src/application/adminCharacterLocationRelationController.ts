@@ -86,6 +86,18 @@ export class AdminCharacterLocationRelationController {
     if (!wasAvailable || this.#state.records.length === 0) void this.reload();
   }
 
+  prepareCampaignTransition(): void {
+    if (this.#destroyed) return;
+    this.#cancelActive();
+    this.#publish({
+      ...this.#state,
+      records: [],
+      references: EMPTY_REFERENCES,
+      phase: this.#canMutate() ? 'loading' : 'blocked',
+      issue: null,
+    });
+  }
+
   async reload(): Promise<void> {
     if (!this.#canMutate()) {
       this.#publishBlocked();

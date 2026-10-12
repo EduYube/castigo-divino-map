@@ -473,6 +473,19 @@ export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
     },
   });
   const campaignRosterRuntime = bootstrapAdminCampaignRosterRuntime(root, authController, {
+    onCampaignTransitionStarted(): void {
+      catalogController.prepareCampaignTransition();
+      mapEntityController.prepareCampaignTransition();
+      relationController.prepareCampaignTransition();
+      requestController.prepareCampaignTransition();
+    },
+    onCampaignTransitionCancelled(): void {
+      // Restore controllers on the original campaign after an interrupted roster load.
+      void catalogController.reload();
+      void mapEntityController.reload();
+      void relationController.reload();
+      void requestController.reload();
+    },
     onCampaignChanged(): void {
       void catalogController.reload();
       void mapEntityController.reload();
