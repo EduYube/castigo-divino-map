@@ -357,9 +357,13 @@ function rosterPlayer(page: Page, name: string): Locator {
   return cards.getByText(name, { exact: true });
 }
 
-async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void> {
+async function expectTextContrast(
+  locator: Locator,
+  minimum = 4.5,
+  boundary = false,
+): Promise<void> {
   await expect(locator).toBeVisible();
-  const ratio = await locator.evaluate((element) => {
+  const ratio = await locator.evaluate((element, boundary) => {
     interface Rgba {
       r: number;
       g: number;
@@ -399,7 +403,7 @@ async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void
     };
 
     const ancestors: Element[] = [];
-    for (let node: Element | null = element; node; node = node.parentElement) {
+    for (let node: Element | null = boundary ? element.parentElement : element; node; node = node.parentElement) {
       ancestors.unshift(node);
     }
 
@@ -408,7 +412,8 @@ async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void
       background = composite(parseColor(getComputedStyle(node).backgroundColor), background);
     }
 
-    const foreground = composite(parseColor(getComputedStyle(element).color), background);
+    const property = boundary ? 'borderTopColor' : 'color';
+    const foreground = composite(parseColor(getComputedStyle(element)[property]), background);
     const luminance = ({ r, g, b }: Rgba): number => {
       const linear = [r, g, b].map((channel) => {
         const normalized = channel / 255;
@@ -424,7 +429,7 @@ async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void
       (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
       (Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
     );
-  });
+  }, boundary);
 
   expect(ratio).toBeGreaterThanOrEqual(minimum);
 }
@@ -482,53 +487,15 @@ test('empty admin inputs meet non-text contrast', async ({ page }) => {
   await page.goto('/');
   await login(page);
   await page.getByRole('button', { name: 'Crear campaña' }).click();
-  await page.getByRole('button', { name: 'Cancelar' }).focus();
 
   const fields = [
     page.getByLabel('Nombre', { exact: true }),
     page.getByLabel('Slug estable'),
   ];
   for (const field of fields) {
-    await expect(field).toBeVisible();
     await expect(field).toHaveValue('');
     await expect(field).not.toBeFocused();
-
-    const ratio = await field.evaluate((element) => {
-      const rgb = (value: string) =>
-        (value.match(/[0-9.]+/g) ?? []).map(Number);
-      const mix = (top: number[], bottom: number[]) => {
-        const alpha = top[3] ?? 1;
-        return bottom.map((value, index) =>
-          value * (1 - alpha) + (top[index] ?? 0) * alpha,
-        );
-      };
-      const brightness = (color: number[]) => {
-        const channels = color.slice(0, 3).map((value) => {
-          const unit = value / 255;
-          return unit <= 0.04045
-            ? unit / 12.92
-            : ((unit + 0.055) / 1.055) ** 2.4;
-        });
-        return (
-          channels[0]! * 0.2126 +
-          channels[1]! * 0.7152 +
-          channels[2]! * 0.0722
-        );
-      };
-      const ancestors: Element[] = [];
-      for (let node = element.parentElement; node; node = node.parentElement) {
-        ancestors.unshift(node);
-      }
-      let surface = [255, 255, 255];
-      for (const node of ancestors) {
-        surface = mix(rgb(getComputedStyle(node).backgroundColor), surface);
-      }
-      const edge = mix(rgb(getComputedStyle(element).borderTopColor), surface);
-      const a = brightness(edge);
-      const b = brightness(surface);
-      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-    });
-    expect(ratio).toBeGreaterThanOrEqual(3);
+    await expectTextContrast(field, 3, true);
   }
 });
 
