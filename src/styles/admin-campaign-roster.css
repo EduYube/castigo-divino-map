@@ -96,7 +96,7 @@
   padding: 0.55rem 0.7rem;
   color: var(--ink);
   background: rgba(8, 13, 10, 0.58);
-  border: 1px solid var(--line);
+  border: 1px solid var(--accent-strong);
   border-radius: 0.45rem;
   font: inherit;
 }
@@ -236,7 +236,7 @@
   min-height: 2.75rem;
   padding: 0.25rem;
   background: rgba(8, 13, 10, 0.58);
-  border: 1px solid var(--line);
+  border: 1px solid var(--accent-strong);
   border-radius: 0.45rem;
 }
 
