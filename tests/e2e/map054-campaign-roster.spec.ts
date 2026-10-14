@@ -482,6 +482,8 @@ test('empty admin controls use a visible border token', async ({ page }) => {
   await page.goto('/');
   await login(page);
   await page.getByRole('button', { name: 'Crear campaña' }).click();
+  await expect(page.locator('#admin-campaign-name')).toBeFocused();
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).focus();
 
   for (const field of [
     page.locator('#admin-campaign-name'),
