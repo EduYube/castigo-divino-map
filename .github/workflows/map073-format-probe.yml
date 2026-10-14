@@ -1,0 +1,25 @@
+name: MAP-073 format probe
+
+on:
+  push:
+    branches:
+      - agent/map-073-format-probe
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Format target
+        run: npx prettier --write tests/e2e/map054-campaign-roster.spec.ts
+      - name: Show exact diff
+        run: git diff -- tests/e2e/map054-campaign-roster.spec.ts
