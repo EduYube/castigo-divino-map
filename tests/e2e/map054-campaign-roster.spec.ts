@@ -403,7 +403,8 @@ async function expectTextContrast(
     };
 
     const ancestors: Element[] = [];
-    for (let node: Element | null = boundary ? element.parentElement : element; node; node = node.parentElement) {
+    const start = boundary ? element.parentElement : element;
+    for (let node: Element | null = start; node; node = node.parentElement) {
       ancestors.unshift(node);
     }
 
@@ -413,7 +414,8 @@ async function expectTextContrast(
     }
 
     const property = boundary ? 'borderTopColor' : 'color';
-    const foreground = composite(parseColor(getComputedStyle(element)[property]), background);
+    const foregroundColor = getComputedStyle(element)[property];
+    const foreground = composite(parseColor(foregroundColor), background);
     const luminance = ({ r, g, b }: Rgba): number => {
       const linear = [r, g, b].map((channel) => {
         const normalized = channel / 255;
