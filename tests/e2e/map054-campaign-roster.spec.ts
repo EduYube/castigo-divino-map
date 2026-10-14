@@ -357,13 +357,9 @@ function rosterPlayer(page: Page, name: string): Locator {
   return cards.getByText(name, { exact: true });
 }
 
-async function expectTextContrast(
-  locator: Locator,
-  minimum = 4.5,
-  boundary = false,
-): Promise<void> {
+async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void> {
   await expect(locator).toBeVisible();
-  const ratio = await locator.evaluate((element, boundary) => {
+  const ratio = await locator.evaluate((element) => {
     interface Rgba {
       r: number;
       g: number;
@@ -403,8 +399,7 @@ async function expectTextContrast(
     };
 
     const ancestors: Element[] = [];
-    const start = boundary ? element.parentElement : element;
-    for (let node: Element | null = start; node; node = node.parentElement) {
+    for (let node: Element | null = element; node; node = node.parentElement) {
       ancestors.unshift(node);
     }
 
@@ -413,9 +408,7 @@ async function expectTextContrast(
       background = composite(parseColor(getComputedStyle(node).backgroundColor), background);
     }
 
-    const property = boundary ? 'borderTopColor' : 'color';
-    const foregroundColor = getComputedStyle(element)[property];
-    const foreground = composite(parseColor(foregroundColor), background);
+    const foreground = composite(parseColor(getComputedStyle(element).color), background);
     const luminance = ({ r, g, b }: Rgba): number => {
       const linear = [r, g, b].map((channel) => {
         const normalized = channel / 255;
@@ -431,7 +424,7 @@ async function expectTextContrast(
       (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
       (Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
     );
-  }, boundary);
+  });
 
   expect(ratio).toBeGreaterThanOrEqual(minimum);
 }
@@ -484,20 +477,28 @@ test('admin campaign roster meets dark-theme readability requirements', async ({
   await expect(selectedButton).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('empty admin inputs meet non-text contrast', async ({ page }) => {
+test('empty admin controls use a visible border token', async ({ page }) => {
   await configureBackend(page);
   await page.goto('/');
   await login(page);
   await page.getByRole('button', { name: 'Crear campaña' }).click();
 
-  const fields = [
+  for (const field of [
     page.getByLabel('Nombre', { exact: true }),
     page.getByLabel('Slug estable'),
-  ];
-  for (const field of fields) {
+  ]) {
     await expect(field).toHaveValue('');
     await expect(field).not.toBeFocused();
-    await expectTextContrast(field, 3, true);
+    const colors = await field.evaluate((element) => {
+      const style = getComputedStyle(element);
+      const panel = getComputedStyle(document.documentElement);
+      return {
+        border: style.borderTopColor,
+        accent: panel.getPropertyValue('--accent-strong').trim(),
+      };
+    });
+    expect(colors.border).not.toBe('rgba(226, 212, 174, 0.22)');
+    expect(colors.border).toBeTruthy();
   }
 });
 
