@@ -499,10 +499,15 @@ test('empty admin controls use a visible border token', async ({ page }) => {
           const unit = value / 255;
           return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
         });
-        return channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722;
+        return (
+          channels[0]! * 0.2126 +
+          channels[1]! * 0.7152 +
+          channels[2]! * 0.0722
+        );
       };
       const border = luminance(parse(getComputedStyle(element).borderTopColor));
-      const panel = luminance(parse(getComputedStyle(element.closest('dialog')!).backgroundColor));
+      const dialog = element.closest('dialog')!;
+      const panel = luminance(parse(getComputedStyle(dialog).backgroundColor));
       return (Math.max(border, panel) + 0.05) / (Math.min(border, panel) + 0.05);
     });
     expect(ratio).toBeGreaterThanOrEqual(3);
