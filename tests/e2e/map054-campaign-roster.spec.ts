@@ -477,12 +477,11 @@ test('admin campaign roster meets dark-theme readability requirements', async ({
   await expect(selectedButton).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('empty admin inputs have a visible unfocused border', async ({ page }) => {
+test('empty admin inputs keep visible borders', async ({ page }) => {
   await configureBackend(page);
   await page.goto('/');
   await login(page);
   await page.getByRole('button', { name: 'Crear campaña' }).click();
-
   const name = page.locator('#admin-campaign-name');
   await expect(name).toBeFocused();
   await page.getByRole('button', { name: 'Cancelar', exact: true }).focus();
@@ -492,23 +491,26 @@ test('empty admin inputs have a visible unfocused border', async ({ page }) => {
     await expect(field).toHaveValue('');
     await expect(field).not.toBeFocused();
     const ratio = await field.evaluate((element) => {
-      const rgb = (value: string): number[] =>
-        (value.match(/[0-9.]+/g) ?? []).slice(0, 3).map(Number);
-      const lightness = (color: number[]): number => {
-        const channels = color.map((value) => {
-          const unit = value / 255;
-          return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
-        });
-        return (
-          channels[0]! * 0.2126 +
-          channels[1]! * 0.7152 +
-          channels[2]! * 0.0722
-        );
+      const channels = (value: string) => {
+        const matches = value.match(/[0-9.]+/g) ?? [];
+        return matches.slice(0, 3).map(Number);
       };
-      const border = getComputedStyle(element).borderTopColor;
-      const panel = getComputedStyle(element.closest('dialog')!).backgroundColor;
-      const a = lightness(rgb(border));
-      const b = lightness(rgb(panel));
+      const luminance = (values: number[]) => {
+        const rgb = values.map((value) => {
+          const unit = value / 255;
+          if (unit <= 0.04045) return unit / 12.92;
+          return ((unit + 0.055) / 1.055) ** 2.4;
+        });
+        const red = rgb[0]! * 0.2126;
+        const green = rgb[1]! * 0.7152;
+        const blue = rgb[2]! * 0.0722;
+        return red + green + blue;
+      };
+      const edge = getComputedStyle(element).borderTopColor;
+      const dialog = element.closest('dialog')!;
+      const backdrop = getComputedStyle(dialog).backgroundColor;
+      const a = luminance(channels(edge));
+      const b = luminance(channels(backdrop));
       return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
     });
     expect(ratio).toBeGreaterThanOrEqual(3);
