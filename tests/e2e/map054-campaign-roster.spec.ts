@@ -477,26 +477,24 @@ test('admin campaign roster meets dark-theme readability requirements', async ({
   await expect(selectedButton).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('empty admin controls use a visible border token', async ({ page }) => {
+test('empty admin inputs have a visible unfocused border', async ({ page }) => {
   await configureBackend(page);
   await page.goto('/');
   await login(page);
   await page.getByRole('button', { name: 'Crear campaña' }).click();
-  await expect(page.locator('#admin-campaign-name')).toBeFocused();
+
+  const name = page.locator('#admin-campaign-name');
+  await expect(name).toBeFocused();
   await page.getByRole('button', { name: 'Cancelar', exact: true }).focus();
 
-  for (const field of [
-    page.locator('#admin-campaign-name'),
-    page.locator('#admin-campaign-slug'),
-  ]) {
+  for (const id of ['#admin-campaign-name', '#admin-campaign-slug']) {
+    const field = page.locator(id);
     await expect(field).toHaveValue('');
     await expect(field).not.toBeFocused();
     const ratio = await field.evaluate((element) => {
-      const parse = (value: string): number[] => {
-        const channels = value.match(/[0-9.]+/g) ?? [];
-        return channels.slice(0, 3).map(Number);
-      };
-      const luminance = (color: number[]) => {
+      const rgb = (value: string): number[] =>
+        (value.match(/[0-9.]+/g) ?? []).slice(0, 3).map(Number);
+      const lightness = (color: number[]): number => {
         const channels = color.map((value) => {
           const unit = value / 255;
           return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
@@ -507,10 +505,11 @@ test('empty admin controls use a visible border token', async ({ page }) => {
           channels[2]! * 0.0722
         );
       };
-      const border = luminance(parse(getComputedStyle(element).borderTopColor));
-      const dialog = element.closest('dialog')!;
-      const panel = luminance(parse(getComputedStyle(dialog).backgroundColor));
-      return (Math.max(border, panel) + 0.05) / (Math.min(border, panel) + 0.05);
+      const border = getComputedStyle(element).borderTopColor;
+      const panel = getComputedStyle(element.closest('dialog')!).backgroundColor;
+      const a = lightness(rgb(border));
+      const b = lightness(rgb(panel));
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
     });
     expect(ratio).toBeGreaterThanOrEqual(3);
   }
