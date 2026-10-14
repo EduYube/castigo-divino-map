@@ -381,8 +381,7 @@ async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void
 
       const blendChannel = (foregroundChannel: number, backgroundChannel: number): number => {
         const foregroundContribution = foregroundChannel * foreground.a;
-        const backgroundContribution =
-          backgroundChannel * background.a * (1 - foreground.a);
+        const backgroundContribution = backgroundChannel * background.a * (1 - foreground.a);
         return (foregroundContribution + backgroundContribution) / alpha;
       };
 
@@ -408,9 +407,7 @@ async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void
     const luminance = ({ r, g, b }: Rgba): number => {
       const linear = [r, g, b].map((channel) => {
         const normalized = channel / 255;
-        return normalized <= 0.04045
-          ? normalized / 12.92
-          : ((normalized + 0.055) / 1.055) ** 2.4;
+        return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
       });
       const [red = 0, green = 0, blue = 0] = linear;
       return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
@@ -427,9 +424,7 @@ async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void
   expect(ratio).toBeGreaterThanOrEqual(minimum);
 }
 
-test('admin campaign roster meets dark-theme readability requirements', async ({
-  page,
-}) => {
+test('admin campaign roster meets dark-theme readability requirements', async ({ page }) => {
   await configureBackend(page);
   await page.goto('/');
   await login(page);
@@ -477,9 +472,7 @@ test('admin campaign roster meets dark-theme readability requirements', async ({
   await expect(selectedButton).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('public and admin campaign selectors remain independent and scoped', async ({
-  page,
-}) => {
+test('public and admin campaign selectors remain independent and scoped', async ({ page }) => {
   await configureBackend(page);
   await page.goto('/?campaign=castigo-divino');
   await login(page);
