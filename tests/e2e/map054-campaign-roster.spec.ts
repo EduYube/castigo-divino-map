@@ -493,7 +493,7 @@ test('empty admin inputs keep visible borders', async ({ page }) => {
     const ratio = await field.evaluate((element) => {
       const channels = (value: string) => {
         const matches = value.match(/[0-9.]+/g) ?? [];
-        return matches.slice(0, 3).map(Number);
+        return matches.map(Number);
       };
       const luminance = (values: number[]) => {
         const rgb = values.map((value) => {
@@ -509,11 +509,23 @@ test('empty admin inputs keep visible borders', async ({ page }) => {
       const edge = getComputedStyle(element).borderTopColor;
       const dialog = element.closest('dialog')!;
       const backdrop = getComputedStyle(dialog).backgroundColor;
-      const a = luminance(channels(edge));
-      const b = luminance(channels(backdrop));
-      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      const original = channels('rgba(226, 212, 174, 0.22)');
+      const background = channels(backdrop);
+      const blend = (color: number[]) => {
+        const alpha = color[3] ?? 1;
+        return background.slice(0, 3).map((value, index) => {
+          return value * (1 - alpha) + color[index]! * alpha;
+        });
+      };
+      const a = luminance(blend(channels(edge)));
+      const b = luminance(background);
+      const originalRatio = luminance(blend(original));
+      const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      const negative = (Math.max(originalRatio, b) + 0.05) / (Math.min(originalRatio, b) + 0.05);
+      return { ratio, negative };
     });
-    expect(ratio).toBeGreaterThanOrEqual(3);
+    expect(ratio.ratio).toBeGreaterThanOrEqual(3);
+    expect(ratio.negative).toBeLessThan(3);
   }
 });
 
