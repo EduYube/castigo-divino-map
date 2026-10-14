@@ -378,18 +378,9 @@ async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void
       const alpha = foreground.a + background.a * (1 - foreground.a);
       if (alpha === 0) return { r: 0, g: 0, b: 0, a: 0 };
       return {
-        r:
-          (foreground.r * foreground.a +
-            background.r * background.a * (1 - foreground.a)) /
-          alpha,
-        g:
-          (foreground.g * foreground.a +
-            background.g * background.a * (1 - foreground.a)) /
-          alpha,
-        b:
-          (foreground.b * foreground.a +
-            background.b * background.a * (1 - foreground.a)) /
-          alpha,
+        r: (foreground.r * foreground.a + background.r * background.a * (1 - foreground.a)) / alpha,
+        g: (foreground.g * foreground.a + background.g * background.a * (1 - foreground.a)) / alpha,
+        b: (foreground.b * foreground.a + background.b * background.a * (1 - foreground.a)) / alpha,
         a: alpha,
       };
     };
@@ -412,11 +403,7 @@ async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void
           ? normalized / 12.92
           : ((normalized + 0.055) / 1.055) ** 2.4;
       });
-      return (
-        0.2126 * (linear[0] ?? 0) +
-        0.7152 * (linear[1] ?? 0) +
-        0.0722 * (linear[2] ?? 0)
-      );
+      return 0.2126 * (linear[0] ?? 0) + 0.7152 * (linear[1] ?? 0) + 0.0722 * (linear[2] ?? 0);
     };
 
     const foregroundLuminance = luminance(foreground);
