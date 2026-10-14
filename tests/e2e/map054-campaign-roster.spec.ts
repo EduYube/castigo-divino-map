@@ -483,7 +483,10 @@ test('empty administrative inputs retain a distinguishable boundary without focu
   await login(page);
 
   await page.getByRole('button', { name: 'Crear campaña' }).click();
-  const fields = [page.getByLabel('Nombre', { exact: true }), page.getByLabel('Slug estable')];
+  const fields = [
+    page.getByLabel('Nombre', { exact: true }),
+    page.getByLabel('Slug estable'),
+  ];
   await page.getByRole('button', { name: 'Cancelar', exact: true }).focus();
 
   for (const field of fields) {
@@ -507,9 +510,13 @@ test('empty administrative inputs retain a distinguishable boundary without focu
         ];
       };
       const ancestors: Element[] = [];
-      for (let node = element.parentElement; node; node = node.parentElement) ancestors.unshift(node);
+      for (let node = element.parentElement; node; node = node.parentElement) {
+        ancestors.unshift(node);
+      }
       let backdrop: number[] = [255, 255, 255, 1];
-      for (const node of ancestors) backdrop = blend(parse(getComputedStyle(node).backgroundColor), backdrop);
+      for (const node of ancestors) {
+        backdrop = blend(parse(getComputedStyle(node).backgroundColor), backdrop);
+      }
       const border = blend(parse(getComputedStyle(element).borderTopColor), backdrop);
       const luminance = (rgb: readonly number[]) => {
         const linear = rgb.slice(0, 3).map((v) => {
