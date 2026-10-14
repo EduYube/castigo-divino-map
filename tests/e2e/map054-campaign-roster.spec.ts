@@ -492,8 +492,10 @@ test('empty admin controls use a visible border token', async ({ page }) => {
     await expect(field).toHaveValue('');
     await expect(field).not.toBeFocused();
     const ratio = await field.evaluate((element) => {
-      const parse = (value: string) =>
-        (value.match(/[0-9.]+/g) ?? []).slice(0, 3).map(Number);
+      const parse = (value: string): number[] => {
+        const channels = value.match(/[0-9.]+/g) ?? [];
+        return channels.slice(0, 3).map(Number);
+      };
       const luminance = (color: number[]) => {
         const channels = color.map((value) => {
           const unit = value / 255;
