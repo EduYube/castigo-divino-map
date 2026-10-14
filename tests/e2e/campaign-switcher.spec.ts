@@ -531,6 +531,58 @@ async function fillPublicRequest(page: Page, prefix: string): Promise<void> {
   await page.getByLabel('Motivo de la solicitud').fill(`${prefix} motivo`);
 }
 
+async function expectCampaignSwitcherGeometry(page: Page): Promise<void> {
+  const switcher = page.locator('.campaign-switcher');
+  const label = switcher.locator('.campaign-switcher__label');
+  const selector = page.getByLabel('Campaña', { exact: true });
+
+  await expect(label).toBeVisible();
+  await expect(selector).toBeVisible();
+
+  const [switcherBox, labelBox, selectorBox] = await Promise.all([
+    switcher.boundingBox(),
+    label.boundingBox(),
+    selector.boundingBox(),
+  ]);
+
+  expect(switcherBox).not.toBeNull();
+  expect(labelBox).not.toBeNull();
+  expect(selectorBox).not.toBeNull();
+
+  if (!switcherBox || !labelBox || !selectorBox) return;
+
+  expect(labelBox.y + labelBox.height).toBeLessThanOrEqual(selectorBox.y + 0.5);
+  expect(selectorBox.x).toBeGreaterThanOrEqual(switcherBox.x - 0.5);
+  expect(selectorBox.x + selectorBox.width).toBeLessThanOrEqual(
+    switcherBox.x + switcherBox.width + 0.5,
+  );
+
+  const labelMetrics = await label.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      height: element.getBoundingClientRect().height,
+      fontSize: Number.parseFloat(style.fontSize),
+      whiteSpace: style.whiteSpace,
+      wordBreak: style.wordBreak,
+    };
+  });
+
+  expect(labelMetrics.whiteSpace).toBe('nowrap');
+  expect(labelMetrics.wordBreak).toBe('normal');
+  expect(labelMetrics.scrollWidth).toBeLessThanOrEqual(labelMetrics.clientWidth + 1);
+  expect(labelMetrics.height).toBeLessThanOrEqual(labelMetrics.fontSize * 1.7);
+  expect(await switcher.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(
+    true,
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+}
+
 test('A/B selection isolates map, search and details while URL Back/Forward remains canonical', async ({
   page,
 }) => {
@@ -754,6 +806,34 @@ test('degraded schema v3 keeps B selected and backend recovery does not reset it
     .toBe('connected');
   await expectCampaignB(page);
   await expect(page).toHaveURL(/campaign=un-aliento-menos/);
+});
+
+for (const width of [320, 390, 430, 1280]) {
+  test(`campaign selector stacks the label above the select without overflow at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 760 });
+    await configureCampaignBackend(page);
+    await page.goto('/');
+
+    await expectCampaignSwitcherGeometry(page);
+  });
+}
+
+test('campaign selector stays stacked when its own parent grid column is narrow on desktop', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 760 });
+  await configureCampaignBackend(page);
+  await page.goto('/');
+
+  const switcher = page.locator('.campaign-switcher');
+  await switcher.evaluate((element) => {
+    element.style.width = '12rem';
+    element.style.maxWidth = '12rem';
+  });
+
+  await expectCampaignSwitcherGeometry(page);
 });
 
 for (const width of [320, 390, 430, 768, 1280]) {

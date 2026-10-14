@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
@@ -84,6 +84,79 @@ const rosters = new Map<string, readonly Record<string, unknown>[]>([
         published_at: '2026-08-26T10:01:00.000Z',
         display_order: 0,
         accent_color: '#9d174d',
+        archived_at: null,
+        updated_at: '2026-08-26T10:01:00.000Z',
+      },
+    ],
+  ],
+]);
+
+const mapEntities = new Map<string, readonly Record<string, unknown>[]>([
+  [
+    INITIAL_CAMPAIGN_ID,
+    [
+      {
+        id: 'entity-skade',
+        slug: 'skade',
+        entity_type: 'character',
+        lifecycle_status: null,
+        visibility: 'pin',
+        audience: 'public',
+        portrait_path: null,
+        name: 'Skade',
+        summary: 'Entidad exclusiva de Castigo Divino.',
+        description: 'Referent administrativo de Castigo Divino.',
+        x: 1400,
+        y: 950,
+        geometry: null,
+        category_id: null,
+        publication_status: 'published',
+        published_at: '2026-08-26T10:00:00.000Z',
+        archived_at: null,
+        updated_at: '2026-08-26T10:00:00.000Z',
+      },
+      {
+        id: 'entity-ura',
+        slug: 'ura',
+        entity_type: 'character',
+        lifecycle_status: null,
+        visibility: 'pin',
+        audience: 'public',
+        portrait_path: null,
+        name: 'Ura',
+        summary: 'Entidad exclusiva de Castigo Divino.',
+        description: 'Referent administrativo de Castigo Divino.',
+        x: 1600,
+        y: 1050,
+        geometry: null,
+        category_id: null,
+        publication_status: 'published',
+        published_at: '2026-08-26T10:00:00.000Z',
+        archived_at: null,
+        updated_at: '2026-08-26T10:00:00.000Z',
+      },
+    ],
+  ],
+  [
+    CAMPAIGN_B_ID,
+    [
+      {
+        id: 'entity-veyra',
+        slug: 'veyra',
+        entity_type: 'character',
+        lifecycle_status: null,
+        visibility: 'pin',
+        audience: 'public',
+        portrait_path: null,
+        name: 'Veyra',
+        summary: 'Entidad exclusiva de Un aliento menos.',
+        description: 'Referent administrativo de Un aliento menos.',
+        x: 2400,
+        y: 1400,
+        geometry: null,
+        category_id: null,
+        publication_status: 'published',
+        published_at: '2026-08-26T10:01:00.000Z',
         archived_at: null,
         updated_at: '2026-08-26T10:01:00.000Z',
       },
@@ -192,6 +265,18 @@ async function configureBackend(page: Page, options: BackendOptions = {}): Promi
       return;
     }
 
+    if (table === 'map_entities') {
+      const filter = url.searchParams.get('campaign_id') ?? '';
+      const campaignId = filter.startsWith('eq.') ? filter.slice(3) : '';
+      const entities = mapEntities.get(campaignId) ?? [];
+      await route.fulfill({
+        status: 200,
+        headers: collectionHeaders(entities.length),
+        body: JSON.stringify(entities),
+      });
+      return;
+    }
+
     if (table === 'players') {
       const filter = url.searchParams.get('campaign_id') ?? '';
       const campaignId = filter.startsWith('eq.') ? filter.slice(3) : '';
@@ -250,8 +335,8 @@ async function login(page: Page): Promise<void> {
     page.getByRole('heading', { name: 'Campañas y personajes jugadores' }),
   ).toBeVisible();
   await expect(page.getByLabel('Campaña administrativa')).toHaveValue(INITIAL_CAMPAIGN_ID);
-  await expect(page.getByText('Skade', { exact: true })).toBeVisible();
-  await expect(page.getByText('Ura', { exact: true })).toBeVisible();
+  await expect(rosterPlayer(page, 'Skade')).toBeVisible();
+  await expect(rosterPlayer(page, 'Ura')).toBeVisible();
   const context = page.locator('[data-admin-campaign-session-context]');
   await expect(context).toContainText('Editando campaña: Castigo Divino');
   await expect(context).toContainText('Campaña pública visible: Castigo Divino');
@@ -261,6 +346,179 @@ function expectNoRuntimeErrors(errors: RuntimeErrors): void {
   expect(errors.pageErrors).toEqual([]);
   expect(errors.consoleErrors).toEqual([]);
 }
+
+function rosterPlayer(page: Page, name: string): Locator {
+  return page.locator('.admin-campaign-roster__player-card').getByText(name, { exact: true });
+}
+
+async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void> {
+  await expect(locator).toBeVisible();
+  const ratio = await locator.evaluate((element) => {
+    interface Rgba {
+      r: number;
+      g: number;
+      b: number;
+      a: number;
+    }
+
+    const parseColor = (value: string): Rgba => {
+      const channels = value.match(/[\d.]+/g)?.map(Number) ?? [];
+      if (channels.length < 3) {
+        throw new Error(`Unable to parse computed color: ${value}`);
+      }
+      return {
+        r: channels[0] ?? 0,
+        g: channels[1] ?? 0,
+        b: channels[2] ?? 0,
+        a: channels[3] ?? 1,
+      };
+    };
+
+    const composite = (foreground: Rgba, background: Rgba): Rgba => {
+      const alpha = foreground.a + background.a * (1 - foreground.a);
+      if (alpha === 0) return { r: 0, g: 0, b: 0, a: 0 };
+      return {
+        r:
+          (foreground.r * foreground.a +
+            background.r * background.a * (1 - foreground.a)) /
+          alpha,
+        g:
+          (foreground.g * foreground.a +
+            background.g * background.a * (1 - foreground.a)) /
+          alpha,
+        b:
+          (foreground.b * foreground.a +
+            background.b * background.a * (1 - foreground.a)) /
+          alpha,
+        a: alpha,
+      };
+    };
+
+    const ancestors: Element[] = [];
+    for (let node: Element | null = element; node; node = node.parentElement) {
+      ancestors.unshift(node);
+    }
+
+    let background: Rgba = { r: 255, g: 255, b: 255, a: 1 };
+    for (const node of ancestors) {
+      background = composite(parseColor(getComputedStyle(node).backgroundColor), background);
+    }
+
+    const foreground = composite(parseColor(getComputedStyle(element).color), background);
+    const luminance = ({ r, g, b }: Rgba): number => {
+      const linear = [r, g, b].map((channel) => {
+        const normalized = channel / 255;
+        return normalized <= 0.04045
+          ? normalized / 12.92
+          : ((normalized + 0.055) / 1.055) ** 2.4;
+      });
+      return (
+        0.2126 * (linear[0] ?? 0) +
+        0.7152 * (linear[1] ?? 0) +
+        0.0722 * (linear[2] ?? 0)
+      );
+    };
+
+    const foregroundLuminance = luminance(foreground);
+    const backgroundLuminance = luminance(background);
+    return (
+      (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
+      (Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
+    );
+  });
+
+  expect(ratio).toBeGreaterThanOrEqual(minimum);
+}
+
+test('admin campaign roster keeps dark-theme contrast, focus, disabled semantics and forced colors', async ({
+  page,
+}) => {
+  await configureBackend(page);
+  await page.goto('/');
+  await login(page);
+
+  const context = page.locator('[data-admin-campaign-session-context]');
+  const roster = page.locator('.admin-campaign-roster');
+  const campaignSelect = page.getByLabel('Campaña administrativa');
+  const selectedButton = roster.getByRole('button', { name: 'Seleccionada' });
+
+  await expect(selectedButton).toBeDisabled();
+  await expect(selectedButton).toHaveAttribute('aria-pressed', 'true');
+  await expect(selectedButton).toHaveCSS('opacity', '1');
+
+  for (const target of [
+    context.getByRole('heading', { name: 'Contexto administrativo' }),
+    context.locator('.admin-campaign-session-context__value'),
+    context.locator('.admin-campaign-session-context__public'),
+    page.getByText('Campaña administrativa', { exact: true }),
+    campaignSelect,
+    page.locator('#admin-campaign-context-hint'),
+    roster.locator('.admin-campaign-roster__badge:visible').first(),
+    rosterPlayer(page, 'Skade'),
+    roster.locator('.admin-campaign-roster__metadata').first(),
+    roster.getByRole('button', { name: 'Crear campaña' }),
+    selectedButton,
+  ]) {
+    await expectTextContrast(target);
+  }
+
+  await campaignSelect.focus();
+  const focusStyle = await campaignSelect.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      outlineStyle: style.outlineStyle,
+      outlineWidth: Number.parseFloat(style.outlineWidth),
+    };
+  });
+  expect(focusStyle.outlineStyle).not.toBe('none');
+  expect(focusStyle.outlineWidth).toBeGreaterThanOrEqual(3);
+
+  await page.emulateMedia({ forcedColors: 'active' });
+  await campaignSelect.focus();
+  await expect(campaignSelect).toBeFocused();
+  await expect(selectedButton).toBeDisabled();
+  await expect(selectedButton).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('public and administrative campaign selectors remain independent and entity search stays scoped', async ({
+  page,
+}) => {
+  await configureBackend(page);
+  await page.goto('/?campaign=castigo-divino');
+  await login(page);
+
+  const context = page.locator('[data-admin-campaign-session-context]');
+  const entitySearch = page.getByLabel('Buscar entidades');
+  const entityTitles = page.locator('.admin-map-entity__item-title');
+
+  await entitySearch.fill('Veyra');
+  await expect(entityTitles).toHaveCount(0);
+  await expect(page.locator('.admin-map-entity__empty')).toHaveText('No hay coincidencias.');
+
+  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
+  await page.getByRole('button', { name: 'Administración' }).click();
+
+  await expect(page.getByLabel('Campaña administrativa')).toHaveValue(INITIAL_CAMPAIGN_ID);
+  await expect(context).toContainText('Editando campaña: Castigo Divino');
+  await expect(context).toContainText('Campaña pública visible: Un aliento menos');
+  await expect(rosterPlayer(page, 'Skade')).toBeVisible();
+  await expect(rosterPlayer(page, 'Ura')).toBeVisible();
+  await expect(rosterPlayer(page, 'Veyra')).toHaveCount(0);
+
+  await page.getByLabel('Campaña administrativa').selectOption(CAMPAIGN_B_ID);
+  await expect(context).toContainText('Editando campaña: Un aliento menos');
+  await expect(rosterPlayer(page, 'Veyra')).toBeVisible();
+  await expect(rosterPlayer(page, 'Skade')).toHaveCount(0);
+  await expect(rosterPlayer(page, 'Ura')).toHaveCount(0);
+
+  await entitySearch.fill('Veyra');
+  await expect(entityTitles).toHaveText(['Veyra']);
+  await entitySearch.fill('Ura');
+  await expect(entityTitles).toHaveCount(0);
+  await entitySearch.fill('Skade');
+  await expect(entityTitles).toHaveCount(0);
+});
 
 test('dirty roster edits cannot silently cross campaigns and focus is restored on cancel', async ({
   page,
@@ -291,8 +549,8 @@ test('dirty roster edits cannot silently cross campaigns and focus is restored o
   });
   await page.getByLabel('Campaña administrativa').selectOption(CAMPAIGN_B_ID);
   await expect(page.getByLabel('Campaña administrativa')).toHaveValue(CAMPAIGN_B_ID);
-  await expect(page.getByText('Veyra', { exact: true })).toBeVisible();
-  await expect(page.getByText('Skade', { exact: true })).toBeHidden();
+  await expect(rosterPlayer(page, 'Veyra')).toBeVisible();
+  await expect(rosterPlayer(page, 'Skade')).toBeHidden();
   await expect(page.getByRole('heading', { name: 'Crear jugador' })).toBeHidden();
   await expect(page.locator('[data-admin-campaign-session-context]')).toContainText(
     'Editando campaña: Un aliento menos',
@@ -337,7 +595,7 @@ test('entity referents and organizations stay scoped to the active administrativ
   await page.getByRole('button', { name: 'Cerrar editor' }).click();
 
   await page.getByLabel('Campaña administrativa').selectOption(CAMPAIGN_B_ID);
-  await expect(page.getByText('Veyra', { exact: true })).toBeVisible();
+  await expect(rosterPlayer(page, 'Veyra')).toBeVisible();
   await page.getByRole('button', { name: 'Crear personaje' }).click();
   await expect(page.getByTestId('admin-player-disposition-player-veyra')).toBeVisible();
   await expect(page.getByTestId('admin-player-disposition-player-skade')).toHaveCount(0);
@@ -397,7 +655,7 @@ test('campaign transition discards old editors and blocks writes while the targe
   expect(mutationStatus).toBe(409);
 
   await expect(page.getByLabel('Campaña administrativa')).toHaveValue(CAMPAIGN_B_ID);
-  await expect(page.getByText('Veyra', { exact: true })).toBeVisible();
+  await expect(rosterPlayer(page, 'Veyra')).toBeVisible();
   expectNoRuntimeErrors(errors);
 });
 
@@ -414,8 +672,8 @@ test('a failed campaign switch restores the original administrative scope and co
   await expect(context).not.toHaveAttribute('data-transitioning', 'true');
   await expect(context).toContainText('Editando campaña: Castigo Divino');
   await expect(page.getByLabel('Campaña administrativa')).toHaveValue(INITIAL_CAMPAIGN_ID);
-  await expect(page.getByText('Ura', { exact: true })).toBeVisible();
-  await expect(page.getByText('Veyra', { exact: true })).toHaveCount(0);
+  await expect(rosterPlayer(page, 'Ura')).toBeVisible();
+  await expect(rosterPlayer(page, 'Veyra')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Crear jugador' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Crear', exact: true })).toBeEnabled();
@@ -431,7 +689,7 @@ test('campaign roster workspace stays usable without horizontal overflow from 32
   await page.goto('/');
   await login(page);
 
-  for (const width of [320, 430]) {
+  for (const width of [320, 390, 430]) {
     await page.setViewportSize({ width, height: 900 });
     const roster = page.locator('.admin-campaign-roster');
     const context = page.locator('[data-admin-campaign-session-context]');
