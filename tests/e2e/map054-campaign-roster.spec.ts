@@ -348,7 +348,8 @@ function expectNoRuntimeErrors(errors: RuntimeErrors): void {
 }
 
 function rosterPlayer(page: Page, name: string): Locator {
-  return page.locator('.admin-campaign-roster__player-card').getByText(name, { exact: true });
+  const cards = page.locator('.admin-campaign-roster__player-card');
+  return cards.getByText(name, { exact: true });
 }
 
 async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void> {
@@ -377,10 +378,18 @@ async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void
     const composite = (foreground: Rgba, background: Rgba): Rgba => {
       const alpha = foreground.a + background.a * (1 - foreground.a);
       if (alpha === 0) return { r: 0, g: 0, b: 0, a: 0 };
+
+      const blendChannel = (foregroundChannel: number, backgroundChannel: number): number => {
+        const foregroundContribution = foregroundChannel * foreground.a;
+        const backgroundContribution =
+          backgroundChannel * background.a * (1 - foreground.a);
+        return (foregroundContribution + backgroundContribution) / alpha;
+      };
+
       return {
-        r: (foreground.r * foreground.a + background.r * background.a * (1 - foreground.a)) / alpha,
-        g: (foreground.g * foreground.a + background.g * background.a * (1 - foreground.a)) / alpha,
-        b: (foreground.b * foreground.a + background.b * background.a * (1 - foreground.a)) / alpha,
+        r: blendChannel(foreground.r, background.r),
+        g: blendChannel(foreground.g, background.g),
+        b: blendChannel(foreground.b, background.b),
         a: alpha,
       };
     };
@@ -403,7 +412,8 @@ async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void
           ? normalized / 12.92
           : ((normalized + 0.055) / 1.055) ** 2.4;
       });
-      return 0.2126 * (linear[0] ?? 0) + 0.7152 * (linear[1] ?? 0) + 0.0722 * (linear[2] ?? 0);
+      const [red = 0, green = 0, blue = 0] = linear;
+      return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
     };
 
     const foregroundLuminance = luminance(foreground);
@@ -417,7 +427,7 @@ async function expectTextContrast(locator: Locator, minimum = 4.5): Promise<void
   expect(ratio).toBeGreaterThanOrEqual(minimum);
 }
 
-test('admin campaign roster keeps dark-theme contrast, focus, disabled semantics and forced colors', async ({
+test('admin campaign roster meets dark-theme readability requirements', async ({
   page,
 }) => {
   await configureBackend(page);
@@ -467,7 +477,7 @@ test('admin campaign roster keeps dark-theme contrast, focus, disabled semantics
   await expect(selectedButton).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('public and administrative campaign selectors remain independent and entity search stays scoped', async ({
+test('public and admin campaign selectors remain independent and scoped', async ({
   page,
 }) => {
   await configureBackend(page);
