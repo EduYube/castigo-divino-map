@@ -268,7 +268,12 @@ async function configureBackend(page: Page, options: BackendOptions = {}): Promi
     if (table === 'map_entities') {
       const filter = url.searchParams.get('campaign_id') ?? '';
       const campaignId = filter.startsWith('eq.') ? filter.slice(3) : '';
-      const entities = mapEntities.get(campaignId) ?? [];
+      const adminMapEntitySelect =
+        'id,slug,entity_type,lifecycle_status,visibility,audience,portrait_path,name,summary,description,x,y,geometry,category_id,publication_status,published_at,archived_at,updated_at';
+      const entities =
+        url.searchParams.get('select') === adminMapEntitySelect
+          ? (mapEntities.get(campaignId) ?? [])
+          : [];
       await route.fulfill({
         status: 200,
         headers: collectionHeaders(entities.length),
