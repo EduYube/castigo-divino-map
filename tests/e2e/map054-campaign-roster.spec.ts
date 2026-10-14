@@ -484,7 +484,7 @@ test('empty administrative inputs retain a distinguishable boundary without focu
 
   await page.getByRole('button', { name: 'Crear campaña' }).click();
   const fields = [page.getByLabel('Nombre', { exact: true }), page.getByLabel('Slug estable')];
-  await page.getByRole('heading', { name: 'Crear campaña' }).focus();
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).focus();
 
   for (const field of fields) {
     await expect(field).toBeVisible();
