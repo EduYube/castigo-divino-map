@@ -484,21 +484,26 @@ test('empty admin controls use a visible border token', async ({ page }) => {
   await page.getByRole('button', { name: 'Crear campaña' }).click();
 
   for (const field of [
-    page.getByLabel('Nombre', { exact: true }),
-    page.getByLabel('Slug estable'),
+    page.locator('#admin-campaign-name'),
+    page.locator('#admin-campaign-slug'),
   ]) {
     await expect(field).toHaveValue('');
     await expect(field).not.toBeFocused();
-    const colors = await field.evaluate((element) => {
-      const style = getComputedStyle(element);
-      const panel = getComputedStyle(document.documentElement);
-      return {
-        border: style.borderTopColor,
-        accent: panel.getPropertyValue('--accent-strong').trim(),
+    const ratio = await field.evaluate((element) => {
+      const parse = (value: string) =>
+        (value.match(/[0-9.]+/g) ?? []).slice(0, 3).map(Number);
+      const luminance = (color: number[]) => {
+        const channels = color.map((value) => {
+          const unit = value / 255;
+          return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
+        });
+        return channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722;
       };
+      const border = luminance(parse(getComputedStyle(element).borderTopColor));
+      const panel = luminance(parse(getComputedStyle(element.closest('dialog')!).backgroundColor));
+      return (Math.max(border, panel) + 0.05) / (Math.min(border, panel) + 0.05);
     });
-    expect(colors.border).not.toBe('rgba(226, 212, 174, 0.22)');
-    expect(colors.border).toBeTruthy();
+    expect(ratio).toBeGreaterThanOrEqual(3);
   }
 });
 
