@@ -477,7 +477,7 @@ test('admin campaign roster meets dark-theme readability requirements', async ({
   await expect(selectedButton).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('empty administrative inputs retain a distinguishable boundary without focus', async ({ page }) => {
+test('empty admin controls have non-text contrast without focus', async ({ page }) => {
   await configureBackend(page);
   await page.goto('/');
   await login(page);
@@ -496,7 +496,7 @@ test('empty administrative inputs retain a distinguishable boundary without focu
 
     const contrast = await field.evaluate((element) => {
       const parse = (value: string) => {
-        const channels = value.match(/[\\d.]+/g)?.map(Number) ?? [];
+        const channels = value.match(/[\d.]+/g)?.map(Number) ?? [];
         if (channels.length < 3) throw new Error(`Unexpected CSS color: ${value}`);
         return [channels[0]!, channels[1]!, channels[2]!, channels[3] ?? 1] as const;
       };
