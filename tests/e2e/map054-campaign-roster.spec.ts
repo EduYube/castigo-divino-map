@@ -477,6 +477,55 @@ test('admin campaign roster meets dark-theme readability requirements', async ({
   await expect(selectedButton).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('empty administrative inputs retain a distinguishable boundary without focus', async ({ page }) => {
+  await configureBackend(page);
+  await page.goto('/');
+  await login(page);
+
+  await page.getByRole('button', { name: 'Crear campaña' }).click();
+  const fields = [page.getByLabel('Nombre', { exact: true }), page.getByLabel('Slug estable')];
+  await page.getByRole('heading', { name: 'Crear campaña' }).focus();
+
+  for (const field of fields) {
+    await expect(field).toBeVisible();
+    await expect(field).toHaveValue('');
+    await expect(field).not.toBeFocused();
+
+    const contrast = await field.evaluate((element) => {
+      const parse = (value: string) => {
+        const channels = value.match(/[\\d.]+/g)?.map(Number) ?? [];
+        if (channels.length < 3) throw new Error(`Unexpected CSS color: ${value}`);
+        return [channels[0]!, channels[1]!, channels[2]!, channels[3] ?? 1] as const;
+      };
+      const blend = (front: readonly number[], back: readonly number[]) => {
+        const alpha = front[3]! + back[3]! * (1 - front[3]!);
+        return [
+          (front[0]! * front[3]! + back[0]! * back[3]! * (1 - front[3]!)) / alpha,
+          (front[1]! * front[3]! + back[1]! * back[3]! * (1 - front[3]!)) / alpha,
+          (front[2]! * front[3]! + back[2]! * back[3]! * (1 - front[3]!)) / alpha,
+          alpha,
+        ];
+      };
+      const ancestors: Element[] = [];
+      for (let node = element.parentElement; node; node = node.parentElement) ancestors.unshift(node);
+      let backdrop: number[] = [255, 255, 255, 1];
+      for (const node of ancestors) backdrop = blend(parse(getComputedStyle(node).backgroundColor), backdrop);
+      const border = blend(parse(getComputedStyle(element).borderTopColor), backdrop);
+      const luminance = (rgb: readonly number[]) => {
+        const linear = rgb.slice(0, 3).map((v) => {
+          const c = v / 255;
+          return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        });
+        return linear[0]! * 0.2126 + linear[1]! * 0.7152 + linear[2]! * 0.0722;
+      };
+      const a = luminance(border);
+      const b = luminance(backdrop);
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    });
+    expect(contrast).toBeGreaterThanOrEqual(3);
+  }
+});
+
 test('public and admin campaign selectors remain independent and scoped', async ({ page }) => {
   await configureBackend(page);
   await page.goto('/?campaign=castigo-divino');
