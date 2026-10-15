@@ -705,7 +705,12 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
     await test.step(`Draft: ${entry.label}`, async () => {
       await page.getByRole('button', { name: entry.label, exact: true }).click();
       await page.getByRole('button', { name: 'Crear', exact: true }).click();
-      await page.getByLabel('ID estable').fill(entry.id);
+      const stableId = page.getByLabel('ID estable');
+      // The editor schedules initial focus in requestAnimationFrame. Wait for
+      // that focus before filling or it may steal subsequent typed values.
+      await expect(stableId).toBeFocused();
+      await stableId.fill(entry.id);
+      await expect(stableId).toHaveValue(entry.id);
 
       for (const [field, value] of Object.entries(entry.fields)) {
         const labels: Record<string, string> = {
@@ -726,8 +731,10 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
         } else {
           await control.fill(value);
         }
+        await expect(control).toHaveValue(value);
       }
 
+      await expect(stableId).toHaveValue(entry.id);
       await page.getByLabel('Estado editorial').selectOption('draft');
       await page.getByRole('button', { name: 'Guardar' }).click();
       await expect(page.getByText(entry.title, { exact: true })).toBeVisible();
@@ -809,7 +816,7 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
       await page.getByRole('button', { name: entry.label, exact: true }).click();
       await page.getByRole('button', { name: `Archivar ${entry.title}` }).click();
       await page.getByRole('alertdialog').getByRole('button', { name: 'Archivar' }).click();
-      await expect(page.locator('.admin-catalog__status')).toContainText(
+      await expect(page.locator('.admin-catalog__status[role="status"]')).toContainText(
         'PostgreSQL rechazó la operación',
       );
       await expect(page.getByRole('alertdialog')).toBeVisible();
