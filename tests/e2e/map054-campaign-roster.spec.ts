@@ -764,9 +764,9 @@ test('campaign roster workspace stays usable without horizontal overflow from 32
 });
 
 
-test('MAP-074 administrative banner, roster and entity editor remain reachable at mobile and desktop widths', async ({
-  page,
-}) => {
+test(
+  'MAP-074 administrative banner, roster and entity editor remain reachable at mobile and desktop widths',
+  async ({ page }) => {
   await configureBackend(page);
   await page.goto('/');
   await login(page);
@@ -795,4 +795,5 @@ test('MAP-074 administrative banner, roster and entity editor remain reachable a
     await expect(editor).toBeHidden();
     await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeEnabled();
   }
-});
+  },
+);
