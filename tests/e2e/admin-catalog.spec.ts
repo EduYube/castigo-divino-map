@@ -477,8 +477,7 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
       for (const [field, value] of Object.entries(entry.fields)) {
         const labels: Record<string, string> = {
           slug: 'Slug',
-          name:
-            entry.table === 'geographic_names' ? 'Nombre principal (inglés)' : 'Nombre',
+          name: entry.table === 'geographic_names' ? 'Nombre principal (inglés)' : 'Nombre',
           entityId:
             entry.table === 'geographic_names'
               ? 'Entidad de localización enlazada (opcional)'
@@ -499,23 +498,26 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
       await page.getByLabel('Estado editorial').selectOption('draft');
       await page.getByRole('button', { name: 'Guardar' }).click();
       await expect(page.getByText(entry.title, { exact: true })).toBeVisible();
-      expect(backend.getRecords(entry.table).find((row) => row.id === entry.id))
-        .toMatchObject({ publication_status: 'draft', published_at: null });
+      expect(backend.getRecords(entry.table).find((row) => row.id === entry.id)).toMatchObject({
+        publication_status: 'draft',
+        published_at: null,
+      });
 
       await page.getByRole('button', { name: `Editar ${entry.title}` }).click();
       await page.getByLabel('Estado editorial').selectOption('published');
       await page.getByRole('button', { name: 'Guardar' }).click();
       await expect(page.getByRole('button', { name: `Archivar ${entry.title}` })).toBeVisible();
-      expect(backend.getRecords(entry.table).find((row) => row.id === entry.id))
-        .toMatchObject({ publication_status: 'published' });
+      expect(backend.getRecords(entry.table).find((row) => row.id === entry.id)).toMatchObject({
+        publication_status: 'published',
+      });
 
       await page.getByRole('button', { name: `Archivar ${entry.title}` }).click();
       await expect(page.getByRole('alertdialog')).toContainText('Se archivará');
       await page.getByRole('alertdialog').getByRole('button', { name: 'Archivar' }).click();
-      expect(backend.getRecords(entry.table).find((row) => row.id === entry.id))
-        .toMatchObject({ publication_status: 'archived' });
-      await expect(page.getByRole('button', { name: `Archivar ${entry.title}` }))
-        .toBeDisabled();
+      expect(backend.getRecords(entry.table).find((row) => row.id === entry.id)).toMatchObject({
+        publication_status: 'archived',
+      });
+      await expect(page.getByRole('button', { name: `Archivar ${entry.title}` })).toBeDisabled();
     });
   }
 });
