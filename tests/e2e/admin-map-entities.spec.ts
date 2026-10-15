@@ -1243,9 +1243,7 @@ test('MAP-074 generic relation editor persists oriented organization links and a
     .getByRole('group', { name: 'Relaciones con otras entidades' })
     .locator('[data-entity-relation-row]')
     .first();
-  await expect(historical.locator('[data-entity-relation-target]')).toHaveValue(
-    'place-map074-old',
-  );
+  await expect(historical.locator('[data-entity-relation-target]')).toHaveValue('place-map074-old');
   await expect(historical.locator('[data-entity-relation-target] option:checked')).toBeDisabled();
   await page.getByLabel('Resumen').fill('Edited while archived relation retained');
   await page.getByRole('button', { name: 'Guardar borrador' }).click();
