@@ -1208,7 +1208,13 @@ test('MAP-074 generic relation editor persists oriented organization links and a
   ]) {
     await group.getByRole('button', { name: 'Añadir relación' }).click();
     const current = rows.last();
+    await expect(
+      current.locator('[data-entity-relation-target] option[value="location-map074-old"]'),
+    ).toHaveCount(0);
     await current.locator('[data-entity-relation-target]').selectOption(entry.target);
+    await expect(current.locator('[data-entity-relation-target] option:checked')).toContainText(
+      /Personaje|Emplazamiento|Organización/,
+    );
     await current.locator('[data-entity-relation-own-label]').fill(entry.own);
     await current.locator('[data-entity-relation-target-label]').fill(entry.other);
   }
