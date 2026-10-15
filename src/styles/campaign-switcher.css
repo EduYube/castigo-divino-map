@@ -1,22 +1,29 @@
 .campaign-switcher {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(12rem, 20rem);
-  align-items: end;
-  gap: 0.5rem 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.35rem;
+  min-width: 0;
   padding: clamp(0.85rem, 2vw, 1.25rem) clamp(1rem, 2.5vw, 2rem);
   background: rgba(23, 31, 26, 0.94);
   border-bottom: 1px solid var(--line);
 }
 
 .campaign-switcher__label {
-  align-self: center;
+  justify-self: end;
+  width: min(100%, 20rem);
+  min-width: 0;
   color: var(--ink);
   font-weight: 800;
   letter-spacing: 0.02em;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  word-break: normal;
 }
 
 .campaign-switcher__select {
-  width: 100%;
+  justify-self: end;
+  width: min(100%, 20rem);
   min-width: 0;
   min-height: var(--touch-target, 2.75rem);
   padding: 0.65rem 2.5rem 0.65rem 0.8rem;
@@ -32,7 +39,7 @@
 }
 
 .campaign-switcher__status {
-  grid-column: 1 / -1;
+  grid-column: 1;
   margin: 0;
   color: var(--muted);
   font-size: max(0.82rem, 13px);
@@ -47,7 +54,6 @@
   body .atlas-main > .map-experience > .campaign-switcher {
     order: 2;
     grid-column: 1;
-    grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
     gap: 0.25rem;
     padding: 0.35rem;
@@ -90,13 +96,15 @@
     min-width: 0;
   }
 
+  .campaign-switcher__label,
+  .campaign-switcher__select {
+    justify-self: stretch;
+    width: 100%;
+  }
+
   .campaign-switcher__label {
-    align-self: end;
-    overflow: hidden;
     font-size: 0.72rem;
     line-height: 1.2;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .campaign-switcher__select {

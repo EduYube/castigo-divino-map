@@ -4,9 +4,10 @@
   min-width: 0;
   margin-block: 0.75rem;
   padding: 0.8rem 0.9rem;
-  border: 2px solid currentColor;
+  color: var(--ink);
+  background: var(--panel-soft);
+  border: 2px solid var(--line);
   border-radius: 0.6rem;
-  background: var(--color-surface-muted, #f1f5f9);
   overflow-wrap: anywhere;
 }
 
@@ -29,6 +30,7 @@
 
 .admin-campaign-session-context__public,
 .admin-campaign-session-context__status {
+  color: var(--muted);
   font-size: 0.9rem;
 }
 
@@ -41,7 +43,7 @@
   gap: 1rem;
   margin-block: 1rem;
   padding-block: 1rem;
-  border-block: 1px solid var(--color-border, #cbd5e1);
+  border-block: 1px solid var(--line);
 }
 
 .admin-campaign-roster__heading,
@@ -60,7 +62,7 @@
 .admin-campaign-roster__hint,
 .admin-campaign-roster__metadata,
 .admin-campaign-roster__roster-summary {
-  color: var(--color-text-muted, #475569);
+  color: var(--muted);
 }
 
 .admin-campaign-roster__context,
@@ -92,15 +94,16 @@
   width: 100%;
   min-height: 2.75rem;
   padding: 0.55rem 0.7rem;
-  border: 1px solid var(--color-border-strong, #94a3b8);
+  color: var(--ink);
+  background: rgba(8, 13, 10, 0.58);
+  border: 1px solid var(--accent-strong);
   border-radius: 0.45rem;
-  background: var(--color-surface, #fff);
-  color: inherit;
   font: inherit;
 }
 
 .admin-campaign-roster__control[readonly] {
-  background: var(--color-surface-muted, #f1f5f9);
+  color: var(--muted);
+  background: var(--panel-soft);
 }
 
 .admin-campaign-roster__select:focus-visible,
@@ -108,7 +111,7 @@
 .admin-campaign-roster__color-picker:focus-visible,
 .admin-campaign-roster__button:focus-visible,
 .admin-campaign-roster__primary:focus-visible {
-  outline: 3px solid currentColor;
+  outline: 3px solid var(--accent-strong);
   outline-offset: 2px;
 }
 
@@ -123,7 +126,7 @@
 .admin-campaign-roster__primary {
   min-height: 2.65rem;
   padding: 0.5rem 0.75rem;
-  border: 1px solid currentColor;
+  border: 1px solid var(--line);
   border-radius: 0.45rem;
   font: inherit;
   font-weight: 700;
@@ -131,21 +134,38 @@
 }
 
 .admin-campaign-roster__button {
-  background: var(--color-surface, #fff);
-  color: inherit;
+  color: var(--ink);
+  background: rgba(8, 13, 10, 0.58);
 }
 
 .admin-campaign-roster__primary {
-  background: #1e293b;
-  color: #fff;
+  color: #172018;
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.admin-campaign-roster__button:hover:not(:disabled),
+.admin-campaign-roster__primary:hover:not(:disabled) {
+  border-color: var(--accent-strong);
 }
 
 .admin-campaign-roster__button:disabled,
 .admin-campaign-roster__primary:disabled,
 .admin-campaign-roster__select:disabled,
 .admin-campaign-roster__control:disabled {
+  color: var(--muted);
+  -webkit-text-fill-color: currentColor;
+  background: rgba(8, 13, 10, 0.35);
+  border-color: var(--line);
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 1;
+}
+
+.admin-campaign-roster__button[aria-pressed='true']:disabled {
+  color: #172018;
+  -webkit-text-fill-color: currentColor;
+  background: var(--accent);
+  border-color: transparent;
 }
 
 .admin-campaign-roster__cards {
@@ -161,9 +181,10 @@
   gap: 0.45rem;
   min-width: 0;
   padding: 0.75rem;
-  border: 1px solid var(--color-border, #cbd5e1);
+  color: var(--ink);
+  background: rgba(8, 13, 10, 0.35);
+  border: 1px solid var(--line);
   border-radius: 0.55rem;
-  background: var(--color-surface, #fff);
 }
 
 .admin-campaign-roster__card-title {
@@ -183,6 +204,8 @@
   display: inline-flex;
   width: fit-content;
   padding: 0.18rem 0.45rem;
+  color: var(--accent-strong);
+  background: rgba(215, 185, 111, 0.08);
   border: 1px solid currentColor;
   border-radius: 999px;
   font-size: 0.78rem;
@@ -194,7 +217,7 @@
   flex: 0 0 auto;
   width: 1rem;
   height: 1rem;
-  border: 2px solid #fff;
+  border: 2px solid var(--ink);
   border-radius: 50%;
   outline: 1px solid currentColor;
   background: var(--player-accent, #475569);
@@ -212,19 +235,19 @@
   width: 100%;
   min-height: 2.75rem;
   padding: 0.25rem;
-  border: 1px solid var(--color-border-strong, #94a3b8);
+  background: rgba(8, 13, 10, 0.58);
+  border: 1px solid var(--accent-strong);
   border-radius: 0.45rem;
-  background: var(--color-surface, #fff);
 }
 
 .admin-campaign-roster__field-error {
   min-height: 1.2em;
-  color: var(--color-danger, #991b1b);
+  color: #ffc8bd;
   font-size: 0.9rem;
 }
 
 .admin-campaign-roster__control[aria-invalid='true'] {
-  border-color: var(--color-danger, #991b1b);
+  border-color: rgba(241, 145, 129, 0.78);
 }
 
 @media (max-width: 48rem) {
@@ -251,18 +274,63 @@
 }
 
 @media (forced-colors: active) {
+  .admin-campaign-session-context,
+  .admin-campaign-roster__card {
+    color: CanvasText;
+    background: Canvas;
+    border-color: CanvasText;
+  }
+
+  .admin-campaign-session-context__public,
+  .admin-campaign-session-context__status,
+  .admin-campaign-roster__intro,
+  .admin-campaign-roster__hint,
+  .admin-campaign-roster__metadata,
+  .admin-campaign-roster__roster-summary,
+  .admin-campaign-roster__field-error {
+    color: CanvasText;
+  }
+
+  .admin-campaign-roster__select,
+  .admin-campaign-roster__control,
+  .admin-campaign-roster__color-picker,
+  .admin-campaign-roster__button,
+  .admin-campaign-roster__primary,
+  .admin-campaign-roster__badge {
+    color: ButtonText;
+    -webkit-text-fill-color: currentColor;
+    background: ButtonFace;
+    border-color: ButtonText;
+  }
+
+  .admin-campaign-roster__button[aria-pressed='true']:disabled {
+    color: HighlightText;
+    -webkit-text-fill-color: currentColor;
+    background: Highlight;
+    border-color: Highlight;
+  }
+
+  .admin-campaign-roster__button:disabled:not([aria-pressed='true']),
+  .admin-campaign-roster__primary:disabled,
+  .admin-campaign-roster__select:disabled,
+  .admin-campaign-roster__control:disabled {
+    color: GrayText;
+    -webkit-text-fill-color: currentColor;
+    border-color: GrayText;
+  }
+
+  .admin-campaign-roster__select:focus-visible,
+  .admin-campaign-roster__control:focus-visible,
+  .admin-campaign-roster__color-picker:focus-visible,
+  .admin-campaign-roster__button:focus-visible,
+  .admin-campaign-roster__primary:focus-visible {
+    outline-color: Highlight;
+  }
+
   .admin-campaign-roster__swatch {
     forced-color-adjust: none;
     background: CanvasText;
     border-color: Canvas;
     outline-color: CanvasText;
-  }
-}
-
-@media (forced-colors: active) {
-  .admin-campaign-session-context {
-    border-color: CanvasText;
-    background: Canvas;
-    color: CanvasText;
   }
 }

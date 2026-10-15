@@ -489,10 +489,11 @@ export function mountAdminCampaignRoster(
       title.append(badge);
     }
     metadata.textContent = `${campaign.slug} · orden ${campaign.displayOrder} · ${campaign.status === 'active' ? 'activa' : 'archivada'}`;
+    const selected = campaign.id === state.selectedCampaignId;
     selectButton.type = 'button';
-    selectButton.textContent =
-      campaign.id === state.selectedCampaignId ? 'Seleccionada' : 'Seleccionar';
-    selectButton.disabled = campaign.id === state.selectedCampaignId || state.phase === 'mutating';
+    selectButton.textContent = selected ? 'Seleccionada' : 'Seleccionar';
+    selectButton.setAttribute('aria-pressed', String(selected));
+    selectButton.disabled = selected || state.phase === 'mutating';
     selectButton.addEventListener('click', () => requestCampaignChange(campaign.id));
     editButton.type = 'button';
     editButton.textContent = 'Editar';
