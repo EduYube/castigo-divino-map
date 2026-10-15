@@ -223,7 +223,6 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
     return published(table);
   };
 
-
   // Mirror 009_admin_catalog_crud.test.sql and the published-endpoint invariants.
   // Only an explicit change to the persisted dependency can unblock withdrawal.
   const violatesPublicationInvariant = (
@@ -240,8 +239,7 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
       if (
         table === 'categories' &&
         rowsByTable.map_entities.some(
-          (entity) =>
-            entity.publication_status === 'published' && entity.category_id === id,
+          (entity) => entity.publication_status === 'published' && entity.category_id === id,
         )
       ) {
         return true;
@@ -249,8 +247,7 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
       if (
         table === 'tags' &&
         rowsByTable.entity_tags.some(
-          (relation) =>
-            relation.publication_status === 'published' && relation.tag_id === id,
+          (relation) => relation.publication_status === 'published' && relation.tag_id === id,
         )
       ) {
         return true;
@@ -260,8 +257,7 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
       const categoryId = changes.category_id ?? current?.category_id;
       if (
         !rowsByTable.categories.some(
-          (category) =>
-            category.id === categoryId && category.publication_status === 'published',
+          (category) => category.id === categoryId && category.publication_status === 'published',
         )
       ) {
         return true;
@@ -274,9 +270,7 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
         !rowsByTable.map_entities.some(
           (entity) => entity.id === entityId && entity.publication_status === 'published',
         ) ||
-        !rowsByTable.tags.some(
-          (tag) => tag.id === tagId && tag.publication_status === 'published',
-        )
+        !rowsByTable.tags.some((tag) => tag.id === tagId && tag.publication_status === 'published')
       ) {
         return true;
       }
@@ -659,10 +653,12 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
     );
     expect(result.status, `${method} ${table}/${id}`).toBe(method === 'POST' ? 201 : 200);
     expect(result.rows).toMatchObject([{ id }]);
-    await expect.poll(() => backend.getRecords(table).find((row) => row.id === id)).toMatchObject({
-      id,
-      ...changes,
-    });
+    await expect
+      .poll(() => backend.getRecords(table).find((row) => row.id === id))
+      .toMatchObject({
+        id,
+        ...changes,
+      });
   };
 
   const checkPublic = async (isPublished: boolean): Promise<void> => {
@@ -818,8 +814,7 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
       await page.getByRole('alertdialog').getByRole('button', { name: 'Cancelar' }).click();
     });
   }
-  await test.step('Rejected withdrawals preserve the public projection', () =>
-    checkPublic(true));
+  await test.step('Rejected withdrawals preserve the public projection', () => checkPublic(true));
 
   await test.step('Reassign entity and retire the published tag relation', async () => {
     // A published entity can move to another *published* category, and the
