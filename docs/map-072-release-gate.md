@@ -306,3 +306,11 @@ La revisión independiente R1 identificó cinco PASS insuficientemente acreditad
 **Condición de promoción de la matriz 9.3 a PASS:** estos tests deben ejecutarse satisfactoriamente en la CI del HEAD exacto que los contiene, con `format:check`, `verify:release-version`, seguridad, accesibilidad, lint, unit, E2E, Pages smoke y base de datos completos. Antes de que esa CI termine `success`, los cinco IDs deben interpretarse como **PENDING VALIDATION / RELEASE GATE BLOCKED** y no como manualmente ejecutados. En caso de fallo real, volver a los cinco BLOCKED y corregirlo antes de reclamar QA GATE PASS.
 
 La revisión independiente R2 debe validar la equivalencia material de la evidencia nueva, no dar por cerrados automáticamente estos findings por su mera existencia. No hubo migración, modificación del snapshot ni escrituras en producción. El checkpoint sigue Draft, sin Ready/merge/tag/GitHub Release.
+
+### 9.17 Revisión independiente R2: 25/0/2/0; remediación R3 pendiente
+
+La review R2 del HEAD `d562d968374f47b4764b9e869d8aeecc3826a0cc`, CI `38757132174` attempt 1 success, resolvió **MAP074-REV-01** (REL-01/02) y **MAP074-REV-02** (REQ-03). Su recuento acreditado fue **25 PASS / 0 FAIL / 2 BLOCKED / 0 N/A**. Quedaron **MAP074-REV-03** (CAT-01, proyección pública) y **MAP074-REV-04** (RESP-01, relación poblada). Se conserva este checkpoint histórico.
+
+En respuesta, el E2E del catálogo ahora usa las mismas tablas editoriales mutables para responder a las consultas públicas reales, y un navegador público independiente comprueba **draft ausente, published presente y archived retirado** en filtros de categorías/etiquetas y búsquedas de alias de entidad, nombre geográfico y alias geográfico. El E2E responsive opera selector y ambas etiquetas y mide overflow del documento, grupo y fila de relación **antes de retirarla** en 320/390/430/1280px, conservando moderación y Escape/foco.
+
+**R3 y CI success del HEAD exacto son condiciones obligatorias para promover CAT-01 y RESP-01 a PASS.** Hasta entonces el gate efectivo sigue **25/0/2/0 — RELEASE GATE BLOCKED**. Sin Ready/merge/tag/GitHub Release. No migration. Production database not mutated. PRODUCTION WRITES: 0.

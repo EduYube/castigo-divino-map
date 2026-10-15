@@ -919,7 +919,34 @@ test('MAP-074 responsive administrative relations and moderation across viewport
     await expect(relations).toBeVisible();
     await expect(relations.getByRole('button', { name: 'Añadir relación' })).toBeEnabled();
     await relations.getByRole('button', { name: 'Añadir relación' }).click();
-    await expect(relations.locator('[data-entity-relation-target]')).toBeVisible();
+    const relationRow = relations.locator('[data-entity-relation-row]').last();
+    const selector = relationRow.locator('[data-entity-relation-target]');
+    const ownLabel = relationRow.locator('[data-entity-relation-own-label]');
+    const targetLabel = relationRow.locator('[data-entity-relation-target-label]');
+    await expect(selector).toBeVisible();
+    await selector.selectOption({ index: 1 });
+    await ownLabel.fill(`Responsive own ${width}`);
+    await targetLabel.fill(`Responsive target ${width}`);
+    await expect(ownLabel).toHaveValue(`Responsive own ${width}`);
+    await expect(targetLabel).toHaveValue(`Responsive target ${width}`);
+
+    for (const [surface, locator] of [
+      ['relations', relations],
+      ['relation row', relationRow],
+    ] as const) {
+      const size = await locator.evaluate((element) => ({
+        scroll: element.scrollWidth,
+        client: element.clientWidth,
+      }));
+      expect(size.scroll, `${surface} overflow at ${width}px`).toBeLessThanOrEqual(
+        size.client + 1,
+      );
+    }
+    const relationsOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(relationsOverflow, `populated relations overflow at ${width}px`).toBeLessThanOrEqual(1);
+
     await relations.getByRole('button', { name: 'Quitar relación' }).click();
     await page.getByRole('button', { name: 'Cerrar editor' }).click();
 
