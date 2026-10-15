@@ -112,13 +112,24 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
     map_entities: [
       {
         id: 'place-waterdeep',
-        name: 'Waterdeep',
+        slug: 'waterdeep',
         entity_type: 'location',
+        lifecycle_status: null,
+        visibility: 'pin',
+        name: 'Waterdeep',
+        name_language: 'en',
+        summary: 'MAP-074 public projection fixture',
+        description: '',
+        portrait_path: null,
+        x: 1200,
+        y: 800,
+        category_id: 'category-cities',
         publication_status: 'published',
         published_at: '2026-08-07T10:00:06.000Z',
         updated_at: '2026-08-07T10:00:06.000Z',
       },
     ],
+    entity_tags: [],
   };
 
   const router = publicProjection ? page.context() : page;
@@ -197,43 +208,8 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
         },
       ];
     }
-    if (table === 'map_entities') {
-      const location = {
-        id: 'place-waterdeep',
-        slug: 'waterdeep',
-        entity_type: 'location',
-        lifecycle_status: null,
-        visibility: 'pin',
-        name: 'Waterdeep',
-        name_language: 'en',
-        summary: 'MAP-074 public projection fixture',
-        description: '',
-        portrait_path: null,
-        x: 1200,
-        y: 800,
-        category_id: 'category-cities',
-      };
-      return [
-        location,
-        ...(published('categories').some((row) => row.id === 'category-map074')
-          ? [
-              {
-                ...location,
-                id: 'place-map074-category-projection',
-                slug: 'map074-category-projection',
-                name: 'MAP074 Categorized Place',
-                category_id: 'category-map074',
-                x: 1320,
-                y: 920,
-              },
-            ]
-          : []),
-      ];
-    }
-    if (table === 'entity_tags') {
-      return published('tags').some((row) => row.id === 'tag-map074')
-        ? [{ entity_id: 'place-waterdeep', tag_id: 'tag-map074' }]
-        : [];
+    if (table === 'map_entities' || table === 'entity_tags') {
+      return published(table);
     }
     if (table === 'campaign_geographic_entity_links') {
       return published('geographic_names')
@@ -245,6 +221,78 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
         }));
     }
     return published(table);
+  };
+
+
+  // Mirror 009_admin_catalog_crud.test.sql and the published-endpoint invariants.
+  // Only an explicit change to the persisted dependency can unblock withdrawal.
+  const violatesPublicationInvariant = (
+    table: string,
+    current: Row | undefined,
+    changes: Record<string, unknown>,
+  ): boolean => {
+    const status = changes.publication_status ?? current?.publication_status;
+    const id = current?.id;
+    if (current?.publication_status === 'archived' && status === 'published') {
+      return true;
+    }
+    if (current?.publication_status === 'published' && status !== 'published') {
+      if (
+        table === 'categories' &&
+        rowsByTable.map_entities.some(
+          (entity) =>
+            entity.publication_status === 'published' && entity.category_id === id,
+        )
+      ) {
+        return true;
+      }
+      if (
+        table === 'tags' &&
+        rowsByTable.entity_tags.some(
+          (relation) =>
+            relation.publication_status === 'published' && relation.tag_id === id,
+        )
+      ) {
+        return true;
+      }
+    }
+    if (status === 'published' && table === 'map_entities') {
+      const categoryId = changes.category_id ?? current?.category_id;
+      if (
+        !rowsByTable.categories.some(
+          (category) =>
+            category.id === categoryId && category.publication_status === 'published',
+        )
+      ) {
+        return true;
+      }
+    }
+    if (status === 'published' && table === 'entity_tags') {
+      const entityId = changes.entity_id ?? current?.entity_id;
+      const tagId = changes.tag_id ?? current?.tag_id;
+      if (
+        !rowsByTable.map_entities.some(
+          (entity) => entity.id === entityId && entity.publication_status === 'published',
+        ) ||
+        !rowsByTable.tags.some(
+          (tag) => tag.id === tagId && tag.publication_status === 'published',
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const rejectPublicationInvariant = async (route: Route): Promise<void> => {
+    await route.fulfill({
+      status: 400,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: '23514',
+        message: 'a published dependency prevents editorial withdrawal',
+      }),
+    });
   };
 
   await router.route('**/rest/v1/**', async (route) => {
@@ -301,6 +349,10 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
 
     if (request.method() === 'POST') {
       const body = request.postDataJSON() as Record<string, unknown>;
+      if (violatesPublicationInvariant(table, undefined, body)) {
+        await rejectPublicationInvariant(route);
+        return;
+      }
       if (body.name === 'Conflict') {
         await route.fulfill({
           status: 409,
@@ -335,9 +387,16 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
 
     if (request.method() === 'PATCH') {
       const body = request.postDataJSON() as Record<string, unknown>;
+      if (violatesPublicationInvariant(table, rows[index], body)) {
+        await rejectPublicationInvariant(route);
+        return;
+      }
       const next = {
         ...rows[index],
         ...body,
+        published_at:
+          rows[index]?.published_at ??
+          (body.publication_status === 'published' ? '2026-08-07T11:00:00.000Z' : null),
         updated_at: `2026-08-07T11:01:${String(updatedCounter++).padStart(2, '0')}.000Z`,
       } as Row;
       rows[index] = next;
@@ -574,6 +633,38 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
     },
   ] as const;
 
+  // Exercise the same PostgREST routes and responses used by the admin UI.
+  // Dependencies are explicit persisted rows, not derived from a category/tag status.
+  const writeDependency = async (
+    table: 'map_entities' | 'entity_tags',
+    id: string,
+    method: 'POST' | 'PATCH',
+    changes: Record<string, unknown>,
+  ): Promise<void> => {
+    const result = await page.evaluate(
+      async ({ table, id, method, changes, accessToken }) => {
+        const query = method === 'PATCH' ? `?id=eq.${encodeURIComponent(id)}` : '';
+        const response = await fetch(`/rest/v1/${table}${query}`, {
+          method,
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify(changes),
+        });
+        return { status: response.status, rows: await response.json() };
+      },
+      { table, id, method, changes, accessToken: ACCESS_TOKEN },
+    );
+    expect(result.status, `${method} ${table}/${id}`).toBe(method === 'POST' ? 201 : 200);
+    expect(result.rows).toMatchObject([{ id }]);
+    await expect.poll(() => backend.getRecords(table).find((row) => row.id === id)).toMatchObject({
+      id,
+      ...changes,
+    });
+  };
+
   const checkPublic = async (isPublished: boolean): Promise<void> => {
     // A new page forces a fresh public catalog read, rather than trusting admin state.
     const publicPage = await page.context().newPage();
@@ -639,12 +730,39 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
       await page.getByLabel('Estado editorial').selectOption('draft');
       await page.getByRole('button', { name: 'Guardar' }).click();
       await expect(page.getByText(entry.title, { exact: true })).toBeVisible();
-      expect(backend.getRecords(entry.table).find((row) => row.id === entry.id)).toMatchObject({
-        publication_status: 'draft',
-        published_at: null,
-      });
+      await expect
+        .poll(() => backend.getRecords(entry.table).find((row) => row.id === entry.id))
+        .toMatchObject({
+          publication_status: 'draft',
+          published_at: null,
+        });
     });
   }
+
+  await test.step('Insert stable draft category/tag dependencies', async () => {
+    await writeDependency('map_entities', 'place-map074-category-projection', 'POST', {
+      id: 'place-map074-category-projection',
+      slug: 'map074-category-projection',
+      entity_type: 'location',
+      lifecycle_status: null,
+      visibility: 'pin',
+      name: 'MAP074 Categorized Place',
+      name_language: 'en',
+      summary: 'Stable editorial dependency',
+      description: '',
+      portrait_path: null,
+      x: 1320,
+      y: 920,
+      category_id: 'category-map074',
+      publication_status: 'draft',
+    });
+    await writeDependency('entity_tags', 'entity-tag-map074', 'POST', {
+      id: 'entity-tag-map074',
+      entity_id: 'place-waterdeep',
+      tag_id: 'tag-map074',
+      publication_status: 'draft',
+    });
+  });
   await test.step('Drafts are absent from the public UI', () => checkPublic(false));
 
   for (const entry of cases) {
@@ -654,12 +772,79 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
       await page.getByLabel('Estado editorial').selectOption('published');
       await page.getByRole('button', { name: 'Guardar' }).click();
       await expect(page.getByRole('button', { name: `Archivar ${entry.title}` })).toBeVisible();
+      await expect
+        .poll(() => backend.getRecords(entry.table).find((row) => row.id === entry.id))
+        .toMatchObject({
+          publication_status: 'published',
+        });
+    });
+  }
+  await test.step('Publish stable dependencies after their endpoints', async () => {
+    await writeDependency('map_entities', 'place-map074-category-projection', 'PATCH', {
+      publication_status: 'published',
+    });
+    await writeDependency('entity_tags', 'entity-tag-map074', 'PATCH', {
+      publication_status: 'published',
+    });
+    expect(backend.getRecords('map_entities')).toContainEqual(
+      expect.objectContaining({
+        id: 'place-map074-category-projection',
+        category_id: 'category-map074',
+        publication_status: 'published',
+      }),
+    );
+    expect(backend.getRecords('entity_tags')).toContainEqual(
+      expect.objectContaining({
+        id: 'entity-tag-map074',
+        tag_id: 'tag-map074',
+        publication_status: 'published',
+      }),
+    );
+  });
+  await test.step('Published resources appear in public filters/search', () => checkPublic(true));
+
+  for (const entry of cases.slice(0, 2)) {
+    await test.step(`Reject withdrawal of referenced ${entry.label}`, async () => {
+      await page.getByRole('button', { name: entry.label, exact: true }).click();
+      await page.getByRole('button', { name: `Archivar ${entry.title}` }).click();
+      await page.getByRole('alertdialog').getByRole('button', { name: 'Archivar' }).click();
+      await expect(page.locator('.admin-catalog__status')).toContainText(
+        'PostgreSQL rechazó la operación',
+      );
+      await expect(page.getByRole('alertdialog')).toBeVisible();
       expect(backend.getRecords(entry.table).find((row) => row.id === entry.id)).toMatchObject({
         publication_status: 'published',
       });
+      await page.getByRole('alertdialog').getByRole('button', { name: 'Cancelar' }).click();
     });
   }
-  await test.step('Published resources appear in public filters/search', () => checkPublic(true));
+  await test.step('Rejected withdrawals preserve the public projection', () =>
+    checkPublic(true));
+
+  await test.step('Reassign entity and retire the published tag relation', async () => {
+    // A published entity can move to another *published* category, and the
+    // association can be archived. Neither dependency is erased by the mock.
+    await writeDependency('map_entities', 'place-map074-category-projection', 'PATCH', {
+      category_id: 'category-cities',
+    });
+    await writeDependency('entity_tags', 'entity-tag-map074', 'PATCH', {
+      publication_status: 'archived',
+    });
+    expect(backend.getRecords('map_entities')).toContainEqual(
+      expect.objectContaining({
+        id: 'place-map074-category-projection',
+        category_id: 'category-cities',
+        publication_status: 'published',
+      }),
+    );
+    expect(backend.getRecords('entity_tags')).toContainEqual(
+      expect.objectContaining({
+        id: 'entity-tag-map074',
+        tag_id: 'tag-map074',
+        publication_status: 'archived',
+      }),
+    );
+  });
 
   for (const entry of cases) {
     await test.step(`Archive: ${entry.label}`, async () => {
@@ -667,9 +852,11 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
       await page.getByRole('button', { name: `Archivar ${entry.title}` }).click();
       await expect(page.getByRole('alertdialog')).toContainText('Se archivará');
       await page.getByRole('alertdialog').getByRole('button', { name: 'Archivar' }).click();
-      expect(backend.getRecords(entry.table).find((row) => row.id === entry.id)).toMatchObject({
-        publication_status: 'archived',
-      });
+      await expect
+        .poll(() => backend.getRecords(entry.table).find((row) => row.id === entry.id))
+        .toMatchObject({
+          publication_status: 'archived',
+        });
       await expect(page.getByRole('button', { name: `Archivar ${entry.title}` })).toBeDisabled();
     });
   }
