@@ -1,8 +1,8 @@
-# MAP-071 — Guía de QA administrativa v1.1.1
+# MAP-071 — Guía de QA administrativa v1.2
 
 > **SEGURIDAD — LEER ANTES DE EMPEZAR.** En producción se autorizan únicamente lectura, navegación, inicio y cierre de sesión, cambios de selección e inspección visual que no escriban datos. **Crear, editar, publicar, archivar, borrar, moderar solicitudes o guardar relaciones son pruebas mutadoras**: ejecútalas solo en un entorno o conjunto de datos expresamente autorizado, nunca con contenido temporal o «canary» en producción por defecto. No copies credenciales, tokens, datos privados de Master ni datos personales a capturas, issues o informes.
 
-**Documento canónico:** este Markdown. **PDF:** copia generada automáticamente, no edición independiente. **Alcance:** producto del baseline MAP-070 y regresión administrativa candidata a v1.1.1; esta guía no constituye aprobación de release ni prueba ya ejecutada.
+**Documento canónico:** este Markdown. **PDF:** copia generada automáticamente, no edición independiente. **Alcance:** producto del baseline MAP-070 y regresión administrativa candidata a v1.2; esta guía no constituye aprobación de release ni prueba ya ejecutada.
 
 ## 1. Hoja de sesión y criterios
 
@@ -506,4 +506,4 @@ El primer comando regenera **docs/map-071-admin-qa-guide.pdf** exclusivamente de
 
 **Documentación de contraste:** [Auth](admin-auth.md), [Catálogo](admin-catalog.md), [Entidades](admin-map-entities.md), [Moderación](admin-public-request-moderation.md), [Separación de campañas](map-068-campaign-separation.md), [Organizaciones](map-069-nonspatial-organizations.md), [UX multicampaña](map-070-multicampaign-admin-ux.md), [Seguridad](security.md) y [Despliegue](deployment-and-rollback.md).
 
-**Atlas público:** https://eduyube.github.io/castigo-divino-map/ — cualquier checklist de aprobación v1.1.1 pertenece a MAP-072, no a este documento.
+**Atlas público:** https://eduyube.github.io/castigo-divino-map/ — cualquier checklist de aprobación v1.2 pertenece a MAP-072, no a este documento.

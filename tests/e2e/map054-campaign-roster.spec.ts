@@ -172,6 +172,7 @@ interface RuntimeErrors {
 interface BackendOptions {
   readonly campaignBPlayerDelayMs?: number;
   readonly campaignBPlayerFailure?: boolean;
+  readonly publicRequestFixture?: boolean;
 }
 
 function collectRuntimeErrors(page: Page): RuntimeErrors {
@@ -278,6 +279,39 @@ async function configureBackend(page: Page, options: BackendOptions = {}): Promi
         status: 200,
         headers: collectionHeaders(entities.length),
         body: JSON.stringify(entities),
+      });
+      return;
+    }
+
+    if (table === 'public_requests' && options.publicRequestFixture) {
+      const campaignId = (url.searchParams.get('campaign_id') ?? '').replace(/^eq[.]/, '');
+      const records =
+        campaignId === INITIAL_CAMPAIGN_ID
+          ? [
+              {
+                id: '10000000-0000-4000-8000-000000000744',
+                campaign_id: INITIAL_CAMPAIGN_ID,
+                sender_name: 'MAP-074 QA fixture',
+                proposed_name: 'MAP-074 Pending Note',
+                entity_type: 'location',
+                x: 1200,
+                y: 900,
+                description: 'Disposable mock request for campaign transition.',
+                reason: 'QA fixture only',
+                request_status: 'pending',
+                moderator_user_id: null,
+                moderation_note: null,
+                converted_entity_id: null,
+                moderated_at: null,
+                created_at: '2026-10-15T10:00:00.000Z',
+                updated_at: '2026-10-15T10:00:00.000Z',
+              },
+            ]
+          : [];
+      await route.fulfill({
+        status: 200,
+        headers: collectionHeaders(records.length),
+        body: JSON.stringify(records),
       });
       return;
     }
@@ -761,4 +795,173 @@ test('campaign roster workspace stays usable without horizontal overflow from 32
   await page.keyboard.press('Enter');
   await expect(page.getByLabel('Nombre visible')).toBeFocused();
   expectNoRuntimeErrors(errors);
+});
+
+test('MAP-074 administrative banner, roster and entity editor remain reachable at mobile and desktop widths', async ({
+  page,
+}) => {
+  await configureBackend(page);
+  await page.goto('/');
+  await login(page);
+
+  for (const width of [320, 390, 430, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    const context = page.locator('[data-admin-campaign-session-context]');
+    const roster = page.locator('.admin-campaign-roster');
+    await expect(context).toBeVisible();
+    await expect(roster).toBeVisible();
+    await expect(page.getByLabel('Campaña administrativa')).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeEnabled();
+
+    await page.getByRole('button', { name: 'Crear personaje' }).click();
+    const editor = page.getByRole('heading', { name: 'Crear personaje' });
+    await expect(editor).toBeVisible();
+    await expect(page.getByLabel('Nombre principal (inglés)')).toBeVisible();
+    const dimensions = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      client: document.documentElement.clientWidth,
+    }));
+    expect(dimensions.scroll, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(
+      dimensions.client + 1,
+    );
+    await page.getByRole('button', { name: 'Cerrar editor' }).click();
+    await expect(editor).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeEnabled();
+  }
+});
+
+test('MAP-074 moderation note cancels, discards and never writes across campaign A to B', async ({
+  page,
+}) => {
+  let moderationWrites = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('/rpc/admin_moderate_public_request_v2')) {
+      moderationWrites += 1;
+    }
+  });
+  await configureBackend(page, { publicRequestFixture: true });
+  await page.goto('/');
+  await login(page);
+
+  const campaign = page.getByLabel('Campaña administrativa');
+  const note = page
+    .getByRole('heading', { name: 'MAP-074 Pending Note' })
+    .locator('..')
+    .getByLabel('Nota administrativa (opcional)');
+  await expect(note).toBeVisible();
+  await note.fill('Unsaved moderation note for campaign A');
+  await expect(page.locator('.admin-public-requests[data-admin-dirty]')).toBeVisible();
+
+  page.once('dialog', async (dialog) => {
+    expect(dialog.message()).toContain('cambios administrativos sin guardar');
+    await dialog.dismiss();
+  });
+  await campaign.selectOption(CAMPAIGN_B_ID);
+  await expect(campaign).toHaveValue(INITIAL_CAMPAIGN_ID);
+  await expect(campaign).toBeFocused();
+  await expect(note).toHaveValue('Unsaved moderation note for campaign A');
+  await expect(page.locator('[data-admin-campaign-session-context]')).toContainText(
+    'Editando campaña: Castigo Divino',
+  );
+
+  page.once('dialog', async (dialog) => {
+    expect(dialog.message()).toContain('cambios administrativos sin guardar');
+    await dialog.accept();
+  });
+  await campaign.selectOption(CAMPAIGN_B_ID);
+  await expect(campaign).toHaveValue(CAMPAIGN_B_ID);
+  await expect(rosterPlayer(page, 'Veyra')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'MAP-074 Pending Note' })).toHaveCount(0);
+  await expect(page.locator('.admin-public-requests[data-admin-dirty]')).toHaveCount(0);
+
+  await campaign.selectOption(INITIAL_CAMPAIGN_ID);
+  await expect(rosterPlayer(page, 'Skade')).toBeVisible();
+  await expect(note).toHaveValue('');
+  expect(moderationWrites).toBe(0);
+});
+
+test('MAP-074 responsive authentication dialog across viewport matrix', async ({ browser }) => {
+  for (const width of [320, 390, 430, 1280]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    await configureBackend(page);
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Administrar' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByLabel('Correo')).toBeVisible();
+    await expect(page.getByLabel('Contraseña')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeEnabled();
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, `auth dialog overflow at ${width}px`).toBeLessThanOrEqual(1);
+    await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await context.close();
+  }
+});
+
+test('MAP-074 responsive administrative relations and moderation across viewport matrix', async ({
+  page,
+}) => {
+  await configureBackend(page, { publicRequestFixture: true });
+  await page.goto('/');
+  await login(page);
+
+  for (const width of [320, 390, 430, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(page.locator('[data-admin-campaign-session-context]')).toBeVisible();
+    await expect(page.locator('.admin-campaign-roster')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeEnabled();
+
+    await page.getByRole('button', { name: 'Crear personaje' }).click();
+    const relations = page.getByRole('group', { name: 'Relaciones con otras entidades' });
+    await expect(relations).toBeVisible();
+    await expect(relations.getByRole('button', { name: 'Añadir relación' })).toBeEnabled();
+    await relations.getByRole('button', { name: 'Añadir relación' }).click();
+    const relationRow = relations.locator('[data-entity-relation-row]').last();
+    const selector = relationRow.locator('[data-entity-relation-target]');
+    const ownLabel = relationRow.locator('[data-entity-relation-own-label]');
+    const targetLabel = relationRow.locator('[data-entity-relation-target-label]');
+    await expect(selector).toBeVisible();
+    await selector.selectOption({ index: 1 });
+    await ownLabel.fill(`Responsive own ${width}`);
+    await targetLabel.fill(`Responsive target ${width}`);
+    await expect(ownLabel).toHaveValue(`Responsive own ${width}`);
+    await expect(targetLabel).toHaveValue(`Responsive target ${width}`);
+
+    for (const [surface, locator] of [
+      ['relations', relations],
+      ['relation row', relationRow],
+    ] as const) {
+      const size = await locator.evaluate((element) => ({
+        scroll: element.scrollWidth,
+        client: element.clientWidth,
+      }));
+      expect(size.scroll, `${surface} overflow at ${width}px`).toBeLessThanOrEqual(size.client + 1);
+    }
+    const relationsOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(relationsOverflow, `populated relations overflow at ${width}px`).toBeLessThanOrEqual(1);
+
+    await relations.getByRole('button', { name: 'Quitar relación' }).click();
+    await page.getByRole('button', { name: 'Cerrar editor' }).click();
+
+    const requestCard = page.getByRole('heading', { name: 'MAP-074 Pending Note' }).locator('..');
+    await expect(requestCard.getByLabel('Nota administrativa (opcional)')).toBeVisible();
+    const reject = requestCard.getByRole('button', { name: 'Rechazar' });
+    await reject.click();
+    await expect(page.getByRole('alertdialog')).toBeVisible();
+    await expect(
+      page.getByRole('alertdialog').getByRole('button', { name: 'Rechazar solicitud' }),
+    ).toBeEnabled();
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, `relations/moderation overflow at ${width}px`).toBeLessThanOrEqual(1);
+    await page.keyboard.press('Escape');
+    await expect(reject).toBeFocused();
+  }
 });

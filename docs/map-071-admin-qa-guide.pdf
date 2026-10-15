@@ -16,11 +16,11 @@ endobj
 << /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
 endobj
 6 0 obj
-<< /Length 7625 >>
+<< /Length 7619 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
-0.12 0.32 0.51 rg BT /F2 18.00 Tf 1 0 0 1 46.00 775.00 Tm (MAP-071 - Guía de QA administrativa v1.1.1) Tj ET
+0.12 0.32 0.51 rg BT /F2 18.00 Tf 1 0 0 1 46.00 775.00 Tm (MAP-071 - Guía de QA administrativa v1.2) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 757.00 m 549.28 757.00 l S
 0.94 0.97 0.99 rg 46.00 662.00 503.28 85.00 re f
 0.15 0.38 0.61 rg 46.00 662.00 3.40 85.00 re f
@@ -30,8 +30,8 @@ stream
 0.11 0.26 0.40 rg BT /F1 9.15 Tf 1 0 0 1 58.00 694.00 Tm (datos expresamente autorizado, nunca con contenido temporal o «canary» en producción por defecto. No copies) Tj ET
 0.11 0.26 0.40 rg BT /F1 9.15 Tf 1 0 0 1 58.00 681.00 Tm (credenciales, tokens, datos privados de Master ni datos personales a capturas, issues o informes.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 647.00 Tm (Documento canónico: este Markdown. PDF: copia generada automáticamente, no edición independiente. Alcance: producto) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 633.80 Tm (del baseline MAP-070 y regresión administrativa candidata a v1.1.1; esta guía no constituye aprobación de release ni) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 620.60 Tm (prueba ya ejecutada.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 633.80 Tm (del baseline MAP-070 y regresión administrativa candidata a v1.2; esta guía no constituye aprobación de release ni prueba) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 620.60 Tm (ya ejecutada.) Tj ET
 0.12 0.32 0.51 rg BT /F2 13.20 Tf 1 0 0 1 46.00 589.60 Tm (1. Hoja de sesión y criterios) Tj ET
 0.88 0.93 0.97 rg 46.00 543.10 503.28 22.00 re f
 0.80 0.85 0.90 RG 0.5 w 46.00 543.10 m 549.28 543.10 l S
@@ -87,14 +87,14 @@ stream
 0.19 0.35 0.54 rg BT /F2 9.00 Tf 1 0 0 1 48.00 84.80 Tm (3.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.10 Tf 1 0 0 1 65.00 84.80 Tm (Selecciona Castigo Divino y mira Personajes jugadores / referents: Ura y Skade, nunca Veyra.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
-0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 1 / 11) Tj ET
+0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.2 | Página 1 / 11) Tj ET
 endstream
 endobj
 7 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 6 0 R >>
 endobj
 8 0 obj
-<< /Length 7177 >>
+<< /Length 7175 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
@@ -147,14 +147,14 @@ stream
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 125.60 Tm (Evidencia. Estado UI anonimizado, método de simulación y ausencia de controles mutadores.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 107.60 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
-0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 2 / 11) Tj ET
+0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.2 | Página 2 / 11) Tj ET
 endstream
 endobj
 9 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 8 0 R >>
 endobj
 10 0 obj
-<< /Length 6482 >>
+<< /Length 6480 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
@@ -199,14 +199,14 @@ stream
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 98.60 Tm (Evidencia. Contexto final y ausencia del texto local.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 80.60 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
-0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 3 / 11) Tj ET
+0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.2 | Página 3 / 11) Tj ET
 endstream
 endobj
 11 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 10 0 R >>
 endobj
 12 0 obj
-<< /Length 6506 >>
+<< /Length 6504 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
@@ -251,14 +251,14 @@ stream
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 108.20 Tm (Objetivo. Verificar geometría obligatoria y editor visual para character, location, mission y hazard.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 90.20 Tm (Precondiciones. Dataset de QA, categoría válida y posición autorizada; no usar coordenadas ficticias en producción.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
-0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 4 / 11) Tj ET
+0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.2 | Página 4 / 11) Tj ET
 endstream
 endobj
 13 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 12 0 R >>
 endobj
 14 0 obj
-<< /Length 6751 >>
+<< /Length 6749 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
@@ -304,14 +304,14 @@ stream
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 108.50 Tm (está ligado al personaje de su propia campaña. 4. En M revisa validación de nuevo jugador/orden/acento y cancela antes) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 95.30 Tm (de guardar si no hay autorización adicional.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
-0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 5 / 11) Tj ET
+0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.2 | Página 5 / 11) Tj ET
 endstream
 endobj
 15 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 14 0 R >>
 endobj
 16 0 obj
-<< /Length 6410 >>
+<< /Length 6408 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
@@ -356,14 +356,14 @@ stream
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 116.90 Tm (Limpieza. Retirar relaciones de QA y archivar/retirar fixtures según autorización.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 98.90 Tm (Resultado: [ ] PASS [ ] FAIL [ ] BLOCKED [ ] N/A · Evidencia/observaciones/issue: __________________) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
-0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 6 / 11) Tj ET
+0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.2 | Página 6 / 11) Tj ET
 endstream
 endobj
 17 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 16 0 R >>
 endobj
 18 0 obj
-<< /Length 6731 >>
+<< /Length 6729 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
@@ -409,14 +409,14 @@ stream
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 95.00 Tm (Objetivo. Incluir borradores de notas en la protección dirty de MAP-070.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 77.00 Tm (Precondiciones. Solicitud pendiente de lectura en A; no se confirma ninguna moderación.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
-0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 7 / 11) Tj ET
+0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.2 | Página 7 / 11) Tj ET
 endstream
 endobj
 19 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 18 0 R >>
 endobj
 20 0 obj
-<< /Length 6415 >>
+<< /Length 6413 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
@@ -461,14 +461,14 @@ stream
 0.12 0.32 0.51 rg BT /F2 10.80 Tf 1 0 0 1 46.00 105.90 Tm (QA-DEG-01 - Offline/degraded sin caída de producción \(C\)) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 85.40 Tm (Objetivo. El atlas público es usable desde snapshot mientras admin falla cerrado.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
-0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 8 / 11) Tj ET
+0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.2 | Página 8 / 11) Tj ET
 endstream
 endobj
 21 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 20 0 R >>
 endobj
 22 0 obj
-<< /Length 7440 >>
+<< /Length 7438 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
@@ -534,14 +534,14 @@ stream
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 113.30 Tm (Objetivo. Revisión negativa de fugas visibles, no pentest ni auditoría SQL.) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 95.30 Tm (Precondiciones. Navegación anónima, usuario no admin y cuenta autorizada en escenarios separados.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
-0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 9 / 11) Tj ET
+0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.2 | Página 9 / 11) Tj ET
 endstream
 endobj
 23 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 22 0 R >>
 endobj
 24 0 obj
-<< /Length 11467 >>
+<< /Length 11465 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
@@ -685,14 +685,14 @@ stream
 0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 364.03 76.30 Tm (P/C) Tj ET
 0.15 0.20 0.27 rg BT /F1 7.80 Tf 1 0 0 1 424.43 76.30 Tm (__________________) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
-0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 10 / 11) Tj ET
+0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.2 | Página 10 / 11) Tj ET
 endstream
 endobj
 25 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 24 0 R >>
 endobj
 26 0 obj
-<< /Length 6304 >>
+<< /Length 6300 >>
 stream
 0.19 0.35 0.54 rg BT /F2 8.00 Tf 1 0 0 1 46.00 811.00 Tm (EL ATLAS DE LOS NUEVOS DIOSES / MAP-071) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 801.00 m 549.28 801.00 l S
@@ -752,10 +752,10 @@ stream
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 340.30 Tm (Moderación \(admin-public-request-moderation.md\), Separación de campañas \(map-068-campaign-separation.md\),) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 327.10 Tm (Organizaciones \(map-069-nonspatial-organizations.md\), UX multicampaña \(map-070-multicampaign-admin-ux.md\),) Tj ET
 0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 313.90 Tm (Seguridad \(security.md\) y Despliegue \(deployment-and-rollback.md\).) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 295.90 Tm (Atlas público: https://eduyube.github.io/castigo-divino-map/ - cualquier checklist de aprobación v1.1.1 pertenece a) Tj ET
-0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 282.70 Tm (MAP-072, no a este documento.) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 295.90 Tm (Atlas público: https://eduyube.github.io/castigo-divino-map/ - cualquier checklist de aprobación v1.2 pertenece a MAP-072,) Tj ET
+0.15 0.20 0.27 rg BT /F1 9.15 Tf 1 0 0 1 46.00 282.70 Tm (no a este documento.) Tj ET
 0.80 0.85 0.90 RG 0.5 w 46.00 55.00 m 549.28 55.00 l S
-0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.1.1 | Página 11 / 11) Tj ET
+0.35 0.41 0.49 rg BT /F1 7.30 Tf 1 0 0 1 46.00 39.00 Tm (MAP-071 | QA administrativa v1.2 | Página 11 / 11) Tj ET
 endstream
 endobj
 27 0 obj
@@ -770,29 +770,29 @@ xref
 0000000288 00000 n 
 0000000390 00000 n 
 0000000485 00000 n 
-0000008161 00000 n 
-0000008313 00000 n 
-0000015541 00000 n 
-0000015693 00000 n 
-0000022227 00000 n 
-0000022381 00000 n 
-0000028939 00000 n 
-0000029093 00000 n 
-0000035896 00000 n 
-0000036050 00000 n 
-0000042512 00000 n 
-0000042666 00000 n 
-0000049449 00000 n 
-0000049603 00000 n 
-0000056070 00000 n 
-0000056224 00000 n 
-0000063716 00000 n 
-0000063870 00000 n 
-0000075390 00000 n 
-0000075544 00000 n 
-0000081900 00000 n 
+0000008155 00000 n 
+0000008307 00000 n 
+0000015533 00000 n 
+0000015685 00000 n 
+0000022217 00000 n 
+0000022371 00000 n 
+0000028927 00000 n 
+0000029081 00000 n 
+0000035882 00000 n 
+0000036036 00000 n 
+0000042496 00000 n 
+0000042650 00000 n 
+0000049431 00000 n 
+0000049585 00000 n 
+0000056050 00000 n 
+0000056204 00000 n 
+0000063694 00000 n 
+0000063848 00000 n 
+0000075366 00000 n 
+0000075520 00000 n 
+0000081872 00000 n 
 trailer
 << /Size 28 /Root 1 0 R >>
 startxref
-82054
+82026
 %%EOF
