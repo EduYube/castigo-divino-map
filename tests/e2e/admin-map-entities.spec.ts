@@ -44,7 +44,9 @@ interface EntityRow extends Record<string, unknown> {
 
 interface BackendControl {
   getEntity(id: string): EntityRow | undefined;
-  getRelations(id: string): readonly { targetEntityId: string; ownLabel: string; targetLabel: string }[];
+  getRelations(
+    id: string,
+  ): readonly { targetEntityId: string; ownLabel: string; targetLabel: string }[];
   getSaveCount(): number;
   getLastAssociationIds(): readonly string[];
   getStoredPortraits(): readonly string[];
@@ -160,7 +162,9 @@ async function configureBackend(page: Page, relationFixture = false): Promise<Ba
       },
     ]);
   }
-  const relationsFor = (id: string): { targetEntityId: string; ownLabel: string; targetLabel: string }[] => [
+  const relationsFor = (
+    id: string,
+  ): { targetEntityId: string; ownLabel: string; targetLabel: string }[] => [
     ...(relationRecords.get(id) ?? []),
     ...[...relationRecords.entries()].flatMap(([source, rows]) =>
       rows
@@ -1224,12 +1228,8 @@ test('MAP-074 generic relation editor persists oriented organization links and a
       .getByRole('group', { name: 'Relaciones con otras entidades' })
       .locator('[data-entity-relation-row]')
       .first();
-    await expect(relation.locator('[data-entity-relation-own-label]')).toHaveValue(
-      entry.label,
-    );
-    await expect(relation.locator('[data-entity-relation-target-label]')).toHaveValue(
-      entry.other,
-    );
+    await expect(relation.locator('[data-entity-relation-own-label]')).toHaveValue(entry.label);
+    await expect(relation.locator('[data-entity-relation-target-label]')).toHaveValue(entry.other);
     await page.getByRole('button', { name: 'Cerrar editor' }).click();
   }
   await page.getByRole('button', { name: 'Editar Guild MAP074' }).click();
@@ -1244,7 +1244,9 @@ test('MAP-074 generic relation editor persists oriented organization links and a
   await page.getByLabel('Resumen').fill('Edited while archived relation retained');
   await page.getByRole('button', { name: 'Guardar borrador' }).click();
   await expect(page.getByText('Borrador guardado correctamente.')).toBeVisible();
-  expect(backend.getRelations('org-map074-guild').some(
-    (row) => row.targetEntityId === 'location-map074-old',
-  )).toBe(true);
+  expect(
+    backend
+      .getRelations('org-map074-guild')
+      .some((row) => row.targetEntityId === 'location-map074-old'),
+  ).toBe(true);
 });
