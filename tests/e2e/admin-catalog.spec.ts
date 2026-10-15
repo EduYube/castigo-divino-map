@@ -60,7 +60,12 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
       updated_at: '2026-08-07T10:00:01.000Z',
     },
   ];
-  const rowsByTable: Record<string, Row[]> = {
+  const rowsByTable: Record<string, Row[]> & {
+    categories: Row[];
+    tags: Row[];
+    map_entities: Row[];
+    entity_tags: Row[];
+  } = {
     categories,
     tags: [
       {
