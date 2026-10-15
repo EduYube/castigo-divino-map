@@ -122,21 +122,24 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
   };
 
   const router = publicProjection ? page.context() : page;
-  await router.addInitScript(({ projectUrl, publicProjection }) => {
-    if (publicProjection) {
-      window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
+  await router.addInitScript(
+    ({ projectUrl, publicProjection }) => {
+      if (publicProjection) {
+        window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
+          projectUrl,
+          publishableKey: 'sb_publishable_map074_editorial_key',
+          timeoutMs: 2_000,
+          retryDelaysMs: [0],
+        };
+      }
+      window.__MAP017_AUTH_TEST_CONFIG__ = {
         projectUrl,
-        publishableKey: 'sb_publishable_map074_editorial_key',
+        publishableKey: 'sb_publishable_map018_e2e_key',
         timeoutMs: 2_000,
-        retryDelaysMs: [0],
       };
-    }
-    window.__MAP017_AUTH_TEST_CONFIG__ = {
-      projectUrl,
-      publishableKey: 'sb_publishable_map018_e2e_key',
-      timeoutMs: 2_000,
-    };
-  }, { projectUrl: PROJECT_URL, publicProjection });
+    },
+    { projectUrl: PROJECT_URL, publicProjection },
+  );
 
   await router.route(OFFICIAL_MAP_URL, async (route) => {
     await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: TEST_MAP });
@@ -167,29 +170,32 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
     await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
   });
 
-
   // The public app reads the same mutable tables through its real query contract.
   // In particular, archived records never appear in the projected public rows.
   const publicRows = (table: string): readonly Record<string, unknown>[] => {
     const published = (name: string): Row[] =>
       (rowsByTable[name] ?? []).filter((row) => row.publication_status === 'published');
     if (table === 'campaigns') {
-      return [{
-        id: '00000000-0000-4000-8000-000000000053',
-        slug: 'castigo-divino',
-        name: 'Castigo Divino',
-        status: 'active',
-        display_order: 0,
-      }];
+      return [
+        {
+          id: '00000000-0000-4000-8000-000000000053',
+          slug: 'castigo-divino',
+          name: 'Castigo Divino',
+          status: 'active',
+          display_order: 0,
+        },
+      ];
     }
     if (table === 'players') {
-      return [{
-        id: 'player-map074',
-        slug: 'map074',
-        display_name: 'MAP074',
-        name_language: 'en',
-        accent_color: '#475569',
-      }];
+      return [
+        {
+          id: 'player-map074',
+          slug: 'map074',
+          display_name: 'MAP074',
+          name_language: 'en',
+          accent_color: '#475569',
+        },
+      ];
     }
     if (table === 'map_entities') {
       const location = {
@@ -210,15 +216,17 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
       return [
         location,
         ...(published('categories').some((row) => row.id === 'category-map074')
-          ? [{
-              ...location,
-              id: 'place-map074-category-projection',
-              slug: 'map074-category-projection',
-              name: 'MAP074 Categorized Place',
-              category_id: 'category-map074',
-              x: 1320,
-              y: 920,
-            }]
+          ? [
+              {
+                ...location,
+                id: 'place-map074-category-projection',
+                slug: 'map074-category-projection',
+                name: 'MAP074 Categorized Place',
+                category_id: 'category-map074',
+                x: 1320,
+                y: 920,
+              },
+            ]
           : []),
       ];
     }
@@ -564,7 +572,6 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
     },
   ] as const;
 
-
   const checkPublic = async (isPublished: boolean): Promise<void> => {
     // A new page forces a fresh public catalog read, rather than trusting admin state.
     const publicPage = await page.context().newPage();
@@ -665,6 +672,5 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
     });
   }
   await test.step('Archived resources disappear from public filters/search', () =>
-    checkPublic(false),
-  );
+    checkPublic(false));
 });

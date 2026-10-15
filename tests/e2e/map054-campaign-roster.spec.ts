@@ -938,9 +938,7 @@ test('MAP-074 responsive administrative relations and moderation across viewport
         scroll: element.scrollWidth,
         client: element.clientWidth,
       }));
-      expect(size.scroll, `${surface} overflow at ${width}px`).toBeLessThanOrEqual(
-        size.client + 1,
-      );
+      expect(size.scroll, `${surface} overflow at ${width}px`).toBeLessThanOrEqual(size.client + 1);
     }
     const relationsOverflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
