@@ -797,39 +797,38 @@ test('campaign roster workspace stays usable without horizontal overflow from 32
   expectNoRuntimeErrors(errors);
 });
 
-test(
-  'MAP-074 administrative banner, roster and entity editor remain reachable at mobile and desktop widths',
-  async ({ page }) => {
-    await configureBackend(page);
-    await page.goto('/');
-    await login(page);
+test('MAP-074 administrative banner, roster and entity editor remain reachable at mobile and desktop widths', async ({
+  page,
+}) => {
+  await configureBackend(page);
+  await page.goto('/');
+  await login(page);
 
-    for (const width of [320, 390, 430, 1280]) {
-      await page.setViewportSize({ width, height: 900 });
-      const context = page.locator('[data-admin-campaign-session-context]');
-      const roster = page.locator('.admin-campaign-roster');
-      await expect(context).toBeVisible();
-      await expect(roster).toBeVisible();
-      await expect(page.getByLabel('Campaña administrativa')).toBeEnabled();
-      await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeEnabled();
+  for (const width of [320, 390, 430, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    const context = page.locator('[data-admin-campaign-session-context]');
+    const roster = page.locator('.admin-campaign-roster');
+    await expect(context).toBeVisible();
+    await expect(roster).toBeVisible();
+    await expect(page.getByLabel('Campaña administrativa')).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeEnabled();
 
-      await page.getByRole('button', { name: 'Crear personaje' }).click();
-      const editor = page.getByRole('heading', { name: 'Crear personaje' });
-      await expect(editor).toBeVisible();
-      await expect(page.getByLabel('Nombre principal (inglés)')).toBeVisible();
-      const dimensions = await page.evaluate(() => ({
-        scroll: document.documentElement.scrollWidth,
-        client: document.documentElement.clientWidth,
-      }));
-      expect(dimensions.scroll, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(
-        dimensions.client + 1,
-      );
-      await page.getByRole('button', { name: 'Cerrar editor' }).click();
-      await expect(editor).toBeHidden();
-      await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeEnabled();
-    }
-  },
-);
+    await page.getByRole('button', { name: 'Crear personaje' }).click();
+    const editor = page.getByRole('heading', { name: 'Crear personaje' });
+    await expect(editor).toBeVisible();
+    await expect(page.getByLabel('Nombre principal (inglés)')).toBeVisible();
+    const dimensions = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      client: document.documentElement.clientWidth,
+    }));
+    expect(dimensions.scroll, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(
+      dimensions.client + 1,
+    );
+    await page.getByRole('button', { name: 'Cerrar editor' }).click();
+    await expect(editor).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Crear personaje' })).toBeEnabled();
+  }
+});
 
 test('MAP-074 moderation note cancels, discards and never writes across campaign A to B', async ({
   page,
@@ -929,7 +928,9 @@ test('MAP-074 responsive administrative relations and moderation across viewport
     const reject = requestCard.getByRole('button', { name: 'Rechazar' });
     await reject.click();
     await expect(page.getByRole('alertdialog')).toBeVisible();
-    await expect(page.getByRole('alertdialog').getByRole('button', { name: 'Rechazar solicitud' })).toBeEnabled();
+    await expect(
+      page.getByRole('alertdialog').getByRole('button', { name: 'Rechazar solicitud' }),
+    ).toBeEnabled();
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
