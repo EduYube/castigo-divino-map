@@ -24,7 +24,7 @@ type Audience = 'public' | 'master';
 interface EntityRow extends Record<string, unknown> {
   id: string;
   slug: string;
-  entity_type: 'character' | 'location' | 'mission' | 'hazard';
+  entity_type: 'character' | 'location' | 'mission' | 'hazard' | 'organization';
   lifecycle_status: 'active' | 'completed' | 'failed' | 'resolved' | null;
   visibility: 'pin' | 'search_only';
   audience: Audience;
@@ -32,8 +32,9 @@ interface EntityRow extends Record<string, unknown> {
   name: string;
   summary: string;
   description: string;
-  x: number;
-  y: number;
+  x: number | null;
+  y: number | null;
+  geometry?: null;
   category_id: string;
   publication_status: PublicationStatus;
   published_at: string | null;
@@ -43,6 +44,7 @@ interface EntityRow extends Record<string, unknown> {
 
 interface BackendControl {
   getEntity(id: string): EntityRow | undefined;
+  getRelations(id: string): readonly { targetEntityId: string; ownLabel: string; targetLabel: string }[];
   getSaveCount(): number;
   getLastAssociationIds(): readonly string[];
   getStoredPortraits(): readonly string[];
@@ -65,7 +67,7 @@ function rangeResponse(rows: readonly Record<string, unknown>[]): {
   };
 }
 
-async function configureBackend(page: Page): Promise<BackendControl> {
+async function configureBackend(page: Page, relationFixture = false): Promise<BackendControl> {
   let mode: 'normal' | 'network' | 'expired' | 'stale' | 'invalid-relation' = 'normal';
   let counter = 10;
   let saveCount = 0;
@@ -116,6 +118,61 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       updated_at: '2026-08-07T10:00:00.000Z',
     },
   ];
+  const relationRecords = new Map<
+    string,
+    { targetEntityId: string; ownLabel: string; targetLabel: string }[]
+  >();
+  if (relationFixture) {
+    for (const entry of [
+      { id: 'org-map074-guild', name: 'Guild MAP074', entity_type: 'organization' },
+      { id: 'org-map074-order', name: 'Order MAP074', entity_type: 'organization' },
+      { id: 'location-map074-hall', name: 'Hall MAP074', entity_type: 'location' },
+      { id: 'location-map074-old', name: 'Old Seat MAP074', entity_type: 'location' },
+    ] as const) {
+      const spatial = entry.entity_type === 'location';
+      const archived = entry.id === 'location-map074-old';
+      entities.push({
+        id: entry.id,
+        slug: entry.id,
+        entity_type: entry.entity_type,
+        lifecycle_status: null,
+        visibility: spatial ? 'pin' : 'search_only',
+        audience: 'public',
+        portrait_path: null,
+        name: entry.name,
+        summary: 'MAP-074 isolated editor fixture',
+        description: '',
+        x: spatial ? 800 : null,
+        y: spatial ? 500 : null,
+        geometry: null,
+        category_id: spatial ? 'category-places' : 'category-people',
+        publication_status: archived ? 'archived' : 'published',
+        published_at: '2026-10-15T10:00:00.000Z',
+        archived_at: archived ? '2026-10-15T11:00:00.000Z' : null,
+        updated_at: '2026-10-15T11:00:00.000Z',
+      });
+    }
+    relationRecords.set('org-map074-guild', [
+      {
+        targetEntityId: 'location-map074-old',
+        ownLabel: 'Historic seat',
+        targetLabel: 'Former organization',
+      },
+    ]);
+  }
+  const relationsFor = (id: string): { targetEntityId: string; ownLabel: string; targetLabel: string }[] => [
+    ...(relationRecords.get(id) ?? []),
+    ...[...relationRecords.entries()].flatMap(([source, rows]) =>
+      rows
+        .filter((row) => row.targetEntityId === id)
+        .map((row) => ({
+          targetEntityId: source,
+          ownLabel: row.targetLabel,
+          targetLabel: row.ownLabel,
+        })),
+    ),
+  ];
+
   const entityTags = new Map<string, string[]>([['entity-aster-guide', ['notable']]]);
   const entityAssociations = new Map<string, string[]>();
   const dispositions = new Map<string, Record<string, Disposition>>([
@@ -161,6 +218,25 @@ async function configureBackend(page: Page): Promise<BackendControl> {
             ]
           : [];
       }),
+      entity_relations: relationsFor(id).map((row) => {
+        const target = entities.find((entity) => entity.id === row.targetEntityId)!;
+        return {
+          other_entity_id: target.id,
+          other_name: target.name,
+          other_entity_type: target.entity_type,
+          other_audience: target.audience,
+          own_label: row.ownLabel,
+          other_label: row.targetLabel,
+        };
+      }),
+      relation_entities: entities.map((entity) => ({
+        id: entity.id,
+        name: entity.name,
+        entity_type: entity.entity_type,
+        audience: entity.audience,
+        publication_status: entity.publication_status,
+      })),
+      entity_relations_revision: `revision-${id}-map074`,
       relations_revision: relationRevision(id),
       delete_blockers: {
         aliases: 0,
@@ -412,7 +488,7 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       const body = request.postDataJSON() as Record<string, unknown>;
       const geometry = body.p_geometry as {
         coordinates?: { x?: unknown; y?: unknown };
-      };
+      } | null;
       const id = String(body.p_id);
       const existing = entities.find((candidate) => candidate.id === id);
       if (
@@ -446,8 +522,9 @@ async function configureBackend(page: Page): Promise<BackendControl> {
         name: String(body.p_name),
         summary: String(body.p_summary),
         description: String(body.p_description),
-        x: Number(geometry.coordinates?.x),
-        y: Number(geometry.coordinates?.y),
+        x: geometry ? Number(geometry.coordinates?.x) : null,
+        y: geometry ? Number(geometry.coordinates?.y) : null,
+        geometry: geometry ? undefined : null,
         category_id: String(body.p_category_id),
         publication_status: nextStatus,
         published_at: existing?.published_at ?? (nextStatus === 'published' ? updatedAt : null),
@@ -457,6 +534,16 @@ async function configureBackend(page: Page): Promise<BackendControl> {
       if (existing) Object.assign(existing, next);
       else entities.push(next);
       entityTags.set(id, Array.isArray(body.p_tag_ids) ? body.p_tag_ids.map(String) : []);
+      if (relationFixture && Array.isArray(body.p_entity_relations)) {
+        relationRecords.set(
+          id,
+          body.p_entity_relations.map((row: Record<string, unknown>) => ({
+            targetEntityId: String(row.targetEntityId),
+            ownLabel: String(row.ownLabel),
+            targetLabel: String(row.targetLabel),
+          })),
+        );
+      }
       const nextDispositions: Record<string, Disposition> = {};
       if (Array.isArray(body.p_dispositions)) {
         for (const value of body.p_dispositions) {
@@ -534,6 +621,9 @@ async function configureBackend(page: Page): Promise<BackendControl> {
   return {
     getEntity(id): EntityRow | undefined {
       return entities.find((entity) => entity.id === id);
+    },
+    getRelations(id) {
+      return relationsFor(id);
     },
     getSaveCount(): number {
       return saveCount;
@@ -1088,4 +1178,73 @@ test('MAP-064 mission and hazard lifecycle remains independent from publication'
   const hazardPanel = page.getByTestId('place-details');
   await expect(hazardPanel).toContainText('Peligro');
   await expect(hazardPanel).toContainText('Resuelto');
+});
+
+test('MAP-074 generic relation editor persists oriented organization links and archived history', async ({
+  page,
+}) => {
+  const backend = await configureBackend(page, true);
+  await page.goto('/');
+  await loginAndConnect(page);
+
+  await page.getByRole('button', { name: 'Editar Guild MAP074' }).click();
+  const group = page.getByRole('group', { name: 'Relaciones con otras entidades' });
+  await expect(group).toBeVisible();
+  const rows = group.locator('[data-entity-relation-row]');
+  await expect(rows).toHaveCount(1);
+  const historic = rows.first().locator('[data-entity-relation-target]');
+  await expect(historic).toHaveValue('location-map074-old');
+  await expect(historic.locator('option:checked')).toBeDisabled();
+  await expect(historic.locator('option:checked')).toContainText('Old Seat MAP074');
+
+  for (const entry of [
+    { target: 'location-map074-hall', own: 'Guild hall', other: 'Home guild' },
+    { target: 'entity-aster-guide', own: 'Agent', other: 'Serves guild' },
+    { target: 'org-map074-order', own: 'Partner', other: 'Sister guild' },
+  ]) {
+    await group.getByRole('button', { name: 'Añadir relación' }).click();
+    const current = rows.last();
+    await current.locator('[data-entity-relation-target]').selectOption(entry.target);
+    await current.locator('[data-entity-relation-own-label]').fill(entry.own);
+    await current.locator('[data-entity-relation-target-label]').fill(entry.other);
+  }
+  await expect(rows).toHaveCount(4);
+  await page.getByRole('button', { name: 'Guardar borrador' }).click();
+  await expect(page.getByText('Borrador guardado correctamente.')).toBeVisible();
+  expect(backend.getRelations('org-map074-guild')).toHaveLength(4);
+  await page.getByRole('button', { name: 'Cerrar editor' }).click();
+
+  for (const entry of [
+    { name: 'Hall MAP074', label: 'Home guild', other: 'Guild hall' },
+    { name: 'Aster Guide', label: 'Serves guild', other: 'Agent' },
+    { name: 'Order MAP074', label: 'Sister guild', other: 'Partner' },
+  ]) {
+    await page.getByRole('button', { name: `Editar ${entry.name}` }).click();
+    const relation = page
+      .getByRole('group', { name: 'Relaciones con otras entidades' })
+      .locator('[data-entity-relation-row]')
+      .first();
+    await expect(relation.locator('[data-entity-relation-own-label]')).toHaveValue(
+      entry.label,
+    );
+    await expect(relation.locator('[data-entity-relation-target-label]')).toHaveValue(
+      entry.other,
+    );
+    await page.getByRole('button', { name: 'Cerrar editor' }).click();
+  }
+  await page.getByRole('button', { name: 'Editar Guild MAP074' }).click();
+  const historical = page
+    .getByRole('group', { name: 'Relaciones con otras entidades' })
+    .locator('[data-entity-relation-row]')
+    .first();
+  await expect(historical.locator('[data-entity-relation-target]')).toHaveValue(
+    'location-map074-old',
+  );
+  await expect(historical.locator('[data-entity-relation-target] option:checked')).toBeDisabled();
+  await page.getByLabel('Resumen').fill('Edited while archived relation retained');
+  await page.getByRole('button', { name: 'Guardar borrador' }).click();
+  await expect(page.getByText('Borrador guardado correctamente.')).toBeVisible();
+  expect(backend.getRelations('org-map074-guild').some(
+    (row) => row.targetEntityId === 'location-map074-old',
+  )).toBe(true);
 });
