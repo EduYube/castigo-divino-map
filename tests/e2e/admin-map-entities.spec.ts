@@ -126,13 +126,13 @@ async function configureBackend(page: Page, relationFixture = false): Promise<Ba
   >();
   if (relationFixture) {
     for (const entry of [
-      { id: 'org-map074-guild', name: 'Guild MAP074', entity_type: 'organization' },
-      { id: 'org-map074-order', name: 'Order MAP074', entity_type: 'organization' },
-      { id: 'location-map074-hall', name: 'Hall MAP074', entity_type: 'location' },
-      { id: 'location-map074-old', name: 'Old Seat MAP074', entity_type: 'location' },
+      { id: 'entity-map074-guild', name: 'Guild MAP074', entity_type: 'organization' },
+      { id: 'entity-map074-order', name: 'Order MAP074', entity_type: 'organization' },
+      { id: 'place-map074-hall', name: 'Hall MAP074', entity_type: 'location' },
+      { id: 'place-map074-old', name: 'Old Seat MAP074', entity_type: 'location' },
     ] as const) {
       const spatial = entry.entity_type === 'location';
-      const archived = entry.id === 'location-map074-old';
+      const archived = entry.id === 'place-map074-old';
       entities.push({
         id: entry.id,
         slug: entry.id,
@@ -154,9 +154,9 @@ async function configureBackend(page: Page, relationFixture = false): Promise<Ba
         updated_at: '2026-10-15T11:00:00.000Z',
       });
     }
-    relationRecords.set('org-map074-guild', [
+    relationRecords.set('entity-map074-guild', [
       {
-        targetEntityId: 'location-map074-old',
+        targetEntityId: 'place-map074-old',
         ownLabel: 'Historic seat',
         targetLabel: 'Former organization',
       },
@@ -1197,19 +1197,19 @@ test('MAP-074 generic relation editor persists oriented organization links and a
   const rows = group.locator('[data-entity-relation-row]');
   await expect(rows).toHaveCount(1);
   const historic = rows.first().locator('[data-entity-relation-target]');
-  await expect(historic).toHaveValue('location-map074-old');
+  await expect(historic).toHaveValue('place-map074-old');
   await expect(historic.locator('option:checked')).toBeDisabled();
   await expect(historic.locator('option:checked')).toContainText('Old Seat MAP074');
 
   for (const entry of [
-    { target: 'location-map074-hall', own: 'Guild hall', other: 'Home guild' },
+    { target: 'place-map074-hall', own: 'Guild hall', other: 'Home guild' },
     { target: 'entity-aster-guide', own: 'Agent', other: 'Serves guild' },
-    { target: 'org-map074-order', own: 'Partner', other: 'Sister guild' },
+    { target: 'entity-map074-order', own: 'Partner', other: 'Sister guild' },
   ]) {
     await group.getByRole('button', { name: 'Añadir relación' }).click();
     const current = rows.last();
     await expect(
-      current.locator('[data-entity-relation-target] option[value="location-map074-old"]'),
+      current.locator('[data-entity-relation-target] option[value="place-map074-old"]'),
     ).toHaveCount(0);
     await current.locator('[data-entity-relation-target]').selectOption(entry.target);
     await expect(current.locator('[data-entity-relation-target] option:checked')).toContainText(
@@ -1221,7 +1221,7 @@ test('MAP-074 generic relation editor persists oriented organization links and a
   await expect(rows).toHaveCount(4);
   await page.getByRole('button', { name: 'Guardar borrador' }).click();
   await expect(page.getByText('Borrador guardado correctamente.')).toBeVisible();
-  expect(backend.getRelations('org-map074-guild')).toHaveLength(4);
+  expect(backend.getRelations('entity-map074-guild')).toHaveLength(4);
   await page.getByRole('button', { name: 'Cerrar editor' }).click();
 
   for (const entry of [
@@ -1244,7 +1244,7 @@ test('MAP-074 generic relation editor persists oriented organization links and a
     .locator('[data-entity-relation-row]')
     .first();
   await expect(historical.locator('[data-entity-relation-target]')).toHaveValue(
-    'location-map074-old',
+    'place-map074-old',
   );
   await expect(historical.locator('[data-entity-relation-target] option:checked')).toBeDisabled();
   await page.getByLabel('Resumen').fill('Edited while archived relation retained');
@@ -1252,7 +1252,7 @@ test('MAP-074 generic relation editor persists oriented organization links and a
   await expect(page.getByText('Borrador guardado correctamente.')).toBeVisible();
   expect(
     backend
-      .getRelations('org-map074-guild')
-      .some((row) => row.targetEntityId === 'location-map074-old'),
+      .getRelations('entity-map074-guild')
+      .some((row) => row.targetEntityId === 'place-map074-old'),
   ).toBe(true);
 });

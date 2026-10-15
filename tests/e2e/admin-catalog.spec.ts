@@ -487,7 +487,7 @@ test('MAP-074 editorial draft, publish and archive cycles cover all five catalog
           x: 'Coordenada X',
           y: 'Coordenada Y',
         };
-        const control = page.getByLabel(labels[field]!);
+        const control = page.getByLabel(labels[field]!, { exact: true });
         if (field === 'entityId' || field === 'geographicNameId') {
           await control.selectOption(value);
         } else {
