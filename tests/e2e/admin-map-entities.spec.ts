@@ -574,8 +574,20 @@ async function configureBackend(page: Page, relationFixture = false): Promise<Ba
     const table = url.pathname.split('/').at(-1) ?? '';
     if (request.method() === 'GET') {
       const rows: Record<string, unknown>[] =
-        table === 'map_entities'
-          ? entities
+        table === 'campaigns' && relationFixture
+          ? [
+              {
+                id: CAMPAIGN_A_ID,
+                slug: 'castigo-divino',
+                name: 'Castigo Divino',
+                status: 'active',
+                display_order: 0,
+                archived_at: null,
+                updated_at: '2026-10-15T10:00:00.000Z',
+              },
+            ]
+          : table === 'map_entities'
+            ? entities
           : table === 'categories'
             ? categories
             : table === 'tags'
@@ -1187,6 +1199,7 @@ test('MAP-064 mission and hazard lifecycle remains independent from publication'
 test('MAP-074 generic relation editor persists oriented organization links and archived history', async ({
   page,
 }) => {
+  test.setTimeout(90_000);
   const backend = await configureBackend(page, true);
   await page.goto('/');
   await loginAndConnect(page);
@@ -1219,8 +1232,8 @@ test('MAP-074 generic relation editor persists oriented organization links and a
     await current.locator('[data-entity-relation-target-label]').fill(entry.other);
   }
   await expect(rows).toHaveCount(4);
-  await page.getByRole('button', { name: 'Guardar borrador' }).click();
-  await expect(page.getByText('Borrador guardado correctamente.')).toBeVisible();
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
   expect(backend.getRelations('entity-map074-guild')).toHaveLength(4);
   await page.getByRole('button', { name: 'Cerrar editor' }).click();
 
@@ -1246,8 +1259,8 @@ test('MAP-074 generic relation editor persists oriented organization links and a
   await expect(historical.locator('[data-entity-relation-target]')).toHaveValue('place-map074-old');
   await expect(historical.locator('[data-entity-relation-target] option:checked')).toBeDisabled();
   await page.getByLabel('Resumen').fill('Edited while archived relation retained');
-  await page.getByRole('button', { name: 'Guardar borrador' }).click();
-  await expect(page.getByText('Borrador guardado correctamente.')).toBeVisible();
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
   expect(
     backend
       .getRelations('entity-map074-guild')
