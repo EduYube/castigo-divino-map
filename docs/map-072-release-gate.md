@@ -142,7 +142,7 @@ Este resultado no identifica un bug reproducible del producto; declara ausencia 
 
 ## Reanudación del gate tras MAP-073
 
-> **Decisión reanudada: QA GATE PASS.** La sesión BLOCKED anterior se conserva íntegra arriba como evidencia histórica. Esta reanudación no afirma que el agente haya repetido manualmente los 27 escenarios: consolida evidencia **HUMAN**, **AUTOMATED** o **HUMAN + AUTOMATED** según el origen real.
+> **Decisión reanudada (tras revisión independiente de PR #206): RELEASE GATE BLOCKED.** La sesión BLOCKED anterior se conserva íntegra arriba como evidencia histórica. Esta reanudación no afirma que el agente haya repetido manualmente los 27 escenarios: consolida evidencia **HUMAN**, **AUTOMATED** o **HUMAN + AUTOMATED** según el origen real.
 
 ### 9.1 Motivo de la reanudación
 
@@ -183,7 +183,7 @@ La CI de la PR MAP-074 sobre su **HEAD exacto** sigue siendo obligatoria como ev
 | QA-CAMP-03 | P | PASS | AUTOMATED | map054 dirty roster: cancelar conserva campaña, borrador y restaura foco | — |
 | QA-CAMP-04 | P | PASS | AUTOMATED | map054 dirty roster + transición lenta: aceptar descarta editores y recarga contexto | — |
 | QA-CAMP-05 | C | PASS | AUTOMATED | map054 failed campaign switch: rollback atómico a campaña/roster/controladores originales | — |
-| QA-CAT-01 | M | PASS | AUTOMATED | admin-catalog CRUD/validación/archive; aliases/nombres geográficos; campaign-scope global geography | — |
+| QA-CAT-01 | M | BLOCKED | AUTOMATED | admin-catalog CRUD/validación/archive; aliases/nombres geográficos; campaign-scope global geography | MAP074-REV-03 — Ciclo editorial de categorías/tags/aliases/nombres geográficos y publicación/retirada no acreditados |
 | QA-CAT-02 | M | PASS | AUTOMATED | admin-catalog conflictos/confirmaciones/delete; admin-map-entities stale/invalid relation safe errors | — |
 | QA-ENTITY-01 | M | PASS | AUTOMATED | admin-map-entities point/preview/validación + MAP-061 polygon + mission/hazard lifecycle | — |
 | QA-ENTITY-02 | M | PASS | AUTOMATED | admin-map-entities search_only, publicar, descubrir y archivar | — |
@@ -191,16 +191,16 @@ La CI de la PR MAP-074 sobre su **HEAD exacto** sigue siendo obligatoria como ev
 | QA-ROSTER-01 | P/M | PASS | HUMAN + AUTOMATED | map054 roster A/B, validación y referents same-campaign; roster observado en QA humano | — |
 | QA-DISP-01 | P/M | PASS | AUTOMATED | admin-map-entities ally/neutral/enemy + map054 candidatos A/B + campaign-switcher/pin visuals | — |
 | QA-ASSOC-01 | P/M | PASS | AUTOMATED | map054 associations scopeadas/ausentes en organization; admin-map-entities save; map058 render; pgTAP RLS | — |
-| QA-REL-01 | P/M | PASS | AUTOMATED | organizationBehavior render bidireccional + pgTAP MAP-069 relación única/orientada same-campaign | — |
-| QA-REL-02 | P/M | PASS | AUTOMATED | pgTAP MAP-069: cross-campaign rechazado, target archived no nuevo e histórico preservado | — |
+| QA-REL-01 | P/M | BLOCKED | AUTOMATED | organizationBehavior render bidireccional + pgTAP MAP-069 relación única/orientada same-campaign | MAP074-REV-01 — Editor de relaciones, selección por tipo y vínculos organization↔location/character/organization sin E2E suficiente |
+| QA-REL-02 | P/M | BLOCKED | AUTOMATED | pgTAP MAP-069: cross-campaign rechazado, target archived no nuevo e histórico preservado | MAP074-REV-01 — Representación en editor de relaciones históricas archivadas y exclusión en nuevos candidatos sin E2E suficiente |
 | QA-REQ-01 | P/M | PASS | AUTOMATED | admin-public-requests inbox/filter/note/reject exactly-once; anon sin inbox | — |
 | QA-REQ-02 | M | PASS | AUTOMATED | admin-public-requests conversión a draft vacío + MAP-056 request→moderation→publication aislado | — |
-| QA-REQ-03 | P | PASS | AUTOMATED | admin-public-requests dirty note/purge logout + MAP-070 dirty-context protection | — |
+| QA-REQ-03 | P | BLOCKED | AUTOMATED | admin-public-requests dirty note/purge logout + MAP-070 dirty-context protection | MAP074-REV-02 — Falta secuencia de nota de moderación durante cancelación/aceptación A→B y garantía sin escritura |
 | QA-PUBLIC-01 | P | PASS | AUTOMATED | map054 selectores público/admin independientes y banner de divergencia explícito | — |
 | QA-MASTER-01 | P/C | PASS | AUTOMATED | campaign-master-mode + stale-response + startup-revocation: purge A/B/OFF/logout/revocación | — |
 | QA-NAV-01 | P | PASS | AUTOMATED | campaign-switcher A/B map/search/details + url-state deep link/reload/history/invalid values | — |
 | QA-DEG-01 | C | PASS | AUTOMATED | backend-status fallback/recovery + campaign-switcher schema v3 + Pages smoke; org subcheck N/A por snapshot sin orgs | — |
-| QA-RESP-01 | P | PASS | HUMAN + AUTOMATED | map054 320/390/430 + responsive/admin suites; selector estrecho retesteado humano | MAP072-QA-02 RESOLVED |
+| QA-RESP-01 | P | BLOCKED | HUMAN + AUTOMATED | map054 320/390/430 + responsive/admin suites; selector estrecho retesteado humano | MAP072-QA-02 RESOLVED |
 | QA-A11Y-01 | P | PASS | HUMAN + AUTOMATED | responsive-accessibility keyboard/focus + forced colors/reduced motion; contraste retesteado humano; sin afirmar lector de pantalla | MAP072-QA-01 RESOLVED |
 | QA-SEC-01 | P/C | PASS | AUTOMATED | admin-auth anon/no-admin/token errors + adminCampaignScope + Master purge/stale + pgTAP/RLS | — |
 
@@ -208,7 +208,7 @@ La CI de la PR MAP-074 sobre su **HEAD exacto** sigue siendo obligatoria como ev
 
 | PASS | FAIL | BLOCKED | N/A |
 | ---: | ---: | ---: | ---: |
-| **27** | **0** | **0** | **0** |
+| **22** | **0** | **5** | **0** |
 
 El `N/A` citado dentro de QA-DEG-01 corresponde únicamente a la subcomprobación opcional de abrir una organización desde snapshot cuando el snapshot no contiene organizaciones; el **ID completo queda PASS** por la cobertura restante del modo degradado.
 
@@ -229,9 +229,7 @@ El `N/A` citado dentro de QA-DEG-01 corresponde únicamente a la subcomprobació
 
 ### 9.7 Decisión de Fase A
 
-Se cumplen las condiciones para **QA GATE PASS**: 27 IDs con estado, FAIL = 0, BLOCKED = 0, cero findings release-blocking abiertos, procedencia HUMAN/AUTOMATED explícita, aislamiento de campaña, purge Master, seguridad, snapshot y MAP-073 revalidados.
-
-Por tanto queda autorizada **Fase B**.
+La primera consolidación declaró 27 PASS y permitió preparar Fase B. La revisión independiente del HEAD `18b6583c739a87e68b2d70f23d72e63cb427442b` identificó insuficiencia de evidencia para cinco IDs: `QA-CAT-01` (`MAP074-REV-03`), `QA-REL-01` y `QA-REL-02` (`MAP074-REV-01`), `QA-REQ-03` (`MAP074-REV-02`) y `QA-RESP-01` (`MAP074-REV-04`). No demostró nuevos defectos funcionales. **22 PASS, 0 FAIL, 5 BLOCKED, 0 N/A**. La Fase B ya preparada se conserva como candidata **sin autorización de publicación**. Para levantar el bloqueo se necesitan pruebas concretas de editor, moderación, ciclo editorial y matriz responsive, CI success del HEAD corregido y segunda revisión independiente.
 
 ### 9.8 Fase B — versionado y reconciliación
 
@@ -287,7 +285,11 @@ La evidencia final antes de revisión independiente es la **CI del HEAD exacto d
 
 ### 9.14 Estado de publicación
 
-**QA GATE PASS. Fase B preparada.**
+**RELEASE GATE BLOCKED. Fase B candidata preparada, sin autorización de publicación.**
 
 No Ready. No merge. No tag. No GitHub Release.
 
+
+### 9.15 Review independiente de PR #206 — correcciones de evidencia pendientes
+
+La revisión externa del HEAD `18b6583c739a87e68b2d70f23d72e63cb427442b` emitió `REQUEST CHANGES — BLOCKED`. Los cinco BLOCKED corresponden exclusivamente a los cuatro findings de cobertura enumerados en 9.7. Los 22 PASS no afectados siguen respaldados por sus pruebas originales. Ninguna prueba nueva ha sido ejecutada por esta actualización documental; no se confunde la CI anterior con acreditación de los cinco casos. El producto candidato `1.2.0 / v1.2` permanece en Draft sin merge, tag, release ni cambios de producción.
