@@ -573,21 +573,25 @@ async function configureBackend(page: Page, relationFixture = false): Promise<Ba
 
     const table = url.pathname.split('/').at(-1) ?? '';
     if (request.method() === 'GET') {
+      if (table === 'campaigns' && relationFixture) {
+        const campaigns = [
+          {
+            id: CAMPAIGN_A_ID,
+            slug: 'castigo-divino',
+            name: 'Castigo Divino',
+            status: 'active',
+            display_order: 0,
+            archived_at: null,
+            updated_at: '2026-10-15T10:00:00.000Z',
+          },
+        ];
+        const range = rangeResponse(campaigns);
+        await route.fulfill({ status: 200, headers: range.headers, body: range.body });
+        return;
+      }
       const rows: Record<string, unknown>[] =
-        table === 'campaigns' && relationFixture
-          ? [
-              {
-                id: CAMPAIGN_A_ID,
-                slug: 'castigo-divino',
-                name: 'Castigo Divino',
-                status: 'active',
-                display_order: 0,
-                archived_at: null,
-                updated_at: '2026-10-15T10:00:00.000Z',
-              },
-            ]
-          : table === 'map_entities'
-            ? entities
+        table === 'map_entities'
+          ? entities
           : table === 'categories'
             ? categories
             : table === 'tags'
