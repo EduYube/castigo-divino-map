@@ -12,6 +12,7 @@ const TEST_MAP = `
 `;
 
 interface AdminBackend {
+  getRecords(table: string): readonly Row[];
   expireNextMutation(): void;
   failNextMutation(): void;
 }
@@ -257,6 +258,9 @@ async function configureAdminBackend(page: Page): Promise<AdminBackend> {
   });
 
   return {
+    getRecords(table: string): readonly Row[] {
+      return rowsByTable[table] ?? [];
+    },
     expireNextMutation(): void {
       mutationMode = 'expired';
     },
@@ -411,4 +415,107 @@ test('admin CRUD remains keyboard-usable at 320px and never exposes tokens', asy
   expect(await page.locator('body').innerText()).not.toContain(REFRESH_TOKEN);
   expect(consoleMessages.join('\n')).not.toContain(ACCESS_TOKEN);
   expect(consoleMessages.join('\n')).not.toContain(REFRESH_TOKEN);
+});
+
+test('MAP-074 editorial draft, publish and archive cycles cover all five catalog resources', async ({
+  page,
+}) => {
+  const backend = await configureAdminBackend(page);
+  await page.goto('/');
+  await loginAndConnect(page);
+
+  const cases = [
+    {
+      label: 'Categorías',
+      table: 'categories',
+      id: 'category-map074',
+      title: 'MAP074 Category',
+      fields: { slug: 'map074-category', name: 'MAP074 Category' },
+    },
+    {
+      label: 'Etiquetas',
+      table: 'tags',
+      id: 'tag-map074',
+      title: 'MAP074 Tag',
+      fields: { name: 'MAP074 Tag' },
+    },
+    {
+      label: 'Nombres alternativos de entidades',
+      table: 'entity_aliases',
+      id: 'alias-map074',
+      title: 'MAP074 Alias',
+      fields: { value: 'MAP074 Alias', entityId: 'place-waterdeep' },
+    },
+    {
+      label: 'Nombres geográficos',
+      table: 'geographic_names',
+      id: 'geo-map074',
+      title: 'MAP074 Geography',
+      fields: {
+        slug: 'map074-geography',
+        name: 'MAP074 Geography',
+        x: '1230',
+        y: '890',
+        entityId: 'place-waterdeep',
+      },
+    },
+    {
+      label: 'Nombres geográficos alternativos',
+      table: 'geographic_name_aliases',
+      id: 'geo-alias-map074',
+      title: 'MAP074 Geo Alias',
+      fields: { value: 'MAP074 Geo Alias', geographicNameId: 'geo-waterdeep' },
+    },
+  ] as const;
+
+  for (const entry of cases) {
+    await test.step(entry.label, async () => {
+      await page.getByRole('button', { name: entry.label, exact: true }).click();
+      await page.getByRole('button', { name: 'Crear', exact: true }).click();
+      await page.getByLabel('ID estable').fill(entry.id);
+
+      for (const [field, value] of Object.entries(entry.fields)) {
+        const labels: Record<string, string> = {
+          slug: 'Slug',
+          name:
+            entry.table === 'geographic_names' ? 'Nombre principal (inglés)' : 'Nombre',
+          entityId:
+            entry.table === 'geographic_names'
+              ? 'Entidad de localización enlazada (opcional)'
+              : 'Entidad propietaria',
+          geographicNameId: 'Nombre geográfico principal',
+          value: 'Nombre alternativo (inglés)',
+          x: 'Coordenada X',
+          y: 'Coordenada Y',
+        };
+        const control = page.getByLabel(labels[field]!);
+        if (field === 'entityId' || field === 'geographicNameId') {
+          await control.selectOption(value);
+        } else {
+          await control.fill(value);
+        }
+      }
+
+      await page.getByLabel('Estado editorial').selectOption('draft');
+      await page.getByRole('button', { name: 'Guardar' }).click();
+      await expect(page.getByText(entry.title, { exact: true })).toBeVisible();
+      expect(backend.getRecords(entry.table).find((row) => row.id === entry.id))
+        .toMatchObject({ publication_status: 'draft', published_at: null });
+
+      await page.getByRole('button', { name: `Editar ${entry.title}` }).click();
+      await page.getByLabel('Estado editorial').selectOption('published');
+      await page.getByRole('button', { name: 'Guardar' }).click();
+      await expect(page.getByRole('button', { name: `Archivar ${entry.title}` })).toBeVisible();
+      expect(backend.getRecords(entry.table).find((row) => row.id === entry.id))
+        .toMatchObject({ publication_status: 'published' });
+
+      await page.getByRole('button', { name: `Archivar ${entry.title}` }).click();
+      await expect(page.getByRole('alertdialog')).toContainText('Se archivará');
+      await page.getByRole('alertdialog').getByRole('button', { name: 'Archivar' }).click();
+      expect(backend.getRecords(entry.table).find((row) => row.id === entry.id))
+        .toMatchObject({ publication_status: 'archived' });
+      await expect(page.getByRole('button', { name: `Archivar ${entry.title}` }))
+        .toBeDisabled();
+    });
+  }
 });
