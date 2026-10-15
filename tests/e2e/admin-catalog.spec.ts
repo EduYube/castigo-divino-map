@@ -263,7 +263,9 @@ async function configureAdminBackend(page: Page, publicProjection = false): Prom
     ) {
       const fields = (url.searchParams.get('select') ?? '').split(',');
       const rows = publicRows(table).map((row) =>
-        Object.fromEntries(fields.map((field) => [field, row[field] ?? null])),
+        Object.fromEntries(
+          fields.filter((field) => field in row).map((field) => [field, row[field]]),
+        ),
       );
       const range = withRange(rows as Row[]);
       await route.fulfill({ status: 200, headers: range.headers, body: range.body });
