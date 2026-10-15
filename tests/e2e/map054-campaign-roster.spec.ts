@@ -284,7 +284,7 @@ async function configureBackend(page: Page, options: BackendOptions = {}): Promi
     }
 
     if (table === 'public_requests' && options.publicRequestFixture) {
-      const campaignId = (url.searchParams.get('campaign_id') ?? '').replace(/^eq\\./, '');
+      const campaignId = (url.searchParams.get('campaign_id') ?? '').replace(/^eq[.]/, '');
       const records =
         campaignId === INITIAL_CAMPAIGN_ID
           ? [
