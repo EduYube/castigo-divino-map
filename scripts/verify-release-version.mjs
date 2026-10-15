@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 
-const expectedVersion = '1.1.0';
-const expectedLabel = 'v1.1';
+const expectedVersion = '1.2.0';
+const expectedLabel = 'v1.2';
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const packageLock = JSON.parse(
   readFileSync(new URL('../package-lock.json', import.meta.url), 'utf8'),
@@ -15,7 +15,7 @@ const projectStatus = readFileSync(new URL('../docs/project-status.md', import.m
 
 function assert(condition, message) {
   if (!condition) {
-    throw new Error(`MAP-066 release version verification failed: ${message}`);
+    throw new Error(`Release version verification failed: ${message}`);
   }
 }
 
@@ -43,4 +43,4 @@ assert(
   'project status must declare both semantic and UI versions',
 );
 
-console.log(`MAP-066 release version verification passed: ${expectedVersion} / ${expectedLabel}.`);
+console.log(`Release version verification passed: ${expectedVersion} / ${expectedLabel}.`);

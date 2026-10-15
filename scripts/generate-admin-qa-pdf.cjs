@@ -288,7 +288,7 @@ function generatePdf(markdown) {
     page = pages[i];
     drawLine(margin, 55, W - margin, 55);
     drawText(
-      `MAP-071  |  QA administrativa v1.1.1  |  Página ${i + 1} / ${pages.length}`,
+      `MAP-071  |  QA administrativa v1.2  |  Página ${i + 1} / ${pages.length}`,
       margin,
       39,
       7.3,
