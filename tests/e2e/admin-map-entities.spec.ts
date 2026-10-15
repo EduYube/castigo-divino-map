@@ -1239,7 +1239,17 @@ test('MAP-074 generic relation editor persists oriented organization links and a
   await page.getByRole('button', { name: 'Publicar' }).click();
   await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
   expect(backend.getRelations('entity-map074-guild')).toHaveLength(4);
-  await page.getByRole('button', { name: 'Cerrar editor' }).click();
+
+  // The lightweight public-data fixture re-enters degraded mode on the post-save
+  // catalog refresh. Restore the simulated connection before reopening editors.
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+    );
+  });
+  await expect(page.getByRole('button', { name: 'Crear organización' })).toBeEnabled();
+  const closeEditor = page.getByRole('button', { name: 'Cerrar editor' });
+  if (await closeEditor.isVisible()) await closeEditor.click();
 
   for (const entry of [
     { name: 'Hall MAP074', label: 'Home guild', other: 'Guild hall' },
