@@ -172,6 +172,7 @@ interface RuntimeErrors {
 interface BackendOptions {
   readonly campaignBPlayerDelayMs?: number;
   readonly campaignBPlayerFailure?: boolean;
+  readonly publicRequestFixture?: boolean;
 }
 
 function collectRuntimeErrors(page: Page): RuntimeErrors {
@@ -278,6 +279,39 @@ async function configureBackend(page: Page, options: BackendOptions = {}): Promi
         status: 200,
         headers: collectionHeaders(entities.length),
         body: JSON.stringify(entities),
+      });
+      return;
+    }
+
+    if (table === 'public_requests' && options.publicRequestFixture) {
+      const campaignId = (url.searchParams.get('campaign_id') ?? '').replace(/^eq\\./, '');
+      const records =
+        campaignId === INITIAL_CAMPAIGN_ID
+          ? [
+              {
+                id: '10000000-0000-4000-8000-000000000744',
+                campaign_id: INITIAL_CAMPAIGN_ID,
+                sender_name: 'MAP-074 QA fixture',
+                proposed_name: 'MAP-074 Pending Note',
+                entity_type: 'location',
+                x: 1200,
+                y: 900,
+                description: 'Disposable mock request for campaign transition.',
+                reason: 'QA fixture only',
+                request_status: 'pending',
+                moderator_user_id: null,
+                moderation_note: null,
+                converted_entity_id: null,
+                moderated_at: null,
+                created_at: '2026-10-15T10:00:00.000Z',
+                updated_at: '2026-10-15T10:00:00.000Z',
+              },
+            ]
+          : [];
+      await route.fulfill({
+        status: 200,
+        headers: collectionHeaders(records.length),
+        body: JSON.stringify(records),
       });
       return;
     }
@@ -796,3 +830,53 @@ test(
     }
   },
 );
+
+test('MAP-074 moderation note cancels, discards and never writes across campaign A to B', async ({
+  page,
+}) => {
+  let moderationWrites = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('/rpc/admin_moderate_public_request_v2')) {
+      moderationWrites += 1;
+    }
+  });
+  await configureBackend(page, { publicRequestFixture: true });
+  await page.goto('/');
+  await login(page);
+
+  const campaign = page.getByLabel('Campaña administrativa');
+  const note = page
+    .getByRole('heading', { name: 'MAP-074 Pending Note' })
+    .locator('..')
+    .getByLabel('Nota administrativa (opcional)');
+  await expect(note).toBeVisible();
+  await note.fill('Unsaved moderation note for campaign A');
+  await expect(page.locator('.admin-public-requests[data-admin-dirty]')).toBeVisible();
+
+  page.once('dialog', async (dialog) => {
+    expect(dialog.message()).toContain('cambios administrativos sin guardar');
+    await dialog.dismiss();
+  });
+  await campaign.selectOption(CAMPAIGN_B_ID);
+  await expect(campaign).toHaveValue(INITIAL_CAMPAIGN_ID);
+  await expect(campaign).toBeFocused();
+  await expect(note).toHaveValue('Unsaved moderation note for campaign A');
+  await expect(page.locator('[data-admin-campaign-session-context]')).toContainText(
+    'Editando campaña: Castigo Divino',
+  );
+
+  page.once('dialog', async (dialog) => {
+    expect(dialog.message()).toContain('cambios administrativos sin guardar');
+    await dialog.accept();
+  });
+  await campaign.selectOption(CAMPAIGN_B_ID);
+  await expect(campaign).toHaveValue(CAMPAIGN_B_ID);
+  await expect(rosterPlayer(page, 'Veyra')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'MAP-074 Pending Note' })).toHaveCount(0);
+  await expect(page.locator('.admin-public-requests[data-admin-dirty]')).toHaveCount(0);
+
+  await campaign.selectOption(INITIAL_CAMPAIGN_ID);
+  await expect(rosterPlayer(page, 'Skade')).toBeVisible();
+  await expect(note).toHaveValue('');
+  expect(moderationWrites).toBe(0);
+});
