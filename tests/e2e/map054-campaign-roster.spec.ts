@@ -763,7 +763,6 @@ test('campaign roster workspace stays usable without horizontal overflow from 32
   expectNoRuntimeErrors(errors);
 });
 
-
 test(
   'MAP-074 administrative banner, roster and entity editor remain reachable at mobile and desktop widths',
   async ({ page }) => {
