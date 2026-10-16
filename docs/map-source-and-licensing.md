@@ -194,7 +194,7 @@ no convierte cada `location` en una obligación de tener plano.
 | Lugar solicitado | Clasificación MAP-076 | Fuente prioritaria | Entrega a MAP-077/078 |
 | --- | --- | --- | --- |
 | Neverwinter | `HOLD_RIGHTS_UNCLEAR` | [Mike Schley — Neverwinter (Digital)](https://prints.mikeschley.com/p52230723/h12947418), cartografía © Wizards (2011) | **Ningún** `image_uri` habilitado; solo metadatos de investigación y posible `REMOTE_SINGLE_IMAGE` tras permiso escrito/expreso de hotlink |
-| City of Shadows | `NO_SUITABLE_SOURCE_FOUND` / identidad `AMBIGUOUS` | **Ninguna fuente seleccionada** | No asignar una imagen ni equiparar el topónimo con Skuld o Evernight sin evidencia narrativa/canónica interna |
+| City of Shadows | `NO_SUITABLE_SOURCE_FOUND` / identidad `HOMEBREW / CAMPAIGN-LOCAL` confirmada | No existe imagen adecuada | Ciudad propia de Castigo Divino donde están Ura y Skade; preparar en MAP-077/078 una `location` sin world coords, plano original y vínculo por campaña |
 
 **Motivo de la cautela.** La [Política de contenido de fans de Wizards](https://company.wizards.com/en/legal/fancontentpolicy)
 (publicada 2017; consultada 2026-10-16) permite sitios de fans gratuitos
@@ -224,7 +224,18 @@ Detalles verificables, ficha de cada candidato, matriz de permisos,
 fuentes, alternativas rechazadas y ejemplo exacto de metadatos en
 [docs/map-076-local-map-sources.md](map-076-local-map-sources.md).
 
-**Estado:** investigación documentada, **ningún mapa aprobado para cargar
-en público**; existe bloqueo de identidad de City of Shadows y bloqueo de
-derechos de Neverwinter. No se han insertado contextos, placements ni
-imágenes; no hay migración, cambio de snapshot ni publicación.
+**Estado:** investigación documentada, **ningún mapa aprobado para carga
+pública**. La identidad de City of Shadows se ha aclarado editorialmente:
+es el lugar de Ura y Skade en Castigo Divino, todavía sin entidad
+`location` ni cartografía propia. Neverwinter continúa pendiente de
+derechos de integración. No se han insertado entidades, contextos,
+placements ni imágenes; no hay migración, cambio de snapshot ni publicación.
+
+
+**Complemento de evidencia de Neverwinter (2026-10-16):** el
+[acuerdo estándar de Mike Schley](https://www.patreon.com/posts/epic-atlas-usage-91246385)
+restringe las descargas a usos personales no lucrativos y excluye
+la distribución y los derivados. Su aplicabilidad al mapa específico
+y la cadena de derechos con Wizards deben confirmarse; no se puede
+considerar aprobada una integración en el Atlas por el simple pago
+de una descarga. Consultar el dossier MAP-076.

@@ -105,6 +105,18 @@ https://jaredblando.com/sword-coast-adventurers-guide/p/neverwinter-city-map .
 N3 fuente oficial:
 https://www.dndbeyond.com/posts/1485-take-a-tour-of-these-popular-locations-in-the .
 
+**FACT — acuerdo estándar de uso publicado por Mike Schley:**
+[The Epic Atlas: Usage Agreement (2023)](https://www.patreon.com/posts/epic-atlas-usage-91246385)
+prevé reproducción personal no lucrativa y **prohíbe distribución y
+derivados**. No se ha acreditado que se extienda o prevalezca sobre
+una licencia específica del mapa Wizards 2011, ni se puede inferir
+que la compra conceda uso público para el Atlas. Pedir permiso al
+titular con facultad suficiente y comprobar si requiere aprobación
+de Wizards. La [política de fans de Wizards](https://company.wizards.com/en/legal/fancontentpolicy)
+indica que las solicitudes fuera de la política pueden dirigirse al
+[soporte oficial](https://support.wizards.com); el silencio no
+constituye aprobación.
+
 **UNKNOWN / test de red:** no se hizo petición `HEAD`/descarga al raster
 original ni ensayo desde navegador del Atlas. `HTTP status` binario,
 `Content-Type`, redirects, `Cache-Control`, cabeceras anti-hotlink,
@@ -194,19 +206,24 @@ como alias literal *City of Shadows* en el corpus revisado.
 La cercanía temática entre Neverwinter y una ciudad sombría no
 constituye correspondencia narrativa.
 
-**PROJECT ASSESSMENT:** identidad solicitada = `AMBIGUOUS`
-(opción D del contrato). No hay prueba suficiente para elegir
-`CANONICAL`/Skuld, `ALIAS`/Evernight o `HOMEBREW`.
-Bloqueo **narrativo**, no operativo ni técnico. No apropiarse de un
-mapa de otra ciudad. Es admisible que finalmente sea homebrew; en
-ese caso no habría mapa oficial automáticamente aplicable.
+**FACT — aclaración editorial del responsable, 2026-10-16:**
+«City of Shadows» es una localización propia de la campaña **Castigo Divino**
+donde están **Ura y Skade**. No tiene todavía entidad `location` ni mapa
+geográfico acreditado en el repositorio. Esta identificación procede del
+responsable de la campaña; no equivale a Skuld ni Evernight.
+
+**PROJECT ASSESSMENT:** identidad resuelta como
+`HOMEBREW / CAMPAIGN-LOCAL`. Persiste `NO_SUITABLE_SOURCE_FOUND`
+para **su cartografía**: no se ha acreditado ningún raster reutilizable
+que represente el lugar de Castigo Divino. Se prefiere un plano
+propio o explícitamente licenciado, nunca el de otra ciudad.
 
 ### 3.2 Candidatos examinados
 
 | Campo | C1 — Skuld, City of Shadows | C2 — Evernight, reflejo oscuro de Neverwinter | C3 — fondo original/neutro futuro |
 | --- | --- | --- | --- |
-| Clasificación | `REJECTED` **para esta ubicación**, pendiente identidad | `REJECTED` **para esta ubicación**, pendiente identidad | `APPROVED_WITH_CONDITIONS` **como estrategia**, NO asset existente |
-| Sitio/lugar representado | Skuld (Mulhorand) | Evernight (Shadowfell) | El que se defina editorialmente |
+| Clasificación | `REJECTED` para este lugar (Skuld es otra ciudad) | `REJECTED` para este lugar (Evernight es otra ciudad) | `APPROVED_WITH_CONDITIONS` **como estrategia**, NO asset existente |
+| Sitio/lugar representado | Skuld (Mulhorand) — no es City of Shadows de la campaña | Evernight (Shadowfell) — no es City of Shadows de la campaña | City of Shadows (Castigo Divino) |
 | Autor/cartógrafo | `UNKNOWN` | Mike Schley | Autor futuro `UNKNOWN` |
 | Editor/titular | TSR Inc. original; derechos vigentes de raster `UNKNOWN` | © Wizards of the Coast, obra original | El proyecto si se crea íntegramente o titular según licencia |
 | Obra original | *Old Empires* (1990); *Forgotten Realms Interactive Atlas* (1999) citado como fuente secundaria | *Neverwinter Campaign Setting* (2011), reverso del póster | Por crear |
@@ -229,30 +246,46 @@ origen primario/derechos se clasifica `REJECTED / provenance unavailable`.
 ### 3.3 Decisión City of Shadows
 
 ```text
-IDENTIFICATION: No confirmada internamente. Coincidencia externa con alias Skuld;
-                Evernight es otra ciudad sin equivalencia demostrada.
-CANONICAL / ALIAS / HOMEBREW / AMBIGUOUS: AMBIGUOUS
-DECISION: NO_SUITABLE_SOURCE_FOUND
-PRIMARY SOURCE: NONE
-AUTHOR / RIGHTS HOLDER: UNKNOWN
-ORIGINAL WORK: UNKNOWN
-SOURCE URL: NULL (no hay fuente confirmada que corresponda al lugar del proyecto)
+IDENTIFICATION: Lugar propio de Castigo Divino donde están Ura y Skade;
+                confirmado por el responsable de la campaña (2026-10-16).
+CANONICAL / ALIAS / HOMEBREW / AMBIGUOUS: HOMEBREW / CAMPAIGN-LOCAL
+DECISION: NO_SUITABLE_SOURCE_FOUND (para raster existente)
+PRIMARY SOURCE: NONE; crear mapa original o conseguir licencia explícita.
+AUTHOR / RIGHTS HOLDER: PENDING (según obra futura).
+ORIGINAL WORK: PENDING.
+SOURCE URL: NULL
 IMAGE URL: NULL / PENDING
-LOADING STRATEGY: PENDING; si es homebrew, futura SELF_HOSTED_SINGLE_IMAGE original/licenciada
-ATTRIBUTION: PENDING / UNKNOWN
-SELF-HOST ALLOWED: UNKNOWN (NO ejecutar).
-TRANSFORM ALLOWED: UNKNOWN (NO ejecutar).
-TILES ALLOWED: UNKNOWN (NO ejecutar).
-TECHNICAL METADATA: UNKNOWN hasta existencia/verificación del original.
-FALLBACK: superficie neutra creada por el proyecto, sin reutilizar otro mapa.
-RISKS: identidad narrativa, anacronismo y derechos de terceros.
+LOADING STRATEGY: PENDING; futuro SELF_HOSTED_SINGLE_IMAGE propio/licenciado.
+ATTRIBUTION: PENDING, según autor.
+SELF-HOST ALLOWED: UNKNOWN, hasta disponer de original/licencia.
+TRANSFORM ALLOWED: UNKNOWN, hasta disponer de original/licencia.
+TILES ALLOWED: UNKNOWN, hasta disponer de original/licencia.
+TECHNICAL METADATA: UNKNOWN, hasta crear/verificar el plano.
+FALLBACK: superficie neutra original creada por el proyecto.
+RISKS: no existe aún arte cartográfico ni vínculo de entrada implementado.
 ```
 
-**Desbloqueo mínimo de identidad:** un registro público o instrucción
-editorial con `campaign/location entity ID`, nombre/alias, mundo/región
-y si es canónica, alias o homebrew. No exponer contenidos privados
-para resolverlo. Después se abre investigación concreta del plano
-correspondiente y de su licencia.
+**Handoff de implementación MAP-077/078 (no ejecutar en MAP-076):**
+
+1. Crear o reutilizar una entidad canónica `map_entities` de tipo
+   `location` para «City of Shadows» en **Castigo Divino**. Si no
+   tiene ubicación en el mundo, `world_map_enabled=false` y
+   `x/y/geometry=NULL`; no inventar coordenadas ni una entrada global
+   de `geographic_names`. Mantener ID estable y no duplicar la entidad.
+2. Crear `map_context` solo tras disponer de un plano original o
+   licenciado, con dimensiones `CRS.Simple` y procedencia verificadas.
+   Hasta entonces, `image_uri=NULL` y `loading_strategy=NULL`.
+3. Añadir el vínculo **por campaña** entre `location` y contexto,
+   según ADR-0008 / MAP-077. La tabla propuesta
+   `campaign_location_map_context_links` todavía **no existe**.
+4. Situar a Ura y Skade mediante `entity_map_placements` dentro
+   de esa campaña reutilizando sus entidades, sin duplicar fichas.
+   Respetar sus estados editoriales, audience y privacidad Master.
+5. No publicar entidades `local-only` hasta actualizar lector y RLS
+   conjuntamente en MAP-079. El frontend 1.2 no interpreta ese contenido.
+
+No se confirman aquí IDs de campaña/entidades, coordenadas, imagen
+o permiso; la aclaración de identidad **no autoriza escrituras remotas**.
 
 ## 4. Metadatos de MAP-075 listos para persistencia futura (NO SQL)
 
@@ -282,15 +315,15 @@ attribution: "Cartografía: Mike Schley. © Wizards of the Coast. Atlas no ofici
 image_uri: null
 ```
 
-**City of Shadows, borrador seguro (identidad sin confirmar):**
+**City of Shadows, borrador seguro (identidad confirmada, arte por crear):**
 
 ```yaml
 source_url: null
 rights_holder: null
 license_notes: >-
-  NO_SUITABLE_SOURCE_FOUND (2026-10-16). Identidad AMBIGUOUS:
-  Skuld es un homónimo/alias canónico externo, Evernight es otro lugar.
-  No seleccionar mapa antes de vínculo editorial verificable.
+  NO_SUITABLE_SOURCE_FOUND (2026-10-16). Ubicación HOMEBREW de Castigo
+  Divino donde están Ura y Skade. No tiene plano acreditado. No usar mapas
+  de Skuld ni Evernight; crear/licenciar un plano original en MAP-077/078.
 loading_strategy: null
 attribution: null
 image_uri: null
@@ -321,8 +354,9 @@ convierte por sí mismo una fuente `HOLD` en material publicable.
 
 ### Handoff MAP-077/078
 
-1. Resolver **primero** la identidad narrativa de City of Shadows,
-   especialmente si se pretendía Skuld, Evernight o un lugar homebrew.
+1. Identidad narrativa de City of Shadows **resuelta**: ubicación propia
+   de Castigo Divino donde están Ura y Skade. La entidad y el mapa
+   son tareas futuras de MAP-077/078; respetar MAP-079 y la RLS.
 2. Para Neverwinter conseguir evidencia **escrita/aplicable** del permiso
    de hosting/embedding desde el recurso exacto. No basta el checkout.
 3. Solo tras fuente autorizada verificar el archivo acordado:
@@ -335,6 +369,7 @@ convierte por sí mismo una fuente `HOLD` en material publicable.
    de MAP-079.
 
 **Veredicto documental:** `BLOCKED` para **aprobar/publicar imágenes**
-por incertidumbre de licencia y por la identidad de City of Shadows.
+por incertidumbre de licencia de Neverwinter y ausencia de raster
+original/licenciado para City of Shadows; su identidad ya está resuelta.
 El dossier puede someterse a revisión independiente sin adelantar
 ingesta de datos ni alterar producción.
