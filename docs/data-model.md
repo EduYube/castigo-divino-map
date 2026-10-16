@@ -445,3 +445,21 @@ Todo texto se almacena como texto plano. Markdown o contenido enriquecido requer
 ## Modelo consolidado v1.1
 
 El modelo v1.1 conserva IDs/slugs históricos y añade `campaign_id` a los dominios dependientes de campaña, roster de jugadores, asociaciones narrativas, geometría JSON canónica y lifecycle de misión/peligro. La geografía física permanece global. Las relaciones cross-campaign se impiden en PostgreSQL mediante constraints/FKs compuestas y RLS. El rehearsal de MAP-066 valida que el upgrade desde el último baseline v1.0 no recrea contenido.
+
+
+## Extensión MAP-075 — superficies físicas opcionales y placements
+
+La cartografía local es global y opcional, con jerarquía en
+`public.map_contexts`; las apariciones editoriales son campaign-scoped en
+`public.entity_map_placements`. Una entidad canónica conserva su ID y relaciones
+aunque aparezca en varias superficies. PK `(campaign_id,map_context_id,entity_id)`
+y FK compuesta con `map_entities` hacen imposible un placement de otra campaña.
+`organization` carece de cualquier placement. Los bounds específicos del contexto
+parametrizan el normalizador MAP-060 de point/polygon.
+
+El world map legacy sigue implícito y no recibe migración de coordenadas.
+`world_map_enabled` es true por defecto; al ser false, una nueva entidad espacial
+debe tener world x/y/geometry NULL y solo geometría mediante placements. El
+lector público v1.2 no muestra entidades sin world geometry hasta MAP-079.
+Consulta [ADR 0008](adr/0008-map-contexts-and-campaign-scoped-placements.md)
+y [contrato MAP-075](map-075-local-map-contexts.md).
