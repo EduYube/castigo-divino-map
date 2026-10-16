@@ -12,9 +12,24 @@ exception when others then
 end;
 $$;
 
-select plan(38);
+select plan(45);
 
 select has_table('public','map_contexts','physical map surfaces are global');
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon', 'private.normalize_map_context_geometry(public.entity_type,jsonb,double precision,double precision)', 'EXECUTE'
+  ), 'anon cannot call local geometry normalizer'
+);
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated', 'private.enforce_entity_map_placement()', 'EXECUTE'
+  ), 'authenticated callers cannot invoke internal trigger functions'
+);
+select ok(
+  pg_catalog.has_function_privilege(
+    'authenticated', 'private.normalize_map_context_geometry(public.entity_type,jsonb,double precision,double precision)', 'EXECUTE'
+  ), 'authenticated admin writes may use the guarded normalizer'
+);
 select has_table('public','entity_map_placements','campaign-scoped placements exist');
 select fk_ok('public','entity_map_placements',array['entity_id','campaign_id'],
   'public','map_entities',array['id','campaign_id'],'composite campaign FK is authoritative');
@@ -41,6 +56,14 @@ select ok(pg_temp.map075_rejects($q$
   insert into public.map_contexts(id,slug,name,width,height)
   values('map-map075-badwidth','map075-badwidth','Bad',0,100)
 $q$,'23514'),'zero dimensions rejected');
+select ok(pg_temp.map075_rejects($q$
+  insert into public.map_contexts(id,slug,name,width,height)
+  values('invalid-id','map075-invalid','Bad ID',100,100)
+$q$,'23514'),'map context ID format is enforced');
+select ok(pg_temp.map075_rejects($q$
+  insert into public.map_contexts(id,slug,name,width,height)
+  values('map-map075-invalidslug','Invalid Slug','Bad slug',100,100)
+$q$,'23514'),'map context slug format is enforced');
 select ok(pg_temp.map075_rejects($q$
   insert into public.map_contexts(id,slug,name,width,height)
   values('map-map075-inf','map075-inf','Inf','Infinity'::float8,100)
@@ -110,7 +133,9 @@ values
 ('00000000-0000-4000-8000-000000000053','map-map075-local','place-map075-onlylocal',
  '{"kind":"point","coordinates":{"x":11,"y":12}}','published'),
 ('00000000-0000-4000-8000-000000000068','map-map075-local','place-map075-campaignb',
- '{"kind":"point","coordinates":{"x":22,"y":23}}','draft');
+ '{"kind":"point","coordinates":{"x":22,"y":23}}','draft'),
+('00000000-0000-4000-8000-000000000053','map-map075-draft','entity-map075-char',
+ '{"kind":"point","coordinates":{"x":2,"y":3}}','published');
 
 select is((select geometry from public.entity_map_placements where entity_id='place-map075-local'),
  '{"kind":"polygon","vertices":[{"x":20,"y":20},{"x":40,"y":20},{"x":40,"y":60},{"x":20,"y":60}]}'::jsonb,
@@ -152,6 +177,11 @@ select ok(pg_temp.map075_rejects($q$
  where entity_id='entity-map075-char'
 $q$,'23514'),'local dimensions, not 3600x2329, bound every point');
 select ok(pg_temp.map075_rejects($q$
+ update public.entity_map_placements
+ set geometry='{"kind":"polygon","vertices":[{"x":20,"y":20},{"x":129,"y":40},{"x":20,"y":50}]}'
+ where entity_id='place-map075-local'
+$q$,'23514'),'polygons also enforce local image bounds');
+select ok(pg_temp.map075_rejects($q$
  update public.entity_map_placements set x=99 where entity_id='entity-map075-char'
 $q$,'23514'),'derived representative x cannot be hand-edited');
 select ok(pg_temp.map075_rejects($q$
@@ -165,6 +195,8 @@ select is((select count(*) from public.entity_map_placements where map_context_i
  2::bigint,'anon sees only published public world-enabled entities and placements');
 select is((select count(*) from public.entity_map_placements where entity_id='entity-map075-master'),
  0::bigint,'Master content never leaks via public placements');
+select is((select count(*) from public.entity_map_placements where map_context_id='map-map075-draft'),
+ 0::bigint,'published placement never exposes a draft map context');
 select is((select count(*) from public.map_entities where id='place-map075-onlylocal'),
  0::bigint,'legacy v1.2 world reader does not receive local-only coordinates');
 
@@ -177,10 +209,14 @@ select ok(pg_temp.map075_rejects($q$
  insert into public.map_contexts(id,slug,name,width,height) values
  ('map-map075-notadmin','map075-notadmin','Unauthorised',10,10)
 $q$),'authenticated non-admin cannot write contexts');
-select ok(pg_temp.map075_rejects($q$
- update public.entity_map_placements set publication_status='draft'
- where entity_id='entity-map075-char'
-$q$),'authenticated non-admin cannot edit placements');
+select is(
+  (with changed as (
+    update public.entity_map_placements set publication_status='draft'
+    where entity_id='entity-map075-char'
+    returning 1
+  ) select pg_catalog.count(*) from changed),
+  0::bigint, 'authenticated non-admin updates cannot affect protected placements'
+);
 
 reset role;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
