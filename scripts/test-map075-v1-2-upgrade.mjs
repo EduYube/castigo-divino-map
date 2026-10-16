@@ -2,24 +2,60 @@ import { spawnSync } from 'node:child_process';
 
 const CONTAINER = 'supabase_db_castigo-divino-map';
 const NPX = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+
 function run(command, args, label, input) {
-  const output = spawnSync(command, args, { encoding: 'utf8', windowsHide: true, input });
+  const output = spawnSync(command, args, {
+    encoding: 'utf8',
+    windowsHide: true,
+    input,
+  });
   if (output.error || output.status !== 0) {
-    throw new Error(`MAP-075 ${label}: ${output.error?.message ?? output.stderr ?? output.status}`);
+    throw new Error(
+      `MAP-075 ${label}: ${output.error?.message ?? output.stderr ?? output.status}`,
+    );
   }
   return output.stdout.trim();
 }
+
 function psql(sql) {
-  return run('docker', [
-    'exec', '--interactive', '--user', 'postgres', CONTAINER, 'psql',
-    '--username', 'postgres', '--dbname', 'postgres', '--no-psqlrc',
-    '--set=ON_ERROR_STOP=1', '--quiet', '--tuples-only', '--no-align',
-  ], 'psql', sql);
+  return run(
+    'docker',
+    [
+      'exec',
+      '--interactive',
+      '--user',
+      'postgres',
+      CONTAINER,
+      'psql',
+      '--username',
+      'postgres',
+      '--dbname',
+      'postgres',
+      '--no-psqlrc',
+      '--set=ON_ERROR_STOP=1',
+      '--quiet',
+      '--tuples-only',
+      '--no-align',
+    ],
+    'psql',
+    sql,
+  );
 }
-run(NPX, [
-  '--no-install', 'supabase', 'db', 'reset', '--local',
-  '--version', '20261008180000', '--no-seed',
-], 'reset to v1.2 final migration');
+
+run(
+  NPX,
+  [
+    '--no-install',
+    'supabase',
+    'db',
+    'reset',
+    '--local',
+    '--version',
+    '20261008180000',
+    '--no-seed',
+  ],
+  'reset to v1.2 final migration',
+);
 
 psql(`
 insert into public.categories(campaign_id,id,slug,name,description,publication_status)
@@ -70,12 +106,19 @@ select pg_catalog.jsonb_build_object(
 )::text;
 `;
 const before = psql(check);
-run(NPX, ['--no-install','supabase','migration','up','--local'], 'migrate to MAP-075');
+run(
+  NPX,
+  ['--no-install', 'supabase', 'migration', 'up', '--local'],
+  'migrate to MAP-075',
+);
 const after = psql(check);
 if (before !== after) {
-  throw new Error(`MAP-075 changed v1.2 canonical rows or editorial timestamps:\nbefore=${before}\nafter=${after}`);
+  throw new Error(
+    `MAP-075 changed v1.2 canonical rows or editorial timestamps:\nbefore=${before}\nafter=${after}`,
+  );
 }
-const newTables = JSON.parse(psql(`
+const newTables = JSON.parse(
+  psql(`
 select pg_catalog.jsonb_build_object(
  'contexts',(select count(*) from public.map_contexts),
  'placements',(select count(*) from public.entity_map_placements),
@@ -83,9 +126,16 @@ select pg_catalog.jsonb_build_object(
    where not world_map_enabled),
  'migration_applied',pg_catalog.to_regclass('public.entity_map_placements') is not null
 )::text;
-`));
-if (newTables.contexts !== 0 || newTables.placements !== 0 ||
-    newTables.world_default !== 0 || !newTables.migration_applied) {
+`),
+);
+if (
+  newTables.contexts !== 0 ||
+  newTables.placements !== 0 ||
+  newTables.world_default !== 0 ||
+  !newTables.migration_applied
+) {
   throw new Error(`MAP-075 expansion invariant failed: ${JSON.stringify(newTables)}`);
 }
-process.stdout.write('MAP-075 v1.2 -> optional maps rehearsal passed; old rows unchanged.\\n');
+process.stdout.write(
+  'MAP-075 v1.2 -> optional maps rehearsal passed; old rows unchanged.\\n',
+);

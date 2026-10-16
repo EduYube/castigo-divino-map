@@ -365,6 +365,22 @@ begin
 end;
 $$;
 
+-- Acquire the hierarchy lock *before* UPDATE has locked any individual row,
+-- preventing crossed A->B / B->A attempts from deadlocking.
+create function private.lock_map_context_hierarchy()
+returns trigger language plpgsql security invoker set search_path = ''
+as $
+begin
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('map-contexts-hierarchy', 0)
+  );
+  return null;
+end;
+$;
+create trigger "05_map_context_hierarchy_lock"
+before insert or update on public.map_contexts
+for each statement execute function private.lock_map_context_hierarchy();
+
 create function private.enforce_map_context()
 returns trigger language plpgsql security invoker set search_path = ''
 as $$
@@ -382,11 +398,8 @@ begin
         message = 'map dimensions cannot change while placements exist';
     end if;
   end if;
-  -- A global lock serializes concurrent hierarchy mutations. This is limited
-  -- to rare editorial operations, never to geometry placements.
-  perform pg_catalog.pg_advisory_xact_lock(
-    pg_catalog.hashtextextended('map-contexts-hierarchy', 0)
-  );
+  -- Statement-level lock acquired before row locks prevents opposed-parent
+  -- updates from deadlocking when validating an ancestor.
   if new.parent_id is not null then
     if new.parent_id = new.id then
       raise exception using errcode = '23514', message = 'map context cannot parent itself';
@@ -546,6 +559,7 @@ grant execute on function private.normalize_map_context_geometry(
   public.entity_type,jsonb,double precision,double precision
 ) to authenticated;
 revoke all on function private.enforce_map_context() from public, anon, authenticated;
+revoke all on function private.lock_map_context_hierarchy() from public, anon, authenticated;
 revoke all on function private.enforce_entity_map_placement() from public, anon, authenticated;
 
 comment on column public.map_entities.world_map_enabled is

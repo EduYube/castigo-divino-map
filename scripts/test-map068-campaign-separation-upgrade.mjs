@@ -16,6 +16,14 @@ const MAP069_HIDDEN = new URL(
   '../supabase/migrations/20261008180000_add_nonspatial_organizations.sql.rehearsal-hidden',
   import.meta.url,
 );
+const MAP075_MIGRATION = new URL(
+  '../supabase/migrations/20261016110000_add_optional_local_map_contexts.sql',
+  import.meta.url,
+);
+const MAP075_HIDDEN = new URL(
+  '../supabase/migrations/20261016110000_add_optional_local_map_contexts.sql.rehearsal-hidden',
+  import.meta.url,
+);
 
 function fail(message) {
   throw new Error(`MAP-068 campaign separation rehearsal failed: ${message}`);
@@ -110,6 +118,7 @@ function sql(query) {
 }
 
 renameSync(MAP069_MIGRATION, MAP069_HIDDEN);
+renameSync(MAP075_MIGRATION, MAP075_HIDDEN);
 try {
   resetToBase();
 
@@ -524,5 +533,6 @@ where entity_id='entity-agamen' and player_id='player-veyra';`);
     'MAP-068 rehearsal passed: 19 audited dispositions removed (18 cross-campaign + 1 self); stable Veyra identity/history preserved.',
   );
 } finally {
+  renameSync(MAP075_HIDDEN, MAP075_MIGRATION);
   renameSync(MAP069_HIDDEN, MAP069_MIGRATION);
 }
