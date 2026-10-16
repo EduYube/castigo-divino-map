@@ -210,14 +210,13 @@ select ok(pg_temp.map075_rejects($q$
  insert into public.map_contexts(id,slug,name,width,height) values
  ('map-map075-notadmin','map075-notadmin','Unauthorised',10,10)
 $q$),'authenticated non-admin cannot write contexts');
-select is(
-  (with changed as (
-    update public.entity_map_placements set publication_status='draft'
-    where entity_id='entity-map075-char'
-    returning 1
-  ) select pg_catalog.count(*) from changed),
-  0::bigint, 'authenticated non-admin updates cannot affect protected placements'
-);
+with changed as (
+  update public.entity_map_placements set publication_status='draft'
+  where entity_id='entity-map075-char'
+  returning 1
+)
+select is((select pg_catalog.count(*) from changed),
+  0::bigint, 'authenticated non-admin updates cannot affect protected placements');
 
 reset role;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
