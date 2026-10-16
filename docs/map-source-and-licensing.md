@@ -181,3 +181,50 @@ Con permiso suficiente, la solución preferida será una pirámide de mosaicos e
 - El titular puede cambiar la política o pedir la retirada del contenido.
 - La autoría cartográfica debe conservarse, pero no sustituye el aviso legal exigido por Wizards.
 - La validación legal definitiva requeriría autorización escrita o revisión jurídica profesional.
+
+---
+
+## MAP-076 / v1.3 — Mapas locales opcionales (revisión 2026-10-16)
+
+Esta sección **añade** la investigación de #197; no altera la decisión histórica del
+mapa mundial Sword Coast/Beta 0.1, su ADR ni su asset. Los mapas locales son
+**opcionales**: que Neverwinter y City of Shadows sean objetivos iniciales
+no convierte cada `location` en una obligación de tener plano.
+
+| Lugar solicitado | Clasificación MAP-076 | Fuente prioritaria | Entrega a MAP-077/078 |
+| --- | --- | --- | --- |
+| Neverwinter | `HOLD_RIGHTS_UNCLEAR` | [Mike Schley — Neverwinter (Digital)](https://prints.mikeschley.com/p52230723/h12947418), cartografía © Wizards (2011) | **Ningún** `image_uri` habilitado; solo metadatos de investigación y posible `REMOTE_SINGLE_IMAGE` tras permiso escrito/expreso de hotlink |
+| City of Shadows | `NO_SUITABLE_SOURCE_FOUND` / identidad `AMBIGUOUS` | **Ninguna fuente seleccionada** | No asignar una imagen ni equiparar el topónimo con Skuld o Evernight sin evidencia narrativa/canónica interna |
+
+**Motivo de la cautela.** La [Política de contenido de fans de Wizards](https://company.wizards.com/en/legal/fancontentpolicy)
+(publicada 2017; consultada 2026-10-16) permite sitios de fans gratuitos
+con condiciones; sus [Términos](https://company.wizards.com/en/legal/terms)
+siguen restringiendo copias, modificaciones, derivados y ciertas
+vinculaciones a imágenes salvo autorización expresa. La autorización para
+mostrar arte en un sitio de fans **no demuestra por sí sola** que Zenfolio/
+el comerciante permita hotlink, que se pueda comprar una licencia para
+publicación pública o que se puedan generar tiles. La tienda del artista
+vende mapas para uso en partidas o exhibición doméstica; no se ha
+acreditado una licencia para el Atlas.
+
+**Fallback de ambos mapas:** superficie neutra creada desde cero por el
+proyecto, cartografía original futura o asset adquirido **con licencia
+comprobada** de alojamiento, modificación y redistribución. No copiar mapas
+de Pinterest, wikis, plataformas de terceros o ventas de uso personal.
+
+**Regla de datos MAP-075:** la migración real
+`20261016110000_add_optional_local_map_contexts.sql` admite
+`loading_strategy` solo `remote|bundled`, no los rótulos conceptuales
+`REMOTE_SINGLE_IMAGE`/`SELF_HOSTED_SINGLE_IMAGE`/`TILED`. Con
+`image_uri=NULL` también debe ser `loading_strategy=NULL`. Las
+dimensiones de imagen y el id del futuro contexto se decidirán **al
+aprobar** un recurso y antes de persistir contextos/placements.
+
+Detalles verificables, ficha de cada candidato, matriz de permisos,
+fuentes, alternativas rechazadas y ejemplo exacto de metadatos en
+[docs/map-076-local-map-sources.md](map-076-local-map-sources.md).
+
+**Estado:** investigación documentada, **ningún mapa aprobado para cargar
+en público**; existe bloqueo de identidad de City of Shadows y bloqueo de
+derechos de Neverwinter. No se han insertado contextos, placements ni
+imágenes; no hay migración, cambio de snapshot ni publicación.
