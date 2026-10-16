@@ -143,7 +143,8 @@ select is((select geometry from public.entity_map_placements where entity_id='pl
 select is((select pg_catalog.jsonb_build_object('x',x,'y',y) from public.entity_map_placements
  where entity_id='place-map075-local'),'{"x":30,"y":40}'::jsonb,'polygon centre is deterministic');
 select is((select pg_catalog.jsonb_build_object('x',x,'y',y) from public.entity_map_placements
- where entity_id='entity-map075-char'),'{"x":0,"y":0}'::jsonb,'point zero/zero remains legal');
+ where entity_id='entity-map075-char' and map_context_id='map-map075-local'),
+ '{"x":0,"y":0}'::jsonb,'point zero/zero remains legal');
 select is((select count(*) from public.map_entities where id='place-map075-local' and x=12 and y=13),
  1::bigint,'placement never changes canonical entity world geometry');
 select ok(pg_temp.map075_rejects($q$

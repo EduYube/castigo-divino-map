@@ -549,8 +549,25 @@ with check ((select private.is_admin()));
 revoke all on public.map_contexts, public.entity_map_placements from public, anon, authenticated;
 grant select on public.map_contexts to anon, authenticated;
 grant select on public.entity_map_placements to anon, authenticated;
-grant insert, update, delete on public.map_contexts to authenticated;
-grant insert, update, delete on public.entity_map_placements to authenticated;
+-- Column-scoped writes preserve the pre-v1.3 ACL contract: even an
+-- authenticated admin cannot supply identifiers on UPDATE or forge lifecycle
+-- timestamps. Internal lifecycle triggers derive those columns.
+grant insert (
+  id, slug, name, parent_id, width, height, publication_status,
+  image_uri, loading_strategy, source_url, rights_holder, attribution, license_notes
+) on public.map_contexts to authenticated;
+grant update (
+  name, parent_id, width, height, publication_status,
+  image_uri, loading_strategy, source_url, rights_holder, attribution, license_notes
+) on public.map_contexts to authenticated;
+grant delete on public.map_contexts to authenticated;
+grant insert (
+  campaign_id, map_context_id, entity_id, geometry, publication_status
+) on public.entity_map_placements to authenticated;
+grant update (
+  map_context_id, geometry, publication_status
+) on public.entity_map_placements to authenticated;
+grant delete on public.entity_map_placements to authenticated;
 
 revoke all on function private.normalize_map_context_geometry(
   public.entity_type,jsonb,double precision,double precision
