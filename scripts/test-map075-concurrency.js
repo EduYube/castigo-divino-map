@@ -119,7 +119,8 @@ async function runRace(label, firstSql, secondSql, marker, error, verify) {
     if (/deadlock detected/iu.test(first.output + second.output)) {
       fail(label + ' deadlock detected: ' + second.output);
     }
-    if (psql(verify) !== 'true') fail(label + ' committed state violates invariant');
+    const observed = psql(verify);
+    if (observed !== 't') fail(label + ' committed state violates invariant: ' + observed);
     console.log('ok - MAP-075 ' + label + ': serialized, no deadlock');
   } finally {
     stop(first);
