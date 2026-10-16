@@ -62,6 +62,6 @@ No se ejecuta migración remota ni se regenera snapshot; v1.2 permanece
 
 `supabase/tests/database/041_map075_local_map_contexts.test.sql` comprueba
 jerarquía, geometría, ACL, aislamiento, publicación y caso local-only.
-`scripts/test-map075-v1-2-upgrade.mjs` ensaya upgrade sobre fixtures v1.2.
+`scripts/test-map075-v1-2-upgrade.cjs` ensaya upgrade sobre fixtures v1.2.
 `npm run supabase:db:validate` incluye ambas rutas en CI. Requiere
 stack Supabase local; no usar `supabase db push` contra producción.

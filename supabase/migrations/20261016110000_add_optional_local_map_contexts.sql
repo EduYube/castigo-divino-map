@@ -369,14 +369,14 @@ $$;
 -- preventing crossed A->B / B->A attempts from deadlocking.
 create function private.lock_map_context_hierarchy()
 returns trigger language plpgsql security invoker set search_path = ''
-as $
+as $$
 begin
   perform pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended('map-contexts-hierarchy', 0)
   );
   return null;
 end;
-$;
+$$;
 create trigger "05_map_context_hierarchy_lock"
 before insert or update on public.map_contexts
 for each statement execute function private.lock_map_context_hierarchy();

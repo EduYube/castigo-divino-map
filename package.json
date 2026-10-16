@@ -57,7 +57,7 @@
     "supabase:db:test:map066:upgrade": "node scripts/test-map066-v1-v1-rehearsal.mjs",
     "supabase:db:test:map068:upgrade": "node scripts/test-map068-campaign-separation-upgrade.mjs",
     "supabase:db:test:map069:upgrade": "node scripts/test-map069-organization-upgrade.mjs",
-    "supabase:db:test:map075:upgrade": "node scripts/test-map075-v1-2-upgrade.mjs"
+    "supabase:db:test:map075:upgrade": "node scripts/test-map075-v1-2-upgrade.cjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4"

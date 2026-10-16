@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process';
+const { spawnSync } = require('node:child_process');
 
 const CONTAINER = 'supabase_db_castigo-divino-map';
 const NPX = process.platform === 'win32' ? 'npx.cmd' : 'npx';
