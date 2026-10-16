@@ -12,7 +12,7 @@ exception when others then
 end;
 $$;
 
-select plan(45);
+select plan(55);
 
 select has_table('public','map_contexts','physical map surfaces are global');
 select ok(
@@ -189,6 +189,49 @@ select ok(pg_temp.map075_rejects($q$
  update public.map_contexts set width=12 where id='map-map075-local'
 $q$,'23514'),'bounds cannot silently invalidate existing placements');
 
+
+-- Regression MAP075-REV-01: JSON null or omitted fields must produce 23514.
+select ok(pg_temp.map075_rejects($q$
+ update public.entity_map_placements
+ set geometry='{"kind":"polygon","vertices":[{"x":20,"y":20},{"x":40,"y":20},{"x":40,"y":null}]}'
+ where entity_id='place-map075-local' and map_context_id='map-map075-local'
+$q$,'23514'),'polygon UPDATE rejects JSON null y');
+select ok(pg_temp.map075_rejects($q$
+ update public.entity_map_placements
+ set geometry='{"kind":"polygon","vertices":[{"x":20,"y":20},{"x":40,"y":20},{"x":null,"y":40}]}'
+ where entity_id='place-map075-local' and map_context_id='map-map075-local'
+$q$,'23514'),'polygon UPDATE rejects JSON null x');
+select ok(pg_temp.map075_rejects($q$
+ update public.entity_map_placements
+ set geometry='{"kind":"polygon","vertices":[{"x":20,"y":20},{"x":40,"y":20},{"y":40}]}'
+ where entity_id='place-map075-local' and map_context_id='map-map075-local'
+$q$,'23514'),'polygon UPDATE rejects missing x');
+select ok(pg_temp.map075_rejects($q$
+ insert into public.entity_map_placements(campaign_id,map_context_id,entity_id,geometry)
+ values('00000000-0000-4000-8000-000000000053','map-map075-root','place-map075-local',
+ '{"kind":"polygon","vertices":[{"x":20,"y":20},{"x":40,"y":20},{"x":40}]}')
+$q$,'23514'),'polygon INSERT rejects missing y');
+select ok(pg_temp.map075_rejects($q$
+ update public.entity_map_placements
+ set geometry='{"kind":"point","coordinates":{"x":4,"y":null}}'
+ where entity_id='entity-map075-char' and map_context_id='map-map075-local'
+$q$,'23514'),'point UPDATE rejects JSON null y');
+select ok(pg_temp.map075_rejects($q$
+ update public.entity_map_placements
+ set geometry='{"kind":"point","coordinates":{"y":4}}'
+ where entity_id='entity-map075-char' and map_context_id='map-map075-local'
+$q$,'23514'),'point UPDATE rejects missing x');
+select ok(pg_temp.map075_rejects($q$
+ insert into public.entity_map_placements(campaign_id,map_context_id,entity_id,geometry)
+ values('00000000-0000-4000-8000-000000000053','map-map075-root','entity-map075-char',
+ '{"kind":"point","coordinates":{"x":null,"y":3}}')
+$q$,'23514'),'point INSERT rejects JSON null x');
+select ok(pg_temp.map075_rejects($q$
+ insert into public.entity_map_placements(campaign_id,map_context_id,entity_id,geometry)
+ values('00000000-0000-4000-8000-000000000053','map-map075-root','entity-map075-char',
+ '{"kind":"point","coordinates":{"x":3}}')
+$q$,'23514'),'point INSERT rejects missing y');
+
 set local role anon;
 select is((select count(*) from public.map_contexts where id like 'map-map075-%'),
  2::bigint,'anon sees published contexts only (not draft or archived)');
@@ -231,6 +274,18 @@ select lives_ok($q$
  update public.entity_map_placements
  set publication_status='draft' where entity_id='entity-map075-char'
 $q$,'admin can edit campaign placement editorial status');
+
+
+select ok(pg_temp.map075_rejects($q$
+ update public.entity_map_placements
+ set geometry='{"kind":"polygon","vertices":[{"x":20,"y":20},{"x":40,"y":20},{"x":40,"y":null}]}'
+ where entity_id='place-map075-local' and map_context_id='map-map075-local'
+$q$,'23514'),'authenticated admin UPDATE cannot persist null polygon coordinate');
+select ok(pg_temp.map075_rejects($q$
+ insert into public.entity_map_placements(campaign_id,map_context_id,entity_id,geometry)
+ values('00000000-0000-4000-8000-000000000053','map-map075-root','entity-map075-char',
+ '{"kind":"point","coordinates":{"y":3}}')
+$q$,'23514'),'authenticated admin INSERT rejects missing point coordinate');
 
 reset role;
 select * from finish();

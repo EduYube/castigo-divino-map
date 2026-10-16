@@ -242,6 +242,10 @@ begin
       raise exception using errcode = '23514', message = 'point geometry coordinates must be numeric';
     end;
 
+    if x_value is null or y_value is null then
+      raise exception using errcode = '23514', message = 'point geometry coordinates must be numeric';
+    end if;
+
     if x_value not between 0 and p_width
        or y_value not between 0 and p_height
        or x_value in ('NaN'::double precision, 'Infinity'::double precision, '-Infinity'::double precision)
@@ -286,6 +290,10 @@ begin
     exception when others then
       raise exception using errcode = '23514', message = 'polygon vertex coordinates must be numeric';
     end;
+
+    if x_value is null or y_value is null then
+      raise exception using errcode = '23514', message = 'polygon vertex coordinates must be numeric';
+    end if;
 
     if x_value not between 0 and p_width
        or y_value not between 0 and p_height

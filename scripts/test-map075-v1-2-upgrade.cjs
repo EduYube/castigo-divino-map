@@ -82,41 +82,60 @@ values ('00000000-0000-4000-8000-000000000053',
         'Relacionado','Relacionado');
 `);
 
-const check = `
-select pg_catalog.jsonb_build_object(
-  'campaigns', (select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(c) order by c.id)
-                from public.campaigns c),
-  'entities', (select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
-    'id',e.id,'slug',e.slug,'campaign_id',e.campaign_id,'x',e.x,'y',e.y,
-    'geometry',e.geometry,'type',e.entity_type,'status',e.publication_status,
-    'created_at',e.created_at,'updated_at',e.updated_at,
-    'published_at',e.published_at,'archived_at',e.archived_at
-  ) order by e.id) from public.map_entities e),
-  'relations', (select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(r) order by r.campaign_id,
-                  r.left_entity_id,r.right_entity_id) from public.entity_relations r),
-  'organizations', (select count(*) from public.map_entities
-                    where entity_type='organization' and x is null and y is null and geometry is null),
-  'players', (select count(*) from public.players),
-  'dispositions', (select count(*) from public.entity_player_dispositions),
-  'associations', (select count(*) from public.entity_player_associations),
-  'notes', (select count(*) from public.public_notes),
-  'requests', (select count(*) from public.public_requests),
-  'locations', (select count(*) from public.character_location_relations),
-  'geography_links', (select count(*) from public.campaign_geographic_entity_links)
-)::text;
-`;
+// Full-row comparison of ALL public tables in v1.2, not just sample columns or counts.
+// Ignore only the new MAP-075 column on map_entities.
+function publicTables() {
+  return psql("select tablename from pg_catalog.pg_tables where schemaname='public' order by tablename;")
+    .split(/\r?\n/u).filter(Boolean);
+}
+function sqlIdentifier(name) {
+  return '"' + name.replaceAll('"', '""') + '"';
+}
+function sqlLiteral(value) {
+  return "'" + value.replaceAll("'", "''") + "'";
+}
+function snapshotSql(tables) {
+  const fields = tables.map((name) => {
+    const row = name === 'map_entities'
+      ? "(pg_catalog.to_jsonb(legacy_row) - 'world_map_enabled')"
+      : 'pg_catalog.to_jsonb(legacy_row)';
+    return sqlLiteral(name) + ', (select coalesce(' +
+      'pg_catalog.jsonb_agg(' + row + ' order by (' + row + ')::text), ' +
+      "'[]'::jsonb) from public." + sqlIdentifier(name) + ' as legacy_row)';
+  });
+  return 'select pg_catalog.jsonb_build_object(' + fields.join(',\n') + ')::text;';
+}
+const tablesBefore = publicTables();
+if (tablesBefore.length < 10 ||
+    !tablesBefore.includes('categories') || !tablesBefore.includes('map_entities')) {
+  throw new Error('MAP-075 rehearsal did not find the v1.2 public tables.');
+}
+const check = snapshotSql(tablesBefore);
 const before = psql(check);
-run(
-  NPX,
-  ['--no-install', 'supabase', 'migration', 'up', '--local'],
-  'migrate to MAP-075',
-);
+run(NPX, ['--no-install', 'supabase', 'migration', 'up', '--local'], 'migrate to MAP-075');
+const tablesAfter = publicTables();
+const added = tablesAfter.filter((name) => !tablesBefore.includes(name));
+const removed = tablesBefore.filter((name) => !tablesAfter.includes(name));
+if (JSON.stringify(added) !== JSON.stringify(['entity_map_placements','map_contexts']) ||
+    removed.length > 0) {
+  throw new Error('MAP-075 changed legacy table inventory: ' + JSON.stringify({ added, removed }));
+}
 const after = psql(check);
 if (before !== after) {
-  throw new Error(
-    `MAP-075 changed v1.2 canonical rows or editorial timestamps:\nbefore=${before}\nafter=${after}`,
-  );
+  throw new Error('MAP-075 modified v1.2 public rows, content or timestamps:\n' +
+                  'before=' + before + '\nafter=' + after);
 }
+// A same-cardinality category mutation MUST be noticed by this comparator.
+// Do not change canonical data: the sensitivity probe is fully rolled back.
+const mutated = psql(
+  "begin;\nupdate public.categories set description='map075-mutation-probe' " +
+  "where id='category-map075-upgrade';\n" + check + "\nrollback;",
+);
+if (mutated === after) {
+  throw new Error('MAP-075 full-row comparator failed to detect content mutation.');
+}
+process.stdout.write('MAP-075 full-row comparator detected rolled-back mutation.\n');
+
 const newTables = JSON.parse(
   psql(`
 select pg_catalog.jsonb_build_object(
