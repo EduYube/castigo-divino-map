@@ -406,3 +406,16 @@ Se mantienen en `docs/future-improvements.md`.
 ## Extensión v1.1
 
 Sobre la arquitectura heredada de v1.0, v1.1 añade campaña como dimensión persistente, catálogo público particionado por campaña con geografía global compartida, catálogo Máster efímero scopeado en backend, geometría canónica `point | polygon`, tipos misión/peligro con lifecycle propio y capas de presentación no persistentes. El cambio de campaña purga primero estado privado y solo después carga el catálogo autorizado del nuevo scope.
+
+
+## Extensión v1.3 MAP-075 — límites cartográficos y aislamiento
+
+`map_contexts` representa geografía física compartida, sin campaña ni vínculo
+obligatorio a una location. `entity_map_placements` representa coordenadas
+narrativas protegidas con campaign FK compuesta, RLS, grants admin y validación
+geométrica SQL parametrizada por las dimensiones del contexto. El world map
+v1.2 permanece implícito: ninguna fila se backfillea, no cambia snapshot ni
+cliente. Local-only nuevos usan `world_map_enabled=false` y geometría mundial
+NULL; RLS pública los retiene hasta lector MAP-079. Jerarquía acíclica
+transaccional, publicación de padres compatible e integridad concurrente.
+Decisión completa en [ADR 0008](adr/0008-map-contexts-and-campaign-scoped-placements.md).

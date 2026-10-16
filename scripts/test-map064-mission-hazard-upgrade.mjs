@@ -137,7 +137,10 @@ function snapshotLegacyGraph(containerName) {
        'entities', coalesce((
          select pg_catalog.jsonb_agg(row_value order by row_value::text)
          from (
-           select pg_catalog.to_jsonb(entity) - 'lifecycle_status' as row_value
+           -- Later expansion MAP-075 adds a non-mutating world_map_enabled
+            -- default; compare only columns existing at the MAP-064 boundary.
+            select pg_catalog.to_jsonb(entity) - 'lifecycle_status'
+              - 'world_map_enabled' as row_value
            from public.map_entities as entity
          ) as rows
        ), '[]'::jsonb),
