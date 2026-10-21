@@ -158,7 +158,13 @@ npx supabase db lint --local --fail-on warning
 
 El job `database` de `.github/workflows/ci.yml` ejecuta
 `npm run supabase:db:validate`, que reconstruye la base
-(`supabase db reset`) y lanza pgTAP. La nueva prueba 042:
+(`supabase db reset`) y lanza pgTAP.
+Los ensayos históricos de actualización previos a ese reset ocultan
+temporalmente **solo** la nueva migración INFRA-210 (con restauración
+`finally`) porque validan checkpoints anteriores: esto evita que el
+orden de aplicación del CLI altere su escenario. El reset completo
+posterior sí aplica **todas** las migraciones, incluido INFRA-210, y
+valida los nuevos defaults con las probes y el smoke HTTP. La nueva prueba 042:
 
 - crea tabla, secuencia y función en `public` como `postgres`, sin
   `GRANT`, comprueba aislamiento y hace `ROLLBACK`;
