@@ -15,10 +15,7 @@ function parseEnvironment(output) {
 }
 
 function localApiUrl() {
-  const config = readFileSync(
-    new URL('../supabase/config.toml', import.meta.url),
-    'utf8',
-  );
+  const config = readFileSync(new URL('../supabase/config.toml', import.meta.url), 'utf8');
   const section = config.match(/\[api\]([\s\S]*?)(?=\n\[|$)/)?.[1];
   const port = section?.match(/^port\s*=\s*(\d+)/m)?.[1];
   if (!port) throw new Error('Missing local Supabase [api].port');
@@ -28,15 +25,7 @@ function localApiUrl() {
 function mintToken(userId) {
   const output = execFileSync(
     'npx',
-    [
-      'supabase',
-      'gen',
-      'bearer-jwt',
-      '--role',
-      'authenticated',
-      '--sub',
-      userId,
-    ],
+    ['supabase', 'gen', 'bearer-jwt', '--role', 'authenticated', '--sub', userId],
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
   );
   const jwtPattern = /eyJ[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+[.][A-Za-z0-9_-]+/;
@@ -55,9 +44,7 @@ async function requestJson(url, headers, options = {}) {
   try {
     body = JSON.parse(text);
   } catch {
-    throw new Error(
-      `Unexpected non-JSON HTTP ${response.status} for ${new URL(url).pathname}`,
-    );
+    throw new Error(`Unexpected non-JSON HTTP ${response.status} for ${new URL(url).pathname}`);
   }
   return { status: response.status, ok: response.ok, body };
 }
@@ -69,10 +56,7 @@ async function main() {
       stdio: ['ignore', 'pipe', 'ignore'],
     }),
   );
-  const key =
-    env.get('PUBLISHABLE_KEY') ??
-    env.get('ANON_KEY') ??
-    env.get('SUPABASE_ANON_KEY');
+  const key = env.get('PUBLISHABLE_KEY') ?? env.get('ANON_KEY') ?? env.get('SUPABASE_ANON_KEY');
   if (!key) throw new Error('Missing local publishable / anon key');
   const api = localApiUrl();
   const headers = (token) => ({
@@ -83,29 +67,16 @@ async function main() {
   const adminHeaders = headers(mintToken(ADMIN_ID));
   const readerHeaders = headers(mintToken(NON_ADMIN_ID));
 
-  for (const table of [
-    'map_entities',
-    'categories',
-    'map_contexts',
-    'entity_map_placements',
-  ]) {
-    const result = await requestJson(
-      `${api}/rest/v1/${table}?select=*&limit=1`,
-      anonHeaders,
-    );
+  for (const table of ['map_entities', 'categories', 'map_contexts', 'entity_map_placements']) {
+    const result = await requestJson(`${api}/rest/v1/${table}?select=*&limit=1`, anonHeaders);
     if (!result.ok || !Array.isArray(result.body)) {
-      throw new Error(
-        `anon ${table}: expected public Data API read, got ${result.status}`,
-      );
+      throw new Error(`anon ${table}: expected public Data API read, got ${result.status}`);
     }
   }
 
   // public_requests has an admin SELECT grant and RLS, but no anon GRANT:
   // missing privileges must fail before the RLS layer with SQLSTATE 42501.
-  const denied = await requestJson(
-    `${api}/rest/v1/public_requests?select=id&limit=1`,
-    anonHeaders,
-  );
+  const denied = await requestJson(`${api}/rest/v1/public_requests?select=id&limit=1`, anonHeaders);
   if (denied.ok || denied.body?.code !== '42501') {
     throw new Error(
       `anon public_requests: expected 42501, got HTTP ${denied.status} / ${denied.body?.code}`,
@@ -116,11 +87,7 @@ async function main() {
     `${api}/rest/v1/public_requests?select=id&limit=1`,
     adminHeaders,
   );
-  if (
-    !adminRequests.ok ||
-    !Array.isArray(adminRequests.body) ||
-    adminRequests.body.length === 0
-  ) {
+  if (!adminRequests.ok || !Array.isArray(adminRequests.body) || adminRequests.body.length === 0) {
     throw new Error('authenticated admin lost access to seeded public requests');
   }
 
@@ -140,24 +107,16 @@ async function main() {
     ['admin', adminHeaders, true],
     ['non-admin', readerHeaders, false],
   ]) {
-    const probe = await requestJson(
-      `${api}/rest/v1/rpc/current_user_is_admin`,
-      authHeaders,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-      },
-    );
+    const probe = await requestJson(`${api}/rest/v1/rpc/current_user_is_admin`, authHeaders, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
     if (!probe.ok || probe.body !== expected) {
-      throw new Error(
-        `${name} authorization RPC: unexpected HTTP/result ${probe.status}`,
-      );
+      throw new Error(`${name} authorization RPC: unexpected HTTP/result ${probe.status}`);
     }
   }
-  console.log(
-    'INFRA-210 Data API smoke: anon/admin/non-admin/grant boundary PASS',
-  );
+  console.log('INFRA-210 Data API smoke: anon/admin/non-admin/grant boundary PASS');
 }
 
 main().catch((error) => {
