@@ -338,3 +338,18 @@ Antes de borrar imágenes compartidas debe comprobarse que ningún otro proyecto
 ## Política de migración para v1.1
 
 MAP-066 trata el historial remoto como evidencia de despliegue, no como una invitación a renombrar SQL histórico. Algunas migraciones v1.1 se aplicaron previamente mediante la API de Supabase con versiones remotas distintas del timestamp del filename conservado en Git; sus nombres funcionales/esquema ya están desplegados. No se reescribe `supabase_migrations` ni se hace un `db push` ciego para “alinear” timestamps. Cualquier corrección futura se implementa como una migración nueva, forward-only, después de comparar el delta real.
+
+## INFRA #210 — Política de grants explícitos (2026-10-21)
+
+Desde el cambio de Supabase del 30/10/2026, las tablas nuevas no
+se exponen automáticamente a la Data API. **RLS no sustituye GRANT**:
+cualquier tabla pública nueva declara, en su misma migración, revokes,
+grants mínimos (incluidos los grants por columna), RLS y policies. Las
+nuevas funciones requieren revisión explícita de EXECUTE y las secuencias
+requieren USAGE/SELECT solo si existe consumidor real. No otorgar permisos
+por defecto a `service_role` ni utilizar concesiones sobre todas las tablas.
+
+Contrato completo, inventario y ensayo de reset:
+[`docs/infra-210-data-api-grants.md`](infra-210-data-api-grants.md).
+El job de base de datos ejecuta el test pgTAP 042 sobre un reset completo y
+el HTTP smoke no mutador, para evitar depender de defaults antiguos.
