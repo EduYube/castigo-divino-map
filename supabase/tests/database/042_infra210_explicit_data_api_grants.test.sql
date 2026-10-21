@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(14);
+select plan(15);
 
 select is(current_user, 'postgres'::name,
   'probe objects are created by postgres, the owner whose defaults we hardened');
@@ -204,9 +204,24 @@ select is(
 select is(
   (select count(*) from pg_catalog.pg_proc p
    join pg_catalog.pg_namespace n on n.oid=p.pronamespace
-   where n.nspname='public'),
-  32::bigint,
-  'the 32 audited public functions form the only exposed RPC inventory'
+   where n.nspname='public' and p.proname <> 'rls_auto_enable'),
+  31::bigint,
+  'exactly 31 application-owned public RPCs exist (excluding the optional platform RLS hook)'
+);
+
+-- Production can include the platform-created RLS auto-enable event trigger.
+-- Fresh CLI resets omit it. If present it must remain restricted, not an RPC.
+select is(
+  (select count(*) from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid=p.pronamespace
+   where n.nspname='public' and p.proname='rls_auto_enable'
+     and (p.prorettype <> 'event_trigger'::regtype
+       or not p.prosecdef
+       or pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE')
+       or pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')
+       or pg_catalog.has_function_privilege('service_role', p.oid, 'EXECUTE'))),
+  0::bigint,
+  'optional platform RLS hook is not callable by Data API roles'
 );
 
 select is(

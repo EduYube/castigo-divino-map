@@ -29,6 +29,10 @@ begin
 end;
 $$;
 
+-- INFRA-210: temporary RLS-test helpers need explicit EXECUTE after default ACL hardening.
+grant execute on function pg_temp.statement_fails(text) to anon, authenticated;
+grant execute on function pg_temp.statement_affected_rows(text) to anon, authenticated;
+
 select plan(41);
 
 select is(

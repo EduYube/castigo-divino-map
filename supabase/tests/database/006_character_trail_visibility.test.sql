@@ -16,6 +16,9 @@ exception
 end;
 $$;
 
+-- INFRA-210: temporary RLS-test helpers need explicit EXECUTE after default ACL hardening.
+grant execute on function pg_temp.sqlstate_for(text) to anon, authenticated;
+
 select plan(3);
 
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';

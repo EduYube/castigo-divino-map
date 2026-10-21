@@ -87,8 +87,10 @@ Se comprueba mediante `information_schema.column_privileges`, y abarca
 y las demás tablas. Las columnas de identidad, tiempos y campos derivados
 mantienen las restricciones documentadas por MAP-014 a MAP-075.
 
-**Funciones:** 32 routines en `public`; 31 son ejecutables por
-`authenticated` (la excepción es `rls_auto_enable()`), y solo
+**Funciones:** producción contiene 32 routines en `public`: 31 RPC del
+producto más `rls_auto_enable()`, un event trigger de Supabase que no se
+crea desde las migraciones versionadas y no aparece en el fresh reset local.
+Las 31 RPC son ejecutables por `authenticated`, y solo
 `begin_public_request_submission(uuid)`,
 `submit_public_request_v3(...)` y
 `create_public_player_note(...)` por `anon`.
@@ -169,9 +171,13 @@ valida los nuevos defaults con las probes y el smoke HTTP. La nueva prueba 042:
 - crea tabla, secuencia y función en `public` como `postgres`, sin
   `GRANT`, comprueba aislamiento y hace `ROLLBACK`;
 - compara la matriz de las 20 tablas, **todos los INSERT/UPDATE y SELECT selectivos por columna**
-  y las 32 RPC contra el contrato de producción;
+  y las 31 RPC del producto contra el contrato de producción (con
+  una verificación independiente del hook opcional `rls_auto_enable()`);
 - falla ante tablas/routines nuevas no catalogadas, exposiciones no previstas,
   o pérdida de permisos administrativos; mantiene RLS como segunda barrera.
+- Los helpers `pg_temp` de las pruebas históricas reciben `EXECUTE`
+  explícito y transaccional para `anon`/`authenticated`. No se alteran
+  los defaults endurecidos ni los privilegios de las funciones del producto.
 
 El HTTP smoke local comprueba lecturas públicas, endpoint sin GRANT
 (`public_requests` para anon → `42501`), editor admin y bloqueo

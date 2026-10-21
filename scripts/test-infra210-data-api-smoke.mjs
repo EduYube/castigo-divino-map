@@ -31,9 +31,8 @@ function mintToken(userId) {
     ['supabase', 'gen', 'bearer-jwt', '--role', 'authenticated', '--sub', userId],
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
   );
-  const token = output.match(
-    /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/,
-  )?.[0];
+  const jwtPattern = /eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+/;
+  const token = output.match(jwtPattern)?.[0];
   if (!token) throw new Error('Unable to mint local authenticated test token');
   return token;
 }

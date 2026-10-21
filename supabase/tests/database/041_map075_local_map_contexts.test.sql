@@ -12,6 +12,9 @@ exception when others then
 end;
 $$;
 
+-- INFRA-210: temporary RLS-test helpers need explicit EXECUTE after default ACL hardening.
+grant execute on function pg_temp.map075_rejects(text, text) to anon, authenticated;
+
 select plan(55);
 
 select has_table('public','map_contexts','physical map surfaces are global');

@@ -34,6 +34,10 @@ $$;
 insert into private.reserved_public_identifiers (namespace, value)
 values ('map_entity_id', 'entity-reserved-test');
 
+-- INFRA-210: temporary RLS-test helpers need explicit EXECUTE after default ACL hardening.
+grant execute on function pg_temp.statement_fails(text) to anon, authenticated;
+grant execute on function pg_temp.statement_succeeds(text) to anon, authenticated;
+
 select plan(14);
 
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
