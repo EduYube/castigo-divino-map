@@ -166,15 +166,24 @@ temporalmente **solo** la nueva migración INFRA-210 (con restauración
 `finally`) porque validan checkpoints anteriores: esto evita que el
 orden de aplicación del CLI altere su escenario. El reset completo
 posterior sí aplica **todas** las migraciones, incluido INFRA-210, y
-valida los nuevos defaults con las probes y el smoke HTTP. La nueva prueba 042:
+valida los nuevos defaults con las probes y el smoke HTTP. La prueba 042 reforzada tras la revisión independiente (22 aserciones):
 
 - crea tabla, secuencia y función en `public` como `postgres`, sin
-  `GRANT`, comprueba aislamiento y hace `ROLLBACK`;
-- compara la matriz de las 20 tablas, **todos los INSERT/UPDATE y SELECT selectivos por columna**
-  y las 31 RPC del producto contra el contrato de producción (con
-  una verificación independiente del hook opcional `rls_auto_enable()`);
-- falla ante tablas/routines nuevas no catalogadas, exposiciones no previstas,
-  o pérdida de permisos administrativos; mantiene RLS como segunda barrera.
+  `GRANT`, comprueba los **ocho derechos de tabla de PostgreSQL 17**,
+  los tres de secuencia (**USAGE/SELECT/UPDATE**) y EXECUTE; hace `ROLLBACK`;
+- compara los ocho permisos efectivos de las 20 tablas (conservando la
+  excepción histórica Dxtm de `service_role`), los INSERT/UPDATE por columna
+  y los SELECT efectivos de todas las columnas restringidas, incluyendo
+  grants heredados de `PUBLIC`; fija también las **31 firmas completas de RPC**
+  (con verificación independiente del hook opcional `rls_auto_enable()`);
+- falla ante tablas/routines nuevas no catalogadas, permisos de tabla como
+  `TRUNCATE`, `REFERENCES`, `TRIGGER`, `MAINTAIN` ampliados, exposiciones de
+  columnas heredadas de `PUBLIC` y pérdida de permisos administrativos;
+  mantiene RLS como segunda barrera.
+- incluye pruebas de sensibilidad que conceden temporalmente
+  `SELECT(created_at)` a `PUBLIC`, `TRUNCATE` a `anon` y `UPDATE` sobre una
+  secuencia de prueba; se comprueba que los detectan los predicados de
+  seguridad y se revocan antes del `ROLLBACK` final.
 - Los helpers `pg_temp` de las pruebas históricas reciben `EXECUTE`
   explícito y transaccional para `anon`/`authenticated`. No se alteran
   los defaults endurecidos ni los privilegios de las funciones del producto.

@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(15);
+select plan(22);
 
 select is(current_user, 'postgres'::name,
   'probe objects are created by postgres, the owner whose defaults we hardened');
@@ -56,8 +56,12 @@ select is(
   'RLS is enabled for every exposed public table'
 );
 
-with expected(name, anon_read, authenticated_read, authenticated_delete) as (
-  values
+-- All eight effective table rights; retain historical service_role Dxtm.
+create function pg_temp.infra210_table_acl_drift()
+returns bigint language sql stable security invoker set search_path = ''
+as $$
+  with expected(name, anon_read, authenticated_read, authenticated_delete) as (
+    values
     ('campaign_geographic_entity_links', true, true, true),
     ('campaigns', true, true, false),
     ('categories', true, true, true),
@@ -78,30 +82,45 @@ with expected(name, anon_read, authenticated_read, authenticated_delete) as (
     ('public_notes', true, true, false),
     ('public_requests', false, true, true),
     ('tags', true, true, true)
-), real as (
-  select c.relname::text as name, c.oid
-  from pg_catalog.pg_class c
-  join pg_catalog.pg_namespace n on n.oid = c.relnamespace
-  where n.nspname='public' and c.relkind in ('r','p')
-)
-select is(
-  (select count(*)
-   from expected join real using (name)
-   where pg_catalog.has_table_privilege('anon', real.oid, 'SELECT') <> expected.anon_read
-      or pg_catalog.has_table_privilege('authenticated', real.oid, 'SELECT') <> expected.authenticated_read
-      or pg_catalog.has_table_privilege('authenticated', real.oid, 'DELETE') <> expected.authenticated_delete
-      or pg_catalog.has_table_privilege('anon', real.oid, 'INSERT')
-      or pg_catalog.has_table_privilege('anon', real.oid, 'UPDATE')
-      or pg_catalog.has_table_privilege('anon', real.oid, 'DELETE')
-      or pg_catalog.has_table_privilege('authenticated', real.oid, 'INSERT')
-      or pg_catalog.has_table_privilege('authenticated', real.oid, 'UPDATE')
-      or pg_catalog.has_table_privilege('service_role', real.oid, 'SELECT')
-      or pg_catalog.has_table_privilege('service_role', real.oid, 'INSERT')
-      or pg_catalog.has_table_privilege('service_role', real.oid, 'UPDATE')
-      or pg_catalog.has_table_privilege('service_role', real.oid, 'DELETE')),
-  0::bigint,
-  'table-level CRUD grants match the least-privilege role matrix exactly'
-);
+  ), real as (
+    select c.relname::text as name, c.oid
+    from pg_catalog.pg_class c
+    join pg_catalog.pg_namespace n on n.oid=c.relnamespace
+    where n.nspname='public' and c.relkind in ('r','p')
+  )
+  select count(*) from expected join real using(name)
+  cross join lateral (values
+      ('anon', 'SELECT', expected.anon_read),
+      ('anon', 'INSERT', false),
+      ('anon', 'UPDATE', false),
+      ('anon', 'DELETE', false),
+      ('anon', 'TRUNCATE', false),
+      ('anon', 'REFERENCES', false),
+      ('anon', 'TRIGGER', false),
+      ('anon', 'MAINTAIN', false),
+      ('authenticated', 'SELECT', expected.authenticated_read),
+      ('authenticated', 'INSERT', false),
+      ('authenticated', 'UPDATE', false),
+      ('authenticated', 'DELETE', expected.authenticated_delete),
+      ('authenticated', 'TRUNCATE', false),
+      ('authenticated', 'REFERENCES', false),
+      ('authenticated', 'TRIGGER', false),
+      ('authenticated', 'MAINTAIN', false),
+      ('service_role', 'SELECT', false),
+      ('service_role', 'INSERT', false),
+      ('service_role', 'UPDATE', false),
+      ('service_role', 'DELETE', false),
+      ('service_role', 'TRUNCATE', true),
+      ('service_role', 'REFERENCES', true),
+      ('service_role', 'TRIGGER', true),
+      ('service_role', 'MAINTAIN', true)
+  ) wanted(role_name, privilege_name, allowed)
+  where pg_catalog.has_table_privilege(wanted.role_name,real.oid,wanted.privilege_name)
+    <> wanted.allowed;
+$$;
+
+select is(pg_temp.infra210_table_acl_drift(), 0::bigint,
+  'all eight table privileges match the least-privilege matrix and historical service_role Dxtm');
 
 select is(
   (select count(*)
@@ -161,8 +180,13 @@ select is(
 
 -- Some public readers use explicit column SELECT despite missing table SELECT.
 -- Without these projections, existing anonymous roster/relations endpoints break.
-with expected(name, role_name, cols) as (
-  values
+-- Exhaustive effective SELECT check: unlike direct grants, this catches
+-- SELECT inherited from PUBLIC on individual columns.
+create function pg_temp.infra210_restricted_select_drift()
+returns bigint language sql stable security invoker set search_path = ''
+as $$
+  with expected(name, role_name, cols) as (
+    values
     ('character_location_relations','anon','campaign_id,character_id,location_id,relation_status'),
     ('entity_player_associations','anon','campaign_id,entity_id,player_id'),
     ('entity_player_associations','authenticated','campaign_id,created_at,entity_id,player_id'),
@@ -170,35 +194,84 @@ with expected(name, role_name, cols) as (
     ('entity_relations','authenticated','campaign_id,created_at,left_entity_id,left_label,right_entity_id,right_label'),
     ('players','anon','accent_color,archived_at,campaign_id,created_at,display_name,display_order,id,name_language,publication_status,published_at,slug,updated_at'),
     ('players','authenticated','accent_color,archived_at,campaign_id,created_at,display_name,display_order,id,name_language,publication_status,published_at,slug,updated_at')
-), actual as (
-  select privilege.table_name::text as name, privilege.grantee::text as role_name,
-         string_agg(privilege.column_name,',' order by privilege.column_name) as cols
-  from information_schema.column_privileges privilege
-  where privilege.table_schema='public'
-    and privilege.grantee in ('anon','authenticated','service_role')
-    and privilege.privilege_type='SELECT'
-    and not pg_catalog.has_table_privilege(
-      privilege.grantee,
-      pg_catalog.format('%I.%I',privilege.table_schema,privilege.table_name)::regclass,
-      'SELECT'
-    )
-  group by privilege.table_name, privilege.grantee
-)
+  )
+  select count(*)
+  from pg_catalog.pg_class c
+  join pg_catalog.pg_namespace n on n.oid=c.relnamespace
+  join pg_catalog.pg_attribute a on a.attrelid=c.oid
+    and a.attnum>0 and not a.attisdropped
+  cross join (values ('anon'), ('authenticated'), ('service_role')) roles(role_name)
+  left join expected on expected.name=c.relname::text
+    and expected.role_name=roles.role_name
+  where n.nspname='public' and c.relkind in ('r','p')
+    and not pg_catalog.has_table_privilege(roles.role_name,c.oid,'SELECT')
+    and pg_catalog.has_column_privilege(
+      roles.role_name,c.oid,a.attname::text,'SELECT'
+    ) <> coalesce(
+      a.attname::text = any(pg_catalog.string_to_array(expected.cols,',')),false
+    );
+$$;
+
+select is(pg_temp.infra210_restricted_select_drift(),0::bigint,
+  'restricted effective SELECT projections detect inherited PUBLIC access');
+
+-- PUBLIC attacl is forbidden for ALL rights (including restricted SELECT).
 select is(
-  (select count(*)
-   from expected full join actual using (name, role_name)
-   where expected.name is null or actual.name is null
-      or expected.cols <> actual.cols),
+  (select count(*) from pg_catalog.pg_class c
+   join pg_catalog.pg_namespace n on n.oid=c.relnamespace
+   join pg_catalog.pg_attribute a on a.attrelid=c.oid
+     and a.attnum>0 and not a.attisdropped
+   cross join lateral pg_catalog.aclexplode(a.attacl) acl
+   where n.nspname='public' and c.relkind in ('r','p') and acl.grantee=0),
   0::bigint,
-  'restricted SELECT projections remain exact for private relations and roster'
+  'PUBLIC has no direct column privilege in pg_attribute.attacl'
 );
 
+-- Pinned complete RPC signatures, not just an inventory count.
+with expected(signature) as (
+  values
+    ('admin_get_map_entity_editor_v2(text)'),
+    ('admin_get_map_entity_editor_v3(text)'),
+    ('admin_get_map_entity_editor_v4(uuid,text)'),
+    ('admin_get_map_entity_editor_v5(uuid,text)'),
+    ('admin_get_map_entity_editor_v6(uuid,text)'),
+    ('admin_get_map_entity_editor_v7(uuid,text)'),
+    ('admin_get_map_entity_editor_v8(uuid,text)'),
+    ('admin_get_map_entity_editor(text)'),
+    ('admin_get_master_catalog_v2()'),
+    ('admin_get_master_catalog_v3(uuid)'),
+    ('admin_get_master_catalog_v4(uuid)'),
+    ('admin_get_master_catalog_v5(uuid)'),
+    ('admin_get_master_catalog_v6(uuid)'),
+    ('admin_get_master_catalog_v7(uuid)'),
+    ('admin_get_master_catalog()'),
+    ('admin_moderate_public_request_v2(uuid,uuid,timestamp with time zone,text,text)'),
+    ('admin_save_map_entity_v2(text,timestamp with time zone,text,text,entity_type,map_visibility,entity_audience,text,text,text,double precision,double precision,text,publication_status,text[],jsonb)'),
+    ('admin_save_map_entity_v3(text,timestamp with time zone,text,text,entity_type,map_visibility,entity_audience,text,text,text,text,double precision,double precision,text,publication_status,text[],jsonb)'),
+    ('admin_save_map_entity_v4(uuid,text,timestamp with time zone,text,text,entity_type,map_visibility,entity_audience,text,text,text,text,double precision,double precision,text,publication_status,text[],jsonb)'),
+    ('admin_save_map_entity_v5(uuid,text,timestamp with time zone,text,text,entity_type,map_visibility,entity_audience,text,text,text,text,double precision,double precision,text,publication_status,text[],jsonb,text[])'),
+    ('admin_save_map_entity_v6(uuid,text,timestamp with time zone,text,text,entity_type,map_visibility,entity_audience,text,text,text,text,jsonb,text,publication_status,text[],jsonb,text[])'),
+    ('admin_save_map_entity_v7(uuid,text,timestamp with time zone,text,text,entity_type,map_visibility,entity_audience,text,text,text,text,jsonb,text,publication_status,text[],jsonb,text[],entity_lifecycle_status)'),
+    ('admin_save_map_entity_v8(uuid,text,timestamp with time zone,text,text,text,entity_type,map_visibility,entity_audience,text,text,text,text,jsonb,text,publication_status,text[],jsonb,text[],entity_lifecycle_status,jsonb)'),
+    ('admin_save_map_entity(text,timestamp with time zone,text,text,entity_type,map_visibility,text,text,text,double precision,double precision,text,publication_status,text[],jsonb)'),
+    ('archive_master_public_note(text,text)'),
+    ('begin_public_request_submission(uuid)'),
+    ('create_master_public_note(text,text,text)'),
+    ('create_public_player_note(text,text,text,text)'),
+    ('current_user_is_admin()'),
+    ('submit_public_request_v3(text,text,text,entity_type,double precision,double precision,text,text,text)'),
+    ('update_master_public_note(text,text,text,text)')
+), real as (
+  select p.oid::regprocedure::text as signature
+  from pg_catalog.pg_proc p
+  join pg_catalog.pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='public' and p.proname <> 'rls_auto_enable'
+)
 select is(
-  (select count(*) from information_schema.column_privileges
-   where table_schema='public' and grantee in ('anon','service_role','PUBLIC')
-     and privilege_type in ('INSERT','UPDATE')),
+  (select count(*) from expected full join real using(signature)
+   where expected.signature is null or real.signature is null),
   0::bigint,
-  'anon, service_role and PUBLIC have no column-level mutations'
+  'all 31 product RPC identities match names and argument types'
 );
 
 select is(
@@ -266,9 +339,10 @@ select ok(
         privilege_name)
     ), false)
     from (values ('anon'), ('authenticated'), ('service_role')) as roles(role_name)
-    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) as privileges(privilege_name)
+    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'),
+      ('TRUNCATE'), ('REFERENCES'), ('TRIGGER'), ('MAINTAIN')) as privileges(privilege_name)
   ),
-  'new table cannot be reached by anon, authenticated or service_role CRUD'
+  'new table denies all eight privileges to anon, authenticated, service_role'
 );
 
 select ok(
@@ -278,9 +352,9 @@ select ok(
         privilege_name)
     ), false)
     from (values ('anon'), ('authenticated'), ('service_role')) as roles(role_name)
-    cross join (values ('USAGE'), ('SELECT')) as privileges(privilege_name)
+    cross join (values ('USAGE'), ('SELECT'), ('UPDATE')) as privileges(privilege_name)
   ),
-  'new sequence does not automatically grant usage or select'
+  'new sequence denies USAGE, SELECT and UPDATE to all Data API roles'
 );
 
 select ok(
@@ -289,6 +363,30 @@ select ok(
   and not pg_catalog.has_function_privilege('service_role', 'public.infra210_function_probe()', 'EXECUTE'),
   'new RPC cannot be executed by Data API roles without explicit GRANT'
 );
+
+-- Mutation sensitivity, executed only in the rolled-back local test.
+grant select (created_at) on public.entity_relations to public;
+select ok(pg_temp.infra210_restricted_select_drift()>0,
+  'PUBLIC SELECT(created_at) triggers effective restricted-SELECT guard');
+revoke select (created_at) on public.entity_relations from public;
+select is(pg_temp.infra210_restricted_select_drift(),0::bigint,
+  'restricted-SELECT guard returns to green after removing injected grant');
+
+grant truncate on public.map_entities to anon;
+select ok(pg_temp.infra210_table_acl_drift()>0,
+  'anon TRUNCATE triggers all-rights table guard despite unchanged CRUD');
+revoke truncate on public.map_entities from anon;
+select is(pg_temp.infra210_table_acl_drift(),0::bigint,
+  'table guard returns to green after removing injected TRUNCATE');
+
+grant update on sequence public.infra210_sequence_probe to authenticated;
+select ok(pg_catalog.has_sequence_privilege(
+  'authenticated','public.infra210_sequence_probe','UPDATE'),
+  'sequence UPDATE injection is observed by the privilege check');
+revoke update on sequence public.infra210_sequence_probe from authenticated;
+select ok(not pg_catalog.has_sequence_privilege(
+  'authenticated','public.infra210_sequence_probe','UPDATE'),
+  'sequence UPDATE is denied again after negative control');
 
 -- The existing security/RLS suite also exercises admin/non-admin row access,
 -- restricted drafts, public requests, moderation and MAP-075 placements.
