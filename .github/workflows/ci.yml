@@ -73,7 +73,7 @@ jobs:
 
       - name: Upload Playwright failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-failure-${{ github.run_id }}
           path: test-results/**
@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload MAP-033 mobile visual references
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: map-033-mobile-references-${{ github.run_id }}
           path: test-results/**/*.png
@@ -91,7 +91,7 @@ jobs:
 
       - name: Upload MAP-037 mobile sheet references
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: map-037-mobile-sheet-references-${{ github.run_id }}
           path: test-results/**/attachments/MAP-037-*.png
