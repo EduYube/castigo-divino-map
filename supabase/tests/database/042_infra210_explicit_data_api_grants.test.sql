@@ -184,7 +184,7 @@ select is(
 -- This guard is re-used in the mutation tests below.
 create function pg_temp.infra210_unexpected_column_writes()
 returns bigint language sql stable security invoker set search_path = ''
-as $
+as $$
   select count(*)
   from pg_catalog.pg_class c
   join pg_catalog.pg_namespace n on n.oid=c.relnamespace
@@ -196,7 +196,7 @@ as $
     and pg_catalog.has_column_privilege(
       roles.role_name,c.oid,a.attname::text,rights.privilege_name
     );
-$;
+$$;
 
 select is(pg_temp.infra210_unexpected_column_writes(),0::bigint,
   'anon and service_role have no effective INSERT/UPDATE on any public column');
