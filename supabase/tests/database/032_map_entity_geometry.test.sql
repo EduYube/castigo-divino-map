@@ -16,6 +16,9 @@ exception
 end;
 $$;
 
+-- INFRA-210: temporary RLS-test helpers need explicit EXECUTE after default ACL hardening.
+grant execute on function pg_temp.statement_fails_with_sqlstate(text, text) to anon, authenticated;
+
 select plan(24);
 
 select has_column('public', 'map_entities', 'geometry', 'MAP-060 adds persistent geometry');

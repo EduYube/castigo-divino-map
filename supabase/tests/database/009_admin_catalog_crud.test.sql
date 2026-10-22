@@ -16,6 +16,9 @@ exception
 end;
 $$;
 
+-- INFRA-210: temporary RLS-test helpers need explicit EXECUTE after default ACL hardening.
+grant execute on function pg_temp.sqlstate_for(text) to anon, authenticated;
+
 select plan(19);
 
 set local role anon;

@@ -58,6 +58,9 @@ values
     'Must stay pending.'
   );
 
+-- INFRA-210: temporary RLS-test helpers need explicit EXECUTE after default ACL hardening.
+grant execute on function pg_temp.statement_fails(text) to anon, authenticated;
+
 select plan(29);
 
 select ok(

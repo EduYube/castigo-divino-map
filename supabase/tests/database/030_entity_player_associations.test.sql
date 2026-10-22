@@ -16,6 +16,9 @@ exception
 end;
 $$;
 
+-- INFRA-210: temporary RLS-test helpers need explicit EXECUTE after default ACL hardening.
+grant execute on function pg_temp.statement_fails(text) to anon, authenticated;
+
 select plan(23);
 
 select has_table('public', 'entity_player_associations', 'MAP-058 association table exists');
