@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(22);
+select plan(27);
 
 select is(current_user, 'postgres'::name,
   'probe objects are created by postgres, the owner whose defaults we hardened');
@@ -177,6 +177,29 @@ select is(
   0::bigint,
   'authenticated INSERT/UPDATE column allowlists remain exact'
 );
+
+-- INFRA210-REV-04: a table-level INSERT/UPDATE check does not detect
+-- per-column writes. Compare EFFECTIVE privileges for every real public column
+-- for anon/service_role (including grants inherited from PUBLIC).
+-- This guard is re-used in the mutation tests below.
+create function pg_temp.infra210_unexpected_column_writes()
+returns bigint language sql stable security invoker set search_path = ''
+as $
+  select count(*)
+  from pg_catalog.pg_class c
+  join pg_catalog.pg_namespace n on n.oid=c.relnamespace
+  join pg_catalog.pg_attribute a on a.attrelid=c.oid
+    and a.attnum>0 and not a.attisdropped
+  cross join (values ('anon'), ('service_role')) roles(role_name)
+  cross join (values ('INSERT'), ('UPDATE')) rights(privilege_name)
+  where n.nspname='public' and c.relkind in ('r','p')
+    and pg_catalog.has_column_privilege(
+      roles.role_name,c.oid,a.attname::text,rights.privilege_name
+    );
+$;
+
+select is(pg_temp.infra210_unexpected_column_writes(),0::bigint,
+  'anon and service_role have no effective INSERT/UPDATE on any public column');
 
 -- Some public readers use explicit column SELECT despite missing table SELECT.
 -- Without these projections, existing anonymous roster/relations endpoints break.
@@ -387,6 +410,23 @@ revoke update on sequence public.infra210_sequence_probe from authenticated;
 select ok(not pg_catalog.has_sequence_privilege(
   'authenticated','public.infra210_sequence_probe','UPDATE'),
   'sequence UPDATE is denied again after negative control');
+
+-- Sensitivity for REV-04: the SAME guard must fail for both restricted
+-- roles and both write privileges, then recover after each exact revoke.
+-- These grants exist only inside this pgTAP BEGIN/ROLLBACK transaction.
+grant insert (name) on public.map_entities to service_role;
+select ok(pg_temp.infra210_unexpected_column_writes()>0,
+  'guard catches service_role INSERT(name) without table-level INSERT');
+revoke insert (name) on public.map_entities from service_role;
+select is(pg_temp.infra210_unexpected_column_writes(),0::bigint,
+  'column write guard recovers after revoking service_role INSERT(name)');
+
+grant update (description) on public.map_entities to anon;
+select ok(pg_temp.infra210_unexpected_column_writes()>0,
+  'guard catches anon UPDATE(description) without table-level UPDATE');
+revoke update (description) on public.map_entities from anon;
+select is(pg_temp.infra210_unexpected_column_writes(),0::bigint,
+  'column write guard recovers after revoking anon UPDATE(description)');
 
 -- The existing security/RLS suite also exercises admin/non-admin row access,
 -- restricted drafts, public requests, moderation and MAP-075 placements.

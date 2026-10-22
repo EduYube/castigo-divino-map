@@ -166,7 +166,7 @@ temporalmente **solo** la nueva migración INFRA-210 (con restauración
 `finally`) porque validan checkpoints anteriores: esto evita que el
 orden de aplicación del CLI altere su escenario. El reset completo
 posterior sí aplica **todas** las migraciones, incluido INFRA-210, y
-valida los nuevos defaults con las probes y el smoke HTTP. La prueba 042 reforzada tras la revisión independiente (22 aserciones):
+valida los nuevos defaults con las probes y el smoke HTTP. La prueba 042 reforzada tras la revisión independiente (27 aserciones):
 
 - crea tabla, secuencia y función en `public` como `postgres`, sin
   `GRANT`, comprueba los **ocho derechos de tabla de PostgreSQL 17**,
@@ -174,7 +174,10 @@ valida los nuevos defaults con las probes y el smoke HTTP. La prueba 042 reforza
 - compara los ocho permisos efectivos de las 20 tablas (conservando la
   excepción histórica Dxtm de `service_role`), los INSERT/UPDATE por columna
   y los SELECT efectivos de todas las columnas restringidas, incluyendo
-  grants heredados de `PUBLIC`; fija también las **31 firmas completas de RPC**
+  grants heredados de `PUBLIC`; además, comprueba **todos los privilegios
+  INSERT/UPDATE efectivos por columna** de `anon` y `service_role`, incluso
+  concesiones directas que no aparecen en los permisos de tabla.
+  Fija también las **31 firmas completas de RPC**
   (con verificación independiente del hook opcional `rls_auto_enable()`);
 - falla ante tablas/routines nuevas no catalogadas, permisos de tabla como
   `TRUNCATE`, `REFERENCES`, `TRIGGER`, `MAINTAIN` ampliados, exposiciones de
@@ -184,6 +187,10 @@ valida los nuevos defaults con las probes y el smoke HTTP. La prueba 042 reforza
   `SELECT(created_at)` a `PUBLIC`, `TRUNCATE` a `anon` y `UPDATE` sobre una
   secuencia de prueba; se comprueba que los detectan los predicados de
   seguridad y se revocan antes del `ROLLBACK` final.
+- incorpora dos casos de sensibilidad adicionales sobre el **mismo detector
+  de escritura por columna**: `service_role INSERT(name)` y
+  `anon UPDATE(description)` sobre `map_entities`, cada uno seguido de su
+  revocación y comprobación de recuperación a cero.
 - Los helpers `pg_temp` de las pruebas históricas reciben `EXECUTE`
   explícito y transaccional para `anon`/`authenticated`. No se alteran
   los defaults endurecidos ni los privilegios de las funciones del producto.
