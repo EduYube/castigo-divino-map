@@ -95,7 +95,10 @@ export async function fetchPublicLocalMapLinks(
   const config = projectConfig();
   if (!config) return [];
   const url = new URL(`${config.url}/rest/v1/campaign_geographic_map_context_links`);
-  url.searchParams.set('select', 'campaign_id,geographic_name_id,map_contexts!inner(id,slug,name,width,height,parent_id,image_uri,publication_status)');
+  url.searchParams.set(
+    'select',
+    'campaign_id,geographic_name_id,map_contexts!inner(id,slug,name,width,height,parent_id,image_uri,publication_status)',
+  );
   url.searchParams.set('campaign_id', `eq.${campaignId}`);
   const response = await fetch(url, {
     signal,
@@ -154,7 +157,10 @@ export function mountLocalMapNavigation(
     localCanvas.hidden = true;
     worldCanvas.hidden = false;
     toolbar.hidden = true;
-    worldCanvas.setAttribute('aria-label', 'Mapa navegable de la Costa de la Espada y el noroeste de Faerûn');
+    worldCanvas.setAttribute(
+      'aria-label',
+      'Mapa navegable de la Costa de la Espada y el noroeste de Faerûn',
+    );
     // The main Leaflet controller retains world coordinates/filters.
     window.dispatchEvent(new Event('atlas:world-map-restored'));
   };
@@ -186,7 +192,9 @@ export function mountLocalMapNavigation(
       dragging: true,
       scrollWheelZoom: true,
     });
-    L.rectangle(bounds, { color: '#a99666', weight: 2, fill: false, interactive: false }).addTo(map);
+    L.rectangle(bounds, { color: '#a99666', weight: 2, fill: false, interactive: false }).addTo(
+      map,
+    );
     if (context.imageUri) {
       // Future rights-cleared contexts can supply their vetted published source.
       image = L.imageOverlay(context.imageUri, bounds, {
@@ -221,7 +229,8 @@ export function mountLocalMapNavigation(
     if (!target) {
       requestedSlug = null;
       closeSurface();
-      announcer.textContent = 'El mapa local no está disponible para esta campaña. Mostrando mapa general.';
+      announcer.textContent =
+        'El mapa local no está disponible para esta campaña. Mostrando mapa general.';
       options.onHistoryChange('replace');
       return;
     }

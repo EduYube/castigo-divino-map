@@ -35,10 +35,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: MAP-077 temporary formatting diagnostics
+      - name: MAP-077 temporary full formatting diagnostics
         run: |
-          npx prettier --write src/app/localMapNavigation.ts src/app/urlState.ts tests/e2e/map077-local-navigation.spec.ts
-          node -e 'const fs=require("node:fs"); for(const path of ["src/app/localMapNavigation.ts","src/app/urlState.ts","tests/e2e/map077-local-navigation.spec.ts"]){const content=fs.readFileSync(path,"utf8"); console.log("MAP077_BEGIN "+path); for(let i=0;i<content.length;i+=700){console.log("MAP077_CHUNK "+JSON.stringify(content.slice(i,i+700)));} console.log("MAP077_END "+path);}'
+          npx prettier --write src/app/localMapNavigation.ts src/app/urlState.ts src/app/urlState.localMap.test.ts tests/e2e/map077-local-navigation.spec.ts scripts/test-map077-master-upgrade.mjs scripts/test-infra210-data-api-smoke.mjs
+          node -e 'const fs=require("node:fs"); for(const path of ["src/app/localMapNavigation.ts","src/app/urlState.ts","src/app/urlState.localMap.test.ts","tests/e2e/map077-local-navigation.spec.ts","scripts/test-map077-master-upgrade.mjs","scripts/test-infra210-data-api-smoke.mjs"]){const content=fs.readFileSync(path,"utf8"); console.log("MAP077_BEGIN "+path); for(let i=0;i<content.length;i+=700){console.log("MAP077_CHUNK "+JSON.stringify(content.slice(i,i+700)));} console.log("MAP077_END "+path);}'
 
       - name: Verify MAP-071 PDF matches Markdown
         run: node scripts/generate-admin-qa-pdf.cjs --check

@@ -373,7 +373,18 @@ async function makeSnapshot(): Promise<PublicCatalogSnapshotV3> {
     schemaVersion: 3 as const,
     campaigns: CAMPAIGNS,
     campaignCatalogs: [snapshotCatalog(CAMPAIGN_A_ID), snapshotCatalog(CAMPAIGN_B_ID)],
-    geographicNames: [{ id: 'geo-neverwinter', slug: 'neverwinter', name: 'Neverwinter', language: 'en', aliases: [], coordinates: { x: 1433, y: 1853 }, recommendedZoom: 0.75, entityId: null }],
+    geographicNames: [
+      {
+        id: 'geo-neverwinter',
+        slug: 'neverwinter',
+        name: 'Neverwinter',
+        language: 'en',
+        aliases: [],
+        coordinates: { x: 1433, y: 1853 },
+        recommendedZoom: 0.75,
+        entityId: null,
+      },
+    ],
   };
   const checksum = await createSha256Checksum(content);
   return {
@@ -484,22 +495,45 @@ async function configureCampaignBackend(
       table === 'campaigns'
         ? CAMPAIGN_ROWS
         : table === 'geographic_names'
-          ? [{
-              id: 'geo-neverwinter', slug: 'neverwinter', name: 'Neverwinter', language: 'en',
-              x: 1433, y: 1853, recommended_zoom: 0.75, entity_id: null,
-              search_min_x: null, search_max_x: null, search_min_y: null, search_max_y: null,
-            }]
+          ? [
+              {
+                id: 'geo-neverwinter',
+                slug: 'neverwinter',
+                name: 'Neverwinter',
+                language: 'en',
+                x: 1433,
+                y: 1853,
+                recommended_zoom: 0.75,
+                entity_id: null,
+                search_min_x: null,
+                search_max_x: null,
+                search_min_y: null,
+                search_max_y: null,
+              },
+            ]
           : table === 'geographic_name_aliases'
             ? []
             : table === 'campaign_geographic_map_context_links'
               ? campaignIdFromUrl(url) === CAMPAIGN_B_ID
-                ? [{ campaign_id: CAMPAIGN_B_ID, geographic_name_id: 'geo-neverwinter',
-                     map_context_id: 'map-neverwinter', map_contexts: {
-                       id: 'map-neverwinter', slug: 'neverwinter', name: 'Neverwinter',
-                       width: 2048, height: 1582, parent_id: null,
-                       image_uri: null, publication_status: 'published' } }]
+                ? [
+                    {
+                      campaign_id: CAMPAIGN_B_ID,
+                      geographic_name_id: 'geo-neverwinter',
+                      map_context_id: 'map-neverwinter',
+                      map_contexts: {
+                        id: 'map-neverwinter',
+                        slug: 'neverwinter',
+                        name: 'Neverwinter',
+                        width: 2048,
+                        height: 1582,
+                        parent_id: null,
+                        image_uri: null,
+                        publication_status: 'published',
+                      },
+                    },
+                  ]
                 : []
-          : rowsFor(table, campaignIdFromUrl(url));
+              : rowsFor(table, campaignIdFromUrl(url));
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -515,7 +549,6 @@ async function configureCampaignBackend(
     getPublicRequests: () => publicRequests,
   };
 }
-
 
 async function selectNeverwinter(page: Page): Promise<void> {
   await page.getByRole('searchbox', { name: 'Buscar lugares' }).fill('Neverwinter');
@@ -535,9 +568,13 @@ test('MAP-077: campaign-gated entrance, neutral surface and browser history', as
   await page.getByRole('button', { name: 'Entrar en Neverwinter' }).click();
   await expect(page).toHaveURL(/map=neverwinter/);
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Ruta cartográfica' })).toContainText('Neverwinter');
+  await expect(page.getByRole('navigation', { name: 'Ruta cartográfica' })).toContainText(
+    'Neverwinter',
+  );
   await expect(page.locator('[data-local-map-status]')).toBeVisible();
-  await expect(page.locator('[data-local-map-status]')).toContainText('Cartografía pendiente de publicación');
+  await expect(page.locator('[data-local-map-status]')).toContainText(
+    'Cartografía pendiente de publicación',
+  );
   await expect(page.locator('[data-map-canvas]')).toBeHidden();
 
   await page.goBack();
@@ -550,7 +587,9 @@ test('MAP-077: campaign-gated entrance, neutral surface and browser history', as
   expect(new URL(page.url()).searchParams.has('map')).toBe(false);
 });
 
-test('MAP-077: direct link and refresh restore the map without an entry action', async ({ page }) => {
+test('MAP-077: direct link and refresh restore the map without an entry action', async ({
+  page,
+}) => {
   await configureCampaignBackend(page);
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
@@ -585,6 +624,8 @@ for (const width of [320, 390, 430, 1280]) {
     await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
     await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Mapa general' })).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
   });
 }

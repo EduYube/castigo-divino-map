@@ -34,7 +34,6 @@ export const EMPTY_PUBLIC_APP_URL_STATE: PublicAppUrlState = {
   activePlaceId: null,
   query: '',
   geographicNameId: null,
-  mapSlug: null,
   selectedCategoryIds: [],
   selectedTagIds: [],
   activeLayerIds: MAP_LAYER_IDS,
@@ -131,9 +130,9 @@ export function normalizePublicAppUrlState(
       state.activePlaceId && validPlaceIds.has(state.activePlaceId) ? state.activePlaceId : null,
     query: normalizeQuery(state.query),
     geographicNameId: normalizeGeographicNameId(state.geographicNameId),
-    mapSlug: state.mapSlug && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(state.mapSlug)
-      ? state.mapSlug
-      : null,
+    ...(state.mapSlug && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(state.mapSlug)
+      ? { mapSlug: state.mapSlug }
+      : {}),
     selectedCategoryIds: facets.categories
       .filter(({ id }) => selectedCategoryIds.has(id))
       .map(({ id }) => id),
