@@ -181,3 +181,38 @@ Con permiso suficiente, la solución preferida será una pirámide de mosaicos e
 - El titular puede cambiar la política o pedir la retirada del contenido.
 - La autoría cartográfica debe conservarse, pero no sustituye el aviso legal exigido por Wizards.
 - La validación legal definitiva requeriría autorización escrita o revisión jurídica profesional.
+
+---
+
+## MAP-076 / v1.3 — Selección de mapa local de Neverwinter (2026-10-26)
+
+Esta sección **complementa** sin modificar la decisión histórica Beta 0.1
+sobre el mapa mundial de Sword Coast. Los mapas locales son opcionales.
+
+| Lugar | Decisión actual | Próximo paso |
+| --- | --- | --- |
+| Neverwinter | **`SELECTED_ASSET`** — producto cerrado; raster JPEG aportado por el responsable, **2048 × 1582 px** | Futuro `map_context` local con `width=2048` y `height=1582`; incorporar el raster seleccionado después de registrar procedencia/derechos efectivos |
+| City of Shadows / Shade | **`DEFERRED / OUT OF SCOPE`** | Se creará manualmente más adelante desde la web-app; no bloquea MAP-076 |
+
+**Neverwinter — `RIGHTS_METADATA_PENDING`:** el raster fue seleccionado
+por el responsable del proyecto, **no** se ha probado por ello permiso
+de distribución, autohospedaje, hotlink, transformación ni mosaicos.
+La selección de producto está cerrada. Los metadatos de autor, titular,
+URL primaria, términos y atribución de **este archivo concreto** deben
+acreditarse **antes de su integración/publicación**; no atribuirlo
+automáticamente a los autores de mapas considerados en la investigación
+anterior. La estrategia final será `bundled` o `remote`, según los
+derechos y el mecanismo de entrega, sin decidirla artificialmente aquí.
+
+**Contrato MAP-075:** con `image_uri=NULL`, debe mantenerse
+`loading_strategy=NULL`. El siguiente trabajo elegirá el método
+de incorporación, registrará procedencia e imagen autorizada y creará
+el contexto con las dimensiones seleccionadas. No confundir
+`SELECTED_ASSET` (decisión editorial) con una licencia de
+publicación concedida por terceros.
+
+[Detalle, raster SHA-256, investigación previa y handoff de MAP-076](map-076-local-map-sources.md).
+
+**Alcance:** documentación únicamente. **NO IMAGE ASSETS ADDED;
+NO MIGRATION; PRODUCTION WRITES: 0; SNAPSHOT UNCHANGED**. Sin creación
+de contextos, placements ni entidades y sin cambios en INFRA #210.
