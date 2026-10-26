@@ -281,6 +281,21 @@ export function mountLocalMapNavigation(
     options.onHistoryChange('push');
   });
   returnButton.addEventListener('click', () => leave(true));
+  // A previously loaded local surface must not outlive remote data authority.
+  window.addEventListener('atlas:public-data-status', (event) => {
+    const detail = (event as CustomEvent<{ backendState?: string }>).detail;
+    if (detail?.backendState === 'connected') {
+      if (currentCampaignId) load();
+      return;
+    }
+    if (detail?.backendState !== 'degraded' && detail?.backendState !== 'offline') return;
+    request?.abort();
+    ++generation;
+    links = [];
+    loaded = true;
+    redraw();
+  });
+
   window.addEventListener('atlas:campaign-will-change', () => {
     request?.abort();
     ++generation;

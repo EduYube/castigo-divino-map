@@ -382,7 +382,7 @@ async function makeSnapshot(): Promise<PublicCatalogSnapshotV3> {
         aliases: [],
         coordinates: { x: 1433, y: 1853 },
         recommendedZoom: 0.75,
-        },
+      },
     ],
   };
   const checksum = await createSha256Checksum(content);
@@ -628,3 +628,34 @@ for (const width of [320, 390, 430, 1280]) {
     );
   });
 }
+
+test('MAP-077: keyboard and offline transition', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+  await configureCampaignBackend(page);
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  const returnButton = page.getByRole('button', { name: 'Mapa general' });
+
+  await returnButton.focus();
+  await expect(returnButton).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await page.goBack();
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+
+  await returnButton.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await page.goBack();
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+
+  await page.evaluate(() => {
+    const event = new CustomEvent('atlas:public-data-status', {
+      detail: { backendState: 'offline' },
+    });
+    window.dispatchEvent(event);
+  });
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await expect(page.locator('[data-map-canvas]')).toBeVisible();
+  expect(new URL(page.url()).searchParams.has('map')).toBe(false);
+});
