@@ -61,7 +61,8 @@ async function main() {
   const api = localApiUrl();
   const headers = (token) => ({
     apikey: key,
-    Authorization: `***  });
+    Authorization: `Bearer ${token}`,
+  });
   const anonHeaders = headers(key);
   const adminHeaders = headers(mintToken(ADMIN_ID));
   const readerHeaders = headers(mintToken(NON_ADMIN_ID));
