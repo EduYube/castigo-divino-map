@@ -20,7 +20,8 @@ describe('MAP-077 local map URL state', () => {
     const parsed = parsePublicAppUrlState(catalog, input);
 
     expect(parsed.state.mapSlug).toBe('neverwinter');
-    expect(parsed.canonicalUrl.searchParams.get('campaign')).toBe('un-aliento-menos');
+    const canonicalCampaign = parsed.canonicalUrl.searchParams.get('campaign');
+    expect(canonicalCampaign).toBe('un-aliento-menos');
     const canonical = createCanonicalPublicAppUrl(catalog, input, parsed.state);
     expect(canonical.searchParams.get('map')).toBe('neverwinter');
   });
