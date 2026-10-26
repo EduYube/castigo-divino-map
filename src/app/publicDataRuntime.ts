@@ -269,6 +269,8 @@ function setCampaignInUrl(slug: string, mode: 'push' | 'replace'): void {
   url.searchParams.set('campaign', slug);
   if (mode === 'push') {
     url.searchParams.delete('place');
+    url.searchParams.delete('map');
+    url.searchParams.delete('geo');
     url.searchParams.delete('category');
     url.searchParams.delete('tag');
     window.history.pushState(window.history.state, '', url);

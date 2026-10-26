@@ -115,13 +115,15 @@ MAP-076 investigará fuentes oficiales y licencias; Pinterest no acredita uso.
 
 ### «Entrar en lugar» y mapa físico compartido
 
-No se acopla `map_contexts` a `map_entities`. MAP-077 debe añadir
-`campaign_location_map_context_links(campaign_id,location_entity_id,
-map_context_id)` o equivalente, con FK compuesta a la location de esa
-campaña y FK global a map_contexts y validación de `entity_type=location`.
-Así, una `location` Neverwinter de cada campaña puede vincular al mismo
-mapa físico Neverwinter; el CTA resuelve el vínculo **de la campaña activa**.
-No se añade esta tabla antes de necesitar navegación y reglas de UX.
+No se acopla `map_contexts` a `map_entities`. MAP-077 introdujo
+`campaign_geographic_map_context_links(campaign_id, geographic_name_id,
+map_context_id)`: el geonombre global `geo-neverwinter` ya existía y no
+corresponde crear una entidad narrativa duplicada. Una PK por
+(campaign_id, geographic_name_id) permite un único contexto de entrada
+primario por campaña y lugar, mientras muchas campañas pueden compartir
+el contexto físico. FK + RLS + políticas y grants explícitos impiden
+fallback cross-campaign. El lector solo muestra un CTA para un enlace
+visible de la campaña activa a un contexto published.
 
 ## Consecuencias / compatibilidad P0
 

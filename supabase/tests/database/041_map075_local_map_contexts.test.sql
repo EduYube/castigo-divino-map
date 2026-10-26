@@ -36,7 +36,7 @@ select ok(
 select has_table('public','entity_map_placements','campaign-scoped placements exist');
 select fk_ok('public','entity_map_placements',array['entity_id','campaign_id'],
   'public','map_entities',array['id','campaign_id'],'composite campaign FK is authoritative');
-select is((select count(*) from public.map_contexts),0::bigint,'no physical maps are seeded');
+select is((select count(*) from public.map_contexts where id = 'map-neverwinter'),1::bigint,'MAP-077 seeds one physical Neverwinter map');
 select is((select count(*) from public.entity_map_placements),0::bigint,'no placements are seeded');
 
 insert into public.map_contexts (id,slug,name,width,height,publication_status) values
