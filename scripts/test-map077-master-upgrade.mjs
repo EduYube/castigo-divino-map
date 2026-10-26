@@ -10,9 +10,7 @@ function run(command, args, label, input) {
     input,
   });
   if (result.error || result.status !== 0) {
-    throw new Error(
-      `MAP-077 ${label}: ${result.error?.message ?? result.stderr ?? result.status}`,
-    );
+    throw new Error(`MAP-077 ${label}: ${result.error?.message ?? result.stderr ?? result.status}`);
   }
   return result.stdout.trim();
 }

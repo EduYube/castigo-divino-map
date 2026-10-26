@@ -61,13 +61,18 @@ async function main() {
   const api = localApiUrl();
   const headers = (token) => ({
     apikey: key,
-    Authorization: `Bearer ${token}`,
-  });
+    Authorization: `***  });
   const anonHeaders = headers(key);
   const adminHeaders = headers(mintToken(ADMIN_ID));
   const readerHeaders = headers(mintToken(NON_ADMIN_ID));
 
-  for (const table of ['map_entities', 'categories', 'map_contexts', 'entity_map_placements', 'campaign_geographic_map_context_links']) {
+  for (const table of [
+    'map_entities',
+    'categories',
+    'map_contexts',
+    'entity_map_placements',
+    'campaign_geographic_map_context_links',
+  ]) {
     const result = await requestJson(`${api}/rest/v1/${table}?select=*&limit=1`, anonHeaders);
     if (!result.ok || !Array.isArray(result.body)) {
       throw new Error(`anon ${table}: expected public Data API read, got ${result.status}`);
