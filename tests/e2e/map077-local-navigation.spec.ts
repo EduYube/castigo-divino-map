@@ -375,15 +375,14 @@ async function makeSnapshot(): Promise<PublicCatalogSnapshotV3> {
     campaignCatalogs: [snapshotCatalog(CAMPAIGN_A_ID), snapshotCatalog(CAMPAIGN_B_ID)],
     geographicNames: [
       {
-        id: 'geo-neverwinter',
+        id: 'geo-neverwinter' as const,
         slug: 'neverwinter',
         name: 'Neverwinter',
-        language: 'en',
+        language: 'en' as const,
         aliases: [],
         coordinates: { x: 1433, y: 1853 },
         recommendedZoom: 0.75,
-        entityId: null,
-      },
+        },
     ],
   };
   const checksum = await createSha256Checksum(content);
