@@ -37,10 +37,16 @@ normaliza `map`. Una URL local no autorizada o REST indisponible
 degrada al mundo con anuncio accesible, sin fallback a otra campaña.
 
 La autoridad de disponibilidad se toma del estado de backend del catálogo
-al montar el controlador y de sus eventos posteriores. En `degraded/offline`
-se invalidan las peticiones locales pendientes y no se aceptan nuevos
-bindings aunque su endpoint siga respondiendo: cambiar de campaña o navegar
-con Back no vuelve a abrir mapas hasta un estado `connected`.
+al montar el controlador y de sus eventos posteriores. El resultado local
+inicial del snapshot es provisional (`checking`) hasta que finalice la primera
+consulta remota: mientras tanto se conserva el `?map=` del deep link sin
+mostrar ningún mapa local ni consultar bindings. Si se confirma `connected`,
+se solicita el binding y se abre únicamente el contexto autorizado; si se
+confirma `degraded/offline`, se normaliza la URL al mundo.
+En `degraded/offline` se invalidan las peticiones locales pendientes y no se
+aceptan nuevos bindings aunque su endpoint siga respondiendo: cambiar de
+campaña o navegar con Back no vuelve a abrir mapas hasta un estado
+`connected`.
 Una lectura de bindings que falla con 503 se diferencia de una lista vacía
 válida: el siguiente evento `connected` del refresco del catálogo reintenta
 una sola vez, sin reconsultar bindings en cada refresco cuando la lectura

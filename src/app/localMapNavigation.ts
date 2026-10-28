@@ -25,7 +25,7 @@ export interface LocalMapNavigation {
 }
 
 interface LocalMapNavigationOptions {
-  readonly initialBackendState: 'connected' | 'degraded' | 'offline';
+  readonly initialBackendState: 'checking' | 'connected' | 'degraded' | 'offline';
   readonly onHistoryChange: (mode: 'push' | 'replace') => void;
 }
 
@@ -249,7 +249,10 @@ export function mountLocalMapNavigation(
     links = [];
     bindingLoadFailed = false;
     if (!campaignId || backendState !== 'connected') {
-      loaded = true;
+      // The initial fallback is provisional: retain the deep-link intent
+      // without displaying local data until the remote authority responds.
+      // Confirmed degraded/offline states must normalize it to the world.
+      loaded = backendState !== 'checking' || !campaignId;
       redraw();
       return;
     }

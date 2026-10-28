@@ -56,6 +56,7 @@ interface CampaignBackend {
   setRemoteAvailable(value: boolean): void;
   setCatalogAvailable(value: boolean): void;
   setBindingAvailable(value: boolean): void;
+  releaseCatalog(): void;
   getBindingRequestCount(): number;
   getPublicRequests(): readonly PublicRequestCapture[];
 }
@@ -399,12 +400,22 @@ async function makeSnapshot(): Promise<PublicCatalogSnapshotV3> {
 
 async function configureCampaignBackend(
   page: Page,
-  options: { readonly remoteAvailable?: boolean; readonly bindingAvailable?: boolean } = {},
+  options: {
+    readonly remoteAvailable?: boolean;
+    readonly bindingAvailable?: boolean;
+    readonly holdCatalogUntilReleased?: boolean;
+  } = {},
 ): Promise<CampaignBackend> {
   let remoteAvailable = options.remoteAvailable !== false;
   let catalogAvailable = true;
   let bindingAvailable = options.bindingAvailable !== false;
   let bindingRequests = 0;
+  let releasePendingCatalog: (() => void) | null = null;
+  const catalogGate = options.holdCatalogUntilReleased
+    ? new Promise<void>((resolve) => {
+        releasePendingCatalog = resolve;
+      })
+    : null;
   const publicRequests: PublicRequestCapture[] = [];
   const submissionBindings = new Map<string, string>();
   const snapshot = await makeSnapshot();
@@ -491,6 +502,11 @@ async function configureCampaignBackend(
     }
 
     if (resource === 'campaign_geographic_map_context_links') bindingRequests += 1;
+    // Hold real catalog requests independently of binding requests, so the
+    // direct link is inspected while the first remote authority check is pending.
+    if (catalogGate && resource !== 'campaign_geographic_map_context_links') {
+      await catalogGate;
+    }
     if (
       !remoteAvailable ||
       (resource === 'campaign_geographic_map_context_links' ? !bindingAvailable : !catalogAvailable)
@@ -561,6 +577,9 @@ async function configureCampaignBackend(
     setBindingAvailable(value): void {
       bindingAvailable = value;
     },
+    releaseCatalog(): void {
+      releasePendingCatalog?.();
+    },
     getBindingRequestCount: () => bindingRequests,
     getPublicRequests: () => publicRequests,
   };
@@ -601,6 +620,28 @@ test('MAP-077: campaign-gated entrance, neutral surface and browser history', as
   await page.getByRole('button', { name: 'Mapa general' }).click();
   await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
   expect(new URL(page.url()).searchParams.has('map')).toBe(false);
+});
+
+test('MAP-077 R3: initial fallback preserves deep link until remote check completes', async ({
+  page,
+}) => {
+  const backend = await configureCampaignBackend(page, { holdCatalogUntilReleased: true });
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  await expect(page).toHaveURL(/map=neverwinter/);
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await expect(page.locator('[data-map-canvas]')).toBeVisible();
+  expect(backend.getBindingRequestCount()).toBe(0);
+
+  // A successful first remote refresh authorizes the binding. Until then,
+  // do not clear the URL or display local cartography.
+  backend.releaseCatalog();
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await expect(page).toHaveURL(/map=neverwinter/);
+  expect(backend.getBindingRequestCount()).toBe(1);
+
+  await page.reload();
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await expect(page).toHaveURL(/map=neverwinter/);
 });
 
 test('MAP-077: direct link and refresh restore the map without an entry action', async ({
