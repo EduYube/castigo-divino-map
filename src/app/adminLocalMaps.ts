@@ -233,8 +233,8 @@ export function mountAdminLocalMaps(
         button.id === 'local-placement-new' ||
         Boolean(button.closest('#local-binding-form')) ||
         Boolean(button.closest('#local-placement-form'));
-      button.disabled = !allowed() || (needsGlobal && !globalReady) ||
-        (needsCampaign && !campaignReady);
+      button.disabled =
+        !allowed() || (needsGlobal && !globalReady) || (needsCampaign && !campaignReady);
     }
   }
   function clearEditor(): void {
@@ -283,9 +283,7 @@ export function mountAdminLocalMaps(
       const meta = document.createElement('p');
       const parent = contexts.find((c) => c.id === context.parentId);
       meta.textContent = `${context.slug} · ${context.width} × ${context.height} · ${context.publicationStatus} · Padre: ${parent?.name ?? 'ninguno'} · ${context.imageUri ? context.loadingStrategy : 'sin imagen'} · ${context.sourceUrl && context.rightsHolder && context.licenseNotes ? 'procedencia registrada' : 'procedencia pendiente'}`;
-      const editButton = createButton('Editar contexto', () =>
-        openContext(context, editButton),
-      );
+      const editButton = createButton('Editar contexto', () => openContext(context, editButton));
       li.append(title, meta, editButton);
       if (context.publicationStatus !== 'archived') {
         li.append(createButton('Archivar contexto', () => void archiveContext(context)));
