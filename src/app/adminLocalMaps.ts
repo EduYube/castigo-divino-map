@@ -518,11 +518,12 @@ export function mountAdminLocalMaps(
     event.preventDefault();
     if (!allowed()) return;
     const draft = readContextForm();
+    const originalContextId = originalContext?.id;
     const errors = validateLocalContext(
       draft,
       originalContext,
       contexts,
-      Boolean(originalContext && placements.some((p) => p.mapContextId === originalContext.id)),
+      Boolean(originalContextId && placements.some((p) => p.mapContextId === originalContextId)),
     );
     for (const el of section.querySelectorAll<HTMLElement>('[aria-invalid]'))
       el.removeAttribute('aria-invalid');
