@@ -465,7 +465,6 @@ export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
   });
   const catalogUi = mountAdminCatalog(root, catalogController, authController);
   const mapEntityUi = mountAdminMapEntities(root, mapEntityController, authController);
-  const localMapUi = mountAdminLocalMaps(root, authController);
   const mapEntityAudienceUi = mountAdminMapEntityAudience(root, mapEntityController);
   const relationUi = mountAdminCharacterLocationRelations(root, relationController, authController);
   const requestUi = mountAdminPublicRequests(root, requestController, authController, {
@@ -495,6 +494,7 @@ export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
       void requestController.reload();
     },
   });
+  const localMapUi = mountAdminLocalMaps(root, authController);
   void authController.start();
 
   return {

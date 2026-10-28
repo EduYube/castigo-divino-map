@@ -106,6 +106,7 @@ export function mountAdminLocalMaps(
     </div>
     <div id="local-maps-bindings" hidden>
       <h4>Bindings · CAMPAIGN-SCOPED</h4>
+      <button type="button" id="local-campaign-reload">Recargar datos de campaña</button>
       <p id="local-binding-campaign"></p>
       <p>Campaña administrativa activa + nombre geográfico existente → contexto global. No se crea una entidad ni se copian coordenadas.</p>
       <form id="local-binding-form">
@@ -119,6 +120,7 @@ export function mountAdminLocalMaps(
     </div>
     <div id="local-maps-placements" hidden>
       <h4>Placements · ENTIDAD DE CAMPAÑA</h4>
+      <button type="button" id="local-placement-reload">Recargar datos de campaña</button>
       <p id="local-placement-campaign"></p>
       <p>Entidad de la campaña → geometría en un contexto global. La lectura pública multi-map/local-only se completará en MAP-079. Un placement guardado no garantiza todavía su visibilidad pública.</p>
       <button type="button" id="local-placement-new">Crear placement</button>
@@ -200,6 +202,8 @@ export function mountAdminLocalMaps(
   let mapEditor: LocalMapEditor | null = null;
   let dirty = false;
   let busy = false;
+  let campaignReady = false;
+  let globalReady = false;
   let restoreFocus: HTMLElement | null = null;
   const pane = (tab: Tab) => $(section, 'local-maps-' + tab);
   const status = $(section, 'local-maps-status');
@@ -218,7 +222,18 @@ export function mountAdminLocalMaps(
   }
   function enable(): void {
     for (const button of section.querySelectorAll<HTMLButtonElement>('button')) {
-      if (!button.hasAttribute('data-local-tab')) button.disabled = !allowed();
+      if (button.hasAttribute('data-local-tab')) continue;
+      const needsGlobal =
+        button.id === 'local-context-new' ||
+        button.id === 'local-placement-new' ||
+        Boolean(button.closest('#local-binding-form')) ||
+        Boolean(button.closest('#local-placement-form'));
+      const needsCampaign =
+        button.id === 'local-placement-new' ||
+        Boolean(button.closest('#local-binding-form')) ||
+        Boolean(button.closest('#local-placement-form'));
+      button.disabled = !allowed() || (needsGlobal && !globalReady) ||
+        (needsCampaign && !campaignReady);
     }
   }
   function clearEditor(): void {
@@ -359,12 +374,16 @@ export function mountAdminLocalMaps(
     const controller = new AbortController();
     globalAbort = controller;
     const generation = ++globalSequence;
+    globalReady = false;
+    enable();
     announce('Cargando contextos globales…');
     try {
       const next = await repository.listContexts(controller.signal);
       if (generation !== globalSequence || !authorized || destroyed) return;
       contexts = next;
+      globalReady = true;
       renderGlobal();
+      enable();
       announce('Contextos globales cargados.');
     } catch (error) {
       if (generation === globalSequence && !controller.signal.aborted)
@@ -379,6 +398,8 @@ export function mountAdminLocalMaps(
     campaignAbort = controller;
     const generation = ++campaignSequence;
     const requested = campaignId;
+    campaignReady = false;
+    enable();
     announce('Cargando bindings y placements de la campaña…');
     try {
       const [nextBindings, nextEntities, nextPlacements, nextGeo] = await Promise.all([
@@ -393,7 +414,9 @@ export function mountAdminLocalMaps(
       entities = nextEntities;
       placements = nextPlacements;
       geographies = nextGeo;
+      campaignReady = true;
       renderCampaign();
+      enable();
       announce('Datos de la campaña cargados.');
     } catch (error) {
       if (generation === campaignSequence && !controller.signal.aborted)
@@ -787,6 +810,7 @@ export function mountAdminLocalMaps(
     campaignAbort?.abort();
     mutationAbort?.abort();
     campaignSequence++;
+    campaignReady = false;
     bindings = [];
     placements = [];
     entities = [];
@@ -809,6 +833,8 @@ export function mountAdminLocalMaps(
     if (!next && authorized) {
       cancelPending();
       clearEditor();
+      campaignReady = false;
+      globalReady = false;
       contexts = [];
       bindings = [];
       placements = [];
@@ -840,6 +866,10 @@ export function mountAdminLocalMaps(
   listen($(section, 'local-context-reload'), 'click', () => {
     void loadGlobal();
   });
+  for (const id of ['local-campaign-reload', 'local-placement-reload'])
+    listen($(section, id), 'click', () => {
+      void loadCampaign();
+    });
   listen($(section, 'local-context-form'), 'submit', (e) => {
     void saveContext(e as SubmitEvent);
   });

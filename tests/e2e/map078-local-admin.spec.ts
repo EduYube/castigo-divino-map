@@ -3,6 +3,7 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 const PROJECT_URL = 'http://127.0.0.1:4173';
 const KEY = 'sb_publishable_map078_e2e_key';
 const TOKEN = 'map078_admin_token';
+const CAMPAIGN_A = '00000000-0000-4000-8000-000000000053';
 const CAMPAIGN = '00000000-0000-4000-8000-000000000068';
 const NEVERWINTER = {
   id: 'map-neverwinter',
@@ -139,15 +140,38 @@ async function setup(page: Page) {
                       archived_at: null,
                       updated_at: '2026-10-28',
                     },
+                    {
+                      id: 'place-synthetic',slug:'synthetic',name:'Emplazamiento sintético',
+                      entity_type:'location',lifecycle_status:null,visibility:'pin',audience:'public',
+                      portrait_path:null,summary:'',description:'',x:150,y:150,geometry:null,
+                      category_id:'category-test',publication_status:'draft',published_at:null,
+                      archived_at:null,updated_at:'2026-10-28'
+                    },
+                    {
+                      id: 'org-synthetic',slug:'organization',name:'Organización sintética',
+                      entity_type:'organization',lifecycle_status:null,visibility:'search_only',audience:'public',
+                      portrait_path:null,summary:'',description:'',x:null,y:null,geometry:null,
+                      category_id:'category-test',publication_status:'draft',published_at:null,
+                      archived_at:null,updated_at:'2026-10-28'
+                    },
                   ]
                 : table === 'campaigns'
                   ? [
+                      {
+                        id: CAMPAIGN_A,
+                        slug: 'castigo-divino',
+                        name: 'Castigo Divino',
+                        status: 'active',
+                        display_order: 0,
+                        archived_at: null,
+                        updated_at: '2026-10-28',
+                      },
                       {
                         id: CAMPAIGN,
                         slug: 'un-aliento-menos',
                         name: 'Un aliento menos',
                         status: 'active',
-                        display_order: 0,
+                        display_order: 1,
                         archived_at: null,
                         updated_at: '2026-10-28',
                       },
@@ -194,6 +218,19 @@ async function setup(page: Page) {
       );
       const row = idx >= 0 ? bindings.splice(idx, 1) : [];
       await route.fulfill(answer(Array.isArray(row) ? row : []));
+      return;
+    }
+    if (table === 'entity_map_placements' && method === 'PATCH') {
+      writes++;
+      const row = placements.find(p => p.entity_id===u.searchParams.get('entity_id')?.slice(3));
+      if(row) Object.assign(row,req.postDataJSON(),{updated_at:'2026-10-28T12:04:00.000Z'});
+      await route.fulfill(answer(row?[row]:[]));
+      return;
+    }
+    if (table === 'entity_map_placements' && method === 'DELETE') {
+      writes++;
+      const index=placements.findIndex(p => p.entity_id===u.searchParams.get('entity_id')?.slice(3));
+      await route.fulfill(answer(index>=0?placements.splice(index,1):[]));
       return;
     }
     if (table === 'entity_map_placements' && method === 'POST') {
@@ -270,6 +307,8 @@ test('MAP-078 keeps bindings campaign-scoped and excludes organization placement
   await login(page);
   await page.getByRole('button', { name: 'Bindings de campaña' }).click();
   await expect(page.locator('#local-binding-list')).not.toContainText('Neverwinter');
+  await page.locator('.admin-campaign-roster__select').selectOption(CAMPAIGN);
+  await expect(page.locator('#local-binding-list')).toContainText('Neverwinter');
   await page.getByRole('button', { name: 'Placements de campaña' }).click();
   await page.getByRole('button', { name: 'Crear placement' }).click();
   const options = await page.locator('#local-placement-entity option').allTextContents();
@@ -289,4 +328,66 @@ test('MAP-078 mobile forms do not overflow at 320/390/430', async ({ page }) => 
       .evaluate((el) => el.scrollWidth > el.clientWidth + 2);
     expect(overflow).toBe(false);
   }
+});
+
+test('MAP-078 can associate and disassociate a synthetic campaign binding without deleting Neverwinter', async ({page}) => {
+  const backend=await setup(page);
+  await login(page);
+  await page.getByRole('button',{name:'Bindings de campaña'}).click();
+  await expect(page.locator('#local-binding-list')).not.toContainText('Neverwinter');
+  await page.locator('#local-binding-geography').selectOption('geo-neverwinter');
+  await page.locator('#local-binding-context').selectOption('map-neverwinter');
+  await page.getByRole('button',{name:'Asociar geografía'}).click();
+  await expect(page.locator('#local-binding-list')).toContainText('Neverwinter');
+  expect(backend.bindings).toHaveLength(2);
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByRole('button',{name:'Desasociar binding'}).click();
+  await expect(page.locator('#local-binding-list')).not.toContainText('Neverwinter');
+  expect(backend.contexts).toHaveLength(1);
+  expect(backend.contexts[0]).toEqual(NEVERWINTER);
+});
+test('MAP-078 keyboard point placement saves and deletes synthetic data',async({page})=>{
+  const backend=await setup(page);await login(page);
+  await page.getByRole('button',{name:'Placements de campaña'}).click();
+  await page.getByRole('button',{name:'Crear placement'}).click();
+  await page.locator('#local-placement-x').fill('101');
+  await page.locator('#local-placement-y').fill('202');
+  await page.getByRole('button',{name:'Situar punto o añadir vértice'}).click();
+  await expect(page.locator('#local-placement-coordinate')).toContainText('101.00');
+  await page.getByRole('button',{name:'Guardar placement'}).click();
+  await expect(page.locator('#local-placement-list')).toContainText('Entidad sintética');
+  expect(backend.placements).toHaveLength(1);
+  expect(backend.placements[0]?.geometry).toEqual({kind:'point',coordinates:{x:101,y:202}});
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByRole('button',{name:'Borrar placement'}).click();
+  await expect(page.locator('#local-placement-list')).not.toContainText('Entidad sintética');
+  expect(backend.placements).toHaveLength(0);
+});
+test('MAP-078 keyboard polygon is only available to locations',async({page})=>{
+  const backend=await setup(page);await login(page);
+  await page.getByRole('button',{name:'Placements de campaña'}).click();
+  await page.getByRole('button',{name:'Crear placement'}).click();
+  await expect(page.locator('#local-placement-kind option[value="polygon"]')).toBeDisabled();
+  await page.locator('#local-placement-entity').selectOption('place-synthetic');
+  await expect(page.locator('#local-placement-kind option[value="polygon"]')).toBeEnabled();
+  await page.locator('#local-placement-kind').selectOption('polygon');
+  for(const [x,y] of [[100,100],[220,100],[150,200]]){
+    await page.locator('#local-placement-x').fill(String(x));
+    await page.locator('#local-placement-y').fill(String(y));
+    await page.getByRole('button',{name:'Situar punto o añadir vértice'}).click();
+  }
+  await expect(page.locator('#local-placement-coordinate')).toContainText('3 vértices');
+  await page.getByRole('button',{name:'Guardar placement'}).click();
+  await expect(page.locator('#local-placement-list')).toContainText('polygon');
+  expect(backend.placements).toHaveLength(1);
+});
+test('MAP-078 refuses out-of-bounds keyboard geometry without sending a write',async({page})=>{
+  const backend=await setup(page);await login(page);
+  await page.getByRole('button',{name:'Placements de campaña'}).click();
+  await page.getByRole('button',{name:'Crear placement'}).click();
+  await page.locator('#local-placement-x').fill('9999');
+  await page.locator('#local-placement-y').fill('100');
+  await page.getByRole('button',{name:'Situar punto o añadir vértice'}).click();
+  await expect(page.locator('#local-placement-error')).toContainText('dimensiones');
+  expect(backend.getWrites()).toBe(0);
 });
