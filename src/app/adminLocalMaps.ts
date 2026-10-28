@@ -131,22 +131,23 @@ export function mountAdminLocalMaps(
       <p id="local-context-error" class="admin-local-maps__error" role="alert" tabindex="-1"></p>
       <form id="local-context-form" novalidate>
         <div class="admin-local-maps__fields">
-          <label for="local-context-id">ID estable (inmutable)</label><input id="local-context-id" required autocomplete="off">
-          <label for="local-context-slug">Slug estable (inmutable)</label><input id="local-context-slug" required autocomplete="off">
-          <label for="local-context-name">Nombre editorial</label><input id="local-context-name" required>
-          <label for="local-context-parent">Contexto padre (opcional)</label><select id="local-context-parent"></select>
-          <label for="local-context-width">Anchura en píxeles</label><input id="local-context-width" type="number" min="0.000001" step="any" required>
-          <label for="local-context-height">Altura en píxeles</label><input id="local-context-height" type="number" min="0.000001" step="any" required>
-          <label for="local-context-status">Estado editorial</label>
+          <label for="local-context-id">Identificador cartográfico (inmutable)</label><input id="local-context-id" required autocomplete="off">
+          <label for="local-context-slug">Ruta cartográfica (inmutable)</label><input id="local-context-slug" required autocomplete="off">
+          <label for="local-context-name">Denominación del mapa</label><input id="local-context-name" required>
+          <label for="local-context-parent">Mapa contenedor (opcional)</label><select id="local-context-parent"></select>
+          <label for="local-context-width">Extensión horizontal (px)</label><input id="local-context-width" type="number" min="0.000001" step="any" required>
+          <label for="local-context-height">Extensión vertical (px)</label><input id="local-context-height" type="number" min="0.000001" step="any" required>
+          <label for="local-context-status">Publicación del contexto</label>
           <select id="local-context-status"><option value="draft">Borrador</option><option value="published">Publicado</option><option value="archived">Archivado</option></select>
-          <label for="local-context-uri">URI de imagen (opcional)</label><input id="local-context-uri" type="text">
-          <label for="local-context-strategy">Estrategia de imagen</label>
+          <label for="local-context-uri">Recurso gráfico (URI opcional)</label><input id="local-context-uri" type="text">
+          <label for="local-context-strategy">Estrategia del recurso gráfico</label>
           <select id="local-context-strategy"><option value="">Sin imagen</option><option value="remote">remote · imagen alojada en origen</option><option value="bundled">bundled · asset incorporado previamente</option></select>
-          <label for="local-context-source">URL de la fuente</label><input id="local-context-source" type="text">
-          <label for="local-context-rights">Titular de derechos</label><input id="local-context-rights">
-          <label for="local-context-attribution">Atribución editorial</label><textarea id="local-context-attribution" rows="2"></textarea>
-          <label for="local-context-license">Notas de licencia y permisos</label><textarea id="local-context-license" rows="3"></textarea>
+          <label for="local-context-source">Enlace de procedencia</label><input id="local-context-source" type="text">
+          <label for="local-context-rights">Propietario legal del gráfico</label><input id="local-context-rights">
+          <label for="local-context-attribution">Créditos cartográficos</label><textarea id="local-context-attribution" rows="2"></textarea>
+          <label for="local-context-license">Condiciones de distribución y licencia</label><textarea id="local-context-license" rows="3"></textarea>
         </div>
+        <p>El identificador (ID) y la ruta (slug) son estables e inmutables tras crear el contexto. Solo se permite cambiar el nombre editorial.</p>
         <p>Sin imagen: URI y estrategia vacías. Con imagen: estrategia remote/bundled, fuente, titular y licencia obligatorios según PostgreSQL. Guardar metadatos no concede permisos de distribución ni sube archivos.</p>
         <p id="local-context-provenance" role="status"></p>
         <div class="admin-local-maps__actions"><button type="submit">Guardar contexto</button><button type="button" id="local-context-cancel">Cancelar edición</button></div>
@@ -156,10 +157,10 @@ export function mountAdminLocalMaps(
       <h4 id="local-placement-editor-title">Editor de placement · CRS.Simple</h4>
       <p id="local-placement-error" class="admin-local-maps__error" role="alert" tabindex="-1"></p>
       <form id="local-placement-form" novalidate>
-        <label for="local-placement-context">Contexto cartográfico global</label><select id="local-placement-context" required></select>
-        <label for="local-placement-entity">Entidad elegible de la campaña</label><select id="local-placement-entity" required></select>
-        <label for="local-placement-kind">Geometría</label><select id="local-placement-kind"><option value="point">Punto</option><option value="polygon">Polígono (solo location)</option></select>
-        <label for="local-placement-status">Estado editorial</label>
+        <label for="local-placement-context">Superficie cartográfica elegida</label><select id="local-placement-context" required></select>
+        <label for="local-placement-entity">Elemento narrativo para situar</label><select id="local-placement-entity" required></select>
+        <label for="local-placement-kind">Forma geométrica local</label><select id="local-placement-kind"><option value="point">Punto</option><option value="polygon">Polígono (solo location)</option></select>
+        <label for="local-placement-status">Publicación del placement</label>
         <select id="local-placement-status"><option value="draft">Borrador</option><option value="published">Publicado</option><option value="archived">Archivado</option></select>
         <p id="local-placement-help">Selecciona un contexto y una entidad. Haz clic para definir el punto, o añade vértices en modo polígono. Arrastra puntos o usa las flechas con teclado. Suprimir elimina un vértice.</p>
         <div class="admin-local-maps__coordinate-controls">
