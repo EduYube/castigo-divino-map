@@ -14,6 +14,8 @@ const CAMPAIGN_SCOPED_TABLES = new Set([
   'character_location_events',
   'public_requests',
   'campaign_geographic_entity_links',
+  'campaign_geographic_map_context_links',
+  'entity_map_placements',
 ]);
 
 function parseJsonObject(body: BodyInit | null | undefined): Record<string, unknown> | null {

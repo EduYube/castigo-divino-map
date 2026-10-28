@@ -101,3 +101,25 @@ describe('MAP-054 administrative campaign scoping', () => {
     expect(unrelated.init).toBe(unrelatedInit);
   });
 });
+
+
+describe('MAP-078 campaign scoped Data API tables',()=>{
+  it.each(['campaign_geographic_map_context_links','entity_map_placements'])(
+    'scopes %s reads, deletes and inserts to active campaign',table=>{
+      for(const method of ['GET','DELETE'] as const){
+        const scoped=scopeAdminTableRequest(
+          new URL('https://example.supabase.co/rest/v1/'+table+'?campaign_id=eq.'+ATTACKER_CAMPAIGN),
+          {method},SELECTED_CAMPAIGN);
+        expect(scoped.url.searchParams.get('campaign_id')).toBe('eq.'+SELECTED_CAMPAIGN);
+      }
+      const inserted=scopeAdminTableRequest(
+        new URL('https://example.supabase.co/rest/v1/'+table),
+        {method:'POST',body:JSON.stringify({campaign_id:ATTACKER_CAMPAIGN})},SELECTED_CAMPAIGN);
+      expect(jsonBody(inserted.init).campaign_id).toBe(SELECTED_CAMPAIGN);
+    }
+  );
+  it('does not campaign-scope global map contexts',()=>{
+    const original=new URL('https://example.supabase.co/rest/v1/map_contexts');
+    expect(scopeAdminTableRequest(original,{method:'GET'},SELECTED_CAMPAIGN).url.searchParams.has('campaign_id')).toBe(false);
+  });
+});
