@@ -36,6 +36,16 @@ peticiones pendientes, oculta inmediatamente el contexto anterior y
 normaliza `map`. Una URL local no autorizada o REST indisponible
 degrada al mundo con anuncio accesible, sin fallback a otra campaña.
 
+La autoridad de disponibilidad se toma del estado de backend del catálogo
+al montar el controlador y de sus eventos posteriores. En `degraded/offline`
+se invalidan las peticiones locales pendientes y no se aceptan nuevos
+bindings aunque su endpoint siga respondiendo: cambiar de campaña o navegar
+con Back no vuelve a abrir mapas hasta un estado `connected`.
+Una lectura de bindings que falla con 503 se diferencia de una lista vacía
+válida: el siguiente evento `connected` del refresco del catálogo reintenta
+una sola vez, sin reconsultar bindings en cada refresco cuando la lectura
+anterior fue correcta. Se mantienen las protecciones por campaña/generación.
+
 La búsqueda global sigue en v1.2; MAP-079 añadirá placements local-only,
 MAP-080 soportará map contexts en snapshot. El snapshot público v3,
 checksum `sha256:ce1d861bbfc12153be799d5bb6f54b34a87c5a03e50830bb27aaef9ef4567de3`,

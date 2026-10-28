@@ -235,6 +235,7 @@ function mountPublicExperience(
     },
   });
   const localNavigation = mountLocalMapNavigation(app, {
+    initialBackendState: publicDataRuntime?.getBackendState() ?? 'degraded',
     onHistoryChange: (mode) => writePublicStateToHistory(mode),
   });
   localNavigation.updateCatalog(initialCatalogState);

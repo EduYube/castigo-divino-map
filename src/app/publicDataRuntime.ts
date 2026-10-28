@@ -72,6 +72,7 @@ export interface PublicDataRuntime {
   subscribeCatalogState(listener: PublicCatalogStateListener): () => void;
   selectCampaign(slug: string): boolean;
   refresh(): Promise<void>;
+  getBackendState(): PublicCatalogLoadResult['backend']['state'];
   revokeEntity(entityId: EntityId): void;
   clearEntityRevocation(entityId: EntityId): void;
   destroy(): void;
@@ -484,6 +485,9 @@ export async function bootstrapPublicDataRuntime(
     },
     refresh(): Promise<void> {
       return refresh(false);
+    },
+    getBackendState(): PublicCatalogLoadResult['backend']['state'] {
+      return latestResult.backend.state;
     },
     revokeEntity,
     clearEntityRevocation,

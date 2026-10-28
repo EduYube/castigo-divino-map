@@ -25,6 +25,7 @@ export interface LocalMapNavigation {
 }
 
 interface LocalMapNavigationOptions {
+  readonly initialBackendState: 'connected' | 'degraded' | 'offline';
   readonly onHistoryChange: (mode: 'push' | 'replace') => void;
 }
 
@@ -140,7 +141,10 @@ export function mountLocalMapNavigation(
   let selectedGeoId: string | null = null;
   let requestedSlug: string | null = null;
   let loaded = false;
-  let backendWasUnavailable = false;
+  // The public catalog is the authority for local navigation, not the binding endpoint.
+  let backendState = options.initialBackendState;
+  // An empty successful response is valid; only failures trigger a retry on refresh.
+  let bindingLoadFailed = false;
   let generation = 0;
   let request: AbortController | null = null;
   let localMap: LeafletMap | null = null;
@@ -216,7 +220,7 @@ export function mountLocalMapNavigation(
 
   const redraw = (): void => {
     const entrance = links.find((link) => link.geographicNameId === selectedGeoId);
-    entry.hidden = requestedSlug !== null || !entrance;
+    entry.hidden = backendState !== 'connected' || requestedSlug !== null || !entrance;
     if (entrance && requestedSlug === null) {
       entryName.textContent = entrance.context.name;
       enter.textContent = `Entrar en ${entrance.context.name}`;
@@ -242,9 +246,10 @@ export function mountLocalMapNavigation(
     request?.abort();
     const localGeneration = ++generation;
     const campaignId = currentCampaignId;
-    if (!campaignId) {
+    links = [];
+    bindingLoadFailed = false;
+    if (!campaignId || backendState !== 'connected') {
       loaded = true;
-      links = [];
       redraw();
       return;
     }
@@ -252,15 +257,18 @@ export function mountLocalMapNavigation(
     request = new AbortController();
     void fetchPublicLocalMapLinks(campaignId, request.signal)
       .then((nextLinks) => {
-        if (localGeneration !== generation) return;
+        if (localGeneration !== generation || backendState !== 'connected') return;
+        request = null;
         links = nextLinks;
         loaded = true;
         redraw();
       })
       .catch(() => {
-        if (localGeneration !== generation) return;
+        if (localGeneration !== generation || backendState !== 'connected') return;
+        request = null;
         links = [];
         loaded = true;
+        bindingLoadFailed = true;
         redraw();
       });
   };
@@ -274,6 +282,7 @@ export function mountLocalMapNavigation(
   };
 
   enter.addEventListener('click', () => {
+    if (backendState !== 'connected') return;
     const entrance = links.find((link) => link.geographicNameId === selectedGeoId);
     if (!entrance) return;
     requestedSlug = entrance.context.slug;
@@ -286,18 +295,19 @@ export function mountLocalMapNavigation(
   window.addEventListener('atlas:public-data-status', (event) => {
     const detail = (event as CustomEvent<{ backendState?: string }>).detail;
     if (detail?.backendState === 'connected') {
-      if (backendWasUnavailable && currentCampaignId) {
-        backendWasUnavailable = false;
-        load();
-      }
+      const shouldReload = backendState !== 'connected' || bindingLoadFailed;
+      backendState = 'connected';
+      if (shouldReload && currentCampaignId) load();
       return;
     }
     if (detail?.backendState !== 'degraded' && detail?.backendState !== 'offline') return;
-    backendWasUnavailable = true;
+    backendState = detail.backendState;
     request?.abort();
+    request = null;
     ++generation;
     links = [];
     loaded = true;
+    bindingLoadFailed = false;
     redraw();
   });
 

@@ -54,6 +54,9 @@ interface PublicRequestCapture {
 
 interface CampaignBackend {
   setRemoteAvailable(value: boolean): void;
+  setCatalogAvailable(value: boolean): void;
+  setBindingAvailable(value: boolean): void;
+  getBindingRequestCount(): number;
   getPublicRequests(): readonly PublicRequestCapture[];
 }
 
@@ -396,9 +399,12 @@ async function makeSnapshot(): Promise<PublicCatalogSnapshotV3> {
 
 async function configureCampaignBackend(
   page: Page,
-  options: { readonly remoteAvailable?: boolean } = {},
+  options: { readonly remoteAvailable?: boolean; readonly bindingAvailable?: boolean } = {},
 ): Promise<CampaignBackend> {
   let remoteAvailable = options.remoteAvailable !== false;
+  let catalogAvailable = true;
+  let bindingAvailable = options.bindingAvailable !== false;
+  let bindingRequests = 0;
   const publicRequests: PublicRequestCapture[] = [];
   const submissionBindings = new Map<string, string>();
   const snapshot = await makeSnapshot();
@@ -484,7 +490,11 @@ async function configureCampaignBackend(
       return;
     }
 
-    if (!remoteAvailable) {
+    if (resource === 'campaign_geographic_map_context_links') bindingRequests += 1;
+    if (
+      !remoteAvailable ||
+      (resource === 'campaign_geographic_map_context_links' ? !bindingAvailable : !catalogAvailable)
+    ) {
       await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
       return;
     }
@@ -545,6 +555,13 @@ async function configureCampaignBackend(
     setRemoteAvailable(value): void {
       remoteAvailable = value;
     },
+    setCatalogAvailable(value): void {
+      catalogAvailable = value;
+    },
+    setBindingAvailable(value): void {
+      bindingAvailable = value;
+    },
+    getBindingRequestCount: () => bindingRequests,
     getPublicRequests: () => publicRequests,
   };
 }
@@ -658,4 +675,84 @@ test('MAP-077: keyboard and offline transition', async ({ page }) => {
   await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
   await expect(page.locator('[data-map-canvas]')).toBeVisible();
   expect(new URL(page.url()).searchParams.has('map')).toBe(false);
+});
+
+test('MAP-077 R2: degraded catalog blocks healthy binding endpoint across campaign changes', async ({
+  page,
+}) => {
+  const backend = await configureCampaignBackend(page);
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  const initialBindingRequests = backend.getBindingRequestCount();
+
+  // Partial outage: the catalog is unavailable, but the binding REST endpoint remains healthy.
+  backend.setCatalogAvailable(false);
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'degraded' } }),
+    );
+  });
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await page.getByLabel('Campaña', { exact: true }).selectOption('castigo-divino');
+  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
+  await selectNeverwinter(page);
+  await expect(page.locator('[data-local-map-entry]')).toBeHidden();
+
+  // Simulate Back to an earlier valid local-map deep link while still degraded.
+  await page.evaluate(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('map', 'neverwinter');
+    window.history.pushState(window.history.state, '', url);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await expect(page).not.toHaveURL(/map=neverwinter/);
+  expect(backend.getBindingRequestCount()).toBe(initialBindingRequests);
+
+  backend.setCatalogAvailable(true);
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+    );
+  });
+  await expect(page.getByRole('button', { name: 'Entrar en Neverwinter' })).toBeVisible();
+  expect(backend.getBindingRequestCount()).toBe(initialBindingRequests + 1);
+});
+
+test('MAP-077 R2: a transient binding-only 503 retries on connected refresh, not on every event', async ({
+  page,
+}) => {
+  const backend = await configureCampaignBackend(page, { bindingAvailable: false });
+  const failedBinding = page.waitForResponse(
+    (response) =>
+      response.url().includes('/rest/v1/campaign_geographic_map_context_links') &&
+      response.status() === 503,
+  );
+  await page.goto('/?campaign=un-aliento-menos');
+  await failedBinding;
+  await selectNeverwinter(page);
+  await expect(page.locator('[data-local-map-entry]')).toBeHidden();
+
+  backend.setBindingAvailable(true);
+  // Two refresh notifications also cover a connected event racing the settled 503.
+  for (let i = 0; i < 2; i += 1) {
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+      );
+    });
+    await expect
+      .poll(() => backend.getBindingRequestCount(), { timeout: 5000 })
+      .toBeGreaterThanOrEqual(2);
+  }
+  await expect(page.getByRole('button', { name: 'Entrar en Neverwinter' })).toBeVisible();
+  expect(backend.getBindingRequestCount()).toBe(2);
+
+  // Healthy refreshes do not create new requests after a successful binding read.
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+    );
+  });
+  expect(backend.getBindingRequestCount()).toBe(2);
 });
