@@ -6,14 +6,14 @@ select no_plan();
 
 -- Assert the exact PostgreSQL error: duplicate/FK errors must not masquerade as RLS rejection.
 create function pg_temp.map077_rejects(statement text, expected_sqlstate text)
-returns boolean language plpgsql set search_path = '' as $
+returns boolean language plpgsql set search_path = '' as $$
 begin
   execute statement;
   return false;
 exception when others then
   return SQLSTATE = expected_sqlstate;
 end;
-$;
+$$;
 grant execute on function pg_temp.map077_rejects(text,text) to anon, authenticated;
 
 select has_table('public', 'campaign_geographic_map_context_links',
