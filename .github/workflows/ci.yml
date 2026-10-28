@@ -20,6 +20,10 @@ jobs:
   validate:
     name: Build, quality and tests
     runs-on: ubuntu-latest
+    # Browser dependencies and executables are preinstalled; version matches package-lock.json.
+    # Pin the official multi-arch image digest so PR CI does not depend on a mutable tag.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
     timeout-minutes: 35
 
     steps:
@@ -65,8 +69,8 @@ jobs:
       - name: Report production build metrics
         run: npm run report:build
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Verify preinstalled Playwright browsers
+        run: npx playwright --version
 
       - name: Run end-to-end tests
         run: npm run test:e2e
