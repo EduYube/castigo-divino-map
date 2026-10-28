@@ -182,7 +182,9 @@ async function setup(page: Page) {
                     ]
                   : [];
     if (method === 'GET') {
-      await route.fulfill(answer(rows));
+      // Public catalog mocks must preserve the empty-but-valid baseline. Local
+      // administrative geography/entities are returned only with an admin JWT.
+      await route.fulfill(answer(!admin && table !== 'campaigns' ? [] : rows));
       return;
     }
     if (!admin) {
