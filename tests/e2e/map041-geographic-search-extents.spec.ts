@@ -195,9 +195,8 @@ test('Spanish region alias uses identical bounds and the area layer never obstru
   );
   // A one-pixel Leaflet fitBounds rounding difference does not change the target area.
   const [beforeX, beforeY] = (englishCenter ?? '').split(',').map(Number);
-  const [afterX, afterY] = (await shell.getAttribute('data-map-center') ?? '')
-    .split(',')
-    .map(Number);
+  const currentCenter = await shell.getAttribute('data-map-center');
+  const [afterX, afterY] = (currentCenter ?? '').split(',').map(Number);
   expect(Math.abs((afterX ?? NaN) - (beforeX ?? NaN))).toBeLessThanOrEqual(1.1);
   expect(Math.abs((afterY ?? NaN) - (beforeY ?? NaN))).toBeLessThanOrEqual(1.1);
   await expect(shell).toHaveAttribute('data-map-zoom', englishZoom ?? '');

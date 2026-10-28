@@ -151,9 +151,8 @@ test('Aguas Profundas and Waterdeep select the exact same geographic target thro
   await chooseFirstSuggestion(page, 'Waterdeep');
   // Subpixel rounding depends on the browser's viewport and font metrics.
   const [beforeX, beforeY] = (spanishCenter ?? '').split(',').map(Number);
-  const [afterX, afterY] = (await mapShell.getAttribute('data-map-center') ?? '')
-    .split(',')
-    .map(Number);
+  const currentCenter = await mapShell.getAttribute('data-map-center');
+  const [afterX, afterY] = (currentCenter ?? '').split(',').map(Number);
   expect(Math.abs((afterX ?? NaN) - (beforeX ?? NaN))).toBeLessThanOrEqual(1.1);
   expect(Math.abs((afterY ?? NaN) - (beforeY ?? NaN))).toBeLessThanOrEqual(1.1);
   await expect(mapShell).toHaveAttribute('data-map-zoom', spanishZoom ?? '');
