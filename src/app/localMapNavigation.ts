@@ -140,6 +140,7 @@ export function mountLocalMapNavigation(
   let selectedGeoId: string | null = null;
   let requestedSlug: string | null = null;
   let loaded = false;
+  let backendWasUnavailable = false;
   let generation = 0;
   let request: AbortController | null = null;
   let localMap: LeafletMap | null = null;
@@ -285,10 +286,14 @@ export function mountLocalMapNavigation(
   window.addEventListener('atlas:public-data-status', (event) => {
     const detail = (event as CustomEvent<{ backendState?: string }>).detail;
     if (detail?.backendState === 'connected') {
-      if (currentCampaignId) load();
+      if (backendWasUnavailable && currentCampaignId) {
+        backendWasUnavailable = false;
+        load();
+      }
       return;
     }
     if (detail?.backendState !== 'degraded' && detail?.backendState !== 'offline') return;
+    backendWasUnavailable = true;
     request?.abort();
     ++generation;
     links = [];

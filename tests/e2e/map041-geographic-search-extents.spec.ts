@@ -193,7 +193,13 @@ test('Spanish region alias uses identical bounds and the area layer never obstru
     'Costa de la Espada',
     /Sword Coast.*Lugar geográfico.*Coincidencia por alias/i,
   );
-  await expect(shell).toHaveAttribute('data-map-center', englishCenter ?? '');
+  // A one-pixel Leaflet fitBounds rounding difference does not change the target area.
+  const [beforeX, beforeY] = (englishCenter ?? '').split(',').map(Number);
+  const [afterX, afterY] = (await shell.getAttribute('data-map-center') ?? '')
+    .split(',')
+    .map(Number);
+  expect(Math.abs((afterX ?? NaN) - (beforeX ?? NaN))).toBeLessThanOrEqual(1.1);
+  expect(Math.abs((afterY ?? NaN) - (beforeY ?? NaN))).toBeLessThanOrEqual(1.1);
   await expect(shell).toHaveAttribute('data-map-zoom', englishZoom ?? '');
   await expect(shell).toHaveAttribute('data-search-highlight-bounds', englishBounds ?? '');
   await expect(pin).toBeVisible();

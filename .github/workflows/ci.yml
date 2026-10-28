@@ -76,6 +76,9 @@ jobs:
         run: npx playwright --version
 
       - name: Run end-to-end tests
+        # Firefox requires disabling its content sandbox in the isolated root CI container.
+        env:
+          MOZ_DISABLE_CONTENT_SANDBOX: '1'
         run: npm run test:e2e
 
       - name: Upload Playwright failure diagnostics
