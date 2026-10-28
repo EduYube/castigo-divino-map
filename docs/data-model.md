@@ -463,3 +463,17 @@ debe tener world x/y/geometry NULL y solo geometría mediante placements. El
 lector público v1.2 no muestra entidades sin world geometry hasta MAP-079.
 Consulta [ADR 0008](adr/0008-map-contexts-and-campaign-scoped-placements.md)
 y [contrato MAP-075](map-075-local-map-contexts.md).
+
+## MAP-077 — Acceso geográfico a contextos locales
+
+`campaign_geographic_map_context_links` tiene PK
+`(campaign_id, geographic_name_id)`, FKs a `campaigns`,
+`geographic_names` y `map_contexts`, e índice por contexto.
+La relación modela **disponibilidad de entrada** por campaña, no la
+propiedad del plano físico. Anon solo lee un enlace cuando geonombre y
+contexto están publicados y campaña activa; escritura por columnas
+para admin autenticado con RLS. El contexto publicado
+`map-neverwinter` es global, 2048 × 1582, sin `parent_id`,
+`image_uri` ni `loading_strategy`, y se enlaza solamente desde
+`Un aliento menos` a `geo-neverwinter`. No se crea un
+`entity-neverwinter` ni placement de Veyra; el snapshot v3 no cambia.

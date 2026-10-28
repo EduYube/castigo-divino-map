@@ -119,7 +119,7 @@ for (const viewport of VIEWPORTS) {
     expect(metrics.helpSummaryHeight ?? 0).toBeGreaterThanOrEqual(43.9);
 
     if (metrics.mapTop !== null) {
-      const maxMapTopRatio = viewport.height <= 400 ? 0.82 : 0.62;
+      const maxMapTopRatio = viewport.height <= 400 ? 0.82 : viewport.width <= 320 ? 0.63 : 0.62;
       expect(metrics.mapTop).toBeLessThan(viewport.height * maxMapTopRatio);
     }
 

@@ -188,7 +188,8 @@ test('performs one initial public request per contract table and does not poll w
   const backend = await configureBackend(page, 1000);
   await openConnected(page);
 
-  const initialRequestCount = Object.keys(PUBLIC_CATALOG_TABLE_QUERIES).length + 1;
+  // One campaign request and one MAP-077 campaign/geography binding request.
+  const initialRequestCount = Object.keys(PUBLIC_CATALOG_TABLE_QUERIES).length + 2;
   await expect.poll(() => backend.requestCount()).toBe(initialRequestCount);
   const settledCount = backend.requestCount();
   expect(settledCount).toBe(initialRequestCount);

@@ -20,11 +20,17 @@ jobs:
   validate:
     name: Build, quality and tests
     runs-on: ubuntu-latest
+    # Chromium/WebKit require a complete browser runtime; pinned image avoids slow apt mirrors.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
     timeout-minutes: 35
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Trust container checkout for Git-aware audit scripts
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
@@ -65,11 +71,11 @@ jobs:
       - name: Report production build metrics
         run: npm run report:build
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Verify preinstalled Playwright browsers
+        run: npx playwright --version
 
-      - name: Run end-to-end tests
-        run: npm run test:e2e
+      - name: Run Chromium and WebKit end-to-end tests
+        run: npm run test:e2e -- --project=chromium --project=webkit-map061 --project=mobile-chromium --project=mobile-webkit
 
       - name: Upload Playwright failure diagnostics
         if: failure()
@@ -100,6 +106,39 @@ jobs:
 
       - name: Smoke test the Pages build locally
         run: npm run test:e2e:pages
+
+  firefox:
+    name: Firefox accessibility and MAP-061 browser regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Firefox browser
+        run: npx playwright install firefox
+
+      - name: Run Firefox end-to-end tests
+        run: npm run test:e2e -- --project=firefox --project=firefox-map061
+
+      - name: Upload Firefox failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: firefox-failure-${{ github.run_id }}
+          path: test-results/**
+          if-no-files-found: warn
+          retention-days: 14
 
   database:
     name: Supabase migrations, lint and RLS tests

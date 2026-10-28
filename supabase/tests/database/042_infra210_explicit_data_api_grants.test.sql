@@ -15,6 +15,7 @@ select is(current_user, 'postgres'::name,
 with expected(name, anon_read, authenticated_read, authenticated_delete) as (
   values
     ('campaign_geographic_entity_links', true, true, true),
+    ('campaign_geographic_map_context_links', true, true, true),
     ('campaigns', true, true, false),
     ('categories', true, true, true),
     ('character_location_events', true, true, true),
@@ -44,7 +45,7 @@ select is(
   (select count(*) from expected full join real using (name)
    where expected.name is null or real.name is null),
   0::bigint,
-  'precisely the 20 expected public tables exist'
+  'precisely the 21 expected public tables exist'
 );
 
 select is(
@@ -63,6 +64,7 @@ as $$
   with expected(name, anon_read, authenticated_read, authenticated_delete) as (
     values
     ('campaign_geographic_entity_links', true, true, true),
+    ('campaign_geographic_map_context_links', true, true, true),
     ('campaigns', true, true, false),
     ('categories', true, true, true),
     ('character_location_events', true, true, true),
@@ -110,10 +112,10 @@ as $$
       ('service_role', 'INSERT', false),
       ('service_role', 'UPDATE', false),
       ('service_role', 'DELETE', false),
-      ('service_role', 'TRUNCATE', true),
-      ('service_role', 'REFERENCES', true),
-      ('service_role', 'TRIGGER', true),
-      ('service_role', 'MAINTAIN', true)
+      ('service_role', 'TRUNCATE', real.name <> 'campaign_geographic_map_context_links'),
+      ('service_role', 'REFERENCES', real.name <> 'campaign_geographic_map_context_links'),
+      ('service_role', 'TRIGGER', real.name <> 'campaign_geographic_map_context_links'),
+      ('service_role', 'MAINTAIN', real.name <> 'campaign_geographic_map_context_links')
   ) wanted(role_name, privilege_name, allowed)
   where pg_catalog.has_table_privilege(wanted.role_name,real.oid,wanted.privilege_name)
     <> wanted.allowed;
@@ -140,6 +142,7 @@ select is(
 with expected(name, ins, upd) as (
   values
     ('campaign_geographic_entity_links', 'campaign_id,entity_id,geographic_name_id', 'entity_id'),
+    ('campaign_geographic_map_context_links', 'campaign_id,geographic_name_id,map_context_id', 'map_context_id'),
     ('campaigns', 'display_order,id,name,slug,status', 'display_order,name,status'),
     ('categories', 'campaign_id,description,id,name,publication_status,slug', 'description,name,publication_status,slug'),
     ('character_location_events', 'campaign_id,character_id,event_type,geographic_name_id,id,language,location_entity_id,location_label,observed_at,publication_status,related_sighting_id,summary,x,y', 'character_id,event_type,geographic_name_id,language,location_entity_id,location_label,observed_at,publication_status,related_sighting_id,summary,x,y'),

@@ -13,6 +13,15 @@ const hidden = new URL(
 // Existing upgrade rehearsals deliberately stop at historical migration
 // checkpoints. The new hardening migration must only participate in the
 // full fresh reset that follows this suite, not those older checkpoints.
+const map077Migration = new URL(
+  '../supabase/migrations/20261026154700_add_campaign_geographic_map_context_links.sql',
+  import.meta.url,
+);
+const map077Hidden = new URL(
+  '../supabase/migrations/20261026154700_add_campaign_geographic_map_context_links.sql.rehearsal-hidden',
+  import.meta.url,
+);
+
 const rehearsals = [
   'supabase:db:test:upgrade',
   'supabase:db:test:map066:upgrade',
@@ -26,6 +35,7 @@ const rehearsals = [
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 renameSync(migration, hidden);
+renameSync(map077Migration, map077Hidden);
 try {
   for (const rehearsal of rehearsals) {
     const result = spawnSync(npm, ['run', rehearsal], {
@@ -39,5 +49,6 @@ try {
   }
 } finally {
   // Always restore the canonical migration, even after a failed rehearsal.
+  renameSync(map077Hidden, map077Migration);
   renameSync(hidden, migration);
 }

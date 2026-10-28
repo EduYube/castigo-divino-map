@@ -8,6 +8,7 @@ import { INITIAL_PUBLIC_CAMPAIGN_SLUG } from './app/campaignSelection';
 import { mountFullEntityDetails, renderFullEntityDetailsShell } from './app/fullEntityDetails';
 import { createFullEntityUrl, parseFullEntityUrlRequest } from './app/fullEntityUrl';
 import { mountMapLayers } from './app/mapLayers';
+import { mountLocalMapNavigation } from './app/localMapNavigation';
 import { mountMasterDetailActions } from './app/masterDetailActions';
 import { mountMasterPinVisuals } from './app/masterPinVisuals';
 import { bootstrapMasterModeRuntime, type MasterModeRuntime } from './app/masterModeRuntime';
@@ -233,6 +234,14 @@ function mountPublicExperience(
       });
     },
   });
+  const localNavigation = mountLocalMapNavigation(app, {
+    initialBackendState: publicDataRuntime?.getBackendState() ?? 'degraded',
+    onHistoryChange: (mode) => writePublicStateToHistory(mode),
+  });
+  localNavigation.updateCatalog(initialCatalogState);
+  window.addEventListener('atlas:world-map-restored', () => {
+    window.requestAnimationFrame(() => mapController.map.invalidateSize({ animate: false }));
+  });
   const masterPinVisuals = mountMasterPinVisuals(app);
   masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
   mountPublicPinRequest(app, mapController.map);
@@ -442,6 +451,7 @@ function mountPublicExperience(
       invalidateDeferredSelectionAnnouncement();
       if (geographicNameId !== null) {
         geographicNameId = null;
+        localNavigation.setGeographicSelection(null);
         mapController.clearSearchFocus();
       }
       updateMatchingPlaces();
@@ -474,6 +484,7 @@ function mountPublicExperience(
       }
 
       geographicNameId = result.type === 'geographic' ? (result.id as GeographicNameId) : null;
+      localNavigation.setGeographicSelection(geographicNameId);
       selection.clear();
       updateMatchingPlaces();
       if (result.coordinates === null) return;
@@ -549,6 +560,7 @@ function mountPublicExperience(
       activePlaceId: selection.getActivePlaceId(),
       query: masterEntityIds.size > 0 ? '' : placeSearchController.getQuery(),
       geographicNameId,
+      mapSlug: localNavigation.getMapSlug(),
       selectedCategoryIds: filters.selectedCategoryIds,
       selectedTagIds: filters.selectedTagIds,
       activeLayerIds: mapLayerState.activeLayerIds,
@@ -691,6 +703,9 @@ function mountPublicExperience(
     if (!force && isSameCatalogState(catalogState, nextCatalogState)) return;
 
     invalidateDeferredSelectionAnnouncement();
+    const previousCampaignId = catalogState.selectedCampaign?.id ?? null;
+    const nextCampaignId = nextCatalogState.selectedCampaign?.id ?? null;
+    const campaignChanged = previousCampaignId !== nextCampaignId;
     catalogState = nextCatalogState;
     const previousActivePlaceId = selection.getActivePlaceId();
     const previousGeographicNameId = geographicNameId;
@@ -747,6 +762,7 @@ function mountPublicExperience(
 
     try {
       catalog = nextCatalogState.compatibility;
+      localNavigation.updateCatalog(nextCatalogState);
       publicBeta02Catalog = nextCatalogState.beta02;
       beta02Catalog = effectiveBeta02;
       placeFiltersController.setCatalogState(catalog, publicBeta02Catalog);
@@ -787,6 +803,7 @@ function mountPublicExperience(
         restorePendingInitialFilters();
       }
       geographicNameId = resolveGeographicName(previousGeographicNameId)?.id ?? null;
+      localNavigation.setGeographicSelection(geographicNameId);
       if (previousGeographicNameId && !geographicNameId) {
         mapController.clearSearchFocus();
       }
@@ -816,7 +833,9 @@ function mountPublicExperience(
       isRestoringFromHistory = false;
     }
 
-    writePublicStateToHistory('replace');
+    // A popstate campaign transition must not erase its target ?map= before
+    // the URL restorer processes it; a selector transition owns its pushState.
+    if (!campaignChanged) writePublicStateToHistory('replace');
   }
 
   publicDataRuntime?.subscribeCatalogState((state) => {
@@ -960,6 +979,8 @@ function mountPublicExperience(
       );
 
       geographicNameId = requestedGeographicName?.id ?? null;
+      localNavigation.setGeographicSelection(geographicNameId);
+      localNavigation.restoreMapSlug(parsed.state.mapSlug ?? null);
 
       if (parsed.state.activePlaceId) {
         selection.select(parsed.state.activePlaceId);

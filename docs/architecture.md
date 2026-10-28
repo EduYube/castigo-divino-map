@@ -419,3 +419,14 @@ cliente. Local-only nuevos usan `world_map_enabled=false` y geometría mundial
 NULL; RLS pública los retiene hasta lector MAP-079. Jerarquía acíclica
 transaccional, publicación de padres compatible e integridad concurrente.
 Decisión completa en [ADR 0008](adr/0008-map-contexts-and-campaign-scoped-placements.md).
+
+## MAP-077 — Navegación local Neverwinter
+
+Se crea un vínculo de entrada campaign-scoped entre el geonombre global
+existente y el contexto global `map-neverwinter`. El lector público consulta
+exclusivamente bindings de la campaña activa bajo RLS, sin acoplar
+`map_contexts` a `campaign_id`. Estado `map=neverwinter` en URL con
+History API, refresh y navegación por breadcrumb; el world map v1.2
+permanece íntegro. En degradación, fallo de red o binding inválido, la
+navegación vuelve al mundo. El mapa local utiliza CRS.Simple y una
+superficie neutral 2048 × 1582 sin raster publicado.

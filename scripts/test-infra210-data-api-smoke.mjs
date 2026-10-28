@@ -67,11 +67,39 @@ async function main() {
   const adminHeaders = headers(mintToken(ADMIN_ID));
   const readerHeaders = headers(mintToken(NON_ADMIN_ID));
 
-  for (const table of ['map_entities', 'categories', 'map_contexts', 'entity_map_placements']) {
+  for (const table of [
+    'map_entities',
+    'categories',
+    'map_contexts',
+    'entity_map_placements',
+    'campaign_geographic_map_context_links',
+  ]) {
     const result = await requestJson(`${api}/rest/v1/${table}?select=*&limit=1`, anonHeaders);
     if (!result.ok || !Array.isArray(result.body)) {
       throw new Error(`anon ${table}: expected public Data API read, got ${result.status}`);
     }
+  }
+
+  // The entrance API is scoped by campaign and map-context publication RLS.
+  const neverwinterLinks = await requestJson(
+    `${api}/rest/v1/campaign_geographic_map_context_links?select=campaign_id,geographic_name_id,map_contexts!inner(id,slug,publication_status)&campaign_id=eq.00000000-0000-4000-8000-000000000068`,
+    anonHeaders,
+  );
+  if (
+    !neverwinterLinks.ok ||
+    !Array.isArray(neverwinterLinks.body) ||
+    neverwinterLinks.body.length !== 1 ||
+    neverwinterLinks.body[0]?.geographic_name_id !== 'geo-neverwinter' ||
+    neverwinterLinks.body[0]?.map_contexts?.slug !== 'neverwinter'
+  ) {
+    throw new Error('MAP-077 public Neverwinter link or map_context join unavailable');
+  }
+  const castigoLinks = await requestJson(
+    `${api}/rest/v1/campaign_geographic_map_context_links?select=campaign_id&campaign_id=eq.00000000-0000-4000-8000-000000000053`,
+    anonHeaders,
+  );
+  if (!castigoLinks.ok || !Array.isArray(castigoLinks.body) || castigoLinks.body.length !== 0) {
+    throw new Error('MAP-077 exposed a forbidden Castigo Divino local map link');
   }
 
   // public_requests has an admin SELECT grant and RLS, but no anon GRANT:

@@ -72,6 +72,7 @@ export interface PublicDataRuntime {
   subscribeCatalogState(listener: PublicCatalogStateListener): () => void;
   selectCampaign(slug: string): boolean;
   refresh(): Promise<void>;
+  getBackendState(): PublicCatalogLoadResult['backend']['state'] | 'checking';
   revokeEntity(entityId: EntityId): void;
   clearEntityRevocation(entityId: EntityId): void;
   destroy(): void;
@@ -269,6 +270,8 @@ function setCampaignInUrl(slug: string, mode: 'push' | 'replace'): void {
   url.searchParams.set('campaign', slug);
   if (mode === 'push') {
     url.searchParams.delete('place');
+    url.searchParams.delete('map');
+    url.searchParams.delete('geo');
     url.searchParams.delete('category');
     url.searchParams.delete('tag');
     window.history.pushState(window.history.state, '', url);
@@ -343,6 +346,9 @@ export async function bootstrapPublicDataRuntime(
 
   const catalogListeners = new Set<PublicCatalogStateListener>();
   let latestResult = initialResult;
+  // initialize() publishes the fallback before the first remote refresh settles.
+  // It is not a confirmed degraded result until that refresh publishes its outcome.
+  let initialBackendCheckPending = true;
   let preferredCampaignSlug = campaignSlugFromLocation();
   let catalogState = toCatalogState(initialResult, revokedEntityIds, preferredCampaignSlug);
   let lastRefreshAt = 0;
@@ -410,6 +416,7 @@ export async function bootstrapPublicDataRuntime(
   const clearEntityRevocation = (entityId: EntityId): void => setEntityRevoked(entityId, false);
 
   const unsubscribe = service.subscribe((result) => {
+    if (result !== initialResult) initialBackendCheckPending = false;
     dispatchSafeStatusEvent(result);
     publishCatalogState(result);
     selector.update(catalogState);
@@ -482,6 +489,9 @@ export async function bootstrapPublicDataRuntime(
     },
     refresh(): Promise<void> {
       return refresh(false);
+    },
+    getBackendState(): PublicCatalogLoadResult['backend']['state'] | 'checking' {
+      return initialBackendCheckPending ? 'checking' : latestResult.backend.state;
     },
     revokeEntity,
     clearEntityRevocation,

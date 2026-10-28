@@ -12,6 +12,8 @@ export interface PublicAppUrlState {
   readonly activePlaceId: PlaceId | null;
   readonly query: string;
   readonly geographicNameId: GeographicNameId | null;
+  /** Optional published local context slug. Undefined is the legacy world map. */
+  readonly mapSlug?: string | null;
   readonly selectedCategoryIds: readonly CategoryId[];
   readonly selectedTagIds: readonly TagId[];
   readonly activeLayerIds: readonly MapLayerId[];
@@ -42,6 +44,7 @@ const URL_PARAMETERS = {
   activePlace: 'place',
   query: 'q',
   geographicName: 'geo',
+  map: 'map',
   category: 'category',
   tag: 'tag',
   layers: 'layers',
@@ -127,6 +130,9 @@ export function normalizePublicAppUrlState(
       state.activePlaceId && validPlaceIds.has(state.activePlaceId) ? state.activePlaceId : null,
     query: normalizeQuery(state.query),
     geographicNameId: normalizeGeographicNameId(state.geographicNameId),
+    ...(state.mapSlug && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(state.mapSlug)
+      ? { mapSlug: state.mapSlug }
+      : {}),
     selectedCategoryIds: facets.categories
       .filter(({ id }) => selectedCategoryIds.has(id))
       .map(({ id }) => id),
@@ -149,6 +155,7 @@ export function serializePublicAppUrlState(
   if (normalizedState.geographicNameId) {
     parameters.append(URL_PARAMETERS.geographicName, normalizedState.geographicNameId);
   }
+  if (normalizedState.mapSlug) parameters.append(URL_PARAMETERS.map, normalizedState.mapSlug);
   normalizedState.selectedCategoryIds.forEach((categoryId) => {
     const category = facets.categories.find(({ id }) => id === categoryId);
     if (category) parameters.append(URL_PARAMETERS.category, category.slug);
@@ -211,6 +218,7 @@ export function parsePublicAppUrlState(
       geographicNameId: getFirstGeographicNameId(
         source.searchParams.getAll(URL_PARAMETERS.geographicName),
       ),
+      mapSlug: getFirstNonEmptyValue(source.searchParams.getAll(URL_PARAMETERS.map)),
       selectedCategoryIds: facets.categories
         .filter(({ id }) => categoryValues.has(id))
         .map(({ id }) => id),
@@ -235,6 +243,7 @@ export function arePublicAppUrlStatesEqual(
     normalizedLeft.activePlaceId === normalizedRight.activePlaceId &&
     normalizedLeft.query === normalizedRight.query &&
     normalizedLeft.geographicNameId === normalizedRight.geographicNameId &&
+    normalizedLeft.mapSlug === normalizedRight.mapSlug &&
     normalizedLeft.selectedCategoryIds.length === normalizedRight.selectedCategoryIds.length &&
     normalizedLeft.selectedCategoryIds.every(
       (categoryId, index) => categoryId === normalizedRight.selectedCategoryIds[index],

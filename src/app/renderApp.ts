@@ -311,6 +311,11 @@ export function renderApp(): string {
           </div>
         </details>
 
+        <div class="map-local-entry" data-local-map-entry hidden>
+          <p>Lugar geográfico: <strong data-local-map-entry-name></strong></p>
+          <button type="button" data-local-map-enter>Entrar en lugar</button>
+        </div>
+
         <div class="map-workspace" data-map-workspace>
           <div
             class="map-shell"
@@ -319,6 +324,11 @@ export function renderApp(): string {
             data-testid="map-shell"
             aria-busy="true"
           >
+            <nav class="map-local-toolbar" data-local-map-toolbar aria-label="Ruta cartográfica" hidden>
+              <button type="button" data-local-map-return>Mapa general</button>
+              <span aria-hidden="true">›</span>
+              <span data-local-map-current aria-current="page"></span>
+            </nav>
             <div
               class="map-canvas"
               data-map-canvas
@@ -326,6 +336,15 @@ export function renderApp(): string {
               aria-label="Mapa navegable de la Costa de la Espada y el noroeste de Faerûn"
               aria-describedby="map-instructions place-filters-status map-layers-status map-search-status"
             ></div>
+            <div
+              class="map-local-canvas"
+              data-local-map-canvas
+              role="region"
+              aria-label="Mapa local"
+              aria-describedby="map-instructions"
+              hidden
+            ></div>
+            <p class="map-local-status" data-local-map-status role="status" aria-live="polite" hidden></p>
             <p class="map-status" data-map-status role="status" aria-atomic="true">
               Cargando la cartografía oficial de Faerûn…
             </p>
