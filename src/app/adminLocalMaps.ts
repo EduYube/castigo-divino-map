@@ -28,8 +28,8 @@ const blankContext = (): LocalMapContextDraft => ({
   slug: '',
   name: '',
   parentId: null,
-  width: 2048,
-  height: 1582,
+  width: 0,
+  height: 0,
   publicationStatus: 'draft',
   imageUri: null,
   loadingStrategy: null,
@@ -282,11 +282,10 @@ export function mountAdminLocalMaps(
       const meta = document.createElement('p');
       const parent = contexts.find((c) => c.id === context.parentId);
       meta.textContent = `${context.slug} · ${context.width} × ${context.height} · ${context.publicationStatus} · Padre: ${parent?.name ?? 'ninguno'} · ${context.imageUri ? context.loadingStrategy : 'sin imagen'} · ${context.sourceUrl && context.rightsHolder && context.licenseNotes ? 'procedencia registrada' : 'procedencia pendiente'}`;
-      li.append(
-        title,
-        meta,
-        createButton('Editar contexto', () => openContext(context, li)),
+      const editButton = createButton('Editar contexto', () =>
+        openContext(context, editButton),
       );
+      li.append(title, meta, editButton);
       if (context.publicationStatus !== 'archived') {
         li.append(createButton('Archivar contexto', () => void archiveContext(context)));
       }
@@ -319,10 +318,10 @@ export function mountAdminLocalMaps(
       const context = contexts.find((c) => c.id === placement.mapContextId);
       const label = document.createElement('span');
       label.textContent = `${entity?.name ?? placement.entityId} · ${context?.name ?? placement.mapContextId} · ${placement.geometry.kind} · ${placement.publicationStatus}`;
-      li.append(
-        label,
-        createButton('Editar placement', () => openPlacement(placement, li)),
+      const editButton = createButton('Editar placement', () =>
+        openPlacement(placement, editButton),
       );
+      li.append(label, editButton);
       li.append(createButton('Borrar placement', () => void deletePlacement(placement)));
     });
     updateChoices();
@@ -579,6 +578,17 @@ export function mountAdminLocalMaps(
     }, 'Contexto guardado.');
   }
   async function archiveContext(context: LocalMapContext): Promise<void> {
+    if (!guardDiscard()) return;
+    const errors = validateLocalContext(
+      { ...context, publicationStatus: 'archived' },
+      context,
+      contexts,
+      false,
+    );
+    if (Object.keys(errors).length > 0) {
+      announce(Object.values(errors)[0] ?? 'No se puede archivar el contexto.', true);
+      return;
+    }
     if (
       !allowed() ||
       !window.confirm(
@@ -756,6 +766,16 @@ export function mountAdminLocalMaps(
       entity = chosenEntity();
     if (!context || !entity || !geometry) {
       $(section, 'local-placement-error').textContent = 'Selecciona contexto, entidad y geometría.';
+      return;
+    }
+    if (
+      originalPlacement?.publicationStatus === 'archived' &&
+      select(section, 'local-placement-status').value === 'published'
+    ) {
+      const error = $(section, 'local-placement-error');
+      error.textContent = 'Un placement archivado debe pasar por borrador antes de publicarse.';
+      error.focus();
+      select(section, 'local-placement-status').focus();
       return;
     }
     let valid: MapEntityGeometry;

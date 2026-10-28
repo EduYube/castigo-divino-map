@@ -92,6 +92,10 @@ async function setup(page: Page) {
     const req = route.request(),
       u = new URL(req.url()),
       table = u.pathname.split('/').at(-1) ?? '';
+    if (table === 'current_user_is_admin') {
+      await route.fallback();
+      return;
+    }
     const admin = req.headers()['authorization'] === 'Bearer ' + TOKEN;
     const method = req.method();
     const campaign = u.searchParams.get('campaign_id')?.replace(/^eq\./, '');
@@ -214,7 +218,9 @@ async function setup(page: Page) {
     if (table === 'campaign_geographic_map_context_links' && method === 'DELETE') {
       writes++;
       const idx = bindings.findIndex(
-        (b) => b.geographic_name_id === u.searchParams.get('geographic_name_id')?.slice(3),
+        (b) => b.geographic_name_id === u.searchParams.get('geographic_name_id')?.slice(3)
+          && b.campaign_id === u.searchParams.get('campaign_id')?.slice(3)
+          && b.map_context_id === u.searchParams.get('map_context_id')?.slice(3),
       );
       const row = idx >= 0 ? bindings.splice(idx, 1) : [];
       await route.fulfill(answer(Array.isArray(row) ? row : []));
@@ -274,6 +280,8 @@ test('MAP-078 creates only synthetic contexts and holds immutable ID/slug', asyn
   await page.locator('#local-context-id').fill('map-test-only');
   await page.locator('#local-context-slug').fill('test-only');
   await page.locator('#local-context-name').fill('Mapa de prueba');
+  await page.locator('#local-context-width').fill('1024');
+  await page.locator('#local-context-height').fill('768');
   await page.getByRole('button', { name: 'Guardar contexto' }).click();
   await expect(page.locator('#local-context-list')).toContainText('Mapa de prueba');
   expect(backend.contexts).toHaveLength(2);
