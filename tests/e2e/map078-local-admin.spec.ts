@@ -561,7 +561,8 @@ for (const shape of ['point', 'polygon'] as const) {
     page.once('dialog', (dialog) => dialog.accept());
     await page.locator('#local-placement-context').selectOption('map-alternate');
     await expect(page.locator('#local-placement-context')).toHaveValue('map-alternate');
-    await expect(page.locator('#local-placement-coordinate')).toContainText('Sin geometría');
+    const expectedText = shape === 'polygon' ? '0 vértices' : 'Sin geometría';
+    await expect(page.locator('#local-placement-coordinate')).toContainText(expectedText);
     expect(backend.getWrites()).toBe(0);
   });
 }
