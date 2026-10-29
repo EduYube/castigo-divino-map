@@ -333,6 +333,8 @@ test('MAP-078 rejects incomplete provenance before any write', async ({ page }) 
   await page.locator('#local-context-id').fill('map-no-rights');
   await page.locator('#local-context-slug').fill('no-rights');
   await page.locator('#local-context-name').fill('Sin derechos');
+  await page.locator('#local-context-width').fill('1024');
+  await page.locator('#local-context-height').fill('768');
   await page.locator('#local-context-uri').fill('/not-authorized.png');
   await page.locator('#local-context-strategy').selectOption('bundled');
   await page.getByRole('button', { name: 'Guardar contexto' }).click();

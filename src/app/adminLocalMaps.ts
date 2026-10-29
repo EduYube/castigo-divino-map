@@ -385,7 +385,7 @@ export function mountAdminLocalMaps(
       announce('Contextos globales cargados.');
     } catch (error) {
       if (generation === globalSequence && !controller.signal.aborted)
-        announce(notice(error), true);
+        announce(notice(error));
       handleAuthError(error);
     }
   }
@@ -418,7 +418,7 @@ export function mountAdminLocalMaps(
       announce('Datos de la campaña cargados.');
     } catch (error) {
       if (generation === campaignSequence && !controller.signal.aborted)
-        announce(notice(error), true);
+        announce(notice(error));
       handleAuthError(error);
     }
   }
@@ -920,7 +920,7 @@ export function mountAdminLocalMaps(
     dirty = true;
   });
   listen($(section, 'local-placement-kind'), 'change', () => {
-    if (!guardDiscard()) {
+    if (geometry && !guardDiscard()) {
       select(section, 'local-placement-kind').value = geometry?.kind ?? 'point';
       return;
     }
