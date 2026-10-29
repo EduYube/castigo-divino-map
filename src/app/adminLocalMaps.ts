@@ -384,8 +384,7 @@ export function mountAdminLocalMaps(
       enable();
       announce('Contextos globales cargados.');
     } catch (error) {
-      if (generation === globalSequence && !controller.signal.aborted)
-        announce(notice(error));
+      if (generation === globalSequence && !controller.signal.aborted) announce(notice(error));
       handleAuthError(error);
     }
   }
@@ -417,8 +416,7 @@ export function mountAdminLocalMaps(
       enable();
       announce('Datos de la campaña cargados.');
     } catch (error) {
-      if (generation === campaignSequence && !controller.signal.aborted)
-        announce(notice(error));
+      if (generation === campaignSequence && !controller.signal.aborted) announce(notice(error));
       handleAuthError(error);
     }
   }
