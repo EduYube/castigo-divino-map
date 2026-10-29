@@ -177,6 +177,10 @@ function mountPublicExperience(
   const mapSearchStatus = app.querySelector<HTMLElement>('[data-map-search-status]');
 
   const focusPinControl = (pin: AtlasPinMarkerModel): void => {
+    if (localNavigation.getMapSlug() && pin.entityId) {
+      localReader.getReturnTarget(pin.entityId)?.element.focus({ preventScroll: true });
+      return;
+    }
     const pinRoot = localNavigation.getMapSlug()
       ? (app.querySelector<HTMLElement>('[data-local-map-canvas]') ?? app)
       : app;
@@ -253,6 +257,13 @@ function mountPublicExperience(
   const localReader = mountPublicLocalMapRuntime(app, {
     onDataChange(): void {
       updateLocalSearch();
+      // Revoked/refreshed placements must also invalidate an open compact card.
+      if (activeLocalEntityId && !localReader.hasPlacementInActiveContext(activeLocalEntityId)) {
+        activeLocalEntityId = null;
+        activeSupplementalPin = null;
+        localReader.setActiveEntity(null);
+        compactDetailsController.hide();
+      }
       if (pendingLocalFocusEntityId && localReader.focusEntity(pendingLocalFocusEntityId))
         pendingLocalFocusEntityId = null;
     },
@@ -357,6 +368,10 @@ function mountPublicExperience(
   };
 
   const compactDetailsController = mountCompactPinDetails(app, {
+    resolveReturnTarget(_detailsId, entityId) {
+      if (!activeLocalEntityId || entityId !== activeLocalEntityId) return null;
+      return localReader.getReturnTarget(activeLocalEntityId);
+    },
     onClose(): void {
       invalidateDeferredSelectionAnnouncement();
       const previouslyActivePlaceId = selection.getActivePlaceId();
@@ -375,6 +390,10 @@ function mountPublicExperience(
       }
 
       activeSupplementalPin = null;
+      if (activeLocalEntityId) {
+        activeLocalEntityId = null;
+        localReader.setActiveEntity(null);
+      }
       clearSupplementalMapSelection();
       window.requestAnimationFrame(() => focusPinControl(supplementalPin));
     },
@@ -414,6 +433,7 @@ function mountPublicExperience(
   onLocalPinActivate = (pin): void => {
     invalidateDeferredSelectionAnnouncement();
     activeLocalEntityId = pin.entityId;
+    localReader.setActiveEntity(pin.entityId);
     activeSupplementalPin = pin;
     selection.clear();
     mapController.clearSearchFocus();
@@ -422,6 +442,7 @@ function mountPublicExperience(
     if (!showCompactDetails(pin, true)) {
       activeSupplementalPin = null;
       activeLocalEntityId = null;
+      localReader.setActiveEntity(null);
     } else if (mapSearchStatus) {
       mapSearchStatus.textContent =
         pin.name + ', seleccionado en el mapa local. Ficha compacta abierta.';
@@ -432,6 +453,7 @@ function mountPublicExperience(
     if (activeLocalEntityId) {
       activeLocalEntityId = null;
       activeSupplementalPin = null;
+      localReader.setActiveEntity(null);
       compactDetailsController.hide();
     }
   };

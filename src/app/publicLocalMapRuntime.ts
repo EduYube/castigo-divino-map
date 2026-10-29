@@ -41,6 +41,8 @@ export interface PublicLocalMapRuntime {
   getContextsForEntity(id: EntityId): readonly { slug: string; name: string; id: string }[];
   hasPlacementInActiveContext(id: EntityId): boolean;
   focusEntity(id: EntityId): boolean;
+  getReturnTarget(id: EntityId): { element: HTMLElement; kind: 'pin' | 'region' | 'map' } | null;
+  setActiveEntity(id: EntityId | null): void;
   getCurrentSurfaceCatalog(): PublicCatalogSnapshotV2 | null;
   purge(): void;
 }
@@ -79,8 +81,16 @@ export function mountPublicLocalMapRuntime(
   let pointLayer: L.LayerGroup | null = null;
   let regionLayer: CampaignRegionController | null = null;
   let pointMarkers = new Map<EntityId, Marker>();
+  let activeEntityId: EntityId | null = null;
+  let choicePopup: L.Popup | null = null;
+  let renderEpoch = 0;
 
   const clearMap = (): void => {
+    // Leaflet popups live on the map outside pointLayer. Invalidate their
+    // identity callbacks and close them before removing any authorized pins.
+    renderEpoch += 1;
+    choicePopup?.remove();
+    choicePopup = null;
     regionLayer?.destroy();
     regionLayer = null;
     pointLayer?.clearLayers();
@@ -125,6 +135,7 @@ export function mountPublicLocalMapRuntime(
       groups.set(key, members);
     }
     for (const pins of groups.values()) {
+      const markerEpoch = renderEpoch;
       const first = pins[0]!;
       const overlapping = pins.length > 1;
       const icon = overlapping
@@ -145,6 +156,7 @@ export function mountPublicLocalMapRuntime(
         title: overlapping ? pins.length + ' pines agrupados' : first.name,
       });
       const activate = (): void => {
+        if (markerEpoch !== renderEpoch || !pointLayer?.hasLayer(marker)) return;
         if (!overlapping) {
           options.onPinActivate(first);
           return;
@@ -154,14 +166,27 @@ export function mountPublicLocalMapRuntime(
         const heading = document.createElement('p');
         heading.textContent = pins.length + ' entidades en la misma posición';
         panel.append(heading);
+        choicePopup?.remove();
         let selected = false;
         for (const pin of pins) {
           const button = document.createElement('button');
           button.type = 'button';
           button.textContent = pin.name;
           button.addEventListener('click', () => {
+            if (
+              markerEpoch !== renderEpoch ||
+              choicePopup !== popup ||
+              !pointLayer?.hasLayer(marker) ||
+              !surfaceCatalog?.entities.some(({ id }) => id === pin.entityId) ||
+              !localData?.placements.some(
+                (placement) =>
+                  placement.entityId === pin.entityId &&
+                  placement.contextId === current.context.id,
+              )
+            )
+              return;
             selected = true;
-            current.map.closePopup();
+            popup.remove();
             options.onPinActivate(pin);
           });
           panel.append(button);
@@ -170,16 +195,18 @@ export function mountPublicLocalMapRuntime(
           if (event.key !== 'Escape') return;
           event.preventDefault();
           event.stopPropagation();
-          current.map.closePopup();
+          popup.remove();
         });
         const popup = L.popup({ autoClose: true, closeButton: true })
           .setLatLng(L.latLng(first.coordinate[0], first.coordinate[1]))
           .setContent(panel);
         popup.on('remove', () => {
-          if (!selected && marker.getElement()?.isConnected) {
+          if (choicePopup === popup) choicePopup = null;
+          if (!selected && markerEpoch === renderEpoch && marker.getElement()?.isConnected) {
             marker.getElement()?.focus({ preventScroll: true });
           }
         });
+        choicePopup = popup;
         popup.openOn(current.map);
         panel.querySelector('button')?.focus({ preventScroll: true });
       };
@@ -195,6 +222,10 @@ export function mountPublicLocalMapRuntime(
         if (!element) return;
         element.tabIndex = 0;
         element.setAttribute('role', 'button');
+        element.setAttribute(
+          'aria-pressed',
+          String(pins.some((pin) => pin.entityId === activeEntityId)),
+        );
         element.setAttribute('aria-keyshortcuts', 'Enter Space');
         if (overlapping) element.setAttribute('aria-haspopup', 'dialog');
         element.dataset.markerLat = String(first.coordinate[0]);
@@ -230,6 +261,7 @@ export function mountPublicLocalMapRuntime(
         options.onPinActivate(pin);
       },
     });
+    if (activeEntityId) regionLayer.setActiveRegion(activeEntityId);
     // Retain the surface CRS and its local image-space bounds unchanged.
   };
 
@@ -410,6 +442,38 @@ export function mountPublicLocalMapRuntime(
         return true;
       }
       return false;
+    },
+    getReturnTarget(id): { element: HTMLElement; kind: 'pin' | 'region' | 'map' } | null {
+      if (
+        !surface ||
+        !surfaceCatalog ||
+        !localData ||
+        backendState !== 'connected' ||
+        !surfaceCatalog.entities.some((entity) => entity.id === id) ||
+        !localData.placements.some(
+          (placement) => placement.entityId === id && placement.contextId === surface?.context.id,
+        )
+      )
+        return null;
+      const element = pointMarkers.get(id)?.getElement();
+      if (element?.isConnected) return { element, kind: 'pin' };
+      const region = Array.from(
+        surface.map.getContainer().querySelectorAll<HTMLElement>('.campaign-region[data-region-id]'),
+      ).find((candidate) => candidate.dataset.regionId === id && candidate.isConnected);
+      if (region) return { element: region, kind: 'region' };
+      // search_only and hidden layers have no permanent marker; focus the
+      // authorized, visible local map instead of an old or world-map control.
+      return { element: surface.map.getContainer(), kind: 'map' };
+    },
+    setActiveEntity(id): void {
+      activeEntityId = id;
+      for (const marker of new Set(pointMarkers.values())) {
+        const pressed = [...pointMarkers].some(
+          ([entityId, target]) => target === marker && entityId === id,
+        );
+        marker.getElement()?.setAttribute('aria-pressed', String(pressed));
+      }
+      regionLayer?.setActiveRegion(id);
     },
     getCurrentSurfaceCatalog(): PublicCatalogSnapshotV2 | null {
       return surfaceCatalog;

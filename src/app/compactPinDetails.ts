@@ -14,6 +14,10 @@ export interface CompactPinDetailsShowOptions {
 
 export interface CompactPinDetailsOptions {
   readonly onClose: () => void;
+  readonly resolveReturnTarget?: (
+    activePinId: string | undefined,
+    entityId: string | null,
+  ) => { element: HTMLElement; kind: 'pin' | 'region' | 'map' } | null;
   readonly createFullDetailsUrl: (details: CompactPinDetailModel) => string | null;
   readonly loadPortrait?: (
     details: CompactPinDetailModel,
@@ -360,8 +364,14 @@ export function mountCompactPinDetails(
   };
   const handleClose = (): void => closePreservingViewport();
   const handleReturnToPin = (): void => {
-    const target = findActiveMapControl(elements.workspace, elements.panel.dataset.activePinId);
-    if (!target) return;
+    const resolved = options.resolveReturnTarget?.(
+      elements.panel.dataset.activePinId,
+      elements.panel.dataset.entityId ?? null,
+    );
+    const target =
+      resolved?.element ??
+      findActiveMapControl(elements.workspace, elements.panel.dataset.activePinId);
+    if (!target?.isConnected || target.closest('[hidden]')) return;
     const preserveViewport = isMobileSheet();
     const scrollX = preserveViewport ? window.scrollX : 0;
     const scrollY = preserveViewport ? window.scrollY : 0;
@@ -403,7 +413,17 @@ export function mountCompactPinDetails(
       elements.workspace.dataset.detailsOpen = 'true';
       elements.closeButton.setAttribute('aria-label', `Cerrar la ficha de ${details.name}`);
       elements.closeButton.setAttribute('aria-keyshortcuts', 'Escape');
-      if (isRegionTarget(elements.workspace, details.id)) {
+      const resolvedTarget = options.resolveReturnTarget?.(
+        details.id,
+        details.entityId ?? null,
+      );
+      if (resolvedTarget?.kind === 'map') {
+        elements.returnButton.textContent = 'Volver al mapa local';
+        elements.returnButton.setAttribute('aria-label', 'Volver al mapa local');
+      } else if (
+        resolvedTarget?.kind === 'region' ||
+        (!resolvedTarget && isRegionTarget(elements.workspace, details.id))
+      ) {
         elements.returnButton.textContent = 'Volver a la región';
         elements.returnButton.setAttribute('aria-label', `Volver a la región de ${details.name}`);
       } else {
