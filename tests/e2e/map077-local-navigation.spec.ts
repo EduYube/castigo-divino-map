@@ -880,6 +880,40 @@ async function configureMap079SyntheticLocalBackend(page: Page): Promise<void> {
       publication_status: 'published',
     },
   ];
+  await page.route('**/rest/v1/campaign_geographic_map_context_links*', async (route) => {
+    const url = new URL(route.request().url());
+    const projection = url.searchParams.get('select') ?? '';
+    // The MAP-077 navigation fixture models a different PostgREST projection.
+    // Full-entity deep links must honor the local reader's narrower projection.
+    if (!projection.includes('map_contexts!inner') || projection.includes('parent_id')) {
+      await route.fallback();
+      return;
+    }
+    const rows =
+      campaignIdFromUrl(url) === CAMPAIGN_B_ID
+        ? [
+            {
+              campaign_id: CAMPAIGN_B_ID,
+              geographic_name_id: 'geo-neverwinter',
+              map_context_id: 'map-neverwinter',
+              map_contexts: {
+                id: 'map-neverwinter',
+                slug: 'neverwinter',
+                name: 'Neverwinter',
+                width: 2048,
+                height: 1582,
+                publication_status: 'published',
+              },
+            },
+          ]
+        : [];
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Content-Range': contentRange(rows) },
+      body: JSON.stringify(rows),
+    });
+  });
   await page.route('**/rest/v1/map_entities*', async (route) => {
     const url = new URL(route.request().url());
     if (url.searchParams.get('world_map_enabled') !== 'eq.false') {
@@ -962,6 +996,8 @@ test('MAP-079: campaign switch and degraded status purge synthetic local-only re
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/?campaign=un-aliento-menos');
   const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  if (!(await search.isVisible())) await page.locator('[data-place-search-toggle]').click();
+  await expect(search).toBeVisible();
   await search.fill('MAP079 Synthetic Only');
   await expect(page.locator('[data-search-result-id="entity-map079-synthetic"]')).toBeVisible();
   await page.locator('[data-search-result-id="entity-map079-synthetic"]').click();

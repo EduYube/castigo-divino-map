@@ -9,8 +9,13 @@ create function pg_temp.map079_rejects(statement text, expected_sqlstate text)
 returns boolean language plpgsql set search_path = '' as $$
 begin
   execute statement;
+  raise notice 'MAP079 unexpected DML success, expected SQLSTATE %', expected_sqlstate;
   return false;
 exception when others then
+  if SQLSTATE <> expected_sqlstate then
+    raise notice 'MAP079 SQLSTATE mismatch: got %, expected %, detail: %',
+      SQLSTATE, expected_sqlstate, SQLERRM;
+  end if;
   return SQLSTATE = expected_sqlstate;
 end;
 $$;
@@ -32,8 +37,8 @@ select ok(not pg_catalog.has_table_privilege('authenticated',
 select ok(pg_catalog.has_column_privilege('authenticated',
  'public.entity_map_placements','geometry','UPDATE'),
  'admin geometry UPDATE stays column-scoped');
-select ok(not pg_catalog.has_table_privilege('service_role',
- 'public.entity_map_placements','TRUNCATE'),'INFRA #210 TRUNCATE denied');
+select ok(not pg_catalog.has_table_privilege('authenticated',
+ 'public.entity_map_placements','TRUNCATE'),'INFRA #210 authenticated TRUNCATE denied');
 
 insert into public.categories
 (campaign_id,id,slug,name,description,publication_status)
