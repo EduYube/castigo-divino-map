@@ -120,7 +120,6 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
   },
 };
 
-
 /**
  * MAP-079 boundary shared by browser, deployment reader and snapshot tooling.
  * Supabase RLS may expose local-only entities and their auxiliary rows after the
@@ -139,42 +138,60 @@ export function filterWorldCatalogPayloads(fetched) {
   const eventIds = new Set(events.map((event) => event.id));
   return {
     ...fetched,
-    ...(fetched.entityAliases ? {
-      entityAliases: fetched.entityAliases.filter((row) => worldIds.has(row.entity_id)),
-    } : {}),
-    ...(fetched.entityTags ? {
-      entityTags: fetched.entityTags.filter((row) => worldIds.has(row.entity_id)),
-    } : {}),
-    ...(fetched.dispositions ? {
-      dispositions: fetched.dispositions.filter((row) => worldIds.has(row.entity_id)),
-    } : {}),
-    ...(fetched.associations ? {
-      associations: fetched.associations.filter((row) => worldIds.has(row.entity_id)),
-    } : {}),
-    ...(fetched.entityRelations ? {
-      entityRelations: fetched.entityRelations.filter(
-        (row) => worldIds.has(row.left_entity_id) && worldIds.has(row.right_entity_id),
-      ),
-    } : {}),
-    ...(fetched.characterLocationRelations ? {
-      characterLocationRelations: fetched.characterLocationRelations.filter(
-        (row) => worldIds.has(row.character_id) && worldIds.has(row.location_id),
-      ),
-    } : {}),
+    ...(fetched.entityAliases
+      ? {
+          entityAliases: fetched.entityAliases.filter((row) => worldIds.has(row.entity_id)),
+        }
+      : {}),
+    ...(fetched.entityTags
+      ? {
+          entityTags: fetched.entityTags.filter((row) => worldIds.has(row.entity_id)),
+        }
+      : {}),
+    ...(fetched.dispositions
+      ? {
+          dispositions: fetched.dispositions.filter((row) => worldIds.has(row.entity_id)),
+        }
+      : {}),
+    ...(fetched.associations
+      ? {
+          associations: fetched.associations.filter((row) => worldIds.has(row.entity_id)),
+        }
+      : {}),
+    ...(fetched.entityRelations
+      ? {
+          entityRelations: fetched.entityRelations.filter(
+            (row) => worldIds.has(row.left_entity_id) && worldIds.has(row.right_entity_id),
+          ),
+        }
+      : {}),
+    ...(fetched.characterLocationRelations
+      ? {
+          characterLocationRelations: fetched.characterLocationRelations.filter(
+            (row) => worldIds.has(row.character_id) && worldIds.has(row.location_id),
+          ),
+        }
+      : {}),
     ...(fetched.notes ? { notes } : {}),
-    ...(fetched.noteTags ? {
-      noteTags: fetched.noteTags.filter((row) => noteIds.has(row.note_id)),
-    } : {}),
-    ...(fetched.locationEvents ? {
-      locationEvents: events.filter(
-        (event) => event.related_sighting_id == null || eventIds.has(event.related_sighting_id),
-      ),
-    } : {}),
-    ...(fetched.geographicEntityLinks ? {
-      geographicEntityLinks: fetched.geographicEntityLinks.filter(
-        (row) => worldIds.has(row.entity_id),
-      ),
-    } : {}),
+    ...(fetched.noteTags
+      ? {
+          noteTags: fetched.noteTags.filter((row) => noteIds.has(row.note_id)),
+        }
+      : {}),
+    ...(fetched.locationEvents
+      ? {
+          locationEvents: events.filter(
+            (event) => event.related_sighting_id == null || eventIds.has(event.related_sighting_id),
+          ),
+        }
+      : {}),
+    ...(fetched.geographicEntityLinks
+      ? {
+          geographicEntityLinks: fetched.geographicEntityLinks.filter((row) =>
+            worldIds.has(row.entity_id),
+          ),
+        }
+      : {}),
   };
 }
 

@@ -36,7 +36,11 @@ export interface AtlasSearchResult {
   readonly legacyPlaceId: PlaceId | null;
   readonly linkedEntityId: EntityId | null;
   /** MAP-079: optional campaign-verified local navigation targets. */
-  readonly localContexts?: readonly { readonly id: string; readonly slug: string; readonly name: string }[];
+  readonly localContexts?: readonly {
+    readonly id: string;
+    readonly slug: string;
+    readonly name: string;
+  }[];
   readonly localOnly?: boolean;
 }
 

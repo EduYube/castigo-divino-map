@@ -22,6 +22,17 @@ const map077Hidden = new URL(
   import.meta.url,
 );
 
+// MAP-079 depends on MAP-075/MAP-077 and must not be recorded as the
+// newest migration when rehearsing a checkpoint before those tables existed.
+const map079Migration = new URL(
+  '../supabase/migrations/20261029140000_enable_public_local_map_reader.sql',
+  import.meta.url,
+);
+const map079Hidden = new URL(
+  '../supabase/migrations/20261029140000_enable_public_local_map_reader.sql.rehearsal-hidden',
+  import.meta.url,
+);
+
 const rehearsals = [
   'supabase:db:test:upgrade',
   'supabase:db:test:map066:upgrade',
@@ -36,6 +47,7 @@ const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 renameSync(migration, hidden);
 renameSync(map077Migration, map077Hidden);
+renameSync(map079Migration, map079Hidden);
 try {
   for (const rehearsal of rehearsals) {
     const result = spawnSync(npm, ['run', rehearsal], {
@@ -49,6 +61,7 @@ try {
   }
 } finally {
   // Always restore the canonical migration, even after a failed rehearsal.
+  renameSync(map079Hidden, map079Migration);
   renameSync(map077Hidden, map077Migration);
   renameSync(hidden, migration);
 }

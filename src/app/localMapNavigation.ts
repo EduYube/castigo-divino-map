@@ -270,7 +270,7 @@ export function mountLocalMapNavigation(
         if (localGeneration !== generation || backendState !== 'connected') return;
         request = null;
         links = nextLinks;
-        options.onBindingsChange?.(nextLinks.map(({context}) => context));
+        options.onBindingsChange?.(nextLinks.map(({ context }) => context));
         loaded = true;
         redraw();
       })
@@ -361,8 +361,12 @@ export function mountLocalMapNavigation(
       return requestedSlug;
     },
     navigateToMapSlug(slug): boolean {
-      if (backendState !== 'connected' || !loaded ||
-          !links.some((link) => link.context.slug === slug)) return false;
+      if (
+        backendState !== 'connected' ||
+        !loaded ||
+        !links.some((link) => link.context.slug === slug)
+      )
+        return false;
       requestedSlug = slug;
       redraw();
       announcer.textContent = `Mapa local de ${slug} abierto.`;

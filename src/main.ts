@@ -190,7 +190,9 @@ function mountPublicExperience(
 
     const [lat, lng] = pin.coordinate;
     const element = Array.from(
-      pinRoot.querySelectorAll<HTMLElement>('.campaign-marker-icon[data-marker-lat][data-marker-lng]'),
+      pinRoot.querySelectorAll<HTMLElement>(
+        '.campaign-marker-icon[data-marker-lat][data-marker-lng]',
+      ),
     ).find(
       (candidate) =>
         Number(candidate.dataset.markerLat) === lat && Number(candidate.dataset.markerLng) === lng,
@@ -251,8 +253,8 @@ function mountPublicExperience(
   const localReader = mountPublicLocalMapRuntime(app, {
     onDataChange(): void {
       updateLocalSearch();
-      if (pendingLocalFocusEntityId &&
-          localReader.focusEntity(pendingLocalFocusEntityId)) pendingLocalFocusEntityId = null;
+      if (pendingLocalFocusEntityId && localReader.focusEntity(pendingLocalFocusEntityId))
+        pendingLocalFocusEntityId = null;
     },
     onPinActivate(pin): void {
       onLocalPinActivate(pin);
@@ -269,8 +271,8 @@ function mountPublicExperience(
     },
     onSurfaceChange(context, map): void {
       localReader.setSurface(context, map);
-      if (pendingLocalFocusEntityId &&
-          localReader.focusEntity(pendingLocalFocusEntityId)) pendingLocalFocusEntityId = null;
+      if (pendingLocalFocusEntityId && localReader.focusEntity(pendingLocalFocusEntityId))
+        pendingLocalFocusEntityId = null;
     },
   });
   localNavigation.updateCatalog(initialCatalogState);
@@ -394,9 +396,10 @@ function mountPublicExperience(
   });
 
   function showCompactDetails(pin: AtlasPinMarkerModel, focus: boolean): boolean {
-    const detailsCatalog = pin.entityId && localReader.hasPlacementInActiveContext(pin.entityId)
-      ? localReader.getSearchCatalog(beta02Catalog)
-      : beta02Catalog;
+    const detailsCatalog =
+      pin.entityId && localReader.hasPlacementInActiveContext(pin.entityId)
+        ? localReader.getSearchCatalog(beta02Catalog)
+        : beta02Catalog;
     const details = buildCompactPinDetailModel(catalog, detailsCatalog, pin);
 
     if (!details) {
@@ -420,7 +423,8 @@ function mountPublicExperience(
       activeSupplementalPin = null;
       activeLocalEntityId = null;
     } else if (mapSearchStatus) {
-      mapSearchStatus.textContent = pin.name + ', seleccionado en el mapa local. Ficha compacta abierta.';
+      mapSearchStatus.textContent =
+        pin.name + ', seleccionado en el mapa local. Ficha compacta abierta.';
     }
   };
   onLocalSurfaceClosed = (): void => {
@@ -510,8 +514,9 @@ function mountPublicExperience(
     pendingLocalFocusEntityId = entityId;
     if (!localNavigation.navigateToMapSlug(slug)) {
       pendingLocalFocusEntityId = null;
-      if (mapSearchStatus) mapSearchStatus.textContent =
-        'El contexto local aún no está disponible. Reintenta cuando termine la carga.';
+      if (mapSearchStatus)
+        mapSearchStatus.textContent =
+          'El contexto local aún no está disponible. Reintenta cuando termine la carga.';
       return false;
     }
     if (localReader.focusEntity(entityId)) pendingLocalFocusEntityId = null;
@@ -550,9 +555,11 @@ function mountPublicExperience(
     onSelect(result): void {
       invalidateDeferredSelectionAnnouncement();
       if (!isSearchResultVisible(result)) return;
-      if (result.linkedEntityId &&
-          localReader.hasPlacementInActiveContext(result.linkedEntityId) &&
-          localReader.focusEntity(result.linkedEntityId)) {
+      if (
+        result.linkedEntityId &&
+        localReader.hasPlacementInActiveContext(result.linkedEntityId) &&
+        localReader.focusEntity(result.linkedEntityId)
+      ) {
         return;
       }
       if (result.localOnly && result.linkedEntityId) {
@@ -560,8 +567,8 @@ function mountPublicExperience(
         if (contexts.length === 1) {
           navigateToLocalEntity(result.linkedEntityId, contexts[0]!.slug);
         } else if (mapSearchStatus) {
-          mapSearchStatus.textContent = 'Elige uno de los mapas locales indicados para ' +
-            result.name + '.';
+          mapSearchStatus.textContent =
+            'Elige uno de los mapas locales indicados para ' + result.name + '.';
         }
         return;
       }
@@ -1214,7 +1221,8 @@ function startFullEntityExperience(sourceUrl: URL): void {
       try {
         localRepository = new SupabasePublicLocalMapRepository({
           projectUrl: test?.projectUrl ?? import.meta.env.VITE_SUPABASE_URL ?? '',
-          publishableKey: test?.publishableKey ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
+          publishableKey:
+            test?.publishableKey ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
           allowLocalProject: import.meta.env.DEV,
         });
       } catch {
@@ -1233,24 +1241,31 @@ function startFullEntityExperience(sourceUrl: URL): void {
         if (worldDetails) detailsController.show(worldDetails);
         else detailsController.showUnavailable();
 
-        if (runtime.getBackendState() !== 'connected' ||
-            !selectedCampaign || !localRepository) return;
+        if (runtime.getBackendState() !== 'connected' || !selectedCampaign || !localRepository)
+          return;
         const controller = new AbortController();
         localAbort = controller;
-        void localRepository.load({
-          campaignId: selectedCampaign.id,
-          signal: controller.signal,
-        }).then((local) => {
-          if (controller.signal.aborted || revision !== localGeneration ||
+        void localRepository
+          .load({
+            campaignId: selectedCampaign.id,
+            signal: controller.signal,
+          })
+          .then((local) => {
+            if (
+              controller.signal.aborted ||
+              revision !== localGeneration ||
               runtime.getBackendState() !== 'connected' ||
-              runtime.getCatalogState().selectedCampaign?.id !== selectedCampaign.id) return;
-          const enriched = mergePublicLocalCatalog(beta02, local);
-          const details = resolveFullEntityDetail(enriched, request.slug!);
-          if (details) detailsController.show(details);
-          else detailsController.showUnavailable();
-        }).catch(() => {
-          // Fail closed and preserve previously authorized world details only.
-        });
+              runtime.getCatalogState().selectedCampaign?.id !== selectedCampaign.id
+            )
+              return;
+            const enriched = mergePublicLocalCatalog(beta02, local);
+            const details = resolveFullEntityDetail(enriched, request.slug!);
+            if (details) detailsController.show(details);
+            else detailsController.showUnavailable();
+          })
+          .catch(() => {
+            // Fail closed and preserve previously authorized world details only.
+          });
       };
 
       renderCatalogState(runtime.getCatalogState());
