@@ -1,7 +1,7 @@
 import L, { type Map as LeafletMap, type Marker } from 'leaflet';
 import type { PublicCatalogSnapshotV2, EntityId } from '../data/beta02-model';
 import type { AtlasPinMarkerModel } from '../data/pinMarkers';
-import { createAtlasPinMarkerModels } from '../data/pinMarkers';
+import { createAtlasPinMarkerModels, createAtlasSearchOnlyDetailPin } from '../data/pinMarkers';
 import type { CampaignCatalog } from '../data/model';
 import {
   ALL_MAP_LAYER_STATE,
@@ -144,7 +144,7 @@ export function mountPublicLocalMapRuntime(
         bubblingMouseEvents: false,
         title: overlapping ? pins.length + ' pines agrupados' : first.name,
       });
-      marker.on('click', () => {
+      const activate = (): void => {
         if (!overlapping) {
           options.onPinActivate(first);
           return;
@@ -154,36 +154,69 @@ export function mountPublicLocalMapRuntime(
         const heading = document.createElement('p');
         heading.textContent = pins.length + ' entidades en la misma posición';
         panel.append(heading);
+        let selected = false;
         for (const pin of pins) {
           const button = document.createElement('button');
           button.type = 'button';
           button.textContent = pin.name;
           button.addEventListener('click', () => {
+            selected = true;
             current.map.closePopup();
             options.onPinActivate(pin);
           });
           panel.append(button);
         }
-        L.popup({ autoClose: true, closeButton: true })
+        panel.addEventListener('keydown', (event) => {
+          if (event.key !== 'Escape') return;
+          event.preventDefault();
+          event.stopPropagation();
+          current.map.closePopup();
+        });
+        const popup = L.popup({ autoClose: true, closeButton: true })
           .setLatLng(L.latLng(first.coordinate[0], first.coordinate[1]))
-          .setContent(panel)
-          .openOn(current.map);
+          .setContent(panel);
+        popup.on('remove', () => {
+          if (!selected && marker.getElement()?.isConnected) {
+            marker.getElement()?.focus({ preventScroll: true });
+          }
+        });
+        popup.openOn(current.map);
+        panel.querySelector('button')?.focus({ preventScroll: true });
+      };
+      marker.on('click', activate);
+      let keyListener: { element: HTMLElement; handler: (event: KeyboardEvent) => void } | null =
+        null;
+      marker.on('remove', () => {
+        if (keyListener) keyListener.element.removeEventListener('keydown', keyListener.handler);
+        keyListener = null;
       });
       marker.on('add', () => {
         const element = marker.getElement();
         if (!element) return;
+        element.tabIndex = 0;
+        element.setAttribute('role', 'button');
+        element.setAttribute('aria-keyshortcuts', 'Enter Space');
+        if (overlapping) element.setAttribute('aria-haspopup', 'dialog');
         element.dataset.markerLat = String(first.coordinate[0]);
         element.dataset.markerLng = String(first.coordinate[1]);
         if (!overlapping && first.entityId) element.dataset.entityId = first.entityId;
         element.setAttribute(
           'aria-label',
           overlapping
-            ? pins.length + ' entidades agrupadas. Pulsa Intro para elegir.'
+            ? pins.length + ' entidades agrupadas. Pulsa Intro o Espacio para elegir.'
             : first.name +
                 ', pin en ' +
                 current.context.name +
-                '. Pulsa Intro para abrir su ficha.',
+                '. Pulsa Intro o Espacio para abrir su ficha.',
         );
+        const handler = (event: KeyboardEvent): void => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          event.stopPropagation();
+          activate();
+        };
+        element.addEventListener('keydown', handler);
+        keyListener = { element, handler };
       });
       group.addLayer(marker);
       for (const pin of pins) {
@@ -361,6 +394,19 @@ export function mountPublicLocalMapRuntime(
         regionLayer.focusRegion(pin.id);
         regionLayer.setActiveRegion(pin.id);
         options.onPinActivate(pin);
+        return true;
+      }
+      // search_only is deliberately absent from permanent marker and polygon
+      // layers. Select from the authorized contextual projection instead.
+      const transientPin = createAtlasSearchOnlyDetailPin(currentCatalog, id);
+      if (
+        transientPin &&
+        localData?.placements.some(
+          (placement) => placement.entityId === id && placement.contextId === surface?.context.id,
+        )
+      ) {
+        surface.map.panTo(L.latLng(...transientPin.coordinate), { animate: false });
+        options.onPinActivate(transientPin);
         return true;
       }
       return false;

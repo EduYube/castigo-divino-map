@@ -369,6 +369,37 @@ describe('public atlas search', () => {
     ).toEqual(['geographic', 'location']);
   });
 
+  it('indexes published tag names for a search_only entity once, including note tags', () => {
+    const tagged: PublicCatalogSnapshotV2 = {
+      ...beta02Catalog,
+      tags: [{ id: 'tag-r1', name: 'Unique R1 Tag', description: '' }],
+      entities: beta02Catalog.entities.map((entity) =>
+        entity.id === 'entity-durnan' ? { ...entity, tagIds: ['tag-r1'] } : entity,
+      ),
+      notes: [
+        {
+          id: 'note-r1',
+          slug: 'note-r1',
+          entityId: 'entity-durnan',
+          title: 'An unrelated public note',
+          body: 'Private words are not indexed.',
+          sortOrder: 0,
+          tagIds: ['tag-r1'],
+        },
+      ],
+    };
+    expect(searchPublicAtlas(campaignCatalog, tagged, 'Unique R1 Tag')).toEqual([
+      expect.objectContaining({
+        id: 'entity-durnan',
+        matchKind: 'tag',
+        matchedText: 'Unique R1 Tag',
+      }),
+    ]);
+    expect(searchPublicAtlas(campaignCatalog, tagged, 'Private words')).toEqual([]);
+    // Never surface a name for a tag absent from the public catalog.
+    expect(searchPublicAtlas(campaignCatalog, { ...tagged, tags: [] }, 'Unique R1 Tag')).toEqual([]);
+  });
+
   it('preserves the legacy search surface while Beta 0.2 data is unavailable', () => {
     expect(searchPublicAtlas(campaignCatalog, null, 'Referencia pública de viaje')).toEqual([
       expect.objectContaining({

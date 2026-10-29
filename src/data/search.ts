@@ -9,7 +9,7 @@ import type { CampaignCatalog, CampaignPlace, PlaceId } from './model';
 import { isSpatialMapEntity } from '../domain/entitySpatiality';
 import { normalizeSearchTerm } from './validate';
 
-export type PlaceSearchMatchKind = 'name' | 'alias' | 'note-title';
+export type PlaceSearchMatchKind = 'name' | 'alias' | 'note-title' | 'tag';
 export type PlaceSearchMatchRank = 0 | 1 | 2;
 
 export interface PlaceSearchResult {
@@ -128,6 +128,13 @@ function legacyPlaceCandidates(catalog: CampaignCatalog, place: CampaignPlace): 
     ...catalog.notes
       .filter((note) => note.placeId === place.id)
       .map((note, noteIndex) => createCandidate('note-title', note.title, 2, noteIndex)),
+    ...catalog.tags
+      .filter(
+        (tag) =>
+          place.tagIds.includes(tag.id) ||
+          catalog.notes.some((note) => note.placeId === place.id && note.tagIds.includes(tag.id)),
+      )
+      .map((tag, index) => createCandidate('tag', tag.name, 3, index)),
   ];
 }
 
@@ -136,6 +143,7 @@ function entityCandidates(
   entity: PublicMapEntity,
   legacyPlace: CampaignPlace | undefined,
   publicNotes: PublicCatalogSnapshotV2['notes'],
+  publicTags: PublicCatalogSnapshotV2['tags'],
 ): SearchCandidate[] {
   const candidates: SearchCandidate[] = [
     createCandidate('name', entity.name, 0, 0),
@@ -146,6 +154,9 @@ function entityCandidates(
 
   publicNotes.forEach((note, index) => {
     candidates.push(createCandidate('note-title', note.title, 2, index));
+  });
+  publicTags.forEach((tag, index) => {
+    candidates.push(createCandidate('tag', tag.name, 3, index));
   });
 
   if (!legacyPlace) return candidates;
@@ -294,8 +305,13 @@ export function searchPublicAtlas(
     if (legacyPlace) representedLegacyPlaces.add(legacyPlace.id);
 
     const publicNotes = beta02Catalog.notes.filter((note) => note.entityId === entity.id);
+    const publicTags = beta02Catalog.tags.filter(
+      (tag) =>
+        entity.tagIds.includes(tag.id) ||
+        publicNotes.some((note) => note.tagIds.includes(tag.id)),
+    );
     const bestMatch = findBestCandidate(
-      entityCandidates(catalog, entity, legacyPlace, publicNotes),
+      entityCandidates(catalog, entity, legacyPlace, publicNotes, publicTags),
       normalizedQuery,
     );
     if (!bestMatch) {

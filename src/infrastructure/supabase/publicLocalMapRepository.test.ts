@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import type { PublicCatalogSnapshotV2 } from '../../data/beta02-model';
 import type { CampaignCatalog } from '../../data/model';
 import { searchPublicAtlas } from '../../data/search';
+import { createAtlasPinMarkerModels, createAtlasSearchOnlyDetailPin } from '../../data/pinMarkers';
 import {
   mergePublicLocalCatalog,
   parsePublicLocalPlacement,
@@ -112,6 +113,24 @@ const local: PublicLocalMapData = {
 const legacy: CampaignCatalog = { categories: [], tags: [], places: [], notes: [] };
 
 describe('MAP-079 explicit world/local boundary', () => {
+  test('search_only selects a transient canonical detail model without rendering a permanent pin', () => {
+    const searchOnlyLocal: PublicLocalMapData = {
+      ...local,
+      localOnlyEntities: [{ ...LOCAL_ENTITY, visibility: 'search_only' }],
+    };
+    const projected = projectPublicLocalSurface(world, searchOnlyLocal, 'map-local-a');
+    const pin = createAtlasSearchOnlyDetailPin(projected, 'entity-local');
+    expect(pin).toMatchObject({
+      id: 'entity-local',
+      entityId: 'entity-local',
+      name: 'Local Only',
+      coordinate: [3000, 4000],
+      source: 'beta02',
+    });
+    expect(createAtlasPinMarkerModels(legacy, projected).some(({ entityId }) => entityId === 'entity-local')).toBe(false);
+    expect(createAtlasSearchOnlyDetailPin(world, 'entity-local')).toBeNull();
+  });
+
   test('world REST query explicitly excludes local-only independent of RLS', async () => {
     expect(PUBLIC_CATALOG_TABLE_QUERIES.entities?.worldMapEnabled).toBe(true);
     let url: URL | null = null;

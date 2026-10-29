@@ -122,6 +122,8 @@ function describeMatch(matchKind: PlaceSearchMatchKind, matchedText: string): st
       return `Coincidencia por alias: ${matchedText}`;
     case 'note-title':
       return `Coincidencia por nota pública: ${matchedText}`;
+    case 'tag':
+      return `Coincidencia por etiqueta pública: ${matchedText}`;
     case 'name':
       return 'Coincidencia por nombre principal';
   }
