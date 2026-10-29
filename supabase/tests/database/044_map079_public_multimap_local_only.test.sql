@@ -188,13 +188,17 @@ select ok(pg_temp.map079_rejects($q$
  (campaign_id,map_context_id,entity_id,geometry)
  values('00000000-0000-4000-8000-000000000068','map-map079-second',
  'place-map079-poly','{"kind":"point","coordinates":{"x":1,"y":2}}')
-$q$,'42501'),'authenticated nonadmin cannot insert a new valid placement');
+$q$,'23503'),'authenticated nonadmin cannot insert into context hidden by lock/RLS');
 with changed as (
  update public.entity_map_placements set geometry='{"kind":"point","coordinates":{"x":7,"y":8}}'
  where entity_id='entity-map079-only' returning 1
 )
 select is((select count(*) from changed),0::bigint,'nonadmin cannot mutate visible placements');
 reset role;
+select is((select count(*) from public.entity_map_placements
+ where campaign_id='00000000-0000-4000-8000-000000000068'
+   and map_context_id='map-map079-second' and entity_id='place-map079-poly'),
+ 0::bigint,'nonadmin rejected insert leaves placement inventory unchanged');
 
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000001';
 set local "request.jwt.claims"=
@@ -206,6 +210,12 @@ select lives_ok($q$
  where campaign_id='00000000-0000-4000-8000-000000000068'
    and map_context_id='map-map079-second' and entity_id='entity-map079-world'
 $q$,'admin retains editorial placement write contract');
+select lives_ok($q$
+ insert into public.entity_map_placements
+ (campaign_id,map_context_id,entity_id,geometry)
+ values('00000000-0000-4000-8000-000000000068','map-map079-second',
+ 'place-map079-poly','{"kind":"point","coordinates":{"x":1,"y":2}}')
+$q$,'admin can insert the identical valid placement rejected for nonadmin');
 reset role;
 
 select * from finish();
