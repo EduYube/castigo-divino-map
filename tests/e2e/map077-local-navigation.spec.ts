@@ -963,9 +963,7 @@ test('MAP-079: campaign switch and degraded status purge synthetic local-only re
   await page.goto('/?campaign=un-aliento-menos');
   const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
   await search.fill('MAP079 Synthetic Only');
-  await expect(
-    page.locator('[data-search-result-id="entity-map079-synthetic"]'),
-  ).toBeVisible();
+  await expect(page.locator('[data-search-result-id="entity-map079-synthetic"]')).toBeVisible();
   await page.locator('[data-search-result-id="entity-map079-synthetic"]').click();
   await expect(
     page.locator('[data-local-map-canvas] [data-entity-id="entity-map079-synthetic"]'),
@@ -974,14 +972,10 @@ test('MAP-079: campaign switch and degraded status purge synthetic local-only re
   await page.getByLabel('Campaña', { exact: true }).selectOption('castigo-divino');
   await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
   await expect(page).not.toHaveURL(/map=neverwinter/);
-  await expect(
-    page.locator('[data-search-result-id="entity-map079-synthetic"]'),
-  ).toHaveCount(0);
+  await expect(page.locator('[data-search-result-id="entity-map079-synthetic"]')).toHaveCount(0);
 
   await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
-  await expect(
-    page.locator('[data-search-result-id="entity-map079-synthetic"]'),
-  ).toBeVisible();
+  await expect(page.locator('[data-search-result-id="entity-map079-synthetic"]')).toBeVisible();
   await page.locator('[data-search-result-id="entity-map079-synthetic"]').click();
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
   await page.evaluate(() => {
@@ -991,7 +985,5 @@ test('MAP-079: campaign switch and degraded status purge synthetic local-only re
   });
   await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
   await expect(page.locator('[data-map-canvas]')).toBeVisible();
-  await expect(
-    page.locator('[data-search-result-id="entity-map079-synthetic"]'),
-  ).toHaveCount(0);
+  await expect(page.locator('[data-search-result-id="entity-map079-synthetic"]')).toHaveCount(0);
 });
