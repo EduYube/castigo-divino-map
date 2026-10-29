@@ -1159,6 +1159,73 @@ test('MAP-079 R1: keyboard access for simple and grouped local pins', async ({ p
   await expect(page.locator('[data-place-details]')).toContainText('MAP079 Overlap B');
 });
 
+test('MAP-079 REV-06: unrelated world layer changes preserve selected local details', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  await page.locator('[data-map-layers-summary]').click();
+  const local = page.locator('[data-local-map-canvas]');
+  const pin = local.locator('[data-entity-id="entity-map079-synthetic"]');
+  await expect(pin).toBeVisible();
+  await pin.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Synthetic Only');
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+
+  // Character stays visible. A change to a different world/local layer must
+  // not compare a local-only identity against the world marker collection.
+  await page.locator('[data-map-layer="hazard"]').uncheck();
+  await expect(page.locator('[data-place-details]')).toBeVisible();
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Synthetic Only');
+  await expect(pin).toBeVisible();
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('[data-map-layer="hazard"]').check();
+  await expect(page.locator('[data-place-details]')).toBeVisible();
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+
+  // Removing the selected category must hide its card and clear the ARIA
+  // identity. Restoring the category cannot resurrect that selection.
+  await page.locator('[data-map-layer="character"]').uncheck();
+  await expect(page.locator('[data-place-details]')).toBeHidden();
+  await expect(pin).toHaveCount(0);
+  await page.locator('[data-map-layer="character"]').check();
+  await expect(pin).toBeVisible();
+  await expect(pin).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('[data-place-details]')).toBeHidden();
+});
+
+test('MAP-079 R3: local region returns focus and mobile Escape returns to map', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  const region = page.locator(
+    '[data-local-map-canvas] [data-region-id="place-map079-synthetic-region"]',
+  );
+  await expect(region).toBeVisible();
+  await region.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Synthetic Region');
+  await page.locator('[data-place-details-return]').click();
+  await expect(region).toBeFocused();
+  await page.locator('[data-place-details-close]').click();
+  await expect(region).toBeFocused();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const local = page.locator('[data-local-map-canvas]');
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  if (!(await search.isVisible())) await page.locator('[data-place-search-toggle]').click();
+  await search.fill('MAP079 Hidden Search Target');
+  await page.locator('[data-search-result-id="entity-map079-search-only"]').click();
+  await expect(page.locator('[data-place-details]')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[data-place-details]')).toBeHidden();
+  await expect(local).toBeFocused();
+});
+
 test('MAP-079 R2: return and close restore local pin focus', async ({ page }) => {
   await configureCampaignBackend(page);
   await configureMap079SyntheticLocalBackend(page);

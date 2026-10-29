@@ -6,6 +6,7 @@ import type { CampaignCatalog } from '../data/model';
 import {
   ALL_MAP_LAYER_STATE,
   filterAtlasMarkersByLayers,
+  isEntityVisibleForMapLayers,
   type MapLayerState,
 } from '../domain/mapLayers';
 import { createSinglePinIcon } from '../map/leafletBase';
@@ -40,6 +41,8 @@ export interface PublicLocalMapRuntime {
   getLocalOnlyIds(): ReadonlySet<EntityId>;
   getContextsForEntity(id: EntityId): readonly { slug: string; name: string; id: string }[];
   hasPlacementInActiveContext(id: EntityId): boolean;
+  /** A currently authorized placement that is still represented by the active layer state. */
+  isEntityVisibleInActiveContext(id: EntityId): boolean;
   focusEntity(id: EntityId): boolean;
   getReturnTarget(id: EntityId): { element: HTMLElement; kind: 'pin' | 'region' | 'map' } | null;
   setActiveEntity(id: EntityId | null): void;
@@ -400,6 +403,28 @@ export function mountPublicLocalMapRuntime(
         localData?.placements.some(
           (placement) => placement.entityId === id && placement.contextId === surface?.context.id,
         ),
+      );
+    },
+    isEntityVisibleInActiveContext(id): boolean {
+      if (!surface || !surfaceCatalog || !localData || backendState !== 'connected') {
+        return false;
+      }
+      const entity = surfaceCatalog.entities.find((candidate) => candidate.id === id);
+      if (
+        !entity ||
+        !localData.placements.some(
+          (placement) => placement.entityId === id && placement.contextId === surface?.context.id,
+        ) ||
+        !isEntityVisibleForMapLayers(entity, layerState)
+      ) {
+        return false;
+      }
+      // search_only is intentionally never a marker. A visible-layer selection
+      // remains valid even though there is no persistent Leaflet control.
+      return (
+        pointMarkers.has(id) ||
+        (entity.geometry?.kind === 'polygon' && regionLayer !== null) ||
+        createAtlasSearchOnlyDetailPin(surfaceCatalog, id) !== null
       );
     },
     focusEntity(id): boolean {

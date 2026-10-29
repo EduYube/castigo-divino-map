@@ -668,13 +668,20 @@ function mountPublicExperience(
     masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
     localReader.setLayers(mapLayerState);
 
-    if (
-      activeSupplementalPin &&
-      !renderedMarkers.some(({ id }) => id === activeSupplementalPin?.id)
-    ) {
-      activeSupplementalPin = null;
-      compactDetailsController.hide();
-      clearSupplementalMapSelection();
+    if (activeSupplementalPin) {
+      const isLocalSelection =
+        activeLocalEntityId !== null &&
+        activeSupplementalPin.entityId === activeLocalEntityId;
+      const selectionStillVisible = isLocalSelection
+        ? localReader.isEntityVisibleInActiveContext(activeLocalEntityId!)
+        : renderedMarkers.some(({ id }) => id === activeSupplementalPin?.id);
+      if (!selectionStillVisible) {
+        activeSupplementalPin = null;
+        activeLocalEntityId = null;
+        localReader.setActiveEntity(null);
+        compactDetailsController.hide();
+        clearSupplementalMapSelection();
+      }
     }
 
     const activePlaceId = selection.getActivePlaceId();
