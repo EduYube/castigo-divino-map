@@ -250,6 +250,13 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
       responses,
     ) as unknown as PublicCatalogPayloadsWithGeographicLinks;
 
+    // Fail closed on malformed/cross-campaign geographic links BEFORE the
+    // world-only projection discards legitimate links to local-only entities.
+    projectCampaignGeographicEntityLinks(
+      fetched.geographicNames,
+      fetched.geographicEntityLinks,
+      campaign.id,
+    );
     const payloads = filterWorldCatalogPayloads(fetched);
 
     const geographicNames = projectCampaignGeographicEntityLinks(

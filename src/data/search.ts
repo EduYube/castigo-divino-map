@@ -135,6 +135,7 @@ function entityCandidates(
   catalog: CampaignCatalog,
   entity: PublicMapEntity,
   legacyPlace: CampaignPlace | undefined,
+  publicNoteTitles: readonly string[],
 ): SearchCandidate[] {
   const candidates: SearchCandidate[] = [
     createCandidate('name', entity.name, 0, 0),
@@ -142,6 +143,10 @@ function entityCandidates(
       createCandidate('alias', alias.value, 1, aliasIndex),
     ),
   ];
+
+  publicNoteTitles.forEach((title, index) => {
+    candidates.push(createCandidate('note-title', title, 2, index));
+  });
 
   if (!legacyPlace) return candidates;
 
@@ -289,7 +294,14 @@ export function searchPublicAtlas(
     if (legacyPlace) representedLegacyPlaces.add(legacyPlace.id);
 
     const bestMatch = findBestCandidate(
-      entityCandidates(catalog, entity, legacyPlace),
+      entityCandidates(
+        catalog,
+        entity,
+        legacyPlace,
+        beta02Catalog.notes
+          .filter((note) => note.entityId === entity.id)
+          .map((note) => note.title),
+      ),
       normalizedQuery,
     );
     if (!bestMatch) {
