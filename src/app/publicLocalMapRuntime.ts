@@ -457,13 +457,15 @@ export function mountPublicLocalMapRuntime(
         return null;
       const element = pointMarkers.get(id)?.getElement();
       if (element?.isConnected) return { element, kind: 'pin' };
-      const region = Array.from(
-        surface.map.getContainer().querySelectorAll<HTMLElement>('.campaign-region[data-region-id]'),
-      ).find((candidate) => candidate.dataset.regionId === id && candidate.isConnected);
+      const localCanvas = surface.map.getContainer();
+      const regions = localCanvas.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]');
+      const region = Array.from(regions).find(
+        (candidate) => candidate.dataset.regionId === id && candidate.isConnected,
+      );
       if (region) return { element: region, kind: 'region' };
       // search_only and hidden layers have no permanent marker; focus the
       // authorized, visible local map instead of an old or world-map control.
-      return { element: surface.map.getContainer(), kind: 'map' };
+      return { element: localCanvas, kind: 'map' };
     },
     setActiveEntity(id): void {
       activeEntityId = id;

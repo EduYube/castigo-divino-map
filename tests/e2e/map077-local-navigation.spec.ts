@@ -1188,9 +1188,7 @@ test('MAP-079 R2: return and close restore local pin focus', async ({ page }) =>
   await expect(grouped).toBeFocused();
 });
 
-test('MAP-079 R2: search_only returns to accessible local map instead of hidden world', async ({
-  page,
-}) => {
+test('MAP-079 R2: search_only returns focus to local map', async ({ page }) => {
   await configureCampaignBackend(page);
   await configureMap079SyntheticLocalBackend(page);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -1207,14 +1205,10 @@ test('MAP-079 R2: search_only returns to accessible local map instead of hidden 
   await page.locator('[data-place-details-close]').click();
   await expect(page.locator('[data-place-details]')).toBeHidden();
   await expect(local).toBeFocused();
-  await expect(
-    local.locator('[data-entity-id="entity-map079-search-only"]'),
-  ).toHaveCount(0);
+  await expect(local.locator('[data-entity-id="entity-map079-search-only"]')).toHaveCount(0);
 });
 
-test('MAP-079 R2: withdrawing a local layer closes and invalidates coincident popup', async ({
-  page,
-}) => {
+test('MAP-079 R2: layer removal invalidates local popup choices', async ({ page }) => {
   await configureCampaignBackend(page);
   await configureMap079SyntheticLocalBackend(page);
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');

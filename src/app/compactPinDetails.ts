@@ -413,10 +413,7 @@ export function mountCompactPinDetails(
       elements.workspace.dataset.detailsOpen = 'true';
       elements.closeButton.setAttribute('aria-label', `Cerrar la ficha de ${details.name}`);
       elements.closeButton.setAttribute('aria-keyshortcuts', 'Escape');
-      const resolvedTarget = options.resolveReturnTarget?.(
-        details.id,
-        details.entityId ?? null,
-      );
+      const resolvedTarget = options.resolveReturnTarget?.(details.id, details.entityId ?? null);
       if (resolvedTarget?.kind === 'map') {
         elements.returnButton.textContent = 'Volver al mapa local';
         elements.returnButton.setAttribute('aria-label', 'Volver al mapa local');
