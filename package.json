@@ -22,7 +22,7 @@
     "snapshot:verify:migration": "node scripts/verify-public-snapshot.mjs --migration-fixture",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{ts,js,json}\" \"public/**/*.json\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
-    "format:check": "npm run format && node -e 'const fs = require(\"fs\"); for (const p of [\"src/app/adminLocalMaps.ts\",\"src/infrastructure/supabase/adminLocalMapRepository.ts\",\"tests/e2e/map078-local-admin.spec.ts\"]) { console.log(\"MAP078_FMT_BEGIN:\" + p); console.log(fs.readFileSync(p).toString(\"base64\")); console.log(\"MAP078_FMT_END:\" + p); }'",
+    "format:check": "prettier --check --end-of-line auto \"src/**/*.{ts,js,json}\" \"public/**/*.json\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:data": "npm run snapshot:verify && vitest run src/data/validate.test.ts src/infrastructure/snapshot/publicCatalogSnapshot.test.ts",
