@@ -355,7 +355,10 @@ export class SupabaseLocalMapRepository implements LocalMapRepository {
     const count = (row: JsonRow, key: string): number => {
       const embedded = row[key];
       if (!Array.isArray(embedded) || embedded.length !== 1) {
-        throw new AdminLocalMapError('invalid-response', 'No se pudieron verificar las dependencias globales.');
+        throw new AdminLocalMapError(
+          'invalid-response',
+          'No se pudieron verificar las dependencias globales.',
+        );
       }
       const value = obj(embedded[0]).count;
       if (!Number.isSafeInteger(value) || (value as number) < 0) {

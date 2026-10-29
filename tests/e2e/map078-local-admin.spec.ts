@@ -107,9 +107,7 @@ async function setup(page: Page) {
               placements: [
                 { count: placements.filter((p) => p.map_context_id === context.id).length },
               ],
-              bindings: [
-                { count: bindings.filter((b) => b.map_context_id === context.id).length },
-              ],
+              bindings: [{ count: bindings.filter((b) => b.map_context_id === context.id).length }],
             }))
           : contexts
         : table === 'campaign_geographic_map_context_links'
@@ -475,9 +473,7 @@ test('MAP078-REV-01 purges hidden private values, options and headings on logout
   expect(backend.getWrites()).toBe(0);
 });
 
-test('MAP078-REV-02 detects cross-campaign dependencies and refreshes them', async ({
-  page,
-}) => {
+test('MAP078-REV-02 detects cross-campaign dependencies and refreshes them', async ({ page }) => {
   const backend = await setup(page);
   backend.contexts.push({
     ...NEVERWINTER,
@@ -515,9 +511,7 @@ test('MAP078-REV-02 detects cross-campaign dependencies and refreshes them', asy
   expect(backend.getWrites()).toBe(0);
 });
 
-test('MAP078-REV-03 recovers confirmed campaign after a failed switch', async ({
-  page,
-}) => {
+test('MAP078-REV-03 recovers confirmed campaign after a failed switch', async ({ page }) => {
   const backend = await setup(page);
   backend.bindings.push({
     campaign_id: CAMPAIGN_A,
@@ -540,9 +534,7 @@ test('MAP078-REV-03 recovers confirmed campaign after a failed switch', async ({
 });
 
 for (const shape of ['point', 'polygon'] as const) {
-  test('MAP078-REV-04 retains editor on canceled context switch: ' + shape, async ({
-    page,
-  }) => {
+  test('MAP078-REV-04 retains editor on canceled context switch: ' + shape, async ({ page }) => {
     const backend = await setup(page);
     backend.contexts.push({
       ...NEVERWINTER,
@@ -574,9 +566,7 @@ for (const shape of ['point', 'polygon'] as const) {
   });
 }
 
-test('MAP078-REV-05 confirms binding navigation impact before any write', async ({
-  page,
-}) => {
+test('MAP078-REV-05 confirms binding navigation impact before any write', async ({ page }) => {
   const backend = await setup(page);
   await login(page);
   await page.getByRole('button', { name: 'Bindings de campaña' }).click();

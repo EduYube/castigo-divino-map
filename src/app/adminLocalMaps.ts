@@ -688,8 +688,7 @@ export function mountAdminLocalMaps(
       return;
     }
     const requested = campaignId;
-    const campaignName =
-      rosterCampaign?.selectedOptions[0]?.textContent?.trim() || requested;
+    const campaignName = rosterCampaign?.selectedOptions[0]?.textContent?.trim() || requested;
     if (
       !window.confirm(
         '¿Asociar "' +
