@@ -92,6 +92,14 @@ select ok(pg_temp.map075_rejects($q$
   update public.map_contexts set image_uri='https://example.invalid/image.png' where id='map-map075-root'
 $q$,'23514'),'image cannot be attached without recorded provenance and license');
 
+-- MAP-079: new public RLS requires a campaign-specific published entrance.
+-- Both bindings are synthetic and rolled back with this pgTAP transaction.
+insert into public.campaign_geographic_map_context_links(
+  campaign_id, geographic_name_id, map_context_id
+) values
+('00000000-0000-4000-8000-000000000053','geo-neverwinter','map-map075-local'),
+('00000000-0000-4000-8000-000000000068','geo-waterdeep','map-map075-local');
+
 insert into public.categories(campaign_id,id,slug,name,description,publication_status)
 values
 ('00000000-0000-4000-8000-000000000053','category-map075-a','map075-a','MAP075 A','','published'),
@@ -239,13 +247,13 @@ set local role anon;
 select is((select count(*) from public.map_contexts where id like 'map-map075-%'),
  2::bigint,'anon sees published contexts only (not draft or archived)');
 select is((select count(*) from public.entity_map_placements where map_context_id='map-map075-local'),
- 2::bigint,'anon sees only published public world-enabled entities and placements');
+ 3::bigint,'anon sees published public world and local-only placements in bound context');
 select is((select count(*) from public.entity_map_placements where entity_id='entity-map075-master'),
  0::bigint,'Master content never leaks via public placements');
 select is((select count(*) from public.entity_map_placements where map_context_id='map-map075-draft'),
  0::bigint,'published placement never exposes a draft map context');
 select is((select count(*) from public.map_entities where id='place-map075-onlylocal'),
- 0::bigint,'legacy v1.2 world reader does not receive local-only coordinates');
+ 1::bigint,'MAP-079 RLS exposes bound local-only entity; explicit world query excludes it');
 
 reset role;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000099';
