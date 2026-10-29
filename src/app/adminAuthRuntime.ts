@@ -60,6 +60,7 @@ import { bootstrapAdminCampaignRosterRuntime } from './adminCampaignRosterRuntim
 import { dispatchAdminEntityAudienceChanged } from './adminEntityAudienceEvents';
 import { mountAdminCharacterLocationRelations } from './adminCharacterLocationRelations';
 import { mountAdminMapEntities } from './adminMapEntities';
+import { mountAdminLocalMaps } from './adminLocalMaps';
 import { mountAdminMapEntityAudience } from './adminMapEntityAudience';
 import { mountAdminPublicRequests } from './adminPublicRequests';
 import '../styles/admin-catalog.css';
@@ -493,6 +494,7 @@ export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
       void requestController.reload();
     },
   });
+  const localMapUi = mountAdminLocalMaps(root, authController);
   void authController.start();
 
   return {
@@ -505,6 +507,7 @@ export function bootstrapAdminAuthRuntime(root: ParentNode): AdminAuthRuntime {
       relationUi.destroy();
       relationController.destroy();
       mapEntityAudienceUi.destroy();
+      localMapUi.destroy();
       mapEntityUi.destroy();
       mapEntityController.destroy();
       catalogUi.destroy();

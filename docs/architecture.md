@@ -430,3 +430,13 @@ History API, refresh y navegación por breadcrumb; el world map v1.2
 permanece íntegro. En degradación, fallo de red o binding inválido, la
 navegación vuelve al mundo. El mapa local utiliza CRS.Simple y una
 superficie neutral 2048 × 1582 sin raster publicado.
+
+## MAP-078 — Gestión editorial de mapas locales
+
+La sección administrativa «Mapas locales» se monta en el workspace existente y separa
+contextos globales, bindings de campaña activa y placements de entidades. Acceso mediante
+el mismo token, admin authorization, interceptor de scope y RLS/grants de MAP-075/077.
+Los contextos globales no se filtran por campaña; bindings, entidades y placements
+se recargan/invalidan al cambiar la campaña administrativa. Se emplea CRS.Simple
+con dimensiones variables de cada contexto, sin publicar assets sin licencia ni
+modificar el lector público. Véase [MAP-078](map-078-local-map-admin.md).

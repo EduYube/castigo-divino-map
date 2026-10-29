@@ -477,3 +477,16 @@ para admin autenticado con RLS. El contexto publicado
 `image_uri` ni `loading_strategy`, y se enlaza solamente desde
 `Un aliento menos` a `geo-neverwinter`. No se crea un
 `entity-neverwinter` ni placement de Veyra; el snapshot v3 no cambia.
+
+## MAP-078 — Contrato administrativo de mapas locales
+
+La edición de `map_contexts` conserva ID/slug inmutables, tamaño positivo finito y
+no permite redimensionar con placements existentes. El estado del contexto obedece
+jerarquía acíclica, publicación del padre y lifecycle `draft/published/archived`.
+`image_uri` y `loading_strategy` deben ambos ser NULL o ambos estar informados;
+con imagen son obligatorios `source_url`, `rights_holder` y `license_notes`.
+El editor crea bindings por `(campaign_id,geographic_name_id)` y placements
+por `(campaign_id,map_context_id,entity_id)`; únicamente las `location` admiten
+polígonos, y todas las coordenadas se verifican dentro de cada contexto.
+No hay nueva migración ni cambio del snapshot, y el soporte público completo sigue
+diferido a MAP-079/080. Véase [guía MAP-078](map-078-local-map-admin.md).
