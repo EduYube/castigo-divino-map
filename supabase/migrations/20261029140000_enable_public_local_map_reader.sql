@@ -1,11 +1,18 @@
--- MAP-079: public local-only access is authorized by a published placement
--- in a published map context *bound to the same active campaign*.
--- Forward-only ACL expansion; no productive rows or legacy geometry are changed.
+-- MAP-079: forward-only public local-only reader authorization.
+-- Older historical upgrade rehearsals intentionally omit MAP-075/MAP-077
+-- tables; installing this capability must be a no-op for that earlier schema.
 begin;
+do $map079$
+begin
+  if to_regclass('public.entity_map_placements') is null
+     or to_regclass('public.campaign_geographic_map_context_links') is null then
+    raise notice 'MAP-079 skipped: optional local context schema absent in historical rehearsal';
+    return;
+  end if;
 
--- The single privileged predicate avoids recursive RLS between map_entities and
--- entity_map_placements. It has no user-controlled dynamic SQL, an empty search_path,
--- and lives outside the Data API exposed schema.
+  -- No user-supplied dynamic SQL: fixed SQL DDL to avoid hard migration
+  -- dependencies in pre-MAP075 fixture rehearsals.
+  execute $create_predicate$
 create function private.map079_public_local_placement_exists(
   requested_campaign_id uuid,
   requested_context_id text,
@@ -49,15 +56,13 @@ as $$
   );
 $$;
 
--- INFRA #210: explicitly list the sole role allowed to execute this policy
--- predicate; no new table-wide grants or default privilege changes.
-revoke all on function private.map079_public_local_placement_exists(uuid,text,text)
-  from public, anon, authenticated, service_role;
-grant execute on function private.map079_public_local_placement_exists(uuid,text,text)
-  to anon, authenticated;
+  $create_predicate$;
 
-drop policy if exists map_entities_public_select on public.map_entities;
-create policy map_entities_public_select on public.map_entities
+execute 'revoke all on function private.map079_public_local_placement_exists(uuid,text,text) from public, anon, authenticated, service_role';
+  execute 'grant execute on function private.map079_public_local_placement_exists(uuid,text,text) to anon, authenticated';
+
+execute 'drop policy if exists map_entities_public_select on public.map_entities';
+  execute $entity_policy$create policy map_entities_public_select on public.map_entities
 for select to anon, authenticated
 using (
   publication_status = 'published'::public.publication_status
@@ -79,25 +84,30 @@ using (
       campaign_id, null::text, id
     )
   )
-);
+)$entity_policy$;
 
-drop policy if exists placements_public_select on public.entity_map_placements;
-create policy placements_public_select on public.entity_map_placements
+  execute 'drop policy if exists placements_public_select on public.entity_map_placements';
+  execute $placement_policy$create policy placements_public_select on public.entity_map_placements
 for select to anon, authenticated
 using (
   private.map079_public_local_placement_exists(
     campaign_id, map_context_id, entity_id
   )
-);
+)$placement_policy$;
 
 -- Existing SELECT and admin column-scoped write grants stay unchanged.
 -- Explicitly assert the SELECT surface for the two already-exposed tables.
-grant select on public.map_entities to anon, authenticated;
-grant select on public.entity_map_placements to anon, authenticated;
-alter table public.map_entities enable row level security;
-alter table public.entity_map_placements enable row level security;
 
-comment on function private.map079_public_local_placement_exists(uuid,text,text) is
-  'MAP-079 policy-only predicate: published local placement, context, geography binding, canonical public entity/category and active same campaign.';
 
+  -- Existing explicit read privileges and RLS state remain authoritative.
+  execute 'grant select on public.map_entities to anon, authenticated';
+  execute 'grant select on public.entity_map_placements to anon, authenticated';
+  execute 'alter table public.map_entities enable row level security';
+  execute 'alter table public.entity_map_placements enable row level security';
+  execute $policy_comment$
+    comment on function private.map079_public_local_placement_exists(uuid,text,text)
+    is 'MAP-079 published local placement and campaign binding authorization.'
+  $policy_comment$;
+end
+$map079$;
 commit;

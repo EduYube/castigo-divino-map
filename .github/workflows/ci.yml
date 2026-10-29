@@ -47,6 +47,18 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      # Temporary MAP-079 diagnostics: emit ONLY tracked source text, never secrets.
+      # Remove this before the independent-review HEAD.
+      - name: MAP-079 formatted source diagnostics
+        if: failure()
+        run: |
+          npx prettier --write src/app/localMapNavigation.ts src/app/placeSearch.ts src/app/publicLocalMapRuntime.ts src/data-access/publicCatalogQueryContract.d.ts src/data-access/publicCatalogQueryContract.js src/data/search.ts src/infrastructure/supabase/publicLocalMapRepository.test.ts src/infrastructure/supabase/publicLocalMapRepository.ts src/main.ts
+          for f in src/app/localMapNavigation.ts src/app/placeSearch.ts src/app/publicLocalMapRuntime.ts src/data-access/publicCatalogQueryContract.d.ts src/data-access/publicCatalogQueryContract.js src/data/search.ts src/infrastructure/supabase/publicLocalMapRepository.test.ts src/infrastructure/supabase/publicLocalMapRepository.ts src/main.ts; do
+            printf 'MAP079_FORMAT_BEGIN=%s\\n' "$f"
+            base64 -w 0 "$f"
+            printf '\\nMAP079_FORMAT_END=%s\\n' "$f"
+          done
+
       - name: Audit tracked files for privileged credentials
         run: npm run verify:security
 

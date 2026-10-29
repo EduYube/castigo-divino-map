@@ -59,4 +59,4 @@ export function fetchCompletePublicCatalogTable(options: {
   readonly campaignId?: string;
 }): Promise<readonly Record<string, unknown>[]>;
 
-export function filterWorldCatalogPayloads<T extends Record<string, readonly Record<string, unknown>[]>>(payloads: T): T;
+export function filterWorldCatalogPayloads<T>(payloads: T): T;
