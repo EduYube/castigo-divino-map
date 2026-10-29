@@ -101,7 +101,17 @@ async function setup(page: Page) {
     const campaign = u.searchParams.get('campaign_id')?.replace(/^eq\./, '');
     const rows =
       table === 'map_contexts'
-        ? contexts
+        ? u.searchParams.get('select')?.includes('entity_map_placements(count)')
+          ? contexts.map((context) => ({
+              id: context.id,
+              placements: [
+                { count: placements.filter((p) => p.map_context_id === context.id).length },
+              ],
+              bindings: [
+                { count: bindings.filter((b) => b.map_context_id === context.id).length },
+              ],
+            }))
+          : contexts
         : table === 'campaign_geographic_map_context_links'
           ? bindings.filter((b) => b.campaign_id === campaign)
           : table === 'entity_map_placements'
@@ -380,6 +390,7 @@ test('MAP-078 can associate and disassociate a synthetic campaign binding withou
   await expect(page.locator('#local-binding-list')).not.toContainText('Neverwinter');
   await page.locator('#local-binding-geography').selectOption('geo-neverwinter');
   await page.locator('#local-binding-context').selectOption('map-neverwinter');
+  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Asociar geografía' }).click();
   await expect(page.locator('#local-binding-list')).toContainText('Neverwinter');
   expect(backend.bindings).toHaveLength(2);
@@ -433,6 +444,159 @@ test('MAP-078 keyboard polygon is only available to locations', async ({ page })
   await expect(page.locator('#local-placement-list')).toContainText('polygon');
   expect(backend.placements).toHaveLength(1);
 });
+test('MAP078-REV-01 purges hidden private values, options and headings on logout', async ({
+  page,
+}) => {
+  const backend = await setup(page);
+  backend.contexts.push({
+    ...NEVERWINTER,
+    id: 'map-private',
+    slug: 'private',
+    name: 'PRIVATE CONTEXT',
+    license_notes: 'PRIVATE LICENSE',
+    publication_status: 'draft',
+  });
+  await login(page);
+  const row = page.locator('#local-context-list li').filter({ hasText: 'PRIVATE CONTEXT' });
+  await row.getByRole('button', { name: 'Editar contexto' }).click();
+  await expect(page.locator('#local-context-license')).toHaveValue('PRIVATE LICENSE');
+  await page.locator('.admin-auth__logout').click();
+  await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible();
+  const leaked = await page.locator('.admin-local-maps').evaluate((root) => {
+    const controls = Array.from(root.querySelectorAll('input,textarea,select')).map(
+      (control) => (control as HTMLInputElement).value,
+    );
+    return [root.textContent ?? '', ...controls].join('|');
+  });
+  expect(leaked).not.toContain('PRIVATE CONTEXT');
+  expect(leaked).not.toContain('PRIVATE LICENSE');
+  expect(leaked).not.toContain('map-private');
+  await expect(page.locator('#local-context-parent option')).toHaveCount(0);
+  expect(backend.getWrites()).toBe(0);
+});
+
+test('MAP078-REV-02 detects cross-campaign dependencies and refreshes them', async ({
+  page,
+}) => {
+  const backend = await setup(page);
+  backend.contexts.push({
+    ...NEVERWINTER,
+    id: 'map-shared',
+    slug: 'shared',
+    name: 'Shared draft',
+    publication_status: 'draft',
+  });
+  backend.placements.push({
+    campaign_id: CAMPAIGN,
+    map_context_id: 'map-shared',
+    entity_id: 'place-foreign',
+    geometry: { kind: 'point', coordinates: { x: 10, y: 15 } },
+    publication_status: 'draft',
+    updated_at: '2026-10-28T12:00:00.000Z',
+  });
+  backend.bindings.push({
+    campaign_id: CAMPAIGN,
+    geographic_name_id: 'geo-other',
+    map_context_id: 'map-shared',
+  });
+  await login(page);
+  const row = page.locator('#local-context-list li').filter({ hasText: 'Shared draft' });
+  await expect(row.getByRole('button', { name: 'Eliminar contexto' })).toHaveCount(0);
+  await row.getByRole('button', { name: 'Editar contexto' }).click();
+  await expect(page.locator('#local-context-width')).toHaveJSProperty('readOnly', true);
+  await page.getByRole('button', { name: 'Cancelar edición' }).click();
+  backend.placements.splice(0);
+  const bindingIndex = backend.bindings.findIndex((b) => b.map_context_id === 'map-shared');
+  backend.bindings.splice(bindingIndex, 1);
+  await page.locator('#local-context-reload').click();
+  await expect(row.getByRole('button', { name: 'Eliminar contexto' })).toBeVisible();
+  await row.getByRole('button', { name: 'Editar contexto' }).click();
+  await expect(page.locator('#local-context-width')).toHaveJSProperty('readOnly', false);
+  expect(backend.getWrites()).toBe(0);
+});
+
+test('MAP078-REV-03 recovers confirmed campaign after a failed switch', async ({
+  page,
+}) => {
+  const backend = await setup(page);
+  backend.bindings.push({
+    campaign_id: CAMPAIGN_A,
+    geographic_name_id: 'geo-neverwinter',
+    map_context_id: 'map-neverwinter',
+  });
+  await login(page);
+  await page.getByRole('button', { name: 'Bindings de campaña' }).click();
+  await expect(page.locator('#local-binding-list')).toContainText('Neverwinter');
+  await page.route('**/rest/v1/players**', async (route) => {
+    if (new URL(route.request().url()).searchParams.get('campaign_id') === 'eq.' + CAMPAIGN) {
+      await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+    } else await route.fallback();
+  });
+  await page.locator('.admin-campaign-roster__select').selectOption(CAMPAIGN);
+  await expect(page.locator('#local-binding-list')).toContainText('Neverwinter');
+  await page.getByRole('button', { name: 'Placements de campaña' }).click();
+  await expect(page.getByRole('button', { name: 'Crear placement' })).toBeEnabled();
+  expect(backend.getWrites()).toBe(0);
+});
+
+for (const shape of ['point', 'polygon'] as const) {
+  test('MAP078-REV-04 retains editor on canceled context switch: ' + shape, async ({
+    page,
+  }) => {
+    const backend = await setup(page);
+    backend.contexts.push({
+      ...NEVERWINTER,
+      id: 'map-alternate',
+      slug: 'alternate',
+      name: 'Alternate',
+    });
+    await login(page);
+    await page.getByRole('button', { name: 'Placements de campaña' }).click();
+    await page.getByRole('button', { name: 'Crear placement' }).click();
+    if (shape === 'polygon') {
+      await page.locator('#local-placement-entity').selectOption('place-synthetic');
+      await page.locator('#local-placement-kind').selectOption('polygon');
+    }
+    await page.locator('#local-placement-x').fill('20');
+    await page.locator('#local-placement-y').fill('30');
+    await page.getByRole('button', { name: 'Situar punto o añadir vértice' }).click();
+    const initialContext = await page.locator('#local-placement-context').inputValue();
+    const originalGeometry = await page.locator('#local-placement-coordinate').textContent();
+    page.once('dialog', (dialog) => dialog.dismiss());
+    await page.locator('#local-placement-context').selectOption('map-alternate');
+    await expect(page.locator('#local-placement-context')).toHaveValue(initialContext);
+    await expect(page.locator('#local-placement-coordinate')).toHaveText(originalGeometry ?? '');
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.locator('#local-placement-context').selectOption('map-alternate');
+    await expect(page.locator('#local-placement-context')).toHaveValue('map-alternate');
+    await expect(page.locator('#local-placement-coordinate')).toContainText('Sin geometría');
+    expect(backend.getWrites()).toBe(0);
+  });
+}
+
+test('MAP078-REV-05 confirms binding navigation impact before any write', async ({
+  page,
+}) => {
+  const backend = await setup(page);
+  await login(page);
+  await page.getByRole('button', { name: 'Bindings de campaña' }).click();
+  await page.locator('#local-binding-geography').selectOption('geo-neverwinter');
+  await page.locator('#local-binding-context').selectOption('map-neverwinter');
+  let message = '';
+  page.once('dialog', async (dialog) => {
+    message = dialog.message();
+    await dialog.dismiss();
+  });
+  await page.getByRole('button', { name: 'Asociar geografía' }).click();
+  expect(message).toContain('Neverwinter');
+  expect(message).toContain('navegación pública');
+  expect(backend.getWrites()).toBe(0);
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Asociar geografía' }).click();
+  await expect(page.locator('#local-binding-list')).toContainText('Neverwinter');
+  expect(backend.getWrites()).toBe(1);
+});
+
 test('MAP-078 refuses out-of-bounds keyboard geometry without sending a write', async ({
   page,
 }) => {

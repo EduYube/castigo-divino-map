@@ -87,6 +87,32 @@ describe('MAP-078 administrative Data API repository', () => {
     expect(rows[0]?.width).toBe(2048);
     expect(fetchImplementation).toHaveBeenCalledOnce();
   });
+  it('counts global dependencies across campaigns without a campaign filter', async () => {
+    const { repo } = makeRepo(async (url) => {
+      expect(url.pathname).toBe('/rest/v1/map_contexts');
+      expect(url.searchParams.has('campaign_id')).toBe(false);
+      expect(url.searchParams.get('select')).toBe(
+        'id,placements:entity_map_placements(count),bindings:campaign_geographic_map_context_links(count)',
+      );
+      return jsonResponse([
+        {
+          id: 'map-neverwinter',
+          placements: [{ count: 2 }],
+          bindings: [{ count: 1 }],
+        },
+      ]);
+    });
+    const counts = await repo.listGlobalContextDependencies(signal());
+    expect(counts.get('map-neverwinter')).toEqual({ placementCount: 2, bindingCount: 1 });
+  });
+  it('fails closed on incomplete global dependency counts', async () => {
+    const { repo } = makeRepo(async () =>
+      jsonResponse([{ id: 'map-neverwinter', placements: [], bindings: [{ count: 0 }] }]),
+    );
+    await expect(repo.listGlobalContextDependencies(signal())).rejects.toMatchObject({
+      code: 'invalid-response',
+    });
+  });
   it('requires valid session before any I/O', async () => {
     const { repo, auth, fetchImplementation } = makeRepo(async () => jsonResponse([]));
     auth.entries.clear();

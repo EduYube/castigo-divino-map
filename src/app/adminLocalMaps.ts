@@ -17,6 +17,7 @@ import {
   AdminLocalMapError,
   SupabaseLocalMapRepository,
   type LocalMapRepository,
+  type GlobalContextDependencies,
 } from '../infrastructure/supabase/adminLocalMapRepository';
 import { mountAdminLocalMapEditor, type LocalMapEditor } from '../map/adminLocalMapEditor';
 import '../styles/admin-local-maps.css';
@@ -193,6 +194,7 @@ export function mountAdminLocalMaps(
     campaignAbort: AbortController | null = null,
     mutationAbort: AbortController | null = null;
   let contexts: LocalMapContext[] = [];
+  let globalDependencies: ReadonlyMap<string, GlobalContextDependencies> = new Map();
   let bindings: LocalMapBinding[] = [];
   let placements: LocalMapPlacement[] = [];
   let entities: LocalMapEntity[] = [];
@@ -200,6 +202,7 @@ export function mountAdminLocalMaps(
   let originalContext: LocalMapContext | null = null;
   let originalPlacement: LocalMapPlacement | null = null;
   let geometry: MapEntityGeometry | null = null;
+  let selectedPlacementContextId = '';
   let mapEditor: LocalMapEditor | null = null;
   let dirty = false;
   let busy = false;
@@ -226,11 +229,13 @@ export function mountAdminLocalMaps(
       if (button.hasAttribute('data-local-tab')) continue;
       const needsGlobal =
         button.id === 'local-context-new' ||
+        Boolean(button.closest('#local-context-list')) ||
         button.id === 'local-placement-new' ||
         Boolean(button.closest('#local-binding-form')) ||
         Boolean(button.closest('#local-placement-form'));
       const needsCampaign =
         button.id === 'local-placement-new' ||
+        Boolean(button.closest('#local-binding-list, #local-placement-list')) ||
         Boolean(button.closest('#local-binding-form')) ||
         Boolean(button.closest('#local-placement-form'));
       button.disabled =
@@ -246,9 +251,48 @@ export function mountAdminLocalMaps(
     originalContext = null;
     originalPlacement = null;
     geometry = null;
+    selectedPlacementContextId = '';
     dirty = false;
     if (restoreFocus?.isConnected) restoreFocus.focus();
     restoreFocus = null;
+  }
+  function purgePrivateControls(): void {
+    for (const control of section.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+      'input, textarea',
+    )) {
+      control.value = '';
+      control.readOnly = false;
+      control.removeAttribute('aria-invalid');
+    }
+    for (const control of section.querySelectorAll<HTMLSelectElement>('select')) {
+      if (
+        [
+          'local-context-parent',
+          'local-binding-geography',
+          'local-binding-context',
+          'local-placement-context',
+          'local-placement-entity',
+        ].includes(control.id)
+      ) {
+        control.replaceChildren();
+      } else control.selectedIndex = 0;
+      control.disabled = false;
+      control.removeAttribute('aria-invalid');
+    }
+    for (const id of [
+      'local-context-error',
+      'local-placement-error',
+      'local-placement-coordinate',
+      'local-context-provenance',
+      'local-binding-campaign',
+      'local-placement-campaign',
+    ]) {
+      $(section, id).textContent = '';
+    }
+    $(section, 'local-context-editor-title').textContent = 'Editar contexto global';
+    $(section, 'local-placement-editor-title').textContent = 'Editor de placement · CRS.Simple';
+    status.textContent = '';
+    status.setAttribute('role', 'status');
   }
   function guardDiscard(): boolean {
     return !dirty || window.confirm('Hay cambios sin guardar. ¿Descartarlos?');
@@ -291,8 +335,8 @@ export function mountAdminLocalMaps(
       if (
         context.publicationStatus === 'draft' &&
         !contexts.some((c) => c.parentId === context.id) &&
-        !placements.some((p) => p.mapContextId === context.id) &&
-        !bindings.some((b) => b.mapContextId === context.id)
+        globalDependencies.get(context.id)?.placementCount === 0 &&
+        globalDependencies.get(context.id)?.bindingCount === 0
       ) {
         li.append(createButton('Eliminar contexto', () => void deleteContext(context)));
       }
@@ -300,8 +344,9 @@ export function mountAdminLocalMaps(
     updateChoices();
   }
   function renderCampaign(): void {
-    $(section, 'local-binding-campaign').textContent = 'Campaña administrativa: ' + campaignId;
-    $(section, 'local-placement-campaign').textContent = 'Campaña administrativa: ' + campaignId;
+    const label = authorized ? 'Campaña administrativa: ' + campaignId : '';
+    $(section, 'local-binding-campaign').textContent = label;
+    $(section, 'local-placement-campaign').textContent = label;
     setList($(section, 'local-binding-list'), bindings, (binding, li) => {
       const geo = geographies.find((g) => g.id === binding.geographicNameId);
       const context = contexts.find((c) => c.id === binding.mapContextId);
@@ -373,12 +418,20 @@ export function mountAdminLocalMaps(
     globalAbort = controller;
     const generation = ++globalSequence;
     globalReady = false;
+    globalDependencies = new Map();
     enable();
     announce('Cargando contextos globales…');
     try {
-      const next = await repository.listContexts(controller.signal);
+      const [next, dependencies] = await Promise.all([
+        repository.listContexts(controller.signal),
+        repository.listGlobalContextDependencies(controller.signal),
+      ]);
       if (generation !== globalSequence || !authorized || destroyed) return;
+      if (next.some((context) => !dependencies.has(context.id))) {
+        throw new Error('Falta la verificación de dependencias para un contexto global.');
+      }
       contexts = next;
+      globalDependencies = dependencies;
       globalReady = true;
       renderGlobal();
       enable();
@@ -474,7 +527,9 @@ export function mountAdminLocalMaps(
     for (const [id, value] of Object.entries(mapping)) input(section, id).value = value;
     input(section, 'local-context-id').readOnly = Boolean(context);
     input(section, 'local-context-slug').readOnly = Boolean(context);
-    const blockedResize = Boolean(context && placements.some((p) => p.mapContextId === context.id));
+    const blockedResize = Boolean(
+      context && globalDependencies.get(context.id)?.placementCount !== 0,
+    );
     input(section, 'local-context-width').readOnly = blockedResize;
     input(section, 'local-context-height').readOnly = blockedResize;
     const parent = select(section, 'local-context-parent');
@@ -542,7 +597,7 @@ export function mountAdminLocalMaps(
       draft,
       originalContext,
       contexts,
-      Boolean(originalContextId && placements.some((p) => p.mapContextId === originalContextId)),
+      Boolean(originalContextId && globalDependencies.get(originalContextId)?.placementCount !== 0),
     );
     for (const el of section.querySelectorAll<HTMLElement>('[aria-invalid]'))
       el.removeAttribute('aria-invalid');
@@ -626,7 +681,27 @@ export function mountAdminLocalMaps(
       announce('La geografía ya tiene un binding en esta campaña.', true);
       return;
     }
+    const geography = geographies.find((item) => item.id === geo);
+    const globalContext = contexts.find((item) => item.id === context);
+    if (!geography || !globalContext) {
+      announce('Recarga geonombres y contextos antes de crear el binding.', true);
+      return;
+    }
     const requested = campaignId;
+    const campaignName =
+      rosterCampaign?.selectedOptions[0]?.textContent?.trim() || requested;
+    if (
+      !window.confirm(
+        '¿Asociar "' +
+          geography.name +
+          '" al contexto global "' +
+          globalContext.name +
+          '" para la campaña "' +
+          campaignName +
+          '"? Si los recursos están publicados, esta operación puede habilitar una nueva entrada de navegación pública.',
+      )
+    )
+      return;
     const repo = repository;
     if (!repo) return;
     await mutate(async (signal) => {
@@ -742,6 +817,7 @@ export function mountAdminLocalMaps(
     updateChoices();
     select(section, 'local-placement-context').value =
       placement?.mapContextId ?? contexts[0]?.id ?? '';
+    selectedPlacementContextId = select(section, 'local-placement-context').value;
     select(section, 'local-placement-entity').value = placement?.entityId ?? entities[0]?.id ?? '';
     select(section, 'local-placement-status').value = placement?.publicationStatus ?? 'draft';
     select(section, 'local-placement-context').disabled = Boolean(placement);
@@ -842,27 +918,36 @@ export function mountAdminLocalMaps(
   };
   const unsubscribeCampaign = adminCampaignContext.subscribe(onCampaign);
   const unsubscribeTransition = adminCampaignContext.subscribeTransition((transition) => {
-    if (transition) onTransition();
+    if (transition) {
+      onTransition();
+      return;
+    }
+    const confirmed = adminCampaignContext.getCampaignId();
+    if (campaignId !== confirmed) campaignId = confirmed;
+    if (authorized && !campaignReady) void loadCampaign();
     else enable();
   });
   const unsubscribeAuth = auth.subscribe((state) => {
     const next = state.phase === 'authorized';
-    if (!next && authorized) {
+    const changed = next !== authorized;
+    authorized = next;
+    if (changed && !next) {
       cancelPending();
+      restoreFocus = null;
       clearEditor();
       campaignReady = false;
       globalReady = false;
       contexts = [];
+      globalDependencies = new Map();
       bindings = [];
       placements = [];
       entities = [];
       geographies = [];
+      purgePrivateControls();
       renderGlobal();
       renderCampaign();
       announce('Sesión administrativa cerrada.');
     }
-    const changed = next !== authorized;
-    authorized = next;
     enable();
     if (changed && next) {
       void loadGlobal();
@@ -934,10 +1019,12 @@ export function mountAdminLocalMaps(
     rebuildMap();
   });
   listen($(section, 'local-placement-context'), 'change', () => {
+    const contextControl = select(section, 'local-placement-context');
     if (dirty && !guardDiscard()) {
-      select(section, 'local-placement-context').value = originalPlacement?.mapContextId ?? '';
+      contextControl.value = selectedPlacementContextId;
       return;
     }
+    selectedPlacementContextId = contextControl.value;
     dirty = true;
     geometry = null;
     rebuildMap();

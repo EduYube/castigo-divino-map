@@ -103,8 +103,15 @@ function contextPayload(draft: LocalMapContextDraft): JsonRow {
     license_notes: nullIfEmpty(draft.licenseNotes),
   };
 }
+export interface GlobalContextDependencies {
+  readonly placementCount: number;
+  readonly bindingCount: number;
+}
 export interface LocalMapRepository {
   listContexts(signal: AbortSignal): Promise<LocalMapContext[]>;
+  listGlobalContextDependencies(
+    signal: AbortSignal,
+  ): Promise<ReadonlyMap<string, GlobalContextDependencies>>;
   saveContext(
     draft: LocalMapContextDraft,
     original: LocalMapContext | null,
@@ -331,6 +338,43 @@ export class SupabaseLocalMapRepository implements LocalMapRepository {
       signal,
     );
     return rows.map(parseLocalContext);
+  }
+  async listGlobalContextDependencies(
+    signal: AbortSignal,
+  ): Promise<ReadonlyMap<string, GlobalContextDependencies>> {
+    // Embedding by foreign keys counts ALL campaigns without reading private
+    // campaign-scoped rows through the MAP-070 request interceptor.
+    const rows = await this.#rows(
+      this.#urlFor('map_contexts', {
+        select:
+          'id,placements:entity_map_placements(count),bindings:campaign_geographic_map_context_links(count)',
+        order: 'id.asc',
+      }),
+      signal,
+    );
+    const count = (row: JsonRow, key: string): number => {
+      const embedded = row[key];
+      if (!Array.isArray(embedded) || embedded.length !== 1) {
+        throw new AdminLocalMapError('invalid-response', 'No se pudieron verificar las dependencias globales.');
+      }
+      const value = obj(embedded[0]).count;
+      if (!Number.isSafeInteger(value) || (value as number) < 0) {
+        throw new AdminLocalMapError('invalid-response', 'Conteo global de dependencias inválido.');
+      }
+      return value as number;
+    };
+    const dependencies = new Map<string, GlobalContextDependencies>();
+    for (const row of rows) {
+      const id = string(row, 'id');
+      if (dependencies.has(id)) {
+        throw new AdminLocalMapError('invalid-response', 'Contexto global duplicado en respuesta.');
+      }
+      dependencies.set(id, {
+        placementCount: count(row, 'placements'),
+        bindingCount: count(row, 'bindings'),
+      });
+    }
+    return dependencies;
   }
   async saveContext(
     draft: LocalMapContextDraft,

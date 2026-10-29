@@ -30,6 +30,14 @@ Neverwinter debe seguir publicado como contexto global `map-neverwinter` de `204
 
 Se mantiene v1.2.0, snapshot v3 y `public/data/public-catalog.snapshot.json` intactos. Sin tag, release, merge ni deploy.
 
+## R1 corrections (MAP078-REV-01–05)
+
+- On logout, expiry or authorization revocation, hidden forms, private select options, titles and messages are scrubbed. Canceled requests and generation checks prevent late responses repopulating sensitive data.
+- Context dependencies are counted across campaigns via FK embeddings on global `map_contexts`, bypassing the campaign-scoped request interceptor. Missing or malformed counts fail closed; reloading refreshes counts and contexts. PostgreSQL remains authoritative in races.
+- Canceling an administrative campaign transition reloads the confirmed campaign after its scoped data was cleared.
+- A rejected context switch preserves the previous context and geometry for new or existing placements.
+- Creating bindings requires a confirmation identifying campaign, geography, map and potential public-navigation impact before POST.
+
 ## QA
 
 Probar creación/edición/archivado, jerarquía y conflictos, selección de campaña, altas y bajas de bindings, geometría sintética y accesibilidad/responsive. Los E2E no deben mutar Neverwinter ni Veyra productivos. Los issues #208 (editor post-save), #213 (pines coincidentes/Escape), #214 (Master Mode) y #215 (accesibilidad de pins) son deudas preexistentes fuera de alcance salvo regresión directa.
