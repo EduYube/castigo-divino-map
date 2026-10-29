@@ -163,7 +163,7 @@ function mountPublicExperience(
   let activeLocalEntityId: EntityId | null = null;
   let pendingLocalFocusEntityId: EntityId | null = null;
   let updateLocalSearch = (): void => {};
-  let onLocalPinActivate = (_pin: AtlasPinMarkerModel): void => {};
+  let onLocalPinActivate = (): void => {};
   let onLocalSurfaceClosed = (): void => {};
   let geographicNameId: GeographicNameId | null = null;
   let masterEntityIds: ReadonlySet<EntityId> = new Set();

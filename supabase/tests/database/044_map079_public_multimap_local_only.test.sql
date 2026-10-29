@@ -73,7 +73,13 @@ values
 ('00000000-0000-4000-8000-000000000068','entity-map079-placementdraft','map079-placementdraft','character','pin','public','MAP079 Draft Placement','','',null,null,null,false,'category-map079-public','published'),
 ('00000000-0000-4000-8000-000000000068','entity-map079-private','map079-private','character','pin','master','MAP079 Private','','',null,null,null,false,'category-map079-public','published'),
 ('00000000-0000-4000-8000-000000000068','entity-map079-draftlocal','map079-draftlocal','character','pin','public','MAP079 Local Draft','','',null,null,null,false,'category-map079-public','draft'),
-('00000000-0000-4000-8000-000000000068','entity-map079-badcategory','map079-badcategory','character','pin','public','MAP079 Hidden Category','','',null,null,null,false,'category-map079-draft','published');
+('00000000-0000-4000-8000-000000000068','entity-map079-badcategory','map079-badcategory','character','pin','public','MAP079 Hidden Category','','',null,null,null,false,'category-map079-draft','draft');
+
+-- The schema rejects publishing a draft-category entity before RLS is even consulted.
+select ok(pg_temp.map079_rejects($q$
+ update public.map_entities set publication_status='published'
+ where id='entity-map079-badcategory'
+$q$,'23514'),'published entity cannot reference unpublished category');
 
 insert into public.entity_map_placements
 (campaign_id,map_context_id,entity_id,geometry,publication_status)

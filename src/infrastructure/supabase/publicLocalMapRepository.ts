@@ -3,7 +3,6 @@ import type {
   PublicCatalogSnapshotV2,
   PublicCoordinate,
   PublicMapGeometry,
-  PublicNote,
   PublicSpatialMapEntity,
 } from '../../data/beta02-model';
 import type { PublicCatalogTableQuery } from '../../data-access/publicCatalogQueryContract.js';

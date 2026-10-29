@@ -79,7 +79,6 @@ export function mountPublicLocalMapRuntime(
   let pointLayer: L.LayerGroup | null = null;
   let regionLayer: CampaignRegionController | null = null;
   let pointMarkers = new Map<EntityId, Marker>();
-  let activeId: EntityId | null = null;
 
   const clearMap = (): void => {
     regionLayer?.destroy();
@@ -89,7 +88,6 @@ export function mountPublicLocalMapRuntime(
     pointLayer = null;
     pointMarkers = new Map();
     surfaceCatalog = null;
-    activeId = null;
   };
 
   const render = (): void => {
@@ -148,7 +146,6 @@ export function mountPublicLocalMapRuntime(
       });
       marker.on('click', () => {
         if (!overlapping) {
-          activeId = first.entityId;
           options.onPinActivate(first);
           return;
         }
@@ -163,7 +160,6 @@ export function mountPublicLocalMapRuntime(
           button.textContent = pin.name;
           button.addEventListener('click', () => {
             current.map.closePopup();
-            activeId = pin.entityId;
             options.onPinActivate(pin);
           });
           panel.append(button);
@@ -197,7 +193,6 @@ export function mountPublicLocalMapRuntime(
     regionLayer = mountCampaignRegions(root, current.map, {
       regions: polygons,
       onActivate(pin) {
-        activeId = pin.entityId;
         regionLayer?.setActiveRegion(pin.id);
         options.onPinActivate(pin);
       },
@@ -353,7 +348,6 @@ export function mountPublicLocalMapRuntime(
           ({ entityId }) => entityId === id,
         );
         if (pin) {
-          activeId = id;
           options.onPinActivate(pin);
           return true;
         }
@@ -365,7 +359,6 @@ export function mountPublicLocalMapRuntime(
         regionLayer.locateRegion(pin.id);
         regionLayer.focusRegion(pin.id);
         regionLayer.setActiveRegion(pin.id);
-        activeId = id;
         options.onPinActivate(pin);
         return true;
       }
