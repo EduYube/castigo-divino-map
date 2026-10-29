@@ -797,3 +797,201 @@ test('MAP-077 R2: a transient binding-only 503 retries on connected refresh, not
   });
   expect(backend.getBindingRequestCount()).toBe(2);
 });
+
+/**
+ * MAP-079: browser-only synthetic fixtures. These are not narrative records and
+ * never create a canonical Neverwinter placement in the database.
+ */
+async function configureMap079SyntheticLocalBackend(page: Page): Promise<void> {
+  const localEntities: readonly Record<string, unknown>[] = [
+    {
+      id: 'entity-map079-synthetic',
+      slug: 'map079-synthetic',
+      entity_type: 'character',
+      lifecycle_status: null,
+      visibility: 'pin',
+      name: 'MAP079 Synthetic Only',
+      name_language: 'en',
+      summary: 'Only on the synthetic local surface.',
+      description: 'Canonical synthetic details.',
+      portrait_path: null,
+      x: null,
+      y: null,
+      geometry: null,
+      category_id: 'category-campaign-b',
+      world_map_enabled: false,
+      publication_status: 'published',
+      audience: 'public',
+    },
+    {
+      id: 'place-map079-synthetic-region',
+      slug: 'map079-synthetic-region',
+      entity_type: 'location',
+      lifecycle_status: null,
+      visibility: 'pin',
+      name: 'MAP079 Synthetic Region',
+      name_language: 'en',
+      summary: 'Synthetic polygon.',
+      description: 'Polygon canonical metadata.',
+      portrait_path: null,
+      x: null,
+      y: null,
+      geometry: null,
+      category_id: 'category-campaign-b',
+      world_map_enabled: false,
+      publication_status: 'published',
+      audience: 'public',
+    },
+  ];
+  const placements: readonly Record<string, unknown>[] = [
+    {
+      campaign_id: CAMPAIGN_B_ID,
+      map_context_id: 'map-neverwinter',
+      entity_id: 'place-campaign-b-ally',
+      x: 150,
+      y: 140,
+      geometry: { kind: 'point', coordinates: { x: 150, y: 140 } },
+      publication_status: 'published',
+    },
+    {
+      campaign_id: CAMPAIGN_B_ID,
+      map_context_id: 'map-neverwinter',
+      entity_id: 'entity-map079-synthetic',
+      x: 220,
+      y: 210,
+      geometry: { kind: 'point', coordinates: { x: 220, y: 210 } },
+      publication_status: 'published',
+    },
+    {
+      campaign_id: CAMPAIGN_B_ID,
+      map_context_id: 'map-neverwinter',
+      entity_id: 'place-map079-synthetic-region',
+      x: 375,
+      y: 375,
+      geometry: {
+        kind: 'polygon',
+        vertices: [
+          { x: 330, y: 330 },
+          { x: 420, y: 330 },
+          { x: 420, y: 420 },
+          { x: 330, y: 420 },
+        ],
+      },
+      publication_status: 'published',
+    },
+  ];
+  await page.route('**/rest/v1/map_entities*', async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get('world_map_enabled') !== 'eq.false') {
+      await route.fallback();
+      return;
+    }
+    const rows = campaignIdFromUrl(url) === CAMPAIGN_B_ID ? localEntities : [];
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Content-Range': contentRange(rows) },
+      body: JSON.stringify(rows),
+    });
+  });
+  await page.route('**/rest/v1/entity_map_placements*', async (route) => {
+    const rows =
+      campaignIdFromUrl(new URL(route.request().url())) === CAMPAIGN_B_ID ? placements : [];
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Content-Range': contentRange(rows) },
+      body: JSON.stringify(rows),
+    });
+  });
+}
+
+test('MAP-079: synthetic local-only search, distinct world/local geometry and canonical details', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos');
+  await expect(page.locator('[data-map-canvas]')).toBeVisible();
+  await expect(
+    page.locator('[data-map-canvas] [data-entity-id="entity-map079-synthetic"]'),
+  ).toHaveCount(0);
+
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await search.fill('MAP079 Synthetic Only');
+  const result = page.locator('[data-search-result-id="entity-map079-synthetic"]');
+  await expect(result).toBeVisible();
+  await expect(result).toContainText('Mapa local: Neverwinter');
+  await expect(result).toHaveCount(1);
+  await result.click();
+
+  await expect(page).toHaveURL(/map=neverwinter/);
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  const localOnlyPin = page.locator(
+    '[data-local-map-canvas] [data-entity-id="entity-map079-synthetic"]',
+  );
+  await expect(localOnlyPin).toBeVisible();
+  await expect(localOnlyPin).toHaveAttribute('data-marker-lat', '210');
+  await expect(localOnlyPin).toHaveAttribute('data-marker-lng', '220');
+  const sharedWorldEntity = page.locator(
+    '[data-local-map-canvas] [data-entity-id="place-campaign-b-ally"]',
+  );
+  await expect(sharedWorldEntity).toHaveAttribute('data-marker-lat', '140');
+  await expect(sharedWorldEntity).toHaveAttribute('data-marker-lng', '150');
+  await expect(
+    page.locator('[data-local-map-canvas] [data-region-id="place-map079-synthetic-region"]'),
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Mapa general' }).click();
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await expect(
+    page.locator('[data-map-canvas] [data-entity-id="entity-map079-synthetic"]'),
+  ).toHaveCount(0);
+  await page.goto('/?campaign=un-aliento-menos&entity=map079-synthetic');
+  await expect(page.locator('[data-full-entity-title]')).toHaveText('MAP079 Synthetic Only');
+  await expect(page.locator('[data-full-entity-body]')).toContainText(
+    'Canonical synthetic details.',
+  );
+});
+
+test('MAP-079: campaign switch and degraded status purge synthetic local-only results', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?campaign=un-aliento-menos');
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await search.fill('MAP079 Synthetic Only');
+  await expect(
+    page.locator('[data-search-result-id="entity-map079-synthetic"]'),
+  ).toBeVisible();
+  await page.locator('[data-search-result-id="entity-map079-synthetic"]').click();
+  await expect(
+    page.locator('[data-local-map-canvas] [data-entity-id="entity-map079-synthetic"]'),
+  ).toBeVisible();
+
+  await page.getByLabel('Campaña', { exact: true }).selectOption('castigo-divino');
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await expect(page).not.toHaveURL(/map=neverwinter/);
+  await expect(
+    page.locator('[data-search-result-id="entity-map079-synthetic"]'),
+  ).toHaveCount(0);
+
+  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
+  await expect(
+    page.locator('[data-search-result-id="entity-map079-synthetic"]'),
+  ).toBeVisible();
+  await page.locator('[data-search-result-id="entity-map079-synthetic"]').click();
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'degraded' } }),
+    );
+  });
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await expect(page.locator('[data-map-canvas]')).toBeVisible();
+  await expect(
+    page.locator('[data-search-result-id="entity-map079-synthetic"]'),
+  ).toHaveCount(0);
+});
