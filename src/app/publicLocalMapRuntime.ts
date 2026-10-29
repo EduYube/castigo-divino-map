@@ -180,8 +180,7 @@ export function mountPublicLocalMapRuntime(
               !surfaceCatalog?.entities.some(({ id }) => id === pin.entityId) ||
               !localData?.placements.some(
                 (placement) =>
-                  placement.entityId === pin.entityId &&
-                  placement.contextId === current.context.id,
+                  placement.entityId === pin.entityId && placement.contextId === current.context.id,
               )
             )
               return;
