@@ -994,9 +994,10 @@ async function configureMap079SyntheticLocalBackend(page: Page): Promise<void> {
     });
   });
   await page.route('**/rest/v1/tags*', async (route) => {
-    const rows = campaignIdFromUrl(new URL(route.request().url())) === CAMPAIGN_B_ID
-      ? [{ id: 'tag-map079', name: 'MAP079 Unique Tag', description: 'Synthetic public tag.' }]
-      : [];
+    const rows =
+      campaignIdFromUrl(new URL(route.request().url())) === CAMPAIGN_B_ID
+        ? [{ id: 'tag-map079', name: 'MAP079 Unique Tag', description: 'Synthetic public tag.' }]
+        : [];
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -1005,9 +1006,10 @@ async function configureMap079SyntheticLocalBackend(page: Page): Promise<void> {
     });
   });
   await page.route('**/rest/v1/entity_tags*', async (route) => {
-    const rows = campaignIdFromUrl(new URL(route.request().url())) === CAMPAIGN_B_ID
-      ? [{ entity_id: 'entity-map079-search-only', tag_id: 'tag-map079' }]
-      : [];
+    const rows =
+      campaignIdFromUrl(new URL(route.request().url())) === CAMPAIGN_B_ID
+        ? [{ entity_id: 'entity-map079-search-only', tag_id: 'tag-map079' }]
+        : [];
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -1089,9 +1091,7 @@ test('MAP-079: synthetic local-only search, distinct world/local geometry and ca
   );
 });
 
-test('MAP-079 R1: search_only is selectable in both authorized contexts without a permanent marker', async ({
-  page,
-}) => {
+test('MAP-079 R1: search_only selection in two local contexts', async ({ page }) => {
   await configureCampaignBackend(page);
   await configureMap079SyntheticLocalBackend(page);
   await page.goto('/?campaign=un-aliento-menos');
@@ -1125,9 +1125,7 @@ test('MAP-079 R1: search_only is selectable in both authorized contexts without 
   ).toHaveCount(0);
 });
 
-test('MAP-079 R1: local marker keyboard activation, grouped choice Escape and focus restoration', async ({
-  page,
-}) => {
+test('MAP-079 R1: keyboard access for simple and grouped local pins', async ({ page }) => {
   await configureCampaignBackend(page);
   await configureMap079SyntheticLocalBackend(page);
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
@@ -1161,9 +1159,7 @@ test('MAP-079 R1: local marker keyboard activation, grouped choice Escape and fo
   await expect(page.locator('[data-place-details]')).toContainText('MAP079 Overlap B');
 });
 
-test('MAP-079 R1: public local-only tags are searchable without duplicated identities', async ({
-  page,
-}) => {
+test('MAP-079 R1: public local tag search is deduplicated', async ({ page }) => {
   await configureCampaignBackend(page);
   await configureMap079SyntheticLocalBackend(page);
   await page.goto('/?campaign=un-aliento-menos');

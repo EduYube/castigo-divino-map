@@ -307,8 +307,7 @@ export function searchPublicAtlas(
     const publicNotes = beta02Catalog.notes.filter((note) => note.entityId === entity.id);
     const publicTags = beta02Catalog.tags.filter(
       (tag) =>
-        entity.tagIds.includes(tag.id) ||
-        publicNotes.some((note) => note.tagIds.includes(tag.id)),
+        entity.tagIds.includes(tag.id) || publicNotes.some((note) => note.tagIds.includes(tag.id)),
     );
     const bestMatch = findBestCandidate(
       entityCandidates(catalog, entity, legacyPlace, publicNotes, publicTags),

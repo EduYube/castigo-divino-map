@@ -127,7 +127,9 @@ describe('MAP-079 explicit world/local boundary', () => {
       coordinate: [3000, 4000],
       source: 'beta02',
     });
-    expect(createAtlasPinMarkerModels(legacy, projected).some(({ entityId }) => entityId === 'entity-local')).toBe(false);
+    expect(
+      createAtlasPinMarkerModels(legacy, projected).some(({ entityId }) => entityId === 'entity-local'),
+    ).toBe(false);
     expect(createAtlasSearchOnlyDetailPin(world, 'entity-local')).toBeNull();
   });
 

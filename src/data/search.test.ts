@@ -397,7 +397,9 @@ describe('public atlas search', () => {
     ]);
     expect(searchPublicAtlas(campaignCatalog, tagged, 'Private words')).toEqual([]);
     // Never surface a name for a tag absent from the public catalog.
-    expect(searchPublicAtlas(campaignCatalog, { ...tagged, tags: [] }, 'Unique R1 Tag')).toEqual([]);
+    expect(
+      searchPublicAtlas(campaignCatalog, { ...tagged, tags: [] }, 'Unique R1 Tag'),
+    ).toEqual([]);
   });
 
   it('preserves the legacy search surface while Beta 0.2 data is unavailable', () => {
