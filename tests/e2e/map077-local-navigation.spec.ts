@@ -824,6 +824,44 @@ async function configureMap079SyntheticLocalBackend(page: Page): Promise<void> {
       audience: 'public',
     },
     {
+      id: 'entity-map079-search-only',
+      slug: 'map079-search-only',
+      entity_type: 'character',
+      lifecycle_status: null,
+      visibility: 'search_only',
+      name: 'MAP079 Hidden Search Target',
+      name_language: 'en',
+      summary: 'Local-only content selected from search.',
+      description: 'MAP079 Search Only Canonical Details.',
+      portrait_path: null,
+      x: null,
+      y: null,
+      geometry: null,
+      category_id: 'category-campaign-b',
+      world_map_enabled: false,
+      publication_status: 'published',
+      audience: 'public',
+    },
+    ...['A', 'B'].map((suffix) => ({
+      id: 'entity-map079-overlap-' + suffix.toLowerCase(),
+      slug: 'map079-overlap-' + suffix.toLowerCase(),
+      entity_type: 'character',
+      lifecycle_status: null,
+      visibility: 'pin',
+      name: 'MAP079 Overlap ' + suffix,
+      name_language: 'en',
+      summary: 'Overlapping synthetic local point.',
+      description: 'MAP079 Overlap Canonical Details.',
+      portrait_path: null,
+      x: null,
+      y: null,
+      geometry: null,
+      category_id: 'category-campaign-b',
+      world_map_enabled: false,
+      publication_status: 'published',
+      audience: 'public',
+    })),
+    {
       id: 'place-map079-synthetic-region',
       slug: 'map079-synthetic-region',
       entity_type: 'location',
@@ -865,6 +903,33 @@ async function configureMap079SyntheticLocalBackend(page: Page): Promise<void> {
     {
       campaign_id: CAMPAIGN_B_ID,
       map_context_id: 'map-neverwinter',
+      entity_id: 'entity-map079-search-only',
+      x: 260,
+      y: 270,
+      geometry: { kind: 'point', coordinates: { x: 260, y: 270 } },
+      publication_status: 'published',
+    },
+    {
+      campaign_id: CAMPAIGN_B_ID,
+      map_context_id: 'map-map079-secondary',
+      entity_id: 'entity-map079-search-only',
+      x: 60,
+      y: 70,
+      geometry: { kind: 'point', coordinates: { x: 60, y: 70 } },
+      publication_status: 'published',
+    },
+    ...['a', 'b'].map((suffix) => ({
+      campaign_id: CAMPAIGN_B_ID,
+      map_context_id: 'map-neverwinter',
+      entity_id: 'entity-map079-overlap-' + suffix,
+      x: 330,
+      y: 260,
+      geometry: { kind: 'point', coordinates: { x: 330, y: 260 } },
+      publication_status: 'published',
+    })),
+    {
+      campaign_id: CAMPAIGN_B_ID,
+      map_context_id: 'map-neverwinter',
       entity_id: 'place-map079-synthetic-region',
       x: 375,
       y: 375,
@@ -883,12 +948,11 @@ async function configureMap079SyntheticLocalBackend(page: Page): Promise<void> {
   await page.route('**/rest/v1/campaign_geographic_map_context_links*', async (route) => {
     const url = new URL(route.request().url());
     const projection = url.searchParams.get('select') ?? '';
-    // The MAP-077 navigation fixture models a different PostgREST projection.
-    // Full-entity deep links must honor the local reader's narrower projection.
-    if (!projection.includes('map_contexts!inner') || projection.includes('parent_id')) {
+    if (!projection.includes('map_contexts!inner')) {
       await route.fallback();
       return;
     }
+    const navigationProjection = projection.includes('parent_id');
     const rows =
       campaignIdFromUrl(url) === CAMPAIGN_B_ID
         ? [
@@ -903,10 +967,47 @@ async function configureMap079SyntheticLocalBackend(page: Page): Promise<void> {
                 width: 2048,
                 height: 1582,
                 publication_status: 'published',
+                ...(navigationProjection ? { parent_id: null, image_uri: null } : {}),
+              },
+            },
+            {
+              campaign_id: CAMPAIGN_B_ID,
+              geographic_name_id: 'geo-neverwinter',
+              map_context_id: 'map-map079-secondary',
+              map_contexts: {
+                id: 'map-map079-secondary',
+                slug: 'map079-secondary',
+                name: 'MAP079 Secondary Map',
+                width: 500,
+                height: 500,
+                publication_status: 'published',
+                ...(navigationProjection ? { parent_id: null, image_uri: null } : {}),
               },
             },
           ]
         : [];
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Content-Range': contentRange(rows) },
+      body: JSON.stringify(rows),
+    });
+  });
+  await page.route('**/rest/v1/tags*', async (route) => {
+    const rows = campaignIdFromUrl(new URL(route.request().url())) === CAMPAIGN_B_ID
+      ? [{ id: 'tag-map079', name: 'MAP079 Unique Tag', description: 'Synthetic public tag.' }]
+      : [];
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Content-Range': contentRange(rows) },
+      body: JSON.stringify(rows),
+    });
+  });
+  await page.route('**/rest/v1/entity_tags*', async (route) => {
+    const rows = campaignIdFromUrl(new URL(route.request().url())) === CAMPAIGN_B_ID
+      ? [{ entity_id: 'entity-map079-search-only', tag_id: 'tag-map079' }]
+      : [];
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -986,6 +1087,92 @@ test('MAP-079: synthetic local-only search, distinct world/local geometry and ca
   await expect(page.locator('[data-full-entity-body]')).toContainText(
     'Canonical synthetic details.',
   );
+});
+
+test('MAP-079 R1: search_only is selectable in both authorized contexts without a permanent marker', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos');
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await search.fill('MAP079 Hidden Search Target');
+  const result = page.locator('[data-search-result-id="entity-map079-search-only"]');
+  await expect(result).toBeVisible();
+  await expect(result).toContainText('Neverwinter');
+  await expect(result).toContainText('MAP079 Secondary Map');
+  await result.click();
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+
+  await page.locator('[data-local-context-slug="neverwinter"]').click();
+  await expect(page).toHaveURL(/map=neverwinter/);
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await expect(
+    page.locator('[data-local-map-canvas] [data-entity-id="entity-map079-search-only"]'),
+  ).toHaveCount(0);
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Hidden Search Target');
+
+  // Selecting the same result while already in context must still open details.
+  await result.click();
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Hidden Search Target');
+
+  await page.locator('[data-local-context-slug="map079-secondary"]').click();
+  await expect(page).toHaveURL(/map=map079-secondary/);
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Hidden Search Target');
+  await expect(
+    page.locator('[data-local-map-canvas] [data-entity-id="entity-map079-search-only"]'),
+  ).toHaveCount(0);
+});
+
+test('MAP-079 R1: local marker keyboard activation, grouped choice Escape and focus restoration', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  const local = page.locator('[data-local-map-canvas]');
+  await expect(local).toBeVisible();
+
+  const simple = local.locator('[data-entity-id="entity-map079-synthetic"]');
+  await expect(simple).toBeVisible();
+  await simple.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Synthetic Only');
+  await simple.focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Synthetic Only');
+
+  const grouped = local.getByRole('button', { name: /2 entidades agrupadas/ });
+  await expect(grouped).toBeVisible();
+  await grouped.focus();
+  await page.keyboard.press('Enter');
+  const choices = page.locator('.local-map-pin-choices button');
+  await expect(choices).toHaveCount(2);
+  await expect(choices.first()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(choices).toHaveCount(0);
+  await expect(grouped).toBeFocused();
+
+  await grouped.focus();
+  await page.keyboard.press('Space');
+  await expect(choices).toHaveCount(2);
+  await choices.getByText('MAP079 Overlap B').click();
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Overlap B');
+});
+
+test('MAP-079 R1: public local-only tags are searchable without duplicated identities', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos');
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await search.fill('MAP079 Unique Tag');
+  const result = page.locator('[data-search-result-id="entity-map079-search-only"]');
+  await expect(result).toHaveCount(1);
+  await expect(result).toContainText('Coincidencia por etiqueta pública');
+  await expect(result).toContainText('Mapa local:');
 });
 
 test('MAP-079: campaign switch and degraded status purge synthetic local-only results', async ({
