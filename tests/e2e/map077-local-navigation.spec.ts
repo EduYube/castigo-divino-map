@@ -1212,6 +1212,10 @@ test('MAP-079 R2: layer removal invalidates local popup choices', async ({ page 
   await configureCampaignBackend(page);
   await configureMap079SyntheticLocalBackend(page);
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  // This is a closed <details> by default: expose the real checkbox before
+  // opening the coincident selector so the popup stays open during revocation.
+  await page.locator('[data-map-layers-summary]').click();
+  await expect(page.locator('[data-map-layer="character"]')).toBeVisible();
   const grouped = page.locator('[data-local-map-canvas]').getByRole('button', {
     name: /2 entidades agrupadas/,
   });
