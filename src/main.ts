@@ -670,8 +670,7 @@ function mountPublicExperience(
 
     if (activeSupplementalPin) {
       const isLocalSelection =
-        activeLocalEntityId !== null &&
-        activeSupplementalPin.entityId === activeLocalEntityId;
+        activeLocalEntityId !== null && activeSupplementalPin.entityId === activeLocalEntityId;
       const selectionStillVisible = isLocalSelection
         ? localReader.isEntityVisibleInActiveContext(activeLocalEntityId!)
         : renderedMarkers.some(({ id }) => id === activeSupplementalPin?.id);
