@@ -509,7 +509,9 @@ export class SupabasePublicLocalMapRepository {
       if (!placement) invalid('Entidad local-only sin placement publicado y vinculado.');
       return parseLocalOnlyEntity(row, placement, aliases, tags);
     });
-    const localNotes = rows.notes.filter((row) => localOnlyIds.has(row.entity_id));
+    const localNotes = rows.notes.filter(
+      (row) => typeof row.entity_id === 'string' && localOnlyIds.has(row.entity_id),
+    );
     const noteIds = new Set(localNotes.map((note) => note.id));
     const noteTags = rows.noteTags.map(parseNoteTag).filter((tag) => noteIds.has(tag.noteId));
     const noteTagsByNote = groupValues(noteTags, ({ noteId }) => noteId);

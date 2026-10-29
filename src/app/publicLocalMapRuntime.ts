@@ -340,11 +340,12 @@ export function mountPublicLocalMapRuntime(
     },
     focusEntity(id): boolean {
       if (!surface || !surfaceCatalog) return false;
+      const currentCatalog = surfaceCatalog;
       const marker = pointMarkers.get(id);
       if (marker) {
         surface.map.panTo(marker.getLatLng(), { animate: false });
         marker.getElement()?.focus({ preventScroll: true });
-        const pin = createAtlasPinMarkerModels(EMPTY_LEGACY, surfaceCatalog).find(
+        const pin = createAtlasPinMarkerModels(EMPTY_LEGACY, currentCatalog).find(
           ({ entityId }) => entityId === id,
         );
         if (pin) {
@@ -352,8 +353,8 @@ export function mountPublicLocalMapRuntime(
           return true;
         }
       }
-      const pin = createAtlasPinMarkerModels(EMPTY_LEGACY, surfaceCatalog).find(
-        ({ entityId }) => entityId === id && entityTypeIsPolygon(surfaceCatalog, entityId),
+      const pin = createAtlasPinMarkerModels(EMPTY_LEGACY, currentCatalog).find(
+        ({ entityId }) => entityId === id && entityTypeIsPolygon(currentCatalog, entityId),
       );
       if (pin && regionLayer) {
         regionLayer.locateRegion(pin.id);
