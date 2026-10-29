@@ -113,7 +113,7 @@ const local: PublicLocalMapData = {
 const legacy: CampaignCatalog = { categories: [], tags: [], places: [], notes: [] };
 
 describe('MAP-079 explicit world/local boundary', () => {
-  test('search_only selects a transient canonical detail model without rendering a permanent pin', () => {
+  test('search_only uses canonical detail without a permanent pin', () => {
     const searchOnlyLocal: PublicLocalMapData = {
       ...local,
       localOnlyEntities: [{ ...LOCAL_ENTITY, visibility: 'search_only' }],
@@ -127,9 +127,8 @@ describe('MAP-079 explicit world/local boundary', () => {
       coordinate: [3000, 4000],
       source: 'beta02',
     });
-    expect(
-      createAtlasPinMarkerModels(legacy, projected).some(({ entityId }) => entityId === 'entity-local'),
-    ).toBe(false);
+    const permanentPins = createAtlasPinMarkerModels(legacy, projected);
+    expect(permanentPins.some(({ entityId }) => entityId === 'entity-local')).toBe(false);
     expect(createAtlasSearchOnlyDetailPin(world, 'entity-local')).toBeNull();
   });
 

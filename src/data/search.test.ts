@@ -369,37 +369,47 @@ describe('public atlas search', () => {
     ).toEqual(['geographic', 'location']);
   });
 
-  it('indexes published tag names for a search_only entity once, including note tags', () => {
+  it('searches public entity tags without leaking hidden tag names', () => {
+    const tag = { id: 'tag-r1', name: 'Unique R1 Tag', description: '' };
     const tagged: PublicCatalogSnapshotV2 = {
       ...beta02Catalog,
-      tags: [{ id: 'tag-r1', name: 'Unique R1 Tag', description: '' }],
+      tags: [tag],
       entities: beta02Catalog.entities.map((entity) =>
-        entity.id === 'entity-durnan' ? { ...entity, tagIds: ['tag-r1'] } : entity,
+        entity.id === 'entity-durnan' ? { ...entity, tagIds: [tag.id] } : entity,
       ),
+    };
+    const matches = searchPublicAtlas(campaignCatalog, tagged, tag.name);
+    expect(matches).toHaveLength(1);
+    expect(matches[0]).toMatchObject({
+      id: 'entity-durnan',
+      matchKind: 'tag',
+      matchedText: tag.name,
+    });
+    const unavailable = { ...tagged, tags: [] };
+    expect(searchPublicAtlas(campaignCatalog, unavailable, tag.name)).toEqual([]);
+  });
+
+  it('searches public note tags without indexing the note body', () => {
+    const tag = { id: 'tag-note', name: 'Unique Note Tag', description: '' };
+    const tagged: PublicCatalogSnapshotV2 = {
+      ...beta02Catalog,
+      tags: [tag],
       notes: [
         {
           id: 'note-r1',
           slug: 'note-r1',
           entityId: 'entity-durnan',
-          title: 'An unrelated public note',
-          body: 'Private words are not indexed.',
+          title: 'Unrelated public note',
+          body: 'Unindexed words from the body.',
           sortOrder: 0,
-          tagIds: ['tag-r1'],
+          tagIds: [tag.id],
         },
       ],
     };
-    expect(searchPublicAtlas(campaignCatalog, tagged, 'Unique R1 Tag')).toEqual([
-      expect.objectContaining({
-        id: 'entity-durnan',
-        matchKind: 'tag',
-        matchedText: 'Unique R1 Tag',
-      }),
-    ]);
-    expect(searchPublicAtlas(campaignCatalog, tagged, 'Private words')).toEqual([]);
-    // Never surface a name for a tag absent from the public catalog.
-    expect(
-      searchPublicAtlas(campaignCatalog, { ...tagged, tags: [] }, 'Unique R1 Tag'),
-    ).toEqual([]);
+    const matches = searchPublicAtlas(campaignCatalog, tagged, tag.name);
+    expect(matches.map(({ id }) => id)).toEqual(['entity-durnan']);
+    expect(matches[0]?.matchKind).toBe('tag');
+    expect(searchPublicAtlas(campaignCatalog, tagged, 'Unindexed words')).toEqual([]);
   });
 
   it('preserves the legacy search surface while Beta 0.2 data is unavailable', () => {
