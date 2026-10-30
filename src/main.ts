@@ -9,6 +9,11 @@ import { mountFullEntityDetails, renderFullEntityDetailsShell } from './app/full
 import { createFullEntityUrl, parseFullEntityUrlRequest } from './app/fullEntityUrl';
 import { mountMapLayers } from './app/mapLayers';
 import { mountLocalMapNavigation } from './app/localMapNavigation';
+import { mountPublicLocalMapRuntime } from './app/publicLocalMapRuntime';
+import {
+  mergePublicLocalCatalog,
+  SupabasePublicLocalMapRepository,
+} from './infrastructure/supabase/publicLocalMapRepository';
 import { mountMasterDetailActions } from './app/masterDetailActions';
 import { mountMasterPinVisuals } from './app/masterPinVisuals';
 import { bootstrapMasterModeRuntime, type MasterModeRuntime } from './app/masterModeRuntime';
@@ -155,6 +160,11 @@ function mountPublicExperience(
   let authorizedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
   let renderedMarkers = filterAtlasMarkersByLayers(authorizedMarkers, mapLayerState);
   let activeSupplementalPin: AtlasPinMarkerModel | null = null;
+  let activeLocalEntityId: EntityId | null = null;
+  let pendingLocalFocusEntityId: EntityId | null = null;
+  let updateLocalSearch = (): void => {};
+  let onLocalPinActivate: (pin: AtlasPinMarkerModel) => void = () => {};
+  let onLocalSurfaceClosed = (): void => {};
   let geographicNameId: GeographicNameId | null = null;
   let masterEntityIds: ReadonlySet<EntityId> = new Set();
   let masterModeRuntime: MasterModeRuntime | null = null;
@@ -167,8 +177,15 @@ function mountPublicExperience(
   const mapSearchStatus = app.querySelector<HTMLElement>('[data-map-search-status]');
 
   const focusPinControl = (pin: AtlasPinMarkerModel): void => {
+    if (localNavigation.getMapSlug() && pin.entityId) {
+      localReader.getReturnTarget(pin.entityId)?.element.focus({ preventScroll: true });
+      return;
+    }
+    const pinRoot = localNavigation.getMapSlug()
+      ? (app.querySelector<HTMLElement>('[data-local-map-canvas]') ?? app)
+      : app;
     const region = Array.from(
-      app.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]'),
+      pinRoot.querySelectorAll<HTMLElement>('.campaign-region[data-region-id]'),
     ).find((candidate) => candidate.dataset.regionId === pin.id);
     if (region) {
       region.focus({ preventScroll: true });
@@ -177,7 +194,9 @@ function mountPublicExperience(
 
     const [lat, lng] = pin.coordinate;
     const element = Array.from(
-      app.querySelectorAll<HTMLElement>('.campaign-marker-icon[data-marker-lat][data-marker-lng]'),
+      pinRoot.querySelectorAll<HTMLElement>(
+        '.campaign-marker-icon[data-marker-lat][data-marker-lng]',
+      ),
     ).find(
       (candidate) =>
         Number(candidate.dataset.markerLat) === lat && Number(candidate.dataset.markerLng) === lng,
@@ -197,6 +216,7 @@ function mountPublicExperience(
       });
     },
     onPinActivate(pin): void {
+      activeLocalEntityId = null;
       const announcementGeneration = ++deferredSelectionAnnouncementGeneration;
       const wasMaster = Boolean(pin.entityId && masterEntityIds.has(pin.entityId));
       mapController.clearSearchFocus();
@@ -234,9 +254,37 @@ function mountPublicExperience(
       });
     },
   });
+  const localReader = mountPublicLocalMapRuntime(app, {
+    onDataChange(): void {
+      updateLocalSearch();
+      // Revoked/refreshed placements must also invalidate an open compact card.
+      if (activeLocalEntityId && !localReader.hasPlacementInActiveContext(activeLocalEntityId)) {
+        activeLocalEntityId = null;
+        activeSupplementalPin = null;
+        localReader.setActiveEntity(null);
+        compactDetailsController.hide();
+      }
+      if (pendingLocalFocusEntityId && localReader.focusEntity(pendingLocalFocusEntityId))
+        pendingLocalFocusEntityId = null;
+    },
+    onPinActivate(pin): void {
+      onLocalPinActivate(pin);
+    },
+    onSurfaceClosed(): void {
+      onLocalSurfaceClosed();
+    },
+  });
   const localNavigation = mountLocalMapNavigation(app, {
     initialBackendState: publicDataRuntime?.getBackendState() ?? 'degraded',
     onHistoryChange: (mode) => writePublicStateToHistory(mode),
+    onBindingsChange(contexts): void {
+      localReader.setAuthorizedContexts(contexts);
+    },
+    onSurfaceChange(context, map): void {
+      localReader.setSurface(context, map);
+      if (pendingLocalFocusEntityId && localReader.focusEntity(pendingLocalFocusEntityId))
+        pendingLocalFocusEntityId = null;
+    },
   });
   localNavigation.updateCatalog(initialCatalogState);
   window.addEventListener('atlas:world-map-restored', () => {
@@ -320,6 +368,10 @@ function mountPublicExperience(
   };
 
   const compactDetailsController = mountCompactPinDetails(app, {
+    resolveReturnTarget(_detailsId, entityId) {
+      if (!activeLocalEntityId || entityId !== activeLocalEntityId) return null;
+      return localReader.getReturnTarget(activeLocalEntityId);
+    },
     onClose(): void {
       invalidateDeferredSelectionAnnouncement();
       const previouslyActivePlaceId = selection.getActivePlaceId();
@@ -338,6 +390,10 @@ function mountPublicExperience(
       }
 
       activeSupplementalPin = null;
+      if (activeLocalEntityId) {
+        activeLocalEntityId = null;
+        localReader.setActiveEntity(null);
+      }
       clearSupplementalMapSelection();
       window.requestAnimationFrame(() => focusPinControl(supplementalPin));
     },
@@ -359,7 +415,11 @@ function mountPublicExperience(
   });
 
   function showCompactDetails(pin: AtlasPinMarkerModel, focus: boolean): boolean {
-    const details = buildCompactPinDetailModel(catalog, beta02Catalog, pin);
+    const detailsCatalog =
+      pin.entityId && localReader.hasPlacementInActiveContext(pin.entityId)
+        ? localReader.getSearchCatalog(beta02Catalog)
+        : beta02Catalog;
+    const details = buildCompactPinDetailModel(catalog, detailsCatalog, pin);
 
     if (!details) {
       return false;
@@ -369,6 +429,34 @@ function mountPublicExperience(
     keepPinVisibleWithCompactDetails();
     return true;
   }
+
+  onLocalPinActivate = (pin): void => {
+    invalidateDeferredSelectionAnnouncement();
+    activeLocalEntityId = pin.entityId;
+    localReader.setActiveEntity(pin.entityId);
+    activeSupplementalPin = pin;
+    selection.clear();
+    mapController.clearSearchFocus();
+    updateMatchingPlaces();
+    writePublicStateToHistory('push');
+    if (!showCompactDetails(pin, true)) {
+      activeSupplementalPin = null;
+      activeLocalEntityId = null;
+      localReader.setActiveEntity(null);
+    } else if (mapSearchStatus) {
+      mapSearchStatus.textContent =
+        pin.name + ', seleccionado en el mapa local. Ficha compacta abierta.';
+    }
+  };
+  onLocalSurfaceClosed = (): void => {
+    if (!localNavigation.getMapSlug()) pendingLocalFocusEntityId = null;
+    if (activeLocalEntityId) {
+      activeLocalEntityId = null;
+      activeSupplementalPin = null;
+      localReader.setActiveEntity(null);
+      compactDetailsController.hide();
+    }
+  };
 
   const showLegacyPlaceDetails = (placeId: PlaceId, focus: boolean): boolean => {
     const marker = renderedMarkers.find(({ legacyPlaceId }) => legacyPlaceId === placeId);
@@ -444,9 +532,38 @@ function mountPublicExperience(
     return result.type === 'organization' ? true : isMapLayerEnabled(mapLayerState, result.type);
   };
 
+  const navigateToLocalEntity = (entityId: EntityId, slug: string): boolean => {
+    pendingLocalFocusEntityId = entityId;
+    if (!localNavigation.navigateToMapSlug(slug)) {
+      pendingLocalFocusEntityId = null;
+      if (mapSearchStatus)
+        mapSearchStatus.textContent =
+          'El contexto local aún no está disponible. Reintenta cuando termine la carga.';
+      return false;
+    }
+    if (localReader.focusEntity(entityId)) pendingLocalFocusEntityId = null;
+    return true;
+  };
+
   const placeSearchController = mountPlaceSearch(app, {
     catalog,
     isResultVisible: isSearchResultVisible,
+    decorateResult(result): AtlasSearchResult {
+      if (!result.linkedEntityId) return result;
+      const contexts = localReader.getContextsForEntity(result.linkedEntityId);
+      const localOnly = localReader.getLocalOnlyIds().has(result.linkedEntityId);
+      if (!contexts.length) return result;
+      return {
+        ...result,
+        localContexts: contexts,
+        localOnly,
+        // Even a real local placement never becomes a world coordinate.
+        coordinates: localOnly ? null : result.coordinates,
+      };
+    },
+    onSelectLocalContext(result, slug): void {
+      if (result.linkedEntityId) navigateToLocalEntity(result.linkedEntityId, slug);
+    },
     onQueryChange(): void {
       invalidateDeferredSelectionAnnouncement();
       if (geographicNameId !== null) {
@@ -460,6 +577,24 @@ function mountPublicExperience(
     onSelect(result): void {
       invalidateDeferredSelectionAnnouncement();
       if (!isSearchResultVisible(result)) return;
+      if (
+        result.linkedEntityId &&
+        localReader.hasPlacementInActiveContext(result.linkedEntityId) &&
+        localReader.focusEntity(result.linkedEntityId)
+      ) {
+        return;
+      }
+      if (result.localOnly && result.linkedEntityId) {
+        const contexts = result.localContexts ?? [];
+        if (contexts.length === 1) {
+          navigateToLocalEntity(result.linkedEntityId, contexts[0]!.slug);
+        } else if (mapSearchStatus) {
+          mapSearchStatus.textContent =
+            'Elige uno de los mapas locales indicados para ' + result.name + '.';
+        }
+        return;
+      }
+      if (localNavigation.getMapSlug()) localNavigation.returnToWorld();
       if (result.type === 'location' && result.legacyPlaceId) {
         geographicNameId = null;
         mapController.clearSearchFocus();
@@ -513,7 +648,16 @@ function mountPublicExperience(
       openLegacyPlace(placeId);
     },
   });
-  placeSearchController.setCatalogState(catalog, beta02Catalog);
+  updateLocalSearch = (): void => {
+    placeSearchController.setCatalogState(catalog, localReader.getSearchCatalog(beta02Catalog));
+    updateMatchingPlaces();
+  };
+  placeSearchController.setCatalogState(catalog, localReader.getSearchCatalog(beta02Catalog));
+  localReader.update(
+    initialCatalogState.selectedCampaign?.id ?? null,
+    publicBeta02Catalog,
+    publicDataRuntime?.getBackendState() ?? 'degraded',
+  );
   const masterSearchVisuals = mountMasterSearchVisuals(app);
   masterSearchVisuals.refresh(masterEntityIds);
 
@@ -522,14 +666,21 @@ function mountPublicExperience(
     renderedMarkers = filterAtlasMarkersByLayers(authorizedMarkers, mapLayerState);
     mapController.setMarkers(renderedMarkers);
     masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
+    localReader.setLayers(mapLayerState);
 
-    if (
-      activeSupplementalPin &&
-      !renderedMarkers.some(({ id }) => id === activeSupplementalPin?.id)
-    ) {
-      activeSupplementalPin = null;
-      compactDetailsController.hide();
-      clearSupplementalMapSelection();
+    if (activeSupplementalPin) {
+      const isLocalSelection =
+        activeLocalEntityId !== null && activeSupplementalPin.entityId === activeLocalEntityId;
+      const selectionStillVisible = isLocalSelection
+        ? localReader.isEntityVisibleInActiveContext(activeLocalEntityId!)
+        : renderedMarkers.some(({ id }) => id === activeSupplementalPin?.id);
+      if (!selectionStillVisible) {
+        activeSupplementalPin = null;
+        activeLocalEntityId = null;
+        localReader.setActiveEntity(null);
+        compactDetailsController.hide();
+        clearSupplementalMapSelection();
+      }
     }
 
     const activePlaceId = selection.getActivePlaceId();
@@ -766,7 +917,12 @@ function mountPublicExperience(
       publicBeta02Catalog = nextCatalogState.beta02;
       beta02Catalog = effectiveBeta02;
       placeFiltersController.setCatalogState(catalog, publicBeta02Catalog);
-      placeSearchController.setCatalogState(catalog, beta02Catalog);
+      localReader.update(
+        nextCatalogState.selectedCampaign?.id ?? null,
+        nextCatalogState.beta02,
+        publicDataRuntime?.getBackendState() ?? 'degraded',
+      );
+      placeSearchController.setCatalogState(catalog, localReader.getSearchCatalog(beta02Catalog));
       const previousMarkersById = new Map(authorizedMarkers.map((pin) => [pin.id, pin]));
       const nextAuthorizedMarkers = createAtlasPinMarkerModels(catalog, beta02Catalog);
       const eagerPortraitPinIds = new Set<string>();
@@ -798,7 +954,7 @@ function mountPublicExperience(
       mapController.setMarkers(renderedMarkers, { eagerPortraitPinIds });
       masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
       masterSearchVisuals.refresh(masterEntityIds);
-      placeSearchController.refresh();
+      updateLocalSearch();
       if (initialPublicRefreshSettled) {
         restorePendingInitialFilters();
       }
@@ -1086,22 +1242,77 @@ function startFullEntityExperience(sourceUrl: URL): void {
 
   void bootstrapPublicDataRuntime(app, campaignCatalog)
     .then((runtime) => {
-      const renderCatalogState = ({ beta02 }: PublicCatalogState): void => {
+      let localGeneration = 0;
+      let localAbort: AbortController | null = null;
+      const test = import.meta.env.DEV ? window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ : undefined;
+      let localRepository: SupabasePublicLocalMapRepository | null = null;
+      try {
+        localRepository = new SupabasePublicLocalMapRepository({
+          projectUrl: test?.projectUrl ?? import.meta.env.VITE_SUPABASE_URL ?? '',
+          publishableKey:
+            test?.publishableKey ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
+          allowLocalProject: import.meta.env.DEV,
+        });
+      } catch {
+        // Local details are never served from the world-only snapshot.
+      }
+      const renderCatalogState = (state: PublicCatalogState): void => {
+        const { beta02, selectedCampaign } = state;
+        localAbort?.abort();
+        localAbort = null;
+        const revision = ++localGeneration;
         if (!beta02) {
           detailsController.showUnavailable();
           return;
         }
+        const worldDetails = resolveFullEntityDetail(beta02, request.slug!);
+        if (worldDetails) detailsController.show(worldDetails);
+        else detailsController.showUnavailable();
 
-        const details = resolveFullEntityDetail(beta02, request.slug!);
-        if (details) {
-          detailsController.show(details);
-        } else {
-          detailsController.showUnavailable();
-        }
+        if (runtime.getBackendState() !== 'connected' || !selectedCampaign || !localRepository)
+          return;
+        const controller = new AbortController();
+        localAbort = controller;
+        void localRepository
+          .load({
+            campaignId: selectedCampaign.id,
+            signal: controller.signal,
+          })
+          .then((local) => {
+            if (
+              controller.signal.aborted ||
+              revision !== localGeneration ||
+              runtime.getBackendState() !== 'connected' ||
+              runtime.getCatalogState().selectedCampaign?.id !== selectedCampaign.id
+            )
+              return;
+            const enriched = mergePublicLocalCatalog(beta02, local);
+            const details = resolveFullEntityDetail(enriched, request.slug!);
+            if (details) detailsController.show(details);
+            else detailsController.showUnavailable();
+          })
+          .catch(() => {
+            // Fail closed and preserve previously authorized world details only.
+          });
       };
 
       renderCatalogState(runtime.getCatalogState());
       runtime.subscribeCatalogState(renderCatalogState);
+      window.addEventListener('atlas:public-data-status', (event) => {
+        const next = (event as CustomEvent<{ backendState?: string }>).detail?.backendState;
+        if (next === 'degraded' || next === 'offline') {
+          localAbort?.abort();
+          ++localGeneration;
+          const state = runtime.getCatalogState();
+          const worldDetails = state.beta02
+            ? resolveFullEntityDetail(state.beta02, request.slug!)
+            : undefined;
+          if (worldDetails) detailsController.show(worldDetails);
+          else detailsController.showUnavailable();
+        } else if (next === 'connected') {
+          renderCatalogState(runtime.getCatalogState());
+        }
+      });
     })
     .catch(() => detailsController.showUnavailable());
 }

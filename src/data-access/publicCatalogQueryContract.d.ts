@@ -4,6 +4,8 @@ export interface PublicCatalogTableQuery {
   readonly order: string;
   readonly published: boolean;
   readonly campaignScoped: boolean;
+  /** Explicit world/local spatial contract; never infer this from RLS. */
+  readonly worldMapEnabled?: boolean;
 }
 
 export interface ParsedPublicCatalogContentRange {
@@ -56,3 +58,5 @@ export function fetchCompletePublicCatalogTable(options: {
   readonly pageSize?: number;
   readonly campaignId?: string;
 }): Promise<readonly Record<string, unknown>[]>;
+
+export function filterWorldCatalogPayloads<T>(payloads: T): T;

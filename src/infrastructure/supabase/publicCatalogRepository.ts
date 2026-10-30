@@ -12,6 +12,7 @@ import {
 } from '../../data-access/publicCatalog';
 import {
   fetchCompletePublicCatalogTable,
+  filterWorldCatalogPayloads,
   INITIAL_PUBLIC_CAMPAIGN_ID,
   PUBLIC_CAMPAIGNS_QUERY,
   projectCampaignGeographicEntityLinks,
@@ -245,9 +246,19 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
         async ([key, query]) => [key, await this.#loadTable(query, signal, campaign.id)] as const,
       ),
     );
-    const payloads = Object.fromEntries(
+    const fetched = Object.fromEntries(
       responses,
     ) as unknown as PublicCatalogPayloadsWithGeographicLinks;
+
+    // Fail closed on malformed/cross-campaign geographic links BEFORE the
+    // world-only projection discards legitimate links to local-only entities.
+    projectCampaignGeographicEntityLinks(
+      fetched.geographicNames,
+      fetched.geographicEntityLinks,
+      campaign.id,
+    );
+    const payloads = filterWorldCatalogPayloads(fetched);
+
     const geographicNames = projectCampaignGeographicEntityLinks(
       payloads.geographicNames,
       payloads.geographicEntityLinks,

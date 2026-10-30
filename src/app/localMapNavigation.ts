@@ -22,11 +22,15 @@ export interface LocalMapNavigation {
   setGeographicSelection(id: string | null): void;
   restoreMapSlug(slug: string | null): void;
   getMapSlug(): string | null;
+  navigateToMapSlug(slug: string): boolean;
+  returnToWorld(): void;
 }
 
 interface LocalMapNavigationOptions {
   readonly initialBackendState: 'checking' | 'connected' | 'degraded' | 'offline';
   readonly onHistoryChange: (mode: 'push' | 'replace') => void;
+  readonly onSurfaceChange?: (context: LocalMapContext | null, map: LeafletMap | null) => void;
+  readonly onBindingsChange?: (contexts: readonly LocalMapContext[]) => void;
 }
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -158,6 +162,7 @@ export function mountLocalMapNavigation(
     }
     activeContextId = null;
     image = null;
+    options.onSurfaceChange?.(null, null);
     mapStatus.hidden = true;
     localCanvas.hidden = true;
     worldCanvas.hidden = false;
@@ -216,6 +221,7 @@ export function mountLocalMapNavigation(
     map.setMinZoom(map.getBoundsZoom(bounds));
     activeContextId = context.id;
     localMap = map;
+    options.onSurfaceChange?.(context, map);
   };
 
   const redraw = (): void => {
@@ -247,6 +253,7 @@ export function mountLocalMapNavigation(
     const localGeneration = ++generation;
     const campaignId = currentCampaignId;
     links = [];
+    options.onBindingsChange?.([]);
     bindingLoadFailed = false;
     if (!campaignId || backendState !== 'connected') {
       // The initial fallback is provisional: retain the deep-link intent
@@ -263,6 +270,7 @@ export function mountLocalMapNavigation(
         if (localGeneration !== generation || backendState !== 'connected') return;
         request = null;
         links = nextLinks;
+        options.onBindingsChange?.(nextLinks.map(({ context }) => context));
         loaded = true;
         redraw();
       })
@@ -270,6 +278,7 @@ export function mountLocalMapNavigation(
         if (localGeneration !== generation || backendState !== 'connected') return;
         request = null;
         links = [];
+        options.onBindingsChange?.([]);
         loaded = true;
         bindingLoadFailed = true;
         redraw();
@@ -309,6 +318,7 @@ export function mountLocalMapNavigation(
     request = null;
     ++generation;
     links = [];
+    options.onBindingsChange?.([]);
     loaded = true;
     bindingLoadFailed = false;
     redraw();
@@ -318,6 +328,7 @@ export function mountLocalMapNavigation(
     request?.abort();
     ++generation;
     links = [];
+    options.onBindingsChange?.([]);
     loaded = false;
     leave(false);
     closeSurface();
@@ -348,6 +359,22 @@ export function mountLocalMapNavigation(
     },
     getMapSlug(): string | null {
       return requestedSlug;
+    },
+    navigateToMapSlug(slug): boolean {
+      if (
+        backendState !== 'connected' ||
+        !loaded ||
+        !links.some((link) => link.context.slug === slug)
+      )
+        return false;
+      requestedSlug = slug;
+      redraw();
+      announcer.textContent = `Mapa local de ${slug} abierto.`;
+      options.onHistoryChange('push');
+      return true;
+    },
+    returnToWorld(): void {
+      leave(true);
     },
   };
 }

@@ -93,6 +93,37 @@ function resolveBeta02Associations(
     });
 }
 
+/**
+ * Transient selection model for a published search_only entity in a projected
+ * local context. Does not create a permanent Leaflet marker or mutate the
+ * global pin-player association registry.
+ */
+export function createAtlasSearchOnlyDetailPin(
+  catalog: PublicCatalogSnapshotV2,
+  entityId: EntityId,
+): AtlasPinMarkerModel | null {
+  const entity = catalog.entities.find(({ id }) => id === entityId);
+  if (!entity || !isSpatialMapEntity(entity) || entity.visibility !== 'search_only') return null;
+  const category = catalog.categories.find(({ id }) => id === entity.categoryId);
+  return {
+    id: entity.id,
+    legacyPlaceId: null,
+    entityId: entity.id,
+    name: entity.name,
+    entityType: entity.entityType,
+    lifecycleStatus: entity.lifecycleStatus ?? null,
+    coordinate: toLeafletSimpleCoordinate(entity.coordinates),
+    mapPresentation: mapPresentation(entity),
+    categoryId: entity.categoryId,
+    categoryName: category?.name ?? entity.categoryId,
+    categorySlug: category?.slug ?? entity.categoryId,
+    dispositions: resolveBeta02Dispositions(catalog, entity.id),
+    associations: resolveBeta02Associations(catalog, entity.id),
+    portraitPath: entity.entityType === 'character' ? (entity.portraitPath ?? null) : null,
+    source: 'beta02',
+  };
+}
+
 function findStableBeta02Location(
   catalog: PublicCatalogSnapshotV2 | null,
   place: CampaignCatalog['places'][number],

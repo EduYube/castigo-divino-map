@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 import {
   fetchCompletePublicCatalogTable,
+  filterWorldCatalogPayloads,
   INITIAL_PUBLIC_CAMPAIGN_ID,
   PUBLIC_CAMPAIGNS_QUERY,
   PUBLIC_CATALOG_TABLE_QUERIES,
@@ -761,7 +762,7 @@ async function loadQuerySet(queries, resolved, campaignId) {
       }),
     ]),
   );
-  return Object.fromEntries(entries);
+  return filterWorldCatalogPayloads(Object.fromEntries(entries));
 }
 
 export async function loadRemotePublicRows(options = {}) {

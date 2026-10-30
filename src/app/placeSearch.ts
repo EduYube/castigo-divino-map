@@ -28,6 +28,8 @@ export interface PlaceSearchOptions {
   readonly onOpenPlace?: (placeId: PlaceId) => void;
   readonly onQueryChange?: (query: string) => void;
   readonly isResultVisible?: (result: AtlasSearchResult) => boolean;
+  readonly decorateResult?: (result: AtlasSearchResult) => AtlasSearchResult;
+  readonly onSelectLocalContext?: (result: AtlasSearchResult, slug: string) => void;
 }
 
 interface PlaceSearchElements {
@@ -120,6 +122,8 @@ function describeMatch(matchKind: PlaceSearchMatchKind, matchedText: string): st
       return `Coincidencia por alias: ${matchedText}`;
     case 'note-title':
       return `Coincidencia por nota pública: ${matchedText}`;
+    case 'tag':
+      return `Coincidencia por etiqueta pública: ${matchedText}`;
     case 'name':
       return 'Coincidencia por nombre principal';
   }
@@ -158,6 +162,7 @@ function createResultItem(
   result: AtlasSearchResult,
   onSelect: (result: AtlasSearchResult) => void,
   onOpenPlace: ((placeId: PlaceId) => void) | undefined,
+  onSelectLocalContext: ((result: AtlasSearchResult, slug: string) => void) | undefined,
 ): HTMLLIElement {
   const item = document.createElement('li');
   const resultButton = document.createElement('button');
@@ -174,6 +179,12 @@ function createResultItem(
     createTextElement('span', 'place-search__result-type', describeResultType(result.type)),
     createTextElement('span', 'place-search__result-match', matchDescription),
   );
+  if (result.localContexts?.length) {
+    const label = result.localOnly
+      ? 'Mapa local: ' + result.localContexts.map(({ name }) => name).join(' · ')
+      : 'Mapa general · ' + result.localContexts.map(({ name }) => name).join(' · ');
+    resultButton.append(createTextElement('span', 'place-search__result-context', label));
+  }
   resultButton.addEventListener('click', () => onSelect(result));
 
   if (result.type === 'geographic' && result.legacyPlaceId && onOpenPlace) {
@@ -190,6 +201,22 @@ function createResultItem(
     item.append(row);
   } else {
     item.append(resultButton);
+  }
+
+  if (result.localOnly && (result.localContexts?.length ?? 0) > 1 && onSelectLocalContext) {
+    const choices = document.createElement('div');
+    choices.className = 'place-search__local-context-choices';
+    choices.setAttribute('aria-label', 'Elegir mapa local para ' + result.name);
+    for (const context of result.localContexts ?? []) {
+      const button = document.createElement('button');
+      button.className = 'place-search__open-details';
+      button.type = 'button';
+      button.dataset.localContextSlug = context.slug;
+      button.textContent = 'Ver en ' + context.name;
+      button.addEventListener('click', () => onSelectLocalContext(result, context.slug));
+      choices.append(button);
+    }
+    item.append(choices);
   }
 
   return item;
@@ -218,6 +245,16 @@ function createSuggestionItem(
       describeMatch(result.matchKind, result.matchedText),
     ),
   );
+  if (result.localContexts?.length) {
+    item.append(
+      createTextElement(
+        'span',
+        'place-search__result-context',
+        (result.localOnly ? 'Mapa local: ' : 'Mapa general · ') +
+          result.localContexts.map(({ name }) => name).join(' · '),
+      ),
+    );
+  }
   item.addEventListener('mousedown', (event) => event.preventDefault());
   item.addEventListener('click', () => onSelect(result));
 
@@ -265,11 +302,19 @@ export function mountPlaceSearch(
     options.isResultVisible ? results.filter(options.isResultVisible) : results;
 
   const getVisibleSuggestions = (): readonly AtlasSearchResult[] =>
-    filterVisibleResults(getPublicAtlasSuggestions(catalog, beta02Catalog, query));
+    filterVisibleResults(
+      getPublicAtlasSuggestions(catalog, beta02Catalog, query).map(
+        (result) => options.decorateResult?.(result) ?? result,
+      ),
+    );
 
   const render = (): void => {
     const normalizedQuery = normalizePlaceSearchQuery(query);
-    const searchResults = filterVisibleResults(searchPublicAtlas(catalog, beta02Catalog, query));
+    const searchResults = filterVisibleResults(
+      searchPublicAtlas(catalog, beta02Catalog, query).map(
+        (result) => options.decorateResult?.(result) ?? result,
+      ),
+    );
     const suggestions = getVisibleSuggestions();
     const suggestionsOpen =
       suggestionsEnabled &&
@@ -284,7 +329,12 @@ export function mountPlaceSearch(
     elements.clearButton.disabled = query.length === 0;
     elements.results.replaceChildren(
       ...searchResults.map((result) =>
-        createResultItem(result, options.onSelect, options.onOpenPlace),
+        createResultItem(
+          result,
+          options.onSelect,
+          options.onOpenPlace,
+          options.onSelectLocalContext,
+        ),
       ),
     );
     elements.suggestions.replaceChildren(

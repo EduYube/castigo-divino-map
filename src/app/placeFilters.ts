@@ -292,6 +292,7 @@ export function mountPlaceFilters(
     renderCollapsedSummary();
 
     if (stateOptions.notify !== false) {
+      removedFilterCount = 0;
       options.onChange();
     }
   };
@@ -354,6 +355,7 @@ export function mountPlaceFilters(
       return;
     }
 
+    removedFilterCount = 0;
     synchronizeControls();
     renderCollapsedSummary();
     options.onChange();
@@ -400,7 +402,8 @@ export function mountPlaceFilters(
             : ` Se han retirado ${removedFilterCount} filtros que ya no están disponibles en el catálogo público.`;
       const message = `${countMessage}${activeMessage}${removedMessage}`;
 
-      removedFilterCount = 0;
+      // Keep the removal announcement stable while asynchronous local-map
+      // reads and search merges recompute the match count.
       setText(elements.status, message);
       renderCollapsedSummary();
     },

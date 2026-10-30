@@ -9,7 +9,7 @@ import type { CampaignCatalog, CampaignPlace, PlaceId } from './model';
 import { isSpatialMapEntity } from '../domain/entitySpatiality';
 import { normalizeSearchTerm } from './validate';
 
-export type PlaceSearchMatchKind = 'name' | 'alias' | 'note-title';
+export type PlaceSearchMatchKind = 'name' | 'alias' | 'note-title' | 'tag';
 export type PlaceSearchMatchRank = 0 | 1 | 2;
 
 export interface PlaceSearchResult {
@@ -35,6 +35,13 @@ export interface AtlasSearchResult {
   readonly recommendedZoom: number | null;
   readonly legacyPlaceId: PlaceId | null;
   readonly linkedEntityId: EntityId | null;
+  /** MAP-079: optional campaign-verified local navigation targets. */
+  readonly localContexts?: readonly {
+    readonly id: string;
+    readonly slug: string;
+    readonly name: string;
+  }[];
+  readonly localOnly?: boolean;
 }
 
 interface SearchCandidate {
@@ -121,6 +128,13 @@ function legacyPlaceCandidates(catalog: CampaignCatalog, place: CampaignPlace): 
     ...catalog.notes
       .filter((note) => note.placeId === place.id)
       .map((note, noteIndex) => createCandidate('note-title', note.title, 2, noteIndex)),
+    ...catalog.tags
+      .filter(
+        (tag) =>
+          place.tagIds.includes(tag.id) ||
+          catalog.notes.some((note) => note.placeId === place.id && note.tagIds.includes(tag.id)),
+      )
+      .map((tag, index) => createCandidate('tag', tag.name, 3, index)),
   ];
 }
 
@@ -128,6 +142,8 @@ function entityCandidates(
   catalog: CampaignCatalog,
   entity: PublicMapEntity,
   legacyPlace: CampaignPlace | undefined,
+  publicNotes: PublicCatalogSnapshotV2['notes'],
+  publicTags: PublicCatalogSnapshotV2['tags'],
 ): SearchCandidate[] {
   const candidates: SearchCandidate[] = [
     createCandidate('name', entity.name, 0, 0),
@@ -135,6 +151,13 @@ function entityCandidates(
       createCandidate('alias', alias.value, 1, aliasIndex),
     ),
   ];
+
+  publicNotes.forEach((note, index) => {
+    candidates.push(createCandidate('note-title', note.title, 2, index));
+  });
+  publicTags.forEach((tag, index) => {
+    candidates.push(createCandidate('tag', tag.name, 3, index));
+  });
 
   if (!legacyPlace) return candidates;
 
@@ -281,8 +304,13 @@ export function searchPublicAtlas(
     const legacyPlace = findLegacyPlaceForEntity(catalog, entity);
     if (legacyPlace) representedLegacyPlaces.add(legacyPlace.id);
 
+    const publicNotes = beta02Catalog.notes.filter((note) => note.entityId === entity.id);
+    const publicTags = beta02Catalog.tags.filter(
+      (tag) =>
+        entity.tagIds.includes(tag.id) || publicNotes.some((note) => note.tagIds.includes(tag.id)),
+    );
     const bestMatch = findBestCandidate(
-      entityCandidates(catalog, entity, legacyPlace),
+      entityCandidates(catalog, entity, legacyPlace, publicNotes, publicTags),
       normalizedQuery,
     );
     if (!bestMatch) {

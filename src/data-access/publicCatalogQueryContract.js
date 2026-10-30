@@ -30,6 +30,7 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
     order: 'id.asc',
     published: true,
     campaignScoped: true,
+    worldMapEnabled: true,
   },
   entityAliases: {
     name: 'entity_aliases',
@@ -118,6 +119,81 @@ export const PUBLIC_CATALOG_TABLE_QUERIES = {
     campaignScoped: true,
   },
 };
+
+/**
+ * MAP-079 boundary shared by browser, deployment reader and snapshot tooling.
+ * Supabase RLS may expose local-only entities and their auxiliary rows after the
+ * local reader is enabled. Nothing from that new surface enters world V3.
+ */
+export function filterWorldCatalogPayloads(fetched) {
+  if (!Array.isArray(fetched.entities)) return fetched;
+  const worldIds = new Set(fetched.entities.map((entity) => entity.id));
+  const notes = (fetched.notes ?? []).filter((note) => worldIds.has(note.entity_id));
+  const noteIds = new Set(notes.map((note) => note.id));
+  const events = (fetched.locationEvents ?? []).filter(
+    (event) =>
+      worldIds.has(event.character_id) &&
+      (event.location_entity_id == null || worldIds.has(event.location_entity_id)),
+  );
+  const eventIds = new Set(events.map((event) => event.id));
+  return {
+    ...fetched,
+    ...(fetched.entityAliases
+      ? {
+          entityAliases: fetched.entityAliases.filter((row) => worldIds.has(row.entity_id)),
+        }
+      : {}),
+    ...(fetched.entityTags
+      ? {
+          entityTags: fetched.entityTags.filter((row) => worldIds.has(row.entity_id)),
+        }
+      : {}),
+    ...(fetched.dispositions
+      ? {
+          dispositions: fetched.dispositions.filter((row) => worldIds.has(row.entity_id)),
+        }
+      : {}),
+    ...(fetched.associations
+      ? {
+          associations: fetched.associations.filter((row) => worldIds.has(row.entity_id)),
+        }
+      : {}),
+    ...(fetched.entityRelations
+      ? {
+          entityRelations: fetched.entityRelations.filter(
+            (row) => worldIds.has(row.left_entity_id) && worldIds.has(row.right_entity_id),
+          ),
+        }
+      : {}),
+    ...(fetched.characterLocationRelations
+      ? {
+          characterLocationRelations: fetched.characterLocationRelations.filter(
+            (row) => worldIds.has(row.character_id) && worldIds.has(row.location_id),
+          ),
+        }
+      : {}),
+    ...(fetched.notes ? { notes } : {}),
+    ...(fetched.noteTags
+      ? {
+          noteTags: fetched.noteTags.filter((row) => noteIds.has(row.note_id)),
+        }
+      : {}),
+    ...(fetched.locationEvents
+      ? {
+          locationEvents: events.filter(
+            (event) => event.related_sighting_id == null || eventIds.has(event.related_sighting_id),
+          ),
+        }
+      : {}),
+    ...(fetched.geographicEntityLinks
+      ? {
+          geographicEntityLinks: fetched.geographicEntityLinks.filter((row) =>
+            worldIds.has(row.entity_id),
+          ),
+        }
+      : {}),
+  };
+}
 
 export const PUBLIC_CAMPAIGNS_QUERY = {
   name: 'campaigns',
@@ -253,6 +329,12 @@ export async function fetchCompletePublicCatalogTable(options) {
     }
     if (options.query.campaignScoped) {
       url.searchParams.set('campaign_id', `eq.${campaignId}`);
+    }
+    if (options.query.worldMapEnabled !== undefined) {
+      url.searchParams.set(
+        'world_map_enabled',
+        options.query.worldMapEnabled ? 'eq.true' : 'eq.false',
+      );
     }
 
     let response;

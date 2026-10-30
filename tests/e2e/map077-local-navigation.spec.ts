@@ -797,3 +797,579 @@ test('MAP-077 R2: a transient binding-only 503 retries on connected refresh, not
   });
   expect(backend.getBindingRequestCount()).toBe(2);
 });
+
+/**
+ * MAP-079: browser-only synthetic fixtures. These are not narrative records and
+ * never create a canonical Neverwinter placement in the database.
+ */
+async function configureMap079SyntheticLocalBackend(page: Page): Promise<void> {
+  const localEntities: readonly Record<string, unknown>[] = [
+    {
+      id: 'entity-map079-synthetic',
+      slug: 'map079-synthetic',
+      entity_type: 'character',
+      lifecycle_status: null,
+      visibility: 'pin',
+      name: 'MAP079 Synthetic Only',
+      name_language: 'en',
+      summary: 'Only on the synthetic local surface.',
+      description: 'Canonical synthetic details.',
+      portrait_path: null,
+      x: null,
+      y: null,
+      geometry: null,
+      category_id: 'category-campaign-b',
+      world_map_enabled: false,
+      publication_status: 'published',
+      audience: 'public',
+    },
+    {
+      id: 'entity-map079-search-only',
+      slug: 'map079-search-only',
+      entity_type: 'character',
+      lifecycle_status: null,
+      visibility: 'search_only',
+      name: 'MAP079 Hidden Search Target',
+      name_language: 'en',
+      summary: 'Local-only content selected from search.',
+      description: 'MAP079 Search Only Canonical Details.',
+      portrait_path: null,
+      x: null,
+      y: null,
+      geometry: null,
+      category_id: 'category-campaign-b',
+      world_map_enabled: false,
+      publication_status: 'published',
+      audience: 'public',
+    },
+    ...['A', 'B'].map((suffix) => ({
+      id: 'entity-map079-overlap-' + suffix.toLowerCase(),
+      slug: 'map079-overlap-' + suffix.toLowerCase(),
+      entity_type: 'character',
+      lifecycle_status: null,
+      visibility: 'pin',
+      name: 'MAP079 Overlap ' + suffix,
+      name_language: 'en',
+      summary: 'Overlapping synthetic local point.',
+      description: 'MAP079 Overlap Canonical Details.',
+      portrait_path: null,
+      x: null,
+      y: null,
+      geometry: null,
+      category_id: 'category-campaign-b',
+      world_map_enabled: false,
+      publication_status: 'published',
+      audience: 'public',
+    })),
+    {
+      id: 'place-map079-synthetic-region',
+      slug: 'map079-synthetic-region',
+      entity_type: 'location',
+      lifecycle_status: null,
+      visibility: 'pin',
+      name: 'MAP079 Synthetic Region',
+      name_language: 'en',
+      summary: 'Synthetic polygon.',
+      description: 'Polygon canonical metadata.',
+      portrait_path: null,
+      x: null,
+      y: null,
+      geometry: null,
+      category_id: 'category-campaign-b',
+      world_map_enabled: false,
+      publication_status: 'published',
+      audience: 'public',
+    },
+  ];
+  const placements: readonly Record<string, unknown>[] = [
+    {
+      campaign_id: CAMPAIGN_B_ID,
+      map_context_id: 'map-neverwinter',
+      entity_id: 'place-campaign-b-ally',
+      x: 150,
+      y: 140,
+      geometry: { kind: 'point', coordinates: { x: 150, y: 140 } },
+      publication_status: 'published',
+    },
+    {
+      campaign_id: CAMPAIGN_B_ID,
+      map_context_id: 'map-neverwinter',
+      entity_id: 'entity-map079-synthetic',
+      x: 220,
+      y: 210,
+      geometry: { kind: 'point', coordinates: { x: 220, y: 210 } },
+      publication_status: 'published',
+    },
+    {
+      campaign_id: CAMPAIGN_B_ID,
+      map_context_id: 'map-neverwinter',
+      entity_id: 'entity-map079-search-only',
+      x: 260,
+      y: 270,
+      geometry: { kind: 'point', coordinates: { x: 260, y: 270 } },
+      publication_status: 'published',
+    },
+    {
+      campaign_id: CAMPAIGN_B_ID,
+      map_context_id: 'map-map079-secondary',
+      entity_id: 'entity-map079-search-only',
+      x: 60,
+      y: 70,
+      geometry: { kind: 'point', coordinates: { x: 60, y: 70 } },
+      publication_status: 'published',
+    },
+    ...['a', 'b'].map((suffix) => ({
+      campaign_id: CAMPAIGN_B_ID,
+      map_context_id: 'map-neverwinter',
+      entity_id: 'entity-map079-overlap-' + suffix,
+      x: 330,
+      y: 260,
+      geometry: { kind: 'point', coordinates: { x: 330, y: 260 } },
+      publication_status: 'published',
+    })),
+    {
+      campaign_id: CAMPAIGN_B_ID,
+      map_context_id: 'map-neverwinter',
+      entity_id: 'place-map079-synthetic-region',
+      x: 375,
+      y: 375,
+      geometry: {
+        kind: 'polygon',
+        vertices: [
+          { x: 330, y: 330 },
+          { x: 420, y: 330 },
+          { x: 420, y: 420 },
+          { x: 330, y: 420 },
+        ],
+      },
+      publication_status: 'published',
+    },
+  ];
+  await page.route('**/rest/v1/campaign_geographic_map_context_links*', async (route) => {
+    const url = new URL(route.request().url());
+    const projection = url.searchParams.get('select') ?? '';
+    if (!projection.includes('map_contexts!inner')) {
+      await route.fallback();
+      return;
+    }
+    const navigationProjection = projection.includes('parent_id');
+    const rows =
+      campaignIdFromUrl(url) === CAMPAIGN_B_ID
+        ? [
+            {
+              campaign_id: CAMPAIGN_B_ID,
+              geographic_name_id: 'geo-neverwinter',
+              map_context_id: 'map-neverwinter',
+              map_contexts: {
+                id: 'map-neverwinter',
+                slug: 'neverwinter',
+                name: 'Neverwinter',
+                width: 2048,
+                height: 1582,
+                publication_status: 'published',
+                ...(navigationProjection ? { parent_id: null, image_uri: null } : {}),
+              },
+            },
+            {
+              campaign_id: CAMPAIGN_B_ID,
+              geographic_name_id: 'geo-map079-secondary',
+              map_context_id: 'map-map079-secondary',
+              map_contexts: {
+                id: 'map-map079-secondary',
+                slug: 'map079-secondary',
+                name: 'MAP079 Secondary Map',
+                width: 500,
+                height: 500,
+                publication_status: 'published',
+                ...(navigationProjection ? { parent_id: null, image_uri: null } : {}),
+              },
+            },
+          ]
+        : [];
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Content-Range': contentRange(rows) },
+      body: JSON.stringify(rows),
+    });
+  });
+  await page.route('**/rest/v1/tags*', async (route) => {
+    const rows =
+      campaignIdFromUrl(new URL(route.request().url())) === CAMPAIGN_B_ID
+        ? [{ id: 'tag-map079', name: 'MAP079 Unique Tag', description: 'Synthetic public tag.' }]
+        : [];
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Content-Range': contentRange(rows) },
+      body: JSON.stringify(rows),
+    });
+  });
+  await page.route('**/rest/v1/entity_tags*', async (route) => {
+    const rows =
+      campaignIdFromUrl(new URL(route.request().url())) === CAMPAIGN_B_ID
+        ? [{ entity_id: 'entity-map079-search-only', tag_id: 'tag-map079' }]
+        : [];
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Content-Range': contentRange(rows) },
+      body: JSON.stringify(rows),
+    });
+  });
+  await page.route('**/rest/v1/map_entities*', async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get('world_map_enabled') !== 'eq.false') {
+      await route.fallback();
+      return;
+    }
+    const rows = campaignIdFromUrl(url) === CAMPAIGN_B_ID ? localEntities : [];
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Content-Range': contentRange(rows) },
+      body: JSON.stringify(rows),
+    });
+  });
+  await page.route('**/rest/v1/entity_map_placements*', async (route) => {
+    const rows =
+      campaignIdFromUrl(new URL(route.request().url())) === CAMPAIGN_B_ID ? placements : [];
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Content-Range': contentRange(rows) },
+      body: JSON.stringify(rows),
+    });
+  });
+}
+
+test('MAP-079: synthetic local-only search, distinct world/local geometry and canonical details', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos');
+  await expect(page.locator('[data-map-canvas]')).toBeVisible();
+  await expect(
+    page.locator('[data-map-canvas] [data-entity-id="entity-map079-synthetic"]'),
+  ).toHaveCount(0);
+
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await search.fill('MAP079 Synthetic Only');
+  const result = page.locator('[data-search-result-id="entity-map079-synthetic"]');
+  await expect(result).toBeVisible();
+  await expect(result).toContainText('Mapa local: Neverwinter');
+  await expect(result).toHaveCount(1);
+  await result.click();
+
+  await expect(page).toHaveURL(/map=neverwinter/);
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  const localOnlyPin = page.locator(
+    '[data-local-map-canvas] [data-entity-id="entity-map079-synthetic"]',
+  );
+  await expect(localOnlyPin).toBeVisible();
+  await expect(localOnlyPin).toHaveAttribute('data-marker-lat', '210');
+  await expect(localOnlyPin).toHaveAttribute('data-marker-lng', '220');
+  const sharedWorldEntity = page.locator(
+    '[data-local-map-canvas] [data-entity-id="place-campaign-b-ally"]',
+  );
+  await expect(sharedWorldEntity).toHaveAttribute('data-marker-lat', '140');
+  await expect(sharedWorldEntity).toHaveAttribute('data-marker-lng', '150');
+  await expect(
+    page.locator('[data-local-map-canvas] [data-region-id="place-map079-synthetic-region"]'),
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Mapa general' }).click();
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await expect(
+    page.locator('[data-map-canvas] [data-entity-id="entity-map079-synthetic"]'),
+  ).toHaveCount(0);
+  await page.goto('/?campaign=un-aliento-menos&entity=map079-synthetic');
+  await expect(page.locator('[data-full-entity-title]')).toHaveText('MAP079 Synthetic Only');
+  await expect(page.locator('[data-full-entity-body]')).toContainText(
+    'Canonical synthetic details.',
+  );
+});
+
+test('MAP-079 R1: search_only selection in two local contexts', async ({ page }) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos');
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await search.fill('MAP079 Hidden Search Target');
+  const result = page.locator('[data-search-result-id="entity-map079-search-only"]');
+  await expect(result).toBeVisible();
+  await expect(result).toContainText('Neverwinter');
+  await expect(result).toContainText('MAP079 Secondary Map');
+  await result.click();
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+
+  await page.locator('[data-local-context-slug="neverwinter"]').click();
+  await expect(page).toHaveURL(/map=neverwinter/);
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await expect(
+    page.locator('[data-local-map-canvas] [data-entity-id="entity-map079-search-only"]'),
+  ).toHaveCount(0);
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Hidden Search Target');
+
+  // Selecting the same result while already in context must still open details.
+  await result.click();
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Hidden Search Target');
+
+  await page.locator('[data-local-context-slug="map079-secondary"]').click();
+  await expect(page).toHaveURL(/map=map079-secondary/);
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Hidden Search Target');
+  await expect(
+    page.locator('[data-local-map-canvas] [data-entity-id="entity-map079-search-only"]'),
+  ).toHaveCount(0);
+});
+
+test('MAP-079 R1: keyboard access for simple and grouped local pins', async ({ page }) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  const local = page.locator('[data-local-map-canvas]');
+  await expect(local).toBeVisible();
+
+  const simple = local.locator('[data-entity-id="entity-map079-synthetic"]');
+  await expect(simple).toBeVisible();
+  await simple.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Synthetic Only');
+  await simple.focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Synthetic Only');
+
+  const grouped = local.getByRole('button', { name: /2 entidades agrupadas/ });
+  await expect(grouped).toBeVisible();
+  await grouped.focus();
+  await page.keyboard.press('Enter');
+  const choices = page.locator('.local-map-pin-choices button');
+  await expect(choices).toHaveCount(2);
+  await expect(choices.first()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(choices).toHaveCount(0);
+  await expect(grouped).toBeFocused();
+
+  await grouped.focus();
+  await page.keyboard.press('Space');
+  await expect(choices).toHaveCount(2);
+  await choices.getByText('MAP079 Overlap B').click();
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Overlap B');
+});
+
+test('MAP-079 REV-06: unrelated world layer changes preserve selected local details', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  await page.locator('[data-map-layers-summary]').click();
+  const local = page.locator('[data-local-map-canvas]');
+  const pin = local.locator('[data-entity-id="entity-map079-synthetic"]');
+  await expect(pin).toBeVisible();
+  await pin.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Synthetic Only');
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+
+  // Character stays visible. A change to a different world/local layer must
+  // not compare a local-only identity against the world marker collection.
+  await page.locator('[data-map-layer="hazard"]').uncheck();
+  await expect(page.locator('[data-place-details]')).toBeVisible();
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Synthetic Only');
+  await expect(pin).toBeVisible();
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('[data-map-layer="hazard"]').check();
+  await expect(page.locator('[data-place-details]')).toBeVisible();
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+
+  // Removing the selected category must hide its card and clear the ARIA
+  // identity. Restoring the category cannot resurrect that selection.
+  await page.locator('[data-map-layer="character"]').uncheck();
+  await expect(page.locator('[data-place-details]')).toBeHidden();
+  await expect(pin).toHaveCount(0);
+  await page.locator('[data-map-layer="character"]').check();
+  await expect(pin).toBeVisible();
+  await expect(pin).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('[data-place-details]')).toBeHidden();
+});
+
+test('MAP-079 R3: local region returns focus and mobile Escape returns to map', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  const region = page.locator(
+    '[data-local-map-canvas] [data-region-id="place-map079-synthetic-region"]',
+  );
+  await expect(region).toBeVisible();
+  await region.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-place-details]')).toContainText('MAP079 Synthetic Region');
+  await page.locator('[data-place-details-return]').click();
+  await expect(region).toBeFocused();
+  await page.locator('[data-place-details-close]').click();
+  await expect(region).toBeFocused();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const local = page.locator('[data-local-map-canvas]');
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  if (!(await search.isVisible())) await page.locator('[data-place-search-toggle]').click();
+  await search.fill('MAP079 Hidden Search Target');
+  await page.locator('[data-search-result-id="entity-map079-search-only"]').click();
+  await expect(page.locator('[data-place-details]')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[data-place-details]')).toBeHidden();
+  await expect(local).toBeFocused();
+});
+
+test('MAP-079 R2: return and close restore local pin focus', async ({ page }) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  const local = page.locator('[data-local-map-canvas]');
+  const pin = local.locator('[data-entity-id="entity-map079-synthetic"]');
+  await expect(pin).toBeVisible();
+  await pin.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-place-details]')).toBeVisible();
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('[data-place-details-return]').click();
+  await expect(pin).toBeFocused();
+  await page.locator('[data-place-details-close]').click();
+  await expect(page.locator('[data-place-details]')).toBeHidden();
+  await expect(pin).toBeFocused();
+  await expect(pin).toHaveAttribute('aria-pressed', 'false');
+
+  const grouped = local.getByRole('button', { name: /2 entidades agrupadas/ });
+  await grouped.focus();
+  await page.keyboard.press('Space');
+  await page.locator('.local-map-pin-choices button').last().click();
+  await expect(grouped).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('[data-place-details-return]').click();
+  await expect(grouped).toBeFocused();
+  await page.locator('[data-place-details-close]').click();
+  await expect(grouped).toBeFocused();
+});
+
+test('MAP-079 R2: search_only returns focus to local map', async ({ page }) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  if (!(await search.isVisible())) await page.locator('[data-place-search-toggle]').click();
+  await search.fill('MAP079 Hidden Search Target');
+  await page.locator('[data-search-result-id="entity-map079-search-only"]').click();
+  await expect(page.locator('[data-place-details]')).toBeVisible();
+  const local = page.locator('[data-local-map-canvas]');
+  await expect(page.locator('[data-place-details-return]')).toHaveText('Volver al mapa local');
+  await page.locator('[data-place-details-return]').click();
+  await expect(local).toBeFocused();
+  await page.locator('[data-place-details-close]').click();
+  await expect(page.locator('[data-place-details]')).toBeHidden();
+  await expect(local).toBeFocused();
+  await expect(local.locator('[data-entity-id="entity-map079-search-only"]')).toHaveCount(0);
+});
+
+test('MAP-079 R2: layer removal invalidates local popup choices', async ({ page }) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  // This is a closed <details> by default: expose the real checkbox before
+  // opening the coincident selector so the popup stays open during revocation.
+  await page.locator('[data-map-layers-summary]').click();
+  await expect(page.locator('[data-map-layer="character"]')).toBeVisible();
+  const grouped = page.locator('[data-local-map-canvas]').getByRole('button', {
+    name: /2 entidades agrupadas/,
+  });
+  await expect(grouped).toBeVisible();
+  await grouped.focus();
+  await page.keyboard.press('Enter');
+  const choices = page.locator('.local-map-pin-choices button');
+  await expect(choices).toHaveCount(2);
+  const stale = await choices.first().elementHandle();
+  await page.locator('[data-map-layer="character"]').uncheck();
+  await expect(choices).toHaveCount(0);
+  await expect(grouped).toHaveCount(0);
+  // Even a retained JS reference to a detached choice cannot activate a
+  // removed entity or open its stale card.
+  await stale?.evaluate((button: HTMLButtonElement) => button.click());
+  await expect(page.locator('[data-place-details]')).toBeHidden();
+  await page.locator('[data-map-layer="character"]').check();
+  await expect(grouped).toBeVisible();
+});
+
+test('MAP-079 R2: degraded revokes open overlapping choices and controls', async ({ page }) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  const grouped = page.locator('[data-local-map-canvas]').getByRole('button', {
+    name: /2 entidades agrupadas/,
+  });
+  await grouped.focus();
+  await page.keyboard.press('Space');
+  const choices = page.locator('.local-map-pin-choices button');
+  await expect(choices).toHaveCount(2);
+  const stale = await choices.last().elementHandle();
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'degraded' } }),
+    );
+  });
+  await expect(choices).toHaveCount(0);
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await stale?.evaluate((button: HTMLButtonElement) => button.click());
+  await expect(page.locator('[data-place-details]')).toBeHidden();
+});
+
+test('MAP-079 R1: public local tag search is deduplicated', async ({ page }) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.goto('/?campaign=un-aliento-menos');
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await search.fill('MAP079 Unique Tag');
+  const result = page.locator('[data-search-result-id="entity-map079-search-only"]');
+  await expect(result).toHaveCount(1);
+  await expect(result).toContainText('Coincidencia por etiqueta pública');
+  await expect(result).toContainText('Mapa local:');
+});
+
+test('MAP-079: campaign switch and degraded status purge synthetic local-only results', async ({
+  page,
+}) => {
+  await configureCampaignBackend(page);
+  await configureMap079SyntheticLocalBackend(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?campaign=un-aliento-menos');
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  if (!(await search.isVisible())) await page.locator('[data-place-search-toggle]').click();
+  await expect(search).toBeVisible();
+  await search.fill('MAP079 Synthetic Only');
+  await expect(page.locator('[data-search-result-id="entity-map079-synthetic"]')).toBeVisible();
+  await page.locator('[data-search-result-id="entity-map079-synthetic"]').click();
+  await expect(
+    page.locator('[data-local-map-canvas] [data-entity-id="entity-map079-synthetic"]'),
+  ).toBeVisible();
+
+  await page.getByLabel('Campaña', { exact: true }).selectOption('castigo-divino');
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await expect(page).not.toHaveURL(/map=neverwinter/);
+  await expect(page.locator('[data-search-result-id="entity-map079-synthetic"]')).toHaveCount(0);
+
+  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
+  await expect(page.locator('[data-search-result-id="entity-map079-synthetic"]')).toBeVisible();
+  await page.locator('[data-search-result-id="entity-map079-synthetic"]').click();
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'degraded' } }),
+    );
+  });
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await expect(page.locator('[data-map-canvas]')).toBeVisible();
+  await expect(page.locator('[data-search-result-id="entity-map079-synthetic"]')).toHaveCount(0);
+});

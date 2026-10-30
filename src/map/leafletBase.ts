@@ -180,7 +180,7 @@ function createSinglePinMarkup(marker: AtlasPinMarkerModel): string {
   return `<span class="pin-visual ${type.className}${lifecycleClass}"><span class="pin-visual__type-symbol" aria-hidden="true">${type.symbol}</span>${dispositionMarkup}</span>`;
 }
 
-function createSinglePinIcon(marker: AtlasPinMarkerModel): L.DivIcon {
+export function createSinglePinIcon(marker: AtlasPinMarkerModel): L.DivIcon {
   return L.divIcon({
     className: 'campaign-marker-icon',
     html: createSinglePinMarkup(marker),
