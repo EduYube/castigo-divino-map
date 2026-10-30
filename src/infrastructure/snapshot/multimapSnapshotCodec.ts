@@ -14,7 +14,6 @@ import {
   parsePublicCatalogSnapshotV3,
   projectPublicCatalogSnapshotV3ToV2,
 } from './multicampaignSnapshotCodec';
-import { parsePublicCatalogSnapshotV2 } from '../supabase/publicCatalogCodec';
 import {
   mergePublicLocalCatalog,
   parsePublicLocalPlacement,

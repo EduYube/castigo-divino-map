@@ -2,21 +2,17 @@ import { readFile } from 'node:fs/promises';
 
 import { assertGeographicSearchExtentCoverage } from '../src/data-access/geographicSearchExtentContract.js';
 import {
-  assertPublicMulticampaignSnapshotContent,
   assertPublicMultimapSnapshotContent,
   buildPublicMulticampaignSnapshotContent,
   buildPublicMultimapSnapshotContent,
   buildPublicSnapshotContent,
   checksum,
   FIXTURE_PATH,
-  INITIAL_PUBLIC_CAMPAIGN,
   loadFixtureRows,
-  loadRemotePublicMulticampaignRows,
   loadRemotePublicMultimapRows,
   projectMulticampaignSnapshotContentToV2,
   SNAPSHOT_PATH,
   snapshotContent,
-  upgradeLegacySnapshotContentV2,
 } from './public-snapshot-lib.mjs';
 
 const verifyRemote = process.argv.includes('--remote');

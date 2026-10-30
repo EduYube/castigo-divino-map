@@ -28,3 +28,9 @@ jobs:
             git commit -m "style(MAP-080): normalize V4 implementation formatting"
             git push origin HEAD:refs/heads/agent/map-080-snapshot-degraded-multimap
           fi
+
+      - name: Verify MAP-080 V4 against live public Supabase (read-only)
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
+        run: npm run snapshot:verify:remote
