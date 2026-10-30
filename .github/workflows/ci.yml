@@ -71,6 +71,99 @@ jobs:
       - name: Report production build metrics
         run: npm run report:build
 
+      # MAP-079: read-only, self-contained bundle for the independent reviewer.
+      # Export the exact checked-out Git tree; never package workspace secrets,
+      # .git, Actions credentials, generated reports or runner configuration.
+      - name: Package MAP-079 offline independent-review runtime
+        if: github.event_name == 'pull_request' && github.event.pull_request.number == 217
+        shell: bash
+        run: |
+          set -euo pipefail
+          offline_dir="$(mktemp -d)"
+          mkdir -p "$offline_dir/repository"
+          git archive --format=tar HEAD | tar -xf - -C "$offline_dir/repository"
+          cp -a node_modules "$offline_dir/repository/node_modules"
+          git rev-parse HEAD > "$offline_dir/repository/CI_SYNTHETIC_MERGE_SHA.txt"
+          git rev-parse 'HEAD^2' > "$offline_dir/repository/PR_HEAD_SHA.txt"
+          git rev-parse 'HEAD^{tree}' > "$offline_dir/repository/TREE_SHA.txt"
+          git ls-files -z | xargs -0 sha256sum > "$offline_dir/repository/TRACKED_SOURCE_SHA256SUMS.txt"
+          cat > "$offline_dir/repository/playwright.offline-map079.config.ts" <<'EOF'
+          import { defineConfig, devices } from '@playwright/test';
+
+          export default defineConfig({
+            testDir: './tests/e2e',
+            fullyParallel: false,
+            retries: 0,
+            workers: 1,
+            reporter: 'list',
+            expect: { timeout: 15_000 },
+            use: {
+              baseURL: 'http://127.0.0.1:4173',
+              launchOptions: {
+                executablePath: process.env.MAP079_CHROMIUM_PATH || '/usr/bin/chromium',
+                args: ['--no-sandbox'],
+              },
+            },
+            projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+            webServer: {
+              command: 'npm run dev -- --mode e2e --host 127.0.0.1 --port 4173',
+              url: 'http://127.0.0.1:4173',
+              reuseExistingServer: false,
+              timeout: 120_000,
+            },
+          });
+          EOF
+          cat > "$offline_dir/repository/OFFLINE_REVIEW.md" <<'EOF'
+          # MAP-079 — Offline, real-runtime independent-review bundle
+
+          This ZIP contains a tar.gz of the GitHub Actions checkout tree (Git
+          archive, exact PR synthetic merge), plus npm-ci-installed Linux Node 22
+          dependencies. No .git, local secrets or private data are included.
+
+          The checkout's merge SHA, PR HEAD SHA and tree SHA are recorded in
+          CI_SYNTHETIC_MERGE_SHA.txt, PR_HEAD_SHA.txt and TREE_SHA.txt.
+          Compare them with GitHub Git Data API. TRACKED_SOURCE_SHA256SUMS.txt
+          hashes tracked source files, prior to any independent instrumentation.
+
+          Offline Linux x64 execution (requires Node 22 and system Chromium):
+
+            tar -xzf map079-offline-runtime.tgz
+            cd repository
+            sha256sum -c TRACKED_SOURCE_SHA256SUMS.txt
+            MAP079_CHROMIUM_PATH=/usr/bin/chromium ./node_modules/.bin/playwright test \
+              tests/e2e/map077-local-navigation.spec.ts \
+              --config=playwright.offline-map079.config.ts \
+              --grep='MAP-079'
+
+          The offline Playwright configuration starts the authentic Vite e2e
+          development server and uses the installed browser instead of trying
+          to download an unavailable browser executable. The app and Leaflet
+          come from the repository and installed production dependencies.
+          Fixtures in tests/e2e intercept Supabase calls; NO production writes.
+
+          IMPORTANT: The original E2E tests were written by the implementer.
+          An independent reviewer MUST additionally author/instrument their
+          own browser tests against this genuine runtime to independently
+          demonstrate REV-04 (DOM focus, Escape, local regions), REV-05 (stale
+          retained popup buttons and an onPinActivate spy/count inside the
+          actual module), and REV-06 (unrelated/local layer changes). For an
+          activation spy, instrument ONLY a separate scratch copy of the
+          runtime at the actual options.onPinActivate call sites, and compare
+          original-file hashes before instrumentation. Never characterize
+          double/mock-only probes as integrated evidence.
+          EOF
+          tar -czf map079-offline-runtime.tgz -C "$offline_dir" repository
+          ls -lh map079-offline-runtime.tgz
+
+      - name: Upload MAP-079 offline independent-review runtime
+        if: github.event_name == 'pull_request' && github.event.pull_request.number == 217
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: map079-offline-runtime-${{ github.run_id }}
+          path: map079-offline-runtime.tgz
+          retention-days: 14
+          if-no-files-found: error
+
       - name: Verify preinstalled Playwright browsers
         run: npx playwright --version
 
