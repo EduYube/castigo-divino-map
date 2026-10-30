@@ -105,7 +105,7 @@ describe('public catalog snapshot', () => {
     const loaded = await repository.load({ signal: new AbortController().signal });
 
     expect(loaded.source).toBe('bundled-snapshot');
-    expect(loaded.data.contract).toBe('beta03');
+    expect(loaded.data.contract).toBe('beta04');
     expect(loaded.metadata.stale).toBe(true);
   });
 

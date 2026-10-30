@@ -49,7 +49,7 @@ const committedLegacyContent = projectMulticampaignSnapshotContentToV2(
 );
 assertPublicMultimapSnapshotContent(committedNativeContent);
 assertGeographicSearchExtentCoverage(
-  committedNativeContent,
+  committedMulticampaignContent,
   'the committed MAP-080 V4 public snapshot',
 );
 

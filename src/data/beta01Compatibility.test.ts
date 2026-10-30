@@ -4,9 +4,9 @@ import { describe, expect, test } from 'vitest';
 
 import { INITIAL_PUBLIC_CAMPAIGN_ID } from '../data-access/publicCatalogQueryContract.js';
 import {
-  parsePublicCatalogSnapshotV3,
-  projectPublicCatalogSnapshotV3ToV2,
-} from '../infrastructure/snapshot/multicampaignSnapshotCodec';
+  parsePublicCatalogSnapshotV4,
+  projectPublicCatalogSnapshotV4ToV2,
+} from '../infrastructure/snapshot/multimapSnapshotCodec';
 import { campaignCatalog } from './catalog';
 import { toBeta01CompatibilityCatalog } from './beta01Compatibility';
 
@@ -20,19 +20,19 @@ const EMPTY_BETA01_CATALOG = {
 
 async function readCommittedBeta02Catalog() {
   const snapshot = JSON.parse(await readFile(SNAPSHOT_URL, 'utf8')) as unknown;
-  const envelope = await parsePublicCatalogSnapshotV3(snapshot);
+  const envelope = await parsePublicCatalogSnapshotV4(snapshot);
 
-  expect(envelope.data.contract).toBe('beta03');
+  expect(envelope.data.contract).toBe('beta04');
 
-  if (envelope.data.contract !== 'beta03') {
-    throw new Error('Expected the committed Beta 0.3 snapshot.');
+  if (envelope.data.contract !== 'beta04') {
+    throw new Error('Expected the committed Beta 0.4 snapshot.');
   }
 
-  const projected = projectPublicCatalogSnapshotV3ToV2(
+  const projected = projectPublicCatalogSnapshotV4ToV2(
     envelope.data.catalog,
     INITIAL_PUBLIC_CAMPAIGN_ID,
   );
-  if (!projected) throw new Error('Expected the initial campaign in the committed v3 snapshot.');
+  if (!projected) throw new Error('Expected the initial campaign in the committed v4 snapshot.');
   return projected;
 }
 

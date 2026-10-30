@@ -283,7 +283,7 @@ export function mountPublicLocalMapRuntime(
       }
     },
     setSurface(context, map): void {
-      const changing = surface?.context.id !== context?.id || surface?.map !== map;
+      const changing = (surface?.context.id ?? null) !== (context?.id ?? null) || (surface?.map ?? null) !== map;
       clearMap();
       surface = context && map ? { context, map } : null;
       if (changing) {

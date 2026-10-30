@@ -44,8 +44,13 @@ const content = useFixture
   : buildPublicMultimapSnapshotContent(await loadRemotePublicMultimapRows());
 
 assertGeographicSearchExtentCoverage(
-  content,
-  useFixture ? 'the MAP-028 CI fixture upgraded to MAP-053' : 'Supabase multicampaign data',
+  {
+    schemaVersion: 3,
+    campaigns: content.campaigns,
+    campaignCatalogs: content.campaignCatalogs,
+    geographicNames: content.geographicNames,
+  },
+  useFixture ? 'the MAP-028 CI fixture upgraded to MAP-080' : 'Supabase multicampaign data',
 );
 
 const nextChecksum = checksum(content);

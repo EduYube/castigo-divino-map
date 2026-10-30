@@ -5,9 +5,9 @@ import { describe, expect, test } from 'vitest';
 import { INITIAL_PUBLIC_CAMPAIGN_ID } from '../../data-access/publicCatalogQueryContract.js';
 import { createSha256Checksum } from '../../data-access/publicCatalog';
 import {
-  parsePublicCatalogSnapshotV3,
-  projectPublicCatalogSnapshotV3ToV2,
-} from '../snapshot/multicampaignSnapshotCodec';
+  parsePublicCatalogSnapshotV4,
+  projectPublicCatalogSnapshotV4ToV2,
+} from '../snapshot/multimapSnapshotCodec';
 import { parsePublicCatalogSnapshotV2 } from './publicCatalogCodec';
 
 const SNAPSHOT_URL = new URL('../../../public/data/public-catalog.snapshot.json', import.meta.url);
@@ -15,11 +15,11 @@ const SNAPSHOT_URL = new URL('../../../public/data/public-catalog.snapshot.json'
 describe('historical Beta 0.2 cache compatibility', () => {
   test('verifies the historic checksum before normalizing MAP-058 fields', async () => {
     const raw = JSON.parse(await readFile(SNAPSHOT_URL, 'utf8')) as unknown;
-    const parsedV3 = await parsePublicCatalogSnapshotV3(raw);
-    if (parsedV3.data.contract !== 'beta03') throw new Error('Expected Beta 0.3 snapshot.');
+    const parsedV4 = await parsePublicCatalogSnapshotV4(raw);
+    if (parsedV4.data.contract !== 'beta04') throw new Error('Expected Beta 0.4 snapshot.');
 
-    const projected = projectPublicCatalogSnapshotV3ToV2(
-      parsedV3.data.catalog,
+    const projected = projectPublicCatalogSnapshotV4ToV2(
+      parsedV4.data.catalog,
       INITIAL_PUBLIC_CAMPAIGN_ID,
     );
     if (!projected) throw new Error('Expected the initial campaign projection.');
