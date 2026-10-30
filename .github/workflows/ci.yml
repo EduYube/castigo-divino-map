@@ -84,7 +84,7 @@ jobs:
           git archive --format=tar HEAD | tar -xf - -C "$offline_dir/repository"
           cp -a node_modules "$offline_dir/repository/node_modules"
           git rev-parse HEAD > "$offline_dir/repository/CI_SYNTHETIC_MERGE_SHA.txt"
-          git rev-parse 'HEAD^2' > "$offline_dir/repository/PR_HEAD_SHA.txt"
+          printf '%s\n' '${{ github.event.pull_request.head.sha }}' > "$offline_dir/repository/PR_HEAD_SHA.txt"
           git rev-parse 'HEAD^{tree}' > "$offline_dir/repository/TREE_SHA.txt"
           git ls-files -z | xargs -0 sha256sum > "$offline_dir/repository/TRACKED_SOURCE_SHA256SUMS.txt"
           cat > "$offline_dir/repository/playwright.offline-map079.config.ts" <<'EOF'
