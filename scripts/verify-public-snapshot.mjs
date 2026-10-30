@@ -2,18 +2,17 @@ import { readFile } from 'node:fs/promises';
 
 import { assertGeographicSearchExtentCoverage } from '../src/data-access/geographicSearchExtentContract.js';
 import {
-  assertPublicMulticampaignSnapshotContent,
+  assertPublicMultimapSnapshotContent,
   buildPublicMulticampaignSnapshotContent,
+  buildPublicMultimapSnapshotContent,
   buildPublicSnapshotContent,
   checksum,
   FIXTURE_PATH,
-  INITIAL_PUBLIC_CAMPAIGN,
   loadFixtureRows,
-  loadRemotePublicMulticampaignRows,
+  loadRemotePublicMultimapRows,
   projectMulticampaignSnapshotContentToV2,
   SNAPSHOT_PATH,
   snapshotContent,
-  upgradeLegacySnapshotContentV2,
 } from './public-snapshot-lib.mjs';
 
 const verifyRemote = process.argv.includes('--remote');
@@ -23,8 +22,8 @@ const snapshot = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'));
 if (verifyRemote && verifyMigrationFixture) {
   throw new Error('Choose either --remote or --migration-fixture, not both.');
 }
-if (snapshot.schemaVersion !== 2 && snapshot.schemaVersion !== 3) {
-  throw new Error('The committed public snapshot must use schemaVersion 2 or 3.');
+if (snapshot.schemaVersion !== 4) {
+  throw new Error('The committed MAP-080 public snapshot MUST use schemaVersion 4.');
 }
 if (!Number.isFinite(Date.parse(snapshot.generatedAt))) {
   throw new Error('The committed public snapshot has an invalid generatedAt value.');
@@ -39,60 +38,31 @@ if (
   throw new Error('The committed public snapshot checksum/sourceRevision is invalid.');
 }
 
-const committedMulticampaignContent =
-  snapshot.schemaVersion === 3
-    ? committedNativeContent
-    : upgradeLegacySnapshotContentV2(committedNativeContent);
-const committedLegacyContent =
-  snapshot.schemaVersion === 3
-    ? projectMulticampaignSnapshotContentToV2(committedMulticampaignContent)
-    : committedNativeContent;
-
-assertPublicMulticampaignSnapshotContent(committedMulticampaignContent);
+const committedMulticampaignContent = {
+  schemaVersion: 3,
+  campaigns: committedNativeContent.campaigns,
+  campaignCatalogs: committedNativeContent.campaignCatalogs,
+  geographicNames: committedNativeContent.geographicNames,
+};
+const committedLegacyContent = projectMulticampaignSnapshotContentToV2(
+  committedMulticampaignContent,
+);
+assertPublicMultimapSnapshotContent(committedNativeContent);
 assertGeographicSearchExtentCoverage(
-  snapshot.schemaVersion === 3 ? committedMulticampaignContent : committedLegacyContent,
-  'the committed public snapshot',
+  committedMulticampaignContent,
+  'the committed MAP-080 V4 public snapshot',
 );
 
 if (verifyRemote) {
-  const expectedMulticampaignContent = buildPublicMulticampaignSnapshotContent(
-    await loadRemotePublicMulticampaignRows(),
-  );
-  assertGeographicSearchExtentCoverage(expectedMulticampaignContent, 'Supabase published data');
-
-  if (snapshot.schemaVersion === 3) {
-    const expectedChecksum = checksum(expectedMulticampaignContent);
-    if (expectedChecksum !== committedNativeChecksum) {
-      throw new Error(
-        `Public snapshot drift: committed ${committedNativeChecksum}, Supabase published data ${expectedChecksum}.`,
-      );
-    }
-    if (JSON.stringify(committedNativeContent) !== JSON.stringify(expectedMulticampaignContent)) {
-      throw new Error('Public snapshot order/content differs from Supabase multicampaign data.');
-    }
-  } else {
-    if (
-      expectedMulticampaignContent.campaigns.length !== 1 ||
-      expectedMulticampaignContent.campaigns[0]?.id !== INITIAL_PUBLIC_CAMPAIGN.id
-    ) {
-      throw new Error(
-        'The legacy schema v2 snapshot cannot represent every active campaign; regenerate schema v3 before deployment.',
-      );
-    }
-
-    const expectedLegacyContent = projectMulticampaignSnapshotContentToV2(
-      expectedMulticampaignContent,
-      INITIAL_PUBLIC_CAMPAIGN.id,
+  const expectedContent = buildPublicMultimapSnapshotContent(await loadRemotePublicMultimapRows());
+  const expectedChecksum = checksum(expectedContent);
+  if (
+    expectedChecksum !== committedNativeChecksum ||
+    JSON.stringify(expectedContent) !== JSON.stringify(committedNativeContent)
+  ) {
+    throw new Error(
+      `MAP-080 V4 public snapshot drift: committed ${committedNativeChecksum}, remote ${expectedChecksum}.`,
     );
-    const expectedChecksum = checksum(expectedLegacyContent);
-    if (expectedChecksum !== committedNativeChecksum) {
-      throw new Error(
-        `Public snapshot drift: committed ${committedNativeChecksum}, Supabase initial campaign ${expectedChecksum}.`,
-      );
-    }
-    if (JSON.stringify(committedNativeContent) !== JSON.stringify(expectedLegacyContent)) {
-      throw new Error('Legacy snapshot order/content differs from the migrated initial campaign.');
-    }
   }
 }
 
@@ -339,6 +309,212 @@ try {
 if (!rejectedMasterLink) {
   throw new Error('MAP-053 snapshot accepted a geographic link to filtered Master content.');
 }
+
+const MAP080_CANARY = 'MAP080 MASTER CANARY NOT PRESENT';
+const map080Fixture = structuredClone(syntheticRows);
+const makeContext = (id, slug) => ({
+  id,
+  slug,
+  name: slug,
+  parent_id: null,
+  width: 5000,
+  height: 4000,
+  image_uri: null,
+  publication_status: 'published',
+});
+const localContextA = makeContext('map-synthetic-a', 'synthetic-a');
+const localContextB = makeContext('map-synthetic-b', 'synthetic-b');
+const localId = 'entity-synthetic-local-only';
+const privateId = 'entity-synthetic-MASTER-CANARY';
+const polyId = 'place-synthetic-local-region';
+const polygon = {
+  kind: 'polygon',
+  vertices: [
+    { x: 4000, y: 3000 },
+    { x: 4300, y: 3000 },
+    { x: 4300, y: 3400 },
+    { x: 4000, y: 3400 },
+  ],
+};
+const point = { kind: 'point', coordinates: { x: 4000, y: 3000 } };
+const place = (mapId, entityId, geometry, x, y) => ({
+  campaign_id: campaignA,
+  map_context_id: mapId,
+  entity_id: entityId,
+  geometry,
+  x,
+  y,
+  publication_status: 'published',
+});
+map080Fixture.localByCampaignId = {
+  [campaignA]: {
+    links: [
+      {
+        campaign_id: campaignA,
+        geographic_name_id: 'geo-shared-synthetic',
+        map_context_id: localContextA.id,
+        map_contexts: localContextA,
+      },
+    ],
+    placements: [
+      place(localContextA.id, 'entity-a-location', point, 4000, 3000),
+      place(localContextA.id, localId, point, 4000, 3000),
+      place(localContextA.id, polyId, polygon, 4150, 3200),
+      place(localContextA.id, privateId, point, 4000, 3000),
+      {
+        ...place(localContextA.id, localId, point, 4000, 3000),
+        entity_id: 'entity-archived-canary',
+        publication_status: 'archived',
+      },
+    ],
+    localEntities: [
+      {
+        id: localId,
+        slug: 'synthetic-local-only',
+        entity_type: 'character',
+        lifecycle_status: null,
+        visibility: 'pin',
+        name: 'Synthetic local entity',
+        name_language: 'en',
+        summary: 'Public',
+        description: 'Public',
+        portrait_path: null,
+        x: null,
+        y: null,
+        geometry: null,
+        category_id: 'category-a',
+        world_map_enabled: false,
+        publication_status: 'published',
+        audience: 'public',
+      },
+      {
+        id: polyId,
+        slug: 'synthetic-local-region',
+        entity_type: 'location',
+        lifecycle_status: null,
+        visibility: 'pin',
+        name: 'Synthetic polygon region',
+        name_language: 'en',
+        summary: 'Public',
+        description: 'Public',
+        portrait_path: null,
+        x: null,
+        y: null,
+        geometry: null,
+        category_id: 'category-a',
+        world_map_enabled: false,
+        publication_status: 'published',
+        audience: 'public',
+      },
+      {
+        id: privateId,
+        slug: 'master-canary',
+        entity_type: 'character',
+        lifecycle_status: null,
+        visibility: 'pin',
+        name: MAP080_CANARY,
+        name_language: 'en',
+        summary: MAP080_CANARY,
+        description: MAP080_CANARY,
+        portrait_path: null,
+        x: null,
+        y: null,
+        geometry: null,
+        category_id: 'category-a',
+        world_map_enabled: false,
+        publication_status: 'published',
+        audience: 'master',
+      },
+    ],
+    entityAliases: [
+      {
+        id: 'alias-synthetic-local',
+        entity_id: localId,
+        language: 'en',
+        value: 'Public synthetic alias',
+      },
+    ],
+    entityTags: [],
+    notes: [
+      {
+        id: 'note-synthetic-private',
+        slug: 'synthetic-private',
+        entity_id: privateId,
+        title: MAP080_CANARY,
+        body: MAP080_CANARY,
+        sort_order: 0,
+        publication_status: 'published',
+      },
+    ],
+    noteTags: [],
+    dispositions: [],
+    associations: [],
+    entityRelations: [
+      {
+        left_entity_id: localId,
+        right_entity_id: privateId,
+        left_label: MAP080_CANARY,
+        right_label: MAP080_CANARY,
+      },
+    ],
+    characterLocationRelations: [],
+  },
+  [campaignB]: {
+    links: [
+      {
+        campaign_id: campaignB,
+        geographic_name_id: 'geo-shared-synthetic',
+        map_context_id: localContextB.id,
+        map_contexts: localContextB,
+      },
+    ],
+    placements: [],
+    localEntities: [],
+    entityAliases: [],
+    entityTags: [],
+    notes: [],
+    noteTags: [],
+    dispositions: [],
+    associations: [],
+    entityRelations: [],
+    characterLocationRelations: [],
+  },
+};
+const map080Content = buildPublicMultimapSnapshotContent(map080Fixture);
+assertPublicMultimapSnapshotContent(map080Content);
+if (
+  map080Content.mapContexts.length !== 2 ||
+  map080Content.campaignLocalMaps[0].placements.length !== 3 ||
+  map080Content.campaignLocalMaps[0].localOnlyEntities.length !== 2 ||
+  map080Content.campaignLocalMaps[0].placements[2].geometry.kind !== 'polygon' ||
+  map080Content.campaignCatalogs[0].entities.some((e) => e.id === localId) ||
+  JSON.stringify(map080Content).includes(MAP080_CANARY)
+) {
+  throw new Error('MAP-080 world/local isolation or private canary exclusion failed.');
+}
+const poisonedMap080 = structuredClone(map080Fixture);
+poisonedMap080.localByCampaignId[campaignA].links[0].campaign_id = campaignB;
+let rejectedCrossCampaign = false;
+try {
+  buildPublicMultimapSnapshotContent(poisonedMap080);
+} catch {
+  rejectedCrossCampaign = true;
+}
+if (!rejectedCrossCampaign) throw new Error('MAP-080 accepted cross-campaign local binding.');
+const maliciousMap080 = structuredClone(map080Content);
+maliciousMap080.campaignLocalMaps[0].placements.push({
+  contextId: 'map-synthetic-a',
+  entityId: privateId,
+  geometry: point,
+  coordinates: { x: 4000, y: 3000 },
+});
+let rejectedPrivatePlacement = false;
+try {
+  assertPublicMultimapSnapshotContent(maliciousMap080);
+} catch {
+  rejectedPrivatePlacement = true;
+}
+if (!rejectedPrivatePlacement) throw new Error('MAP-080 accepted private placement.');
 
 const serialized = JSON.stringify(snapshot);
 for (const forbidden of [

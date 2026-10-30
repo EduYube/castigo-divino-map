@@ -73,8 +73,8 @@ function rowsForEmptyInitialCampaign(url: URL): readonly Record<string, unknown>
 function initialCampaignCatalog(
   result: Awaited<ReturnType<SupabasePublicCatalogRepository['load']>>,
 ) {
-  expect(result.data.contract).toBe('beta03');
-  if (result.data.contract !== 'beta03') throw new Error('Expected Beta 0.3 catalog.');
+  expect(result.data.contract).toBe('beta04');
+  if (result.data.contract !== 'beta04') throw new Error('Expected Beta 0.4 catalog.');
   const catalog = result.data.catalog.campaignCatalogs.find(
     ({ campaignId }) => campaignId === INITIAL_PUBLIC_CAMPAIGN_ID,
   );
@@ -99,9 +99,9 @@ describe('SupabasePublicCatalogRepository', () => {
     const result = await repository.load({ signal: new AbortController().signal });
 
     expect(result.source).toBe('supabase');
-    expect(result.data.contract).toBe('beta03');
-    expect(result.metadata.schemaVersion).toBe(3);
-    expect(requests).toHaveLength(17);
+    expect(result.data.contract).toBe('beta04');
+    expect(result.metadata.schemaVersion).toBe(4);
+    expect(requests).toHaveLength(18);
     requests.forEach((request) => {
       expect(request.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
       expect(request.headers.get('prefer')).toBe('count=exact');
@@ -142,6 +142,7 @@ describe('SupabasePublicCatalogRepository', () => {
       'character_location_relations',
       'entity_relations',
       'campaign_geographic_entity_links',
+      'campaign_geographic_map_context_links',
     ]);
     urls
       .filter((url) => tableName(url) !== 'campaigns')
@@ -170,14 +171,14 @@ describe('SupabasePublicCatalogRepository', () => {
 
     const result = await repository.load({ signal: new AbortController().signal });
 
-    expect(result.data.contract).toBe('beta03');
-    if (result.data.contract !== 'beta03') throw new Error('Expected Beta 0.3 catalog.');
+    expect(result.data.contract).toBe('beta04');
+    if (result.data.contract !== 'beta04') throw new Error('Expected Beta 0.4 catalog.');
     expect(result.data.catalog.campaigns.map(({ id }) => id)).toEqual([
       INITIAL_PUBLIC_CAMPAIGN_ID,
       CAMPAIGN_B_ID,
     ]);
     expect(result.data.catalog.campaignCatalogs).toHaveLength(2);
-    expect(urls).toHaveLength(33);
+    expect(urls).toHaveLength(35);
 
     const scopedUrls = urls.filter((url) => !GLOBAL_TABLES.has(tableName(url)));
     expect(
@@ -268,7 +269,7 @@ describe('SupabasePublicCatalogRepository', () => {
         entityId: 'entity-location',
       },
     ]);
-    if (result.data.contract !== 'beta03') throw new Error('Expected Beta 0.3 catalog.');
+    if (result.data.contract !== 'beta04') throw new Error('Expected Beta 0.4 catalog.');
     expect(result.data.catalog.geographicNames).toEqual([
       expect.not.objectContaining({ entityId: expect.anything() }),
     ]);

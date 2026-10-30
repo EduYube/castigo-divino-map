@@ -8,6 +8,7 @@ import {
 } from '../../data-access/publicCatalog';
 import { parsePublicCatalogSnapshotV2 } from '../supabase/publicCatalogCodec';
 import { parsePublicCatalogSnapshotV3 } from './multicampaignSnapshotCodec';
+import { parsePublicCatalogSnapshotV4 } from './multimapSnapshotCodec';
 
 export const PUBLIC_SNAPSHOT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -129,12 +130,17 @@ async function parseBundledSnapshot(
   value: unknown,
   now: () => number,
 ): Promise<PublicCatalogEnvelope> {
-  if (isRecord(value) && (value.schemaVersion === 2 || value.schemaVersion === 3)) {
+  if (
+    isRecord(value) &&
+    (value.schemaVersion === 2 || value.schemaVersion === 3 || value.schemaVersion === 4)
+  ) {
     try {
       const parsed =
-        value.schemaVersion === 3
-          ? await parsePublicCatalogSnapshotV3(value, now)
-          : await parsePublicCatalogSnapshotV2(value, now);
+        value.schemaVersion === 4
+          ? await parsePublicCatalogSnapshotV4(value, now)
+          : value.schemaVersion === 3
+            ? await parsePublicCatalogSnapshotV3(value, now)
+            : await parsePublicCatalogSnapshotV2(value, now);
       return {
         ...parsed,
         source: 'bundled-snapshot',

@@ -1,9 +1,10 @@
 import type { PublicCatalogSnapshotV2 } from '../data/beta02-model';
 import type { PublicCatalogSnapshotV3 } from '../data/beta03-model';
+import type { PublicCatalogSnapshotV4 } from '../data/beta04-model';
 import type { CampaignCatalog } from '../data/model';
 
 export type BackendState = 'connected' | 'degraded' | 'offline';
-export type PublicCatalogContract = 'beta01' | 'beta02' | 'beta03';
+export type PublicCatalogContract = 'beta01' | 'beta02' | 'beta03' | 'beta04';
 export type PublicDataSource =
   'supabase' | 'memory-cache' | 'session-cache' | 'bundled-snapshot' | 'legacy-static';
 
@@ -35,11 +36,15 @@ export type PublicCatalogPayload =
   | {
       readonly contract: 'beta03';
       readonly catalog: PublicCatalogSnapshotV3;
+    }
+  | {
+      readonly contract: 'beta04';
+      readonly catalog: PublicCatalogSnapshotV4;
     };
 
 export interface PublicCatalogMetadata {
   readonly contract: PublicCatalogContract;
-  readonly schemaVersion: 1 | 2 | 3;
+  readonly schemaVersion: 1 | 2 | 3 | 4;
   readonly generatedAt: string;
   readonly loadedAt: string;
   readonly sourceRevision: string;

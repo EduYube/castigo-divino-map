@@ -10,10 +10,7 @@ import { createFullEntityUrl, parseFullEntityUrlRequest } from './app/fullEntity
 import { mountMapLayers } from './app/mapLayers';
 import { mountLocalMapNavigation } from './app/localMapNavigation';
 import { mountPublicLocalMapRuntime } from './app/publicLocalMapRuntime';
-import {
-  mergePublicLocalCatalog,
-  SupabasePublicLocalMapRepository,
-} from './infrastructure/supabase/publicLocalMapRepository';
+import { mergePublicLocalCatalog } from './infrastructure/supabase/publicLocalMapRepository';
 import { mountMasterDetailActions } from './app/masterDetailActions';
 import { mountMasterPinVisuals } from './app/masterPinVisuals';
 import { bootstrapMasterModeRuntime, type MasterModeRuntime } from './app/masterModeRuntime';
@@ -168,6 +165,7 @@ function mountPublicExperience(
   let geographicNameId: GeographicNameId | null = null;
   let masterEntityIds: ReadonlySet<EntityId> = new Set();
   let masterModeRuntime: MasterModeRuntime | null = null;
+  let masterPurgedOnMapChange = false;
   let deferredSelectionAnnouncementGeneration = 0;
   const invalidateDeferredSelectionAnnouncement = (): void => {
     deferredSelectionAnnouncementGeneration += 1;
@@ -287,6 +285,12 @@ function mountPublicExperience(
     },
   });
   localNavigation.updateCatalog(initialCatalogState);
+  localReader.update(
+    initialCatalogState.selectedCampaign?.id ?? null,
+    initialCatalogState.beta02,
+    publicDataRuntime?.getBackendState() ?? 'degraded',
+    initialCatalogState.localMap,
+  );
   window.addEventListener('atlas:world-map-restored', () => {
     window.requestAnimationFrame(() => mapController.map.invalidateSize({ animate: false }));
   });
@@ -449,6 +453,31 @@ function mountPublicExperience(
     }
   };
   onLocalSurfaceClosed = (): void => {
+    // MAP-080: a public map surface is never allowed to retain the prior
+    // Master-only DOM, callbacks, portrait or selected entity. Disable Master
+    // and synchronously restore the public world marker set before repaint.
+    if (masterEntityIds.size > 0) {
+      masterPurgedOnMapChange = true;
+      masterEntityIds = new Set();
+      beta02Catalog = publicBeta02Catalog;
+      activeSupplementalPin = null;
+      selection.clear();
+      compactDetailsController.hide();
+      mapController.clearSearchFocus();
+      clearSupplementalMapSelection();
+      const publicMarkers = createAtlasPinMarkerModels(catalog, publicBeta02Catalog);
+      authorizedMarkers = publicMarkers;
+      renderedMarkers = filterAtlasMarkersByLayers(publicMarkers, mapLayerState);
+      mapController.setMarkers(renderedMarkers);
+      masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
+      portraitResources?.retainMasterPaths(new Set());
+      placeSearchController.setQuery('', { notify: false });
+      placeSearchController.setCatalogState(
+        catalog,
+        localReader.getSearchCatalog(publicBeta02Catalog),
+      );
+      void masterModeRuntime?.controller.setEnabled(false);
+    }
     if (!localNavigation.getMapSlug()) pendingLocalFocusEntityId = null;
     if (activeLocalEntityId) {
       activeLocalEntityId = null;
@@ -866,7 +895,16 @@ function mountPublicExperience(
     let nextMasterEntityIds: ReadonlySet<EntityId> = new Set();
     const modeState = masterModeRuntime?.controller.getState();
 
-    if (modeState?.phase === 'on' && modeState.catalog && nextCatalogState.beta02) {
+    if (masterPurgedOnMapChange && modeState?.phase !== 'on') {
+      masterPurgedOnMapChange = false;
+    }
+    if (
+      !masterPurgedOnMapChange &&
+      !localNavigation.getMapSlug() &&
+      modeState?.phase === 'on' &&
+      modeState.catalog &&
+      nextCatalogState.beta02
+    ) {
       try {
         const view = createAuthorizedMasterCatalogView(nextCatalogState.beta02, modeState.catalog);
         effectiveBeta02 = view.catalog;
@@ -921,6 +959,7 @@ function mountPublicExperience(
         nextCatalogState.selectedCampaign?.id ?? null,
         nextCatalogState.beta02,
         publicDataRuntime?.getBackendState() ?? 'degraded',
+        nextCatalogState.localMap,
       );
       placeSearchController.setCatalogState(catalog, localReader.getSearchCatalog(beta02Catalog));
       const previousMarkersById = new Map(authorizedMarkers.map((pin) => [pin.id, pin]));
@@ -1186,6 +1225,8 @@ function unavailableCatalogState(catalog: CampaignCatalog): PublicCatalogState {
     compatibility: catalog,
     campaigns: [],
     selectedCampaign: null,
+    localMap: null,
+    mapLinks: [],
   };
 }
 
@@ -1242,77 +1283,19 @@ function startFullEntityExperience(sourceUrl: URL): void {
 
   void bootstrapPublicDataRuntime(app, campaignCatalog)
     .then((runtime) => {
-      let localGeneration = 0;
-      let localAbort: AbortController | null = null;
-      const test = import.meta.env.DEV ? window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ : undefined;
-      let localRepository: SupabasePublicLocalMapRepository | null = null;
-      try {
-        localRepository = new SupabasePublicLocalMapRepository({
-          projectUrl: test?.projectUrl ?? import.meta.env.VITE_SUPABASE_URL ?? '',
-          publishableKey:
-            test?.publishableKey ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
-          allowLocalProject: import.meta.env.DEV,
-        });
-      } catch {
-        // Local details are never served from the world-only snapshot.
-      }
       const renderCatalogState = (state: PublicCatalogState): void => {
-        const { beta02, selectedCampaign } = state;
-        localAbort?.abort();
-        localAbort = null;
-        const revision = ++localGeneration;
+        const { beta02, localMap } = state;
         if (!beta02) {
           detailsController.showUnavailable();
           return;
         }
-        const worldDetails = resolveFullEntityDetail(beta02, request.slug!);
-        if (worldDetails) detailsController.show(worldDetails);
+        const authorized = localMap ? mergePublicLocalCatalog(beta02, localMap) : beta02;
+        const details = resolveFullEntityDetail(authorized, request.slug!);
+        if (details) detailsController.show(details);
         else detailsController.showUnavailable();
-
-        if (runtime.getBackendState() !== 'connected' || !selectedCampaign || !localRepository)
-          return;
-        const controller = new AbortController();
-        localAbort = controller;
-        void localRepository
-          .load({
-            campaignId: selectedCampaign.id,
-            signal: controller.signal,
-          })
-          .then((local) => {
-            if (
-              controller.signal.aborted ||
-              revision !== localGeneration ||
-              runtime.getBackendState() !== 'connected' ||
-              runtime.getCatalogState().selectedCampaign?.id !== selectedCampaign.id
-            )
-              return;
-            const enriched = mergePublicLocalCatalog(beta02, local);
-            const details = resolveFullEntityDetail(enriched, request.slug!);
-            if (details) detailsController.show(details);
-            else detailsController.showUnavailable();
-          })
-          .catch(() => {
-            // Fail closed and preserve previously authorized world details only.
-          });
       };
-
       renderCatalogState(runtime.getCatalogState());
       runtime.subscribeCatalogState(renderCatalogState);
-      window.addEventListener('atlas:public-data-status', (event) => {
-        const next = (event as CustomEvent<{ backendState?: string }>).detail?.backendState;
-        if (next === 'degraded' || next === 'offline') {
-          localAbort?.abort();
-          ++localGeneration;
-          const state = runtime.getCatalogState();
-          const worldDetails = state.beta02
-            ? resolveFullEntityDetail(state.beta02, request.slug!)
-            : undefined;
-          if (worldDetails) detailsController.show(worldDetails);
-          else detailsController.showUnavailable();
-        } else if (next === 'connected') {
-          renderCatalogState(runtime.getCatalogState());
-        }
-      });
     })
     .catch(() => detailsController.showUnavailable());
 }

@@ -1,11 +1,8 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 import { createSha256Checksum } from '../../src/data-access/publicCatalog';
-import type {
-  PublicCampaignCatalogV3,
-  PublicCampaignV3,
-  PublicCatalogSnapshotV3,
-} from '../../src/data/beta03-model';
+import type { PublicCampaignCatalogV3, PublicCampaignV3 } from '../../src/data/beta03-model';
+import type { PublicCatalogSnapshotV4 } from '../../src/data/beta04-model';
 
 type CampaignEntityId = PublicCampaignCatalogV3['entities'][number]['id'];
 type CampaignCategoryId = PublicCampaignCatalogV3['categories'][number]['id'];
@@ -372,9 +369,9 @@ function snapshotCatalog(campaignId: string): PublicCampaignCatalogV3 {
   };
 }
 
-async function makeSnapshot(): Promise<PublicCatalogSnapshotV3> {
+async function makeSnapshot(): Promise<PublicCatalogSnapshotV4> {
   const content = {
-    schemaVersion: 3 as const,
+    schemaVersion: 4 as const,
     campaigns: CAMPAIGNS,
     campaignCatalogs: [snapshotCatalog(CAMPAIGN_A_ID), snapshotCatalog(CAMPAIGN_B_ID)],
     geographicNames: [
@@ -387,12 +384,64 @@ async function makeSnapshot(): Promise<PublicCatalogSnapshotV3> {
         coordinates: { x: 1433, y: 1853 },
         recommendedZoom: 0.75,
       },
+      {
+        id: 'geo-map079-secondary' as const,
+        slug: 'map079-secondary',
+        name: 'MAP079 Secondary Map',
+        language: 'en' as const,
+        aliases: [],
+        coordinates: { x: 1000, y: 1000 },
+        recommendedZoom: 0.75,
+      },
     ],
+    mapContexts: [
+      {
+        id: 'map-neverwinter',
+        slug: 'neverwinter',
+        name: 'Neverwinter',
+        parentId: null,
+        width: 2048,
+        height: 1582,
+        imageUri: null,
+      },
+    ],
+    campaignLocalMaps: CAMPAIGNS.map((campaign) => ({
+      campaignId: campaign.id,
+      contexts:
+        campaign.id === CAMPAIGN_B_ID
+          ? [
+              {
+                id: 'map-neverwinter',
+                slug: 'neverwinter',
+                name: 'Neverwinter',
+                width: 2048,
+                height: 1582,
+              },
+            ]
+          : [],
+      geographicMapContextLinks:
+        campaign.id === CAMPAIGN_B_ID
+          ? [
+              {
+                campaignId: campaign.id,
+                geographicNameId: 'geo-neverwinter',
+                contextId: 'map-neverwinter',
+              },
+            ]
+          : [],
+      placements: [],
+      localOnlyEntities: [],
+      notes: [],
+      dispositions: [],
+      associations: [],
+      entityRelations: [],
+      characterLocationRelations: [],
+    })),
   };
   const checksum = await createSha256Checksum(content);
   return {
     ...content,
-    generatedAt: '2026-08-27T12:00:00.000Z',
+    generatedAt: '2026-10-30T12:00:00.000Z',
     sourceRevision: checksum,
     checksum,
   };
@@ -535,6 +584,20 @@ async function configureCampaignBackend(
                 search_min_y: null,
                 search_max_y: null,
               },
+              {
+                id: 'geo-map079-secondary',
+                slug: 'map079-secondary',
+                name: 'MAP079 Secondary Map',
+                language: 'en',
+                x: 1000,
+                y: 1000,
+                recommended_zoom: 0.75,
+                entity_id: null,
+                search_min_x: null,
+                search_max_x: null,
+                search_min_y: null,
+                search_max_y: null,
+              },
             ]
           : table === 'geographic_name_aliases'
             ? []
@@ -628,16 +691,16 @@ test('MAP-077 R3: initial fallback preserves deep link until remote check comple
   const backend = await configureCampaignBackend(page, { holdCatalogUntilReleased: true });
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
   await expect(page).toHaveURL(/map=neverwinter/);
-  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
-  await expect(page.locator('[data-map-canvas]')).toBeVisible();
+  // A validated bundled V4 already authorizes Neverwinter before the remote
+  // request resolves; there is no independent binding-response authority.
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
   expect(backend.getBindingRequestCount()).toBe(0);
 
-  // A successful first remote refresh authorizes the binding. Until then,
-  // do not clear the URL or display local cartography.
+  // A successful remote refresh atomically replaces the entire revision.
   backend.releaseCatalog();
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
   await expect(page).toHaveURL(/map=neverwinter/);
-  expect(backend.getBindingRequestCount()).toBe(1);
+  expect(backend.getBindingRequestCount()).toBeGreaterThanOrEqual(1);
 
   await page.reload();
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
@@ -667,11 +730,13 @@ test('MAP-077: invalid and cross-campaign map slugs fall back to world', async (
   await expect(page).not.toHaveURL(/map=foo/);
 });
 
-test('MAP-077: degraded snapshot never invents a local context', async ({ page }) => {
+test('MAP-080: degraded V4 preserves a published bound local context', async ({ page }) => {
   await configureCampaignBackend(page, { remoteAvailable: false });
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await expect(page).toHaveURL(/map=neverwinter/);
+  await page.getByLabel('Campaña', { exact: true }).selectOption('castigo-divino');
   await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
-  await expect(page).not.toHaveURL(/map=neverwinter/);
 });
 
 for (const width of [320, 390, 430, 1280]) {
@@ -708,94 +773,29 @@ test('MAP-077: keyboard and offline transition', async ({ page }) => {
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
 
   await page.evaluate(() => {
-    const event = new CustomEvent('atlas:public-data-status', {
-      detail: { backendState: 'offline' },
-    });
-    window.dispatchEvent(event);
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', {
+        detail: { backendState: 'offline' },
+      }),
+    );
   });
-  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
-  await expect(page.locator('[data-map-canvas]')).toBeVisible();
-  expect(new URL(page.url()).searchParams.has('map')).toBe(false);
+  // Status notifications cannot revoke a previously validated V4 projection.
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  expect(new URL(page.url()).searchParams.get('map')).toBe('neverwinter');
 });
 
-test('MAP-077 R2: degraded catalog blocks healthy binding endpoint across campaign changes', async ({
-  page,
-}) => {
-  const backend = await configureCampaignBackend(page);
+test('MAP-080: a failed local query cannot publish a mixed remote revision', async ({ page }) => {
+  const backend = await configureCampaignBackend(page, { bindingAvailable: false });
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
-  const initialBindingRequests = backend.getBindingRequestCount();
-
-  // Partial outage: the catalog is unavailable, but the binding REST endpoint remains healthy.
-  backend.setCatalogAvailable(false);
-  await page.evaluate(() => {
-    window.dispatchEvent(
-      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'degraded' } }),
-    );
-  });
-  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
-  await page.getByLabel('Campaña', { exact: true }).selectOption('castigo-divino');
-  await page.getByLabel('Campaña', { exact: true }).selectOption('un-aliento-menos');
+  // The V4 fallback is complete; the failed remote binding query must not
+  // clear the surface or publish a world-only remote update.
   await selectNeverwinter(page);
-  await expect(page.locator('[data-local-map-entry]')).toBeHidden();
-
-  // Simulate Back to an earlier valid local-map deep link while still degraded.
-  await page.evaluate(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('map', 'neverwinter');
-    window.history.pushState(window.history.state, '', url);
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  });
-  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
-  await expect(page).not.toHaveURL(/map=neverwinter/);
-  expect(backend.getBindingRequestCount()).toBe(initialBindingRequests);
-
-  backend.setCatalogAvailable(true);
-  await page.evaluate(() => {
-    window.dispatchEvent(
-      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
-    );
-  });
-  await expect(page.getByRole('button', { name: 'Entrar en Neverwinter' })).toBeVisible();
-  expect(backend.getBindingRequestCount()).toBe(initialBindingRequests + 1);
-});
-
-test('MAP-077 R2: a transient binding-only 503 retries on connected refresh, not on every event', async ({
-  page,
-}) => {
-  const backend = await configureCampaignBackend(page, { bindingAvailable: false });
-  const failedBinding = page.waitForResponse(
-    (response) =>
-      response.url().includes('/rest/v1/campaign_geographic_map_context_links') &&
-      response.status() === 503,
-  );
-  await page.goto('/?campaign=un-aliento-menos');
-  await failedBinding;
-  await selectNeverwinter(page);
-  await expect(page.locator('[data-local-map-entry]')).toBeHidden();
-
+  await expect(page.getByRole('button', { name: 'Mapa general' })).toBeVisible();
   backend.setBindingAvailable(true);
-  // Two refresh notifications also cover a connected event racing the settled 503.
-  for (let i = 0; i < 2; i += 1) {
-    await page.evaluate(() => {
-      window.dispatchEvent(
-        new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
-      );
-    });
-    await expect
-      .poll(() => backend.getBindingRequestCount(), { timeout: 5000 })
-      .toBeGreaterThanOrEqual(2);
-  }
-  await expect(page.getByRole('button', { name: 'Entrar en Neverwinter' })).toBeVisible();
-  expect(backend.getBindingRequestCount()).toBe(2);
-
-  // Healthy refreshes do not create new requests after a successful binding read.
-  await page.evaluate(() => {
-    window.dispatchEvent(
-      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
-    );
-  });
-  expect(backend.getBindingRequestCount()).toBe(2);
+  await page.reload();
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await expect(page).toHaveURL(/map=neverwinter/);
 });
 
 /**
@@ -1303,7 +1303,9 @@ test('MAP-079 R2: layer removal invalidates local popup choices', async ({ page 
   await expect(grouped).toBeVisible();
 });
 
-test('MAP-079 R2: degraded revokes open overlapping choices and controls', async ({ page }) => {
+test('MAP-080: campaign switch revokes open overlapping choices and callbacks', async ({
+  page,
+}) => {
   await configureCampaignBackend(page);
   await configureMap079SyntheticLocalBackend(page);
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
@@ -1315,11 +1317,7 @@ test('MAP-079 R2: degraded revokes open overlapping choices and controls', async
   const choices = page.locator('.local-map-pin-choices button');
   await expect(choices).toHaveCount(2);
   const stale = await choices.last().elementHandle();
-  await page.evaluate(() => {
-    window.dispatchEvent(
-      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'degraded' } }),
-    );
-  });
+  await page.getByLabel('Campaña', { exact: true }).selectOption('castigo-divino');
   await expect(choices).toHaveCount(0);
   await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
   await stale?.evaluate((button: HTMLButtonElement) => button.click());
@@ -1338,7 +1336,7 @@ test('MAP-079 R1: public local tag search is deduplicated', async ({ page }) => 
   await expect(result).toContainText('Mapa local:');
 });
 
-test('MAP-079: campaign switch and degraded status purge synthetic local-only results', async ({
+test('MAP-080: campaign switch purges local results while degraded preserves validated V4', async ({
   page,
 }) => {
   await configureCampaignBackend(page);
@@ -1369,7 +1367,6 @@ test('MAP-079: campaign switch and degraded status purge synthetic local-only re
       new CustomEvent('atlas:public-data-status', { detail: { backendState: 'degraded' } }),
     );
   });
-  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
-  await expect(page.locator('[data-map-canvas]')).toBeVisible();
-  await expect(page.locator('[data-search-result-id="entity-map079-synthetic"]')).toHaveCount(0);
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await expect(page.locator('[data-search-result-id="entity-map079-synthetic"]')).toBeVisible();
 });

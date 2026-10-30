@@ -1,6 +1,8 @@
 import { ResilientPublicCatalogService } from '../application/publicCatalogService';
 import type { EntityId, PublicCatalogSnapshotV2 } from '../data/beta02-model';
 import type { PublicCampaignV3 } from '../data/beta03-model';
+import type { PublicLocalMapData } from '../infrastructure/supabase/publicLocalMapRepository';
+import type { LocalMapContext } from './localMapNavigation';
 import { toBeta01CompatibilityCatalog } from '../data/beta01Compatibility';
 import type { CampaignCatalog } from '../data/model';
 import {
@@ -15,6 +17,7 @@ import {
   applyEntityRevocationsToBeta02,
 } from '../data/publicCatalogRevocations';
 import { projectPublicCatalogSnapshotV3ToV2 } from '../infrastructure/snapshot/multicampaignSnapshotCodec';
+import { projectPublicCatalogSnapshotV4ToV2 } from '../infrastructure/snapshot/multimapSnapshotCodec';
 import { BundledPublicCatalogRepository } from '../infrastructure/snapshot/publicCatalogSnapshot';
 import { BrowserPublicCatalogSessionCache } from '../infrastructure/snapshot/sessionCatalogCache';
 import { SupabasePublicCatalogRepository } from '../infrastructure/supabase/publicCatalogRepository';
@@ -63,6 +66,9 @@ export interface PublicCatalogState {
   readonly compatibility: CampaignCatalog;
   readonly campaigns: readonly PublicCampaignV3[];
   readonly selectedCampaign: PublicCampaignV3 | null;
+  /** Never merged across revisions: this local projection belongs to checksum. */
+  readonly localMap?: PublicLocalMapData | null;
+  readonly mapLinks?: readonly { geographicNameId: string; context: LocalMapContext }[];
 }
 
 export type PublicCatalogStateListener = (state: PublicCatalogState) => void;
@@ -128,6 +134,8 @@ function toCatalogState(
       compatibility: EMPTY_COMPATIBILITY_CATALOG,
       campaigns: [],
       selectedCampaign: null,
+      localMap: null,
+      mapLinks: [],
     };
   }
 
@@ -139,6 +147,8 @@ function toCatalogState(
       compatibility: applyEntityRevocationsToBeta01(result.data.catalog, revokedEntityIds),
       campaigns: [LEGACY_INITIAL_CAMPAIGN],
       selectedCampaign: LEGACY_INITIAL_CAMPAIGN,
+      localMap: null,
+      mapLinks: [],
     };
   }
 
@@ -151,16 +161,50 @@ function toCatalogState(
       compatibility: toBeta01CompatibilityCatalog(beta02),
       campaigns: [LEGACY_INITIAL_CAMPAIGN],
       selectedCampaign: LEGACY_INITIAL_CAMPAIGN,
+      localMap: null,
+      mapLinks: [],
     };
   }
 
   const campaigns = sortCampaigns(result.data.catalog.campaigns);
   const selectedCampaign = resolveCampaign(campaigns, preferredCampaignSlug);
+  const isV4 = result.data.contract === 'beta04';
   const projection = selectedCampaign
-    ? projectPublicCatalogSnapshotV3ToV2(result.data.catalog, selectedCampaign.id)
+    ? isV4
+      ? projectPublicCatalogSnapshotV4ToV2(result.data.catalog, selectedCampaign.id)
+      : projectPublicCatalogSnapshotV3ToV2(result.data.catalog, selectedCampaign.id)
     : null;
   const beta02 = projection ? applyEntityRevocationsToBeta02(projection, revokedEntityIds) : null;
-
+  const rawLocal =
+    isV4 && selectedCampaign
+      ? result.data.catalog.campaignLocalMaps.find((m) => m.campaignId === selectedCampaign.id)
+      : null;
+  const localMap: PublicLocalMapData | null = rawLocal
+    ? {
+        ...rawLocal,
+        localOnlyEntities: rawLocal.localOnlyEntities.filter((e) => !revokedEntityIds.has(e.id)),
+        placements: rawLocal.placements.filter((p) => !revokedEntityIds.has(p.entityId)),
+        notes: rawLocal.notes.filter((n) => !revokedEntityIds.has(n.entityId)),
+        dispositions: rawLocal.dispositions.filter((d) => !revokedEntityIds.has(d.entityId)),
+        associations: rawLocal.associations.filter((a) => !revokedEntityIds.has(a.entityId)),
+        entityRelations: rawLocal.entityRelations.filter(
+          (r) => !revokedEntityIds.has(r.leftEntityId) && !revokedEntityIds.has(r.rightEntityId),
+        ),
+        characterLocationRelations: rawLocal.characterLocationRelations.filter(
+          (r) => !revokedEntityIds.has(r.characterId) && !revokedEntityIds.has(r.locationId),
+        ),
+      }
+    : null;
+  const contextById = isV4
+    ? new Map(result.data.catalog.mapContexts.map((c) => [c.id, c] as const))
+    : new Map<string, never>();
+  const mapLinks: { geographicNameId: string; context: LocalMapContext }[] =
+    isV4 && rawLocal
+      ? rawLocal.geographicMapContextLinks.flatMap((link) => {
+          const context = contextById.get(link.contextId);
+          return context ? [{ geographicNameId: link.geographicNameId, context }] : [];
+        })
+      : [];
   return {
     availability: beta02 ? result.availability : 'unavailable',
     checksum: result.metadata?.checksum ?? result.data.catalog.checksum,
@@ -168,6 +212,8 @@ function toCatalogState(
     compatibility: beta02 ? toBeta01CompatibilityCatalog(beta02) : EMPTY_COMPATIBILITY_CATALOG,
     campaigns,
     selectedCampaign,
+    localMap,
+    mapLinks,
   };
 }
 

@@ -59,6 +59,16 @@ jobs:
       - name: Run unit tests
         run: npm run test
 
+      # MAP-080 review gate: fail the exact PR HEAD if any world/local public
+      # table changed since the committed atomic V4 snapshot was generated.
+      # The production Pages workflow has its own mandatory remote gate.
+      - name: Verify MAP-080 V4 remote projection (read-only)
+        if: github.event_name == 'pull_request' && github.event.pull_request.number == 218
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
+        run: npm run snapshot:verify:remote
+
       - name: Build application for GitHub Pages
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "campaigns": [
     {
       "id": "00000000-0000-4000-8000-000000000053",
@@ -3480,7 +3480,58 @@
       "recommendedZoom": 0.75
     }
   ],
-  "generatedAt": "2026-10-09T10:41:05.870Z",
-  "sourceRevision": "sha256:ce1d861bbfc12153be799d5bb6f54b34a87c5a03e50830bb27aaef9ef4567de3",
-  "checksum": "sha256:ce1d861bbfc12153be799d5bb6f54b34a87c5a03e50830bb27aaef9ef4567de3"
+  "mapContexts": [
+    {
+      "id": "map-neverwinter",
+      "slug": "neverwinter",
+      "name": "Neverwinter",
+      "parentId": null,
+      "width": 2048,
+      "height": 1582,
+      "imageUri": null
+    }
+  ],
+  "campaignLocalMaps": [
+    {
+      "campaignId": "00000000-0000-4000-8000-000000000053",
+      "contexts": [],
+      "geographicMapContextLinks": [],
+      "placements": [],
+      "localOnlyEntities": [],
+      "notes": [],
+      "dispositions": [],
+      "associations": [],
+      "entityRelations": [],
+      "characterLocationRelations": []
+    },
+    {
+      "campaignId": "00000000-0000-4000-8000-000000000068",
+      "contexts": [
+        {
+          "id": "map-neverwinter",
+          "slug": "neverwinter",
+          "name": "Neverwinter",
+          "width": 2048,
+          "height": 1582
+        }
+      ],
+      "geographicMapContextLinks": [
+        {
+          "campaignId": "00000000-0000-4000-8000-000000000068",
+          "geographicNameId": "geo-neverwinter",
+          "contextId": "map-neverwinter"
+        }
+      ],
+      "placements": [],
+      "localOnlyEntities": [],
+      "notes": [],
+      "dispositions": [],
+      "associations": [],
+      "entityRelations": [],
+      "characterLocationRelations": []
+    }
+  ],
+  "generatedAt": "2026-10-30T17:11:44.369Z",
+  "sourceRevision": "sha256:11669c907d0befaff35d1dabd93260d7882e2ad138d8997a80ca5a01856ba6d8",
+  "checksum": "sha256:11669c907d0befaff35d1dabd93260d7882e2ad138d8997a80ca5a01856ba6d8"
 }
