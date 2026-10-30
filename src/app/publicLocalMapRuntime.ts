@@ -257,10 +257,13 @@ export function mountPublicLocalMapRuntime(
     options.onDataChange();
   };
   window.addEventListener('atlas:campaign-will-change', () => {
+    const wasLocalSurface = surface !== null;
     purge();
     surface = null;
     authorizedContexts = [];
-    options.onSurfaceClosed();
+    // The existing MAP-061/MAP-070 Master campaign handoff owns its purge
+    // while in world view. Do not falsely close a local map and disable Master.
+    if (wasLocalSurface) options.onSurfaceClosed();
   });
 
   return {
@@ -283,8 +286,7 @@ export function mountPublicLocalMapRuntime(
       }
     },
     setSurface(context, map): void {
-      const changing =
-        (surface?.context.id ?? null) !== (context?.id ?? null) || (surface?.map ?? null) !== map;
+      const changing = (surface?.context.id ?? null) !== (context?.id ?? null) || (surface?.map ?? null) !== map;
       clearMap();
       surface = context && map ? { context, map } : null;
       if (changing) {
