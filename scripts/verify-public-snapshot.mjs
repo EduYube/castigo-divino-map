@@ -43,26 +43,27 @@ if (
 }
 
 const committedMulticampaignContent = {
-  schemaVersion:3,
-  campaigns:committedNativeContent.campaigns,
-  campaignCatalogs:committedNativeContent.campaignCatalogs,
-  geographicNames:committedNativeContent.geographicNames,
+  schemaVersion: 3,
+  campaigns: committedNativeContent.campaigns,
+  campaignCatalogs: committedNativeContent.campaignCatalogs,
+  geographicNames: committedNativeContent.geographicNames,
 };
 const committedLegacyContent = projectMulticampaignSnapshotContentToV2(
   committedMulticampaignContent,
 );
 assertPublicMultimapSnapshotContent(committedNativeContent);
 assertGeographicSearchExtentCoverage(
-  committedNativeContent,'the committed MAP-080 V4 public snapshot',
+  committedNativeContent,
+  'the committed MAP-080 V4 public snapshot',
 );
 
 if (verifyRemote) {
-  const expectedContent=buildPublicMultimapSnapshotContent(
-    await loadRemotePublicMultimapRows(),
-  );
-  const expectedChecksum=checksum(expectedContent);
-  if (expectedChecksum !== committedNativeChecksum ||
-      JSON.stringify(expectedContent)!==JSON.stringify(committedNativeContent)) {
+  const expectedContent = buildPublicMultimapSnapshotContent(await loadRemotePublicMultimapRows());
+  const expectedChecksum = checksum(expectedContent);
+  if (
+    expectedChecksum !== committedNativeChecksum ||
+    JSON.stringify(expectedContent) !== JSON.stringify(committedNativeContent)
+  ) {
     throw new Error(
       `MAP-080 V4 public snapshot drift: committed ${committedNativeChecksum}, remote ${expectedChecksum}.`,
     );
@@ -313,109 +314,211 @@ if (!rejectedMasterLink) {
   throw new Error('MAP-053 snapshot accepted a geographic link to filtered Master content.');
 }
 
-
-const MAP080_CANARY='MAP080 MASTER CANARY NOT PRESENT';
-const map080Fixture=structuredClone(syntheticRows);
-const makeContext=(id,slug)=>({
-  id,slug,name:slug,parent_id:null,width:5000,height:4000,image_uri:null,
-  publication_status:'published',
+const MAP080_CANARY = 'MAP080 MASTER CANARY NOT PRESENT';
+const map080Fixture = structuredClone(syntheticRows);
+const makeContext = (id, slug) => ({
+  id,
+  slug,
+  name: slug,
+  parent_id: null,
+  width: 5000,
+  height: 4000,
+  image_uri: null,
+  publication_status: 'published',
 });
-const localContextA=makeContext('map-synthetic-a','synthetic-a');
-const localContextB=makeContext('map-synthetic-b','synthetic-b');
-const localId='entity-synthetic-local-only';
-const privateId='entity-synthetic-MASTER-CANARY';
-const polyId='place-synthetic-local-region';
-const polygon={kind:'polygon',vertices:[
-  {x:4000,y:3000},{x:4300,y:3000},{x:4300,y:3400},{x:4000,y:3400},
-]};
-const point={kind:'point',coordinates:{x:4000,y:3000}};
-const place=(mapId,entityId,geometry,x,y)=>({
-  campaign_id:campaignA,map_context_id:mapId,entity_id:entityId,
-  geometry,x,y,publication_status:'published',
+const localContextA = makeContext('map-synthetic-a', 'synthetic-a');
+const localContextB = makeContext('map-synthetic-b', 'synthetic-b');
+const localId = 'entity-synthetic-local-only';
+const privateId = 'entity-synthetic-MASTER-CANARY';
+const polyId = 'place-synthetic-local-region';
+const polygon = {
+  kind: 'polygon',
+  vertices: [
+    { x: 4000, y: 3000 },
+    { x: 4300, y: 3000 },
+    { x: 4300, y: 3400 },
+    { x: 4000, y: 3400 },
+  ],
+};
+const point = { kind: 'point', coordinates: { x: 4000, y: 3000 } };
+const place = (mapId, entityId, geometry, x, y) => ({
+  campaign_id: campaignA,
+  map_context_id: mapId,
+  entity_id: entityId,
+  geometry,
+  x,
+  y,
+  publication_status: 'published',
 });
-map080Fixture.localByCampaignId={
-  [campaignA]:{
-    links:[{
-      campaign_id:campaignA,geographic_name_id:'geo-shared-synthetic',
-      map_context_id:localContextA.id,map_contexts:localContextA,
-    }],
-    placements:[
-      place(localContextA.id,'entity-a-location',point,4000,3000),
-      place(localContextA.id,localId,point,4000,3000),
-      place(localContextA.id,polyId,polygon,4150,3200),
-      place(localContextA.id,privateId,point,4000,3000),
-      {...place(localContextA.id,localId,point,4000,3000),
-        entity_id:'entity-archived-canary',publication_status:'archived'},
-    ],
-    localEntities:[
+map080Fixture.localByCampaignId = {
+  [campaignA]: {
+    links: [
       {
-        id:localId,slug:'synthetic-local-only',entity_type:'character',
-        lifecycle_status:null,visibility:'pin',name:'Synthetic local entity',
-        name_language:'en',summary:'Public',description:'Public',portrait_path:null,
-        x:null,y:null,geometry:null,category_id:'category-a',world_map_enabled:false,
-        publication_status:'published',audience:'public',
-      },
-      {
-        id:polyId,slug:'synthetic-local-region',entity_type:'location',
-        lifecycle_status:null,visibility:'pin',name:'Synthetic polygon region',
-        name_language:'en',summary:'Public',description:'Public',portrait_path:null,
-        x:null,y:null,geometry:null,category_id:'category-a',world_map_enabled:false,
-        publication_status:'published',audience:'public',
-      },
-      {
-        id:privateId,slug:'master-canary',entity_type:'character',
-        lifecycle_status:null,visibility:'pin',name:MAP080_CANARY,
-        name_language:'en',summary:MAP080_CANARY,description:MAP080_CANARY,
-        portrait_path:null,x:null,y:null,geometry:null,category_id:'category-a',
-        world_map_enabled:false,publication_status:'published',audience:'master',
+        campaign_id: campaignA,
+        geographic_name_id: 'geo-shared-synthetic',
+        map_context_id: localContextA.id,
+        map_contexts: localContextA,
       },
     ],
-    entityAliases:[{id:'alias-synthetic-local',entity_id:localId,
-      language:'en',value:'Public synthetic alias'}],
-    entityTags:[],notes:[
-      {id:'note-synthetic-private',slug:'synthetic-private',entity_id:privateId,
-        title:MAP080_CANARY,body:MAP080_CANARY,sort_order:0,publication_status:'published'},
+    placements: [
+      place(localContextA.id, 'entity-a-location', point, 4000, 3000),
+      place(localContextA.id, localId, point, 4000, 3000),
+      place(localContextA.id, polyId, polygon, 4150, 3200),
+      place(localContextA.id, privateId, point, 4000, 3000),
+      {
+        ...place(localContextA.id, localId, point, 4000, 3000),
+        entity_id: 'entity-archived-canary',
+        publication_status: 'archived',
+      },
     ],
-    noteTags:[],dispositions:[],associations:[],
-    entityRelations:[{left_entity_id:localId,right_entity_id:privateId,
-      left_label:MAP080_CANARY,right_label:MAP080_CANARY}],
-    characterLocationRelations:[],
+    localEntities: [
+      {
+        id: localId,
+        slug: 'synthetic-local-only',
+        entity_type: 'character',
+        lifecycle_status: null,
+        visibility: 'pin',
+        name: 'Synthetic local entity',
+        name_language: 'en',
+        summary: 'Public',
+        description: 'Public',
+        portrait_path: null,
+        x: null,
+        y: null,
+        geometry: null,
+        category_id: 'category-a',
+        world_map_enabled: false,
+        publication_status: 'published',
+        audience: 'public',
+      },
+      {
+        id: polyId,
+        slug: 'synthetic-local-region',
+        entity_type: 'location',
+        lifecycle_status: null,
+        visibility: 'pin',
+        name: 'Synthetic polygon region',
+        name_language: 'en',
+        summary: 'Public',
+        description: 'Public',
+        portrait_path: null,
+        x: null,
+        y: null,
+        geometry: null,
+        category_id: 'category-a',
+        world_map_enabled: false,
+        publication_status: 'published',
+        audience: 'public',
+      },
+      {
+        id: privateId,
+        slug: 'master-canary',
+        entity_type: 'character',
+        lifecycle_status: null,
+        visibility: 'pin',
+        name: MAP080_CANARY,
+        name_language: 'en',
+        summary: MAP080_CANARY,
+        description: MAP080_CANARY,
+        portrait_path: null,
+        x: null,
+        y: null,
+        geometry: null,
+        category_id: 'category-a',
+        world_map_enabled: false,
+        publication_status: 'published',
+        audience: 'master',
+      },
+    ],
+    entityAliases: [
+      {
+        id: 'alias-synthetic-local',
+        entity_id: localId,
+        language: 'en',
+        value: 'Public synthetic alias',
+      },
+    ],
+    entityTags: [],
+    notes: [
+      {
+        id: 'note-synthetic-private',
+        slug: 'synthetic-private',
+        entity_id: privateId,
+        title: MAP080_CANARY,
+        body: MAP080_CANARY,
+        sort_order: 0,
+        publication_status: 'published',
+      },
+    ],
+    noteTags: [],
+    dispositions: [],
+    associations: [],
+    entityRelations: [
+      {
+        left_entity_id: localId,
+        right_entity_id: privateId,
+        left_label: MAP080_CANARY,
+        right_label: MAP080_CANARY,
+      },
+    ],
+    characterLocationRelations: [],
   },
-  [campaignB]:{
-    links:[{
-      campaign_id:campaignB,geographic_name_id:'geo-shared-synthetic',
-      map_context_id:localContextB.id,map_contexts:localContextB,
-    }],
-    placements:[],localEntities:[],entityAliases:[],entityTags:[],notes:[],
-    noteTags:[],dispositions:[],associations:[],entityRelations:[],
-    characterLocationRelations:[],
+  [campaignB]: {
+    links: [
+      {
+        campaign_id: campaignB,
+        geographic_name_id: 'geo-shared-synthetic',
+        map_context_id: localContextB.id,
+        map_contexts: localContextB,
+      },
+    ],
+    placements: [],
+    localEntities: [],
+    entityAliases: [],
+    entityTags: [],
+    notes: [],
+    noteTags: [],
+    dispositions: [],
+    associations: [],
+    entityRelations: [],
+    characterLocationRelations: [],
   },
 };
-const map080Content=buildPublicMultimapSnapshotContent(map080Fixture);
+const map080Content = buildPublicMultimapSnapshotContent(map080Fixture);
 assertPublicMultimapSnapshotContent(map080Content);
-if(map080Content.mapContexts.length!==2||
-   map080Content.campaignLocalMaps[0].placements.length!==3 ||
-   map080Content.campaignLocalMaps[0].localOnlyEntities.length!==2 ||
-   map080Content.campaignLocalMaps[0].placements[2].geometry.kind!=='polygon' ||
-   map080Content.campaignCatalogs[0].entities.some(e=>e.id===localId) ||
-   JSON.stringify(map080Content).includes(MAP080_CANARY)){
+if (
+  map080Content.mapContexts.length !== 2 ||
+  map080Content.campaignLocalMaps[0].placements.length !== 3 ||
+  map080Content.campaignLocalMaps[0].localOnlyEntities.length !== 2 ||
+  map080Content.campaignLocalMaps[0].placements[2].geometry.kind !== 'polygon' ||
+  map080Content.campaignCatalogs[0].entities.some((e) => e.id === localId) ||
+  JSON.stringify(map080Content).includes(MAP080_CANARY)
+) {
   throw new Error('MAP-080 world/local isolation or private canary exclusion failed.');
 }
-const poisonedMap080=structuredClone(map080Fixture);
-poisonedMap080.localByCampaignId[campaignA].links[0].campaign_id=campaignB;
-let rejectedCrossCampaign=false;
-try{buildPublicMultimapSnapshotContent(poisonedMap080);}catch{rejectedCrossCampaign=true;}
-if(!rejectedCrossCampaign)throw new Error('MAP-080 accepted cross-campaign local binding.');
-const maliciousMap080=structuredClone(map080Content);
+const poisonedMap080 = structuredClone(map080Fixture);
+poisonedMap080.localByCampaignId[campaignA].links[0].campaign_id = campaignB;
+let rejectedCrossCampaign = false;
+try {
+  buildPublicMultimapSnapshotContent(poisonedMap080);
+} catch {
+  rejectedCrossCampaign = true;
+}
+if (!rejectedCrossCampaign) throw new Error('MAP-080 accepted cross-campaign local binding.');
+const maliciousMap080 = structuredClone(map080Content);
 maliciousMap080.campaignLocalMaps[0].placements.push({
-  contextId:'map-synthetic-a',entityId:privateId,geometry:point,
-  coordinates:{x:4000,y:3000},
+  contextId: 'map-synthetic-a',
+  entityId: privateId,
+  geometry: point,
+  coordinates: { x: 4000, y: 3000 },
 });
-let rejectedPrivatePlacement=false;
-try{assertPublicMultimapSnapshotContent(maliciousMap080);}
-catch{rejectedPrivatePlacement=true;}
-if(!rejectedPrivatePlacement)throw new Error('MAP-080 accepted private placement.');
-
+let rejectedPrivatePlacement = false;
+try {
+  assertPublicMultimapSnapshotContent(maliciousMap080);
+} catch {
+  rejectedPrivatePlacement = true;
+}
+if (!rejectedPrivatePlacement) throw new Error('MAP-080 accepted private placement.');
 
 const serialized = JSON.stringify(snapshot);
 for (const forbidden of [

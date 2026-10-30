@@ -1,10 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 import { createSha256Checksum } from '../../src/data-access/publicCatalog';
-import type {
-  PublicCampaignCatalogV3,
-  PublicCampaignV3,
-} from '../../src/data/beta03-model';
+import type { PublicCampaignCatalogV3, PublicCampaignV3 } from '../../src/data/beta03-model';
 import type { PublicCatalogSnapshotV4 } from '../../src/data/beta04-model';
 
 type CampaignEntityId = PublicCampaignCatalogV3['entities'][number]['id'];
@@ -388,25 +385,57 @@ async function makeSnapshot(): Promise<PublicCatalogSnapshotV4> {
         recommendedZoom: 0.75,
       },
       {
-        id:'geo-map079-secondary' as const,
-        slug:'map079-secondary',name:'MAP079 Secondary Map',language:'en' as const,
-        aliases:[],coordinates:{x:1000,y:1000},recommendedZoom:0.75,
+        id: 'geo-map079-secondary' as const,
+        slug: 'map079-secondary',
+        name: 'MAP079 Secondary Map',
+        language: 'en' as const,
+        aliases: [],
+        coordinates: { x: 1000, y: 1000 },
+        recommendedZoom: 0.75,
       },
     ],
-    mapContexts:[{
-      id:'map-neverwinter',slug:'neverwinter',name:'Neverwinter',
-      parentId:null,width:2048,height:1582,imageUri:null,
-    }],
-    campaignLocalMaps:CAMPAIGNS.map(campaign=>({
-      campaignId:campaign.id,
-      contexts:campaign.id===CAMPAIGN_B_ID
-        ? [{id:'map-neverwinter',slug:'neverwinter',name:'Neverwinter',width:2048,height:1582}]
-        : [],
-      geographicMapContextLinks:campaign.id===CAMPAIGN_B_ID
-        ? [{campaignId:campaign.id,geographicNameId:'geo-neverwinter',contextId:'map-neverwinter'}]
-        : [],
-      placements:[],localOnlyEntities:[],notes:[],dispositions:[],
-      associations:[],entityRelations:[],characterLocationRelations:[],
+    mapContexts: [
+      {
+        id: 'map-neverwinter',
+        slug: 'neverwinter',
+        name: 'Neverwinter',
+        parentId: null,
+        width: 2048,
+        height: 1582,
+        imageUri: null,
+      },
+    ],
+    campaignLocalMaps: CAMPAIGNS.map((campaign) => ({
+      campaignId: campaign.id,
+      contexts:
+        campaign.id === CAMPAIGN_B_ID
+          ? [
+              {
+                id: 'map-neverwinter',
+                slug: 'neverwinter',
+                name: 'Neverwinter',
+                width: 2048,
+                height: 1582,
+              },
+            ]
+          : [],
+      geographicMapContextLinks:
+        campaign.id === CAMPAIGN_B_ID
+          ? [
+              {
+                campaignId: campaign.id,
+                geographicNameId: 'geo-neverwinter',
+                contextId: 'map-neverwinter',
+              },
+            ]
+          : [],
+      placements: [],
+      localOnlyEntities: [],
+      notes: [],
+      dispositions: [],
+      associations: [],
+      entityRelations: [],
+      characterLocationRelations: [],
     })),
   };
   const checksum = await createSha256Checksum(content);
@@ -556,10 +585,18 @@ async function configureCampaignBackend(
                 search_max_y: null,
               },
               {
-                id:'geo-map079-secondary',slug:'map079-secondary',
-                name:'MAP079 Secondary Map',language:'en',
-                x:1000,y:1000,recommended_zoom:0.75,entity_id:null,
-                search_min_x:null,search_max_x:null,search_min_y:null,search_max_y:null,
+                id: 'geo-map079-secondary',
+                slug: 'map079-secondary',
+                name: 'MAP079 Secondary Map',
+                language: 'en',
+                x: 1000,
+                y: 1000,
+                recommended_zoom: 0.75,
+                entity_id: null,
+                search_min_x: null,
+                search_max_x: null,
+                search_min_y: null,
+                search_max_y: null,
               },
             ]
           : table === 'geographic_name_aliases'
@@ -736,23 +773,25 @@ test('MAP-077: keyboard and offline transition', async ({ page }) => {
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
 
   await page.evaluate(() => {
-    window.dispatchEvent(new CustomEvent('atlas:public-data-status', {
-      detail: { backendState: 'offline' },
-    }));
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', {
+        detail: { backendState: 'offline' },
+      }),
+    );
   });
   // Status notifications cannot revoke a previously validated V4 projection.
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
   expect(new URL(page.url()).searchParams.get('map')).toBe('neverwinter');
 });
 
-test('MAP-080: a failed local query cannot publish a mixed remote revision', async ({page}) => {
-  const backend=await configureCampaignBackend(page,{bindingAvailable:false});
+test('MAP-080: a failed local query cannot publish a mixed remote revision', async ({ page }) => {
+  const backend = await configureCampaignBackend(page, { bindingAvailable: false });
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
   // The V4 fallback is complete; the failed remote binding query must not
   // clear the surface or publish a world-only remote update.
   await selectNeverwinter(page);
-  await expect(page.getByRole('button',{name:'Mapa general'})).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Mapa general' })).toBeVisible();
   backend.setBindingAvailable(true);
   await page.reload();
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
@@ -1264,7 +1303,9 @@ test('MAP-079 R2: layer removal invalidates local popup choices', async ({ page 
   await expect(grouped).toBeVisible();
 });
 
-test('MAP-080: campaign switch revokes open overlapping choices and callbacks', async ({ page }) => {
+test('MAP-080: campaign switch revokes open overlapping choices and callbacks', async ({
+  page,
+}) => {
   await configureCampaignBackend(page);
   await configureMap079SyntheticLocalBackend(page);
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');

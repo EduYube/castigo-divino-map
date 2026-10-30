@@ -95,7 +95,7 @@ export function mountPublicLocalMapRuntime(
       !data ||
       !world ||
       data.campaignId !== campaignId ||
-      !authorizedContexts.some(({id})=>id===current.context.id)
+      !authorizedContexts.some(({ id }) => id === current.context.id)
     )
       return;
     if (!data.contexts.some(({ id }) => id === current.context.id)) return;
@@ -270,8 +270,8 @@ export function mountPublicLocalMapRuntime(
     },
     update(nextCampaign, nextWorld, _nextBackend, revisionLocal): void {
       void _nextBackend;
-      const changed = campaignId !== nextCampaign ||
-        world !== nextWorld || localData !== revisionLocal;
+      const changed =
+        campaignId !== nextCampaign || world !== nextWorld || localData !== revisionLocal;
       campaignId = nextCampaign;
       world = nextWorld;
       // Never fetch local data outside the revision envelope.

@@ -1,8 +1,6 @@
 import type { PublicCatalogTableQuery } from './publicCatalogQueryContract.js';
 import type { PublicLocalContext } from '../infrastructure/supabase/publicLocalMapRepository';
-import type {
-  PublicGeographicMapContextLinkV4, PublicMapContextV4
-} from '../data/beta04-model';
+import type { PublicGeographicMapContextLinkV4, PublicMapContextV4 } from '../data/beta04-model';
 export const PUBLIC_LOCAL_MAP_TABLE_QUERIES: Readonly<{
   readonly links: PublicCatalogTableQuery;
   readonly placements: PublicCatalogTableQuery;

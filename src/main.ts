@@ -465,14 +465,17 @@ function mountPublicExperience(
       compactDetailsController.hide();
       mapController.clearSearchFocus();
       clearSupplementalMapSelection();
-      const publicMarkers = createAtlasPinMarkerModels(catalog,publicBeta02Catalog);
+      const publicMarkers = createAtlasPinMarkerModels(catalog, publicBeta02Catalog);
       authorizedMarkers = publicMarkers;
-      renderedMarkers = filterAtlasMarkersByLayers(publicMarkers,mapLayerState);
+      renderedMarkers = filterAtlasMarkersByLayers(publicMarkers, mapLayerState);
       mapController.setMarkers(renderedMarkers);
-      masterPinVisuals.refresh(renderedMarkers,masterEntityIds);
+      masterPinVisuals.refresh(renderedMarkers, masterEntityIds);
       portraitResources?.retainMasterPaths(new Set());
-      placeSearchController.setQuery('',{notify:false});
-      placeSearchController.setCatalogState(catalog,localReader.getSearchCatalog(publicBeta02Catalog));
+      placeSearchController.setQuery('', { notify: false });
+      placeSearchController.setCatalogState(
+        catalog,
+        localReader.getSearchCatalog(publicBeta02Catalog),
+      );
       void masterModeRuntime?.controller.setEnabled(false);
     }
     if (!localNavigation.getMapSlug()) pendingLocalFocusEntityId = null;
@@ -899,7 +902,8 @@ function mountPublicExperience(
       !masterPurgedOnMapChange &&
       !localNavigation.getMapSlug() &&
       modeState?.phase === 'on' &&
-      modeState.catalog && nextCatalogState.beta02
+      modeState.catalog &&
+      nextCatalogState.beta02
     ) {
       try {
         const view = createAuthorizedMasterCatalogView(nextCatalogState.beta02, modeState.catalog);
@@ -1280,13 +1284,13 @@ function startFullEntityExperience(sourceUrl: URL): void {
   void bootstrapPublicDataRuntime(app, campaignCatalog)
     .then((runtime) => {
       const renderCatalogState = (state: PublicCatalogState): void => {
-        const {beta02,localMap} = state;
+        const { beta02, localMap } = state;
         if (!beta02) {
           detailsController.showUnavailable();
           return;
         }
-        const authorized = localMap ? mergePublicLocalCatalog(beta02,localMap) : beta02;
-        const details = resolveFullEntityDetail(authorized,request.slug!);
+        const authorized = localMap ? mergePublicLocalCatalog(beta02, localMap) : beta02;
+        const details = resolveFullEntityDetail(authorized, request.slug!);
         if (details) detailsController.show(details);
         else detailsController.showUnavailable();
       };

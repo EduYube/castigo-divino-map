@@ -9,7 +9,10 @@ import {
   PUBLIC_CATALOG_TABLE_QUERIES,
   PublicCatalogReadError,
 } from '../src/data-access/publicCatalogQueryContract.js';
-import { PUBLIC_LOCAL_MAP_TABLE_QUERIES, projectPublicMapContextLinks } from '../src/data-access/publicLocalMapQueryContract.js';
+import {
+  PUBLIC_LOCAL_MAP_TABLE_QUERIES,
+  projectPublicMapContextLinks,
+} from '../src/data-access/publicLocalMapQueryContract.js';
 
 export const SNAPSHOT_PATH = 'public/data/public-catalog.snapshot.json';
 export const FIXTURE_PATH = 'scripts/fixtures/beta01-public-rows.json';
@@ -493,236 +496,354 @@ export function buildPublicMulticampaignSnapshotContent(raw) {
   return content;
 }
 
-
 /** MAP-080: one revision encloses world and all campaign-local projections. */
 function publishedLocalRows(raw, name) {
-  return rows(raw ?? [], name).filter(row =>
-    row.publication_status == null || row.publication_status === 'published');
+  return rows(raw ?? [], name).filter(
+    (row) => row.publication_status == null || row.publication_status === 'published',
+  );
 }
 function publicLocalCoordinate(value, context) {
-  if (!value || typeof value !== 'object' || Array.isArray(value) ||
-      Object.keys(value).some(k=>!['x','y'].includes(k)) ||
-      !Number.isFinite(value.x) || !Number.isFinite(value.y) ||
-      value.x < 0 || value.x > context.width ||
-      value.y < 0 || value.y > context.height) {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    Object.keys(value).some((k) => !['x', 'y'].includes(k)) ||
+    !Number.isFinite(value.x) ||
+    !Number.isFinite(value.y) ||
+    value.x < 0 ||
+    value.x > context.width ||
+    value.y < 0 ||
+    value.y > context.height
+  ) {
     throw new Error('Local coordinate out of bounds.');
   }
-  return {x:value.x,y:value.y};
+  return { x: value.x, y: value.y };
 }
 function projectLocalPlacement(row, contextById, campaignId) {
   if (row.campaign_id !== campaignId || row.publication_status !== 'published')
     throw new Error('Local placement must be published and campaign-scoped.');
   const context = contextById.get(row.map_context_id);
   if (!context) throw new Error('Local placement references an unbound context.');
-  const geometry = record(row.geometry,'local placement geometry');
+  const geometry = record(row.geometry, 'local placement geometry');
   let coordinates;
   if (geometry.kind === 'point') {
-    if (Object.keys(geometry).some(k=>!['kind','coordinates'].includes(k)))
+    if (Object.keys(geometry).some((k) => !['kind', 'coordinates'].includes(k)))
       throw new Error('Unexpected point geometry field.');
-    coordinates = publicLocalCoordinate(geometry.coordinates,context);
+    coordinates = publicLocalCoordinate(geometry.coordinates, context);
   } else if (geometry.kind === 'polygon') {
-    if (Object.keys(geometry).some(k=>!['kind','vertices'].includes(k)) ||
-        !Array.isArray(geometry.vertices) ||
-        geometry.vertices.length < 3 || geometry.vertices.length > 64)
+    if (
+      Object.keys(geometry).some((k) => !['kind', 'vertices'].includes(k)) ||
+      !Array.isArray(geometry.vertices) ||
+      geometry.vertices.length < 3 ||
+      geometry.vertices.length > 64
+    )
       throw new Error('Malformed local polygon.');
-    const vertices=geometry.vertices.map(v=>publicLocalCoordinate(v,context));
-    const xs=vertices.map(v=>v.x),ys=vertices.map(v=>v.y);
-    coordinates={x:(Math.min(...xs)+Math.max(...xs))/2,y:(Math.min(...ys)+Math.max(...ys))/2};
+    const vertices = geometry.vertices.map((v) => publicLocalCoordinate(v, context));
+    const xs = vertices.map((v) => v.x),
+      ys = vertices.map((v) => v.y);
+    coordinates = {
+      x: (Math.min(...xs) + Math.max(...xs)) / 2,
+      y: (Math.min(...ys) + Math.max(...ys)) / 2,
+    };
   } else throw new Error('Unrecognized local geometry.');
-  if (Math.abs(coordinates.x-row.x)>1e-9 || Math.abs(coordinates.y-row.y)>1e-9)
+  if (Math.abs(coordinates.x - row.x) > 1e-9 || Math.abs(coordinates.y - row.y) > 1e-9)
     throw new Error('Non-canonical placement coordinates.');
-  return {contextId:context.id,entityId:row.entity_id,geometry,coordinates};
+  return { contextId: context.id, entityId: row.entity_id, geometry, coordinates };
 }
 
 export function buildPublicMultimapSnapshotContent(raw) {
-  const input=record(raw,'MAP-080 rows');
-  const world=buildPublicMulticampaignSnapshotContent(input);
-  const localById=record(input.localByCampaignId ?? {},'localByCampaignId');
-  const geographicIds=new Set(world.geographicNames.map(name=>name.id));
-  const mapContexts=new Map();
-  const campaignLocalMaps=world.campaigns.map(campaign=>{
-    const id=campaign.id;
-    const local=record(localById[id] ?? {},'localByCampaignId.'+id);
-    const links=projectPublicMapContextLinks(
-      rows(local.links ?? [],'local.links'),id,geographicIds,
+  const input = record(raw, 'MAP-080 rows');
+  const world = buildPublicMulticampaignSnapshotContent(input);
+  const localById = record(input.localByCampaignId ?? {}, 'localByCampaignId');
+  const geographicIds = new Set(world.geographicNames.map((name) => name.id));
+  const mapContexts = new Map();
+  const campaignLocalMaps = world.campaigns.map((campaign) => {
+    const id = campaign.id;
+    const local = record(localById[id] ?? {}, 'localByCampaignId.' + id);
+    const links = projectPublicMapContextLinks(
+      rows(local.links ?? [], 'local.links'),
+      id,
+      geographicIds,
     );
-    for(const context of links.mapContexts){
-      const previous=mapContexts.get(context.id);
-      if(previous && JSON.stringify(previous)!==JSON.stringify(context))
+    for (const context of links.mapContexts) {
+      const previous = mapContexts.get(context.id);
+      if (previous && JSON.stringify(previous) !== JSON.stringify(context))
         throw new Error('Conflicting global context metadata.');
-      mapContexts.set(context.id,context);
+      mapContexts.set(context.id, context);
     }
-    const contextById=new Map(links.contexts.map(ctx=>[ctx.id,ctx]));
-    const catalog=world.campaignCatalogs.find(item=>item.campaignId===id);
-    if(!catalog) throw new Error('Public campaign missing world catalog.');
-    const worldIds=new Set(catalog.entities.map(entity=>entity.id));
-    const categoryIds=new Set(catalog.categories.map(category=>category.id));
-    const tagIds=new Set(catalog.tags.map(tag=>tag.id));
-    const playerIds=new Set(catalog.players.map(player=>player.id));
-    const candidateLocalRows=publishedLocalRows(local.localEntities,'local.localEntities')
-      .filter(row=>
-        row.world_map_enabled===false && row.audience==='public' &&
+    const contextById = new Map(links.contexts.map((ctx) => [ctx.id, ctx]));
+    const catalog = world.campaignCatalogs.find((item) => item.campaignId === id);
+    if (!catalog) throw new Error('Public campaign missing world catalog.');
+    const worldIds = new Set(catalog.entities.map((entity) => entity.id));
+    const categoryIds = new Set(catalog.categories.map((category) => category.id));
+    const tagIds = new Set(catalog.tags.map((tag) => tag.id));
+    const playerIds = new Set(catalog.players.map((player) => player.id));
+    const candidateLocalRows = publishedLocalRows(
+      local.localEntities,
+      'local.localEntities',
+    ).filter(
+      (row) =>
+        row.world_map_enabled === false &&
+        row.audience === 'public' &&
         categoryIds.has(row.category_id) &&
-        ['character','location','mission','hazard'].includes(row.entity_type));
-    const localIds=new Set(candidateLocalRows.map(entity=>entity.id));
-    const knownIds=new Set([...worldIds,...localIds]);
-    const placements=publishedLocalRows(local.placements,'local.placements')
-      .filter(row=>{
-        if(row.campaign_id!==id) throw new Error('Cross-campaign local placement.');
+        ['character', 'location', 'mission', 'hazard'].includes(row.entity_type),
+    );
+    const localIds = new Set(candidateLocalRows.map((entity) => entity.id));
+    const knownIds = new Set([...worldIds, ...localIds]);
+    const placements = publishedLocalRows(local.placements, 'local.placements')
+      .filter((row) => {
+        if (row.campaign_id !== id) throw new Error('Cross-campaign local placement.');
         return contextById.has(row.map_context_id) && knownIds.has(row.entity_id);
       })
-      .map(row=>projectLocalPlacement(row,contextById,id));
-    requireUnique(placements.map(p=>p.contextId+'\u0000'+p.entityId),'local placements');
-    const firstPlacement=new Map();
-    for(const placement of placements){
-      if(!firstPlacement.has(placement.entityId))firstPlacement.set(placement.entityId,placement);
+      .map((row) => projectLocalPlacement(row, contextById, id));
+    requireUnique(
+      placements.map((p) => p.contextId + '\u0000' + p.entityId),
+      'local placements',
+    );
+    const firstPlacement = new Map();
+    for (const placement of placements) {
+      if (!firstPlacement.has(placement.entityId))
+        firstPlacement.set(placement.entityId, placement);
     }
-    const visibleLocalRows=candidateLocalRows.filter(row=>firstPlacement.has(row.id));
-    const visibleLocalIds=new Set(visibleLocalRows.map(row=>row.id));
-    const visibleIds=new Set([...worldIds,...visibleLocalIds]);
-    const aliasRows=publishedLocalRows(local.entityAliases,'local.entityAliases')
-      .filter(row=>visibleLocalIds.has(row.entity_id));
-    const entityTagRows=publishedLocalRows(local.entityTags,'local.entityTags')
-      .filter(row=>visibleLocalIds.has(row.entity_id) && tagIds.has(row.tag_id));
-    const aliasesByEntity=group(aliasRows,row=>row.entity_id);
-    const tagsByEntity=group(entityTagRows,row=>row.entity_id);
-    const localOnlyEntities=visibleLocalRows.map(row=>{
-      const placement=firstPlacement.get(row.id);
-      const entity={
-        id:row.id,slug:row.slug,entityType:row.entity_type,
-        lifecycleStatus:row.lifecycle_status??null,visibility:row.visibility,
-        name:row.name,nameLanguage:row.name_language,
-        summary:row.summary,description:row.description,
-        portraitPath:row.portrait_path??null,
-        categoryId:row.category_id,
-        aliases:(aliasesByEntity.get(row.id)??[]).map(alias=>({
-          id:alias.id,entityId:alias.entity_id,language:alias.language,value:alias.value,
+    const visibleLocalRows = candidateLocalRows.filter((row) => firstPlacement.has(row.id));
+    const visibleLocalIds = new Set(visibleLocalRows.map((row) => row.id));
+    const visibleIds = new Set([...worldIds, ...visibleLocalIds]);
+    const aliasRows = publishedLocalRows(local.entityAliases, 'local.entityAliases').filter((row) =>
+      visibleLocalIds.has(row.entity_id),
+    );
+    const entityTagRows = publishedLocalRows(local.entityTags, 'local.entityTags').filter(
+      (row) => visibleLocalIds.has(row.entity_id) && tagIds.has(row.tag_id),
+    );
+    const aliasesByEntity = group(aliasRows, (row) => row.entity_id);
+    const tagsByEntity = group(entityTagRows, (row) => row.entity_id);
+    const localOnlyEntities = visibleLocalRows.map((row) => {
+      const placement = firstPlacement.get(row.id);
+      const entity = {
+        id: row.id,
+        slug: row.slug,
+        entityType: row.entity_type,
+        lifecycleStatus: row.lifecycle_status ?? null,
+        visibility: row.visibility,
+        name: row.name,
+        nameLanguage: row.name_language,
+        summary: row.summary,
+        description: row.description,
+        portraitPath: row.portrait_path ?? null,
+        categoryId: row.category_id,
+        aliases: (aliasesByEntity.get(row.id) ?? []).map((alias) => ({
+          id: alias.id,
+          entityId: alias.entity_id,
+          language: alias.language,
+          value: alias.value,
         })),
-        tagIds:[...new Set((tagsByEntity.get(row.id)??[]).map(tag=>tag.tag_id))],
-        coordinates:placement.coordinates,
+        tagIds: [...new Set((tagsByEntity.get(row.id) ?? []).map((tag) => tag.tag_id))],
+        coordinates: placement.coordinates,
       };
-      if(placement.geometry.kind==='polygon')entity.geometry=placement.geometry;
+      if (placement.geometry.kind === 'polygon') entity.geometry = placement.geometry;
       return entity;
     });
-    const rawNotes=publishedLocalRows(local.notes,'local.notes')
-      .filter(note=>visibleLocalIds.has(note.entity_id));
-    const noteIds=new Set(rawNotes.map(note=>note.id));
-    const noteTags=publishedLocalRows(local.noteTags,'local.noteTags')
-      .filter(row=>noteIds.has(row.note_id)&&tagIds.has(row.tag_id));
-    const tagsByNote=group(noteTags,row=>row.note_id);
-    const notes=rawNotes.map(n=>({
-      id:n.id,slug:n.slug,entityId:n.entity_id,title:n.title,body:n.body,
-      sortOrder:n.sort_order,tagIds:[...new Set((tagsByNote.get(n.id)??[]).map(t=>t.tag_id))],
+    const rawNotes = publishedLocalRows(local.notes, 'local.notes').filter((note) =>
+      visibleLocalIds.has(note.entity_id),
+    );
+    const noteIds = new Set(rawNotes.map((note) => note.id));
+    const noteTags = publishedLocalRows(local.noteTags, 'local.noteTags').filter(
+      (row) => noteIds.has(row.note_id) && tagIds.has(row.tag_id),
+    );
+    const tagsByNote = group(noteTags, (row) => row.note_id);
+    const notes = rawNotes.map((n) => ({
+      id: n.id,
+      slug: n.slug,
+      entityId: n.entity_id,
+      title: n.title,
+      body: n.body,
+      sortOrder: n.sort_order,
+      tagIds: [...new Set((tagsByNote.get(n.id) ?? []).map((t) => t.tag_id))],
     }));
-    const dispositions=rows(local.dispositions??[],'local.dispositions')
-      .filter(r=>visibleLocalIds.has(r.entity_id)&&playerIds.has(r.player_id))
-      .map(r=>({entityId:r.entity_id,playerId:r.player_id,disposition:r.disposition}));
-    const associations=rows(local.associations??[],'local.associations')
-      .filter(r=>visibleLocalIds.has(r.entity_id)&&playerIds.has(r.player_id))
-      .map(r=>({entityId:r.entity_id,playerId:r.player_id}));
-    const entityRelations=rows(local.entityRelations??[],'local.entityRelations')
-      .filter(r=>visibleIds.has(r.left_entity_id)&&visibleIds.has(r.right_entity_id)&&
-        (visibleLocalIds.has(r.left_entity_id)||visibleLocalIds.has(r.right_entity_id)))
-      .map(r=>({leftEntityId:r.left_entity_id,rightEntityId:r.right_entity_id,
-        leftLabel:r.left_label,rightLabel:r.right_label}));
-    const characterLocationRelations=rows(local.characterLocationRelations??[],
-      'local.characterLocationRelations')
-      .filter(r=>visibleIds.has(r.character_id)&&visibleIds.has(r.location_id)&&
-        (visibleLocalIds.has(r.character_id)||visibleLocalIds.has(r.location_id)))
-      .map(r=>({characterId:r.character_id,locationId:r.location_id,
-        relationStatus:r.relation_status}));
+    const dispositions = rows(local.dispositions ?? [], 'local.dispositions')
+      .filter((r) => visibleLocalIds.has(r.entity_id) && playerIds.has(r.player_id))
+      .map((r) => ({ entityId: r.entity_id, playerId: r.player_id, disposition: r.disposition }));
+    const associations = rows(local.associations ?? [], 'local.associations')
+      .filter((r) => visibleLocalIds.has(r.entity_id) && playerIds.has(r.player_id))
+      .map((r) => ({ entityId: r.entity_id, playerId: r.player_id }));
+    const entityRelations = rows(local.entityRelations ?? [], 'local.entityRelations')
+      .filter(
+        (r) =>
+          visibleIds.has(r.left_entity_id) &&
+          visibleIds.has(r.right_entity_id) &&
+          (visibleLocalIds.has(r.left_entity_id) || visibleLocalIds.has(r.right_entity_id)),
+      )
+      .map((r) => ({
+        leftEntityId: r.left_entity_id,
+        rightEntityId: r.right_entity_id,
+        leftLabel: r.left_label,
+        rightLabel: r.right_label,
+      }));
+    const characterLocationRelations = rows(
+      local.characterLocationRelations ?? [],
+      'local.characterLocationRelations',
+    )
+      .filter(
+        (r) =>
+          visibleIds.has(r.character_id) &&
+          visibleIds.has(r.location_id) &&
+          (visibleLocalIds.has(r.character_id) || visibleLocalIds.has(r.location_id)),
+      )
+      .map((r) => ({
+        characterId: r.character_id,
+        locationId: r.location_id,
+        relationStatus: r.relation_status,
+      }));
     return {
-      campaignId:id,contexts:links.contexts,
-      geographicMapContextLinks:links.geographicMapContextLinks,
-      placements,localOnlyEntities,notes,dispositions,associations,entityRelations,
+      campaignId: id,
+      contexts: links.contexts,
+      geographicMapContextLinks: links.geographicMapContextLinks,
+      placements,
+      localOnlyEntities,
+      notes,
+      dispositions,
+      associations,
+      entityRelations,
       characterLocationRelations,
     };
   });
   return {
-    schemaVersion:4,campaigns:world.campaigns,campaignCatalogs:world.campaignCatalogs,
-    geographicNames:world.geographicNames,
-    mapContexts:[...mapContexts.values()].sort((a,b)=>a.id.localeCompare(b.id)),
+    schemaVersion: 4,
+    campaigns: world.campaigns,
+    campaignCatalogs: world.campaignCatalogs,
+    geographicNames: world.geographicNames,
+    mapContexts: [...mapContexts.values()].sort((a, b) => a.id.localeCompare(b.id)),
     campaignLocalMaps,
   };
 }
 
 export function assertPublicMultimapSnapshotContent(content) {
-  const item=record(content,'MAP-080 snapshot content');
-  if(item.schemaVersion!==4)throw new Error('Snapshot must be V4.');
+  const item = record(content, 'MAP-080 snapshot content');
+  if (item.schemaVersion !== 4) throw new Error('Snapshot must be V4.');
   assertPublicMulticampaignSnapshotContent({
-    schemaVersion:3,campaigns:item.campaigns,campaignCatalogs:item.campaignCatalogs,
-    geographicNames:item.geographicNames,
+    schemaVersion: 3,
+    campaigns: item.campaigns,
+    campaignCatalogs: item.campaignCatalogs,
+    geographicNames: item.geographicNames,
   });
-  const campaigns=rows(item.campaigns,'campaigns');
-  const locals=rows(item.campaignLocalMaps,'campaignLocalMaps');
-  const contexts=rows(item.mapContexts,'mapContexts');
-  if(locals.length!==campaigns.length)throw new Error('Missing local campaigns.');
-  requireUnique(locals.map(l=>l.campaignId),'local campaigns');
-  requireUnique(contexts.map(c=>c.id),'map contexts');
-  const ids=new Set(campaigns.map(c=>c.id));
-  const knownContexts=new Set(contexts.map(c=>c.id));
-  const geoIds=new Set(item.geographicNames.map(g=>g.id));
-  const used=new Set();
-  for(const local of locals){
-    if(!ids.has(local.campaignId))throw new Error('Unpublished campaign local projection.');
-    const contextIds=new Set(local.contexts.map(c=>c.id));
-    const links=rows(local.geographicMapContextLinks,'geographicMapContextLinks');
-    requireUnique(links.map(l=>l.geographicNameId),'geographic bindings');
-    for(const link of links){
-      if(link.campaignId!==local.campaignId ||
-         !geoIds.has(link.geographicNameId) ||
-         !knownContexts.has(link.contextId) ||
-         !contextIds.has(link.contextId))throw new Error('Invalid local binding.');
+  const campaigns = rows(item.campaigns, 'campaigns');
+  const locals = rows(item.campaignLocalMaps, 'campaignLocalMaps');
+  const contexts = rows(item.mapContexts, 'mapContexts');
+  if (locals.length !== campaigns.length) throw new Error('Missing local campaigns.');
+  requireUnique(
+    locals.map((l) => l.campaignId),
+    'local campaigns',
+  );
+  requireUnique(
+    contexts.map((c) => c.id),
+    'map contexts',
+  );
+  const ids = new Set(campaigns.map((c) => c.id));
+  const knownContexts = new Set(contexts.map((c) => c.id));
+  const geoIds = new Set(item.geographicNames.map((g) => g.id));
+  const used = new Set();
+  for (const local of locals) {
+    if (!ids.has(local.campaignId)) throw new Error('Unpublished campaign local projection.');
+    const contextIds = new Set(local.contexts.map((c) => c.id));
+    const links = rows(local.geographicMapContextLinks, 'geographicMapContextLinks');
+    requireUnique(
+      links.map((l) => l.geographicNameId),
+      'geographic bindings',
+    );
+    for (const link of links) {
+      if (
+        link.campaignId !== local.campaignId ||
+        !geoIds.has(link.geographicNameId) ||
+        !knownContexts.has(link.contextId) ||
+        !contextIds.has(link.contextId)
+      )
+        throw new Error('Invalid local binding.');
       used.add(link.contextId);
     }
-    if(contextIds.size!==new Set(links.map(l=>l.contextId)).size)
+    if (contextIds.size !== new Set(links.map((l) => l.contextId)).size)
       throw new Error('Unbound context in campaign.');
-    const worldIds=new Set(item.campaignCatalogs.find(c=>c.campaignId===local.campaignId).entities.map(e=>e.id));
-    const localIds=new Set(local.localOnlyEntities.map(e=>e.id));
-    const all=new Set([...worldIds,...localIds]);
-    requireUnique(local.placements.map(p=>p.contextId+'\u0000'+p.entityId),'placements');
-    if(local.placements.some(p=>!contextIds.has(p.contextId)||!all.has(p.entityId)) ||
-       local.localOnlyEntities.some(e=>worldIds.has(e.id)||
-         !local.placements.some(p=>p.entityId===e.id)))
+    const worldIds = new Set(
+      item.campaignCatalogs
+        .find((c) => c.campaignId === local.campaignId)
+        .entities.map((e) => e.id),
+    );
+    const localIds = new Set(local.localOnlyEntities.map((e) => e.id));
+    const all = new Set([...worldIds, ...localIds]);
+    requireUnique(
+      local.placements.map((p) => p.contextId + '\u0000' + p.entityId),
+      'placements',
+    );
+    if (
+      local.placements.some((p) => !contextIds.has(p.contextId) || !all.has(p.entityId)) ||
+      local.localOnlyEntities.some(
+        (e) => worldIds.has(e.id) || !local.placements.some((p) => p.entityId === e.id),
+      )
+    )
       throw new Error('Unsafe local entity or placement.');
-    if(local.notes.some(n=>!localIds.has(n.entityId)) ||
-       local.dispositions.some(d=>!localIds.has(d.entityId)) ||
-       local.associations.some(a=>!localIds.has(a.entityId)) ||
-       local.entityRelations.some(r=>!all.has(r.leftEntityId)||!all.has(r.rightEntityId)) ||
-       local.characterLocationRelations.some(r=>!all.has(r.characterId)||!all.has(r.locationId)))
+    if (
+      local.notes.some((n) => !localIds.has(n.entityId)) ||
+      local.dispositions.some((d) => !localIds.has(d.entityId)) ||
+      local.associations.some((a) => !localIds.has(a.entityId)) ||
+      local.entityRelations.some((r) => !all.has(r.leftEntityId) || !all.has(r.rightEntityId)) ||
+      local.characterLocationRelations.some(
+        (r) => !all.has(r.characterId) || !all.has(r.locationId),
+      )
+    )
       throw new Error('Unsafe local auxiliary metadata.');
   }
-  if(contexts.some(c=>!used.has(c.id)))throw new Error('Unbound global context.');
+  if (contexts.some((c) => !used.has(c.id))) throw new Error('Unbound global context.');
 }
 
 export async function loadRemotePublicMultimapRows(options = {}) {
   // A single generation only publishes after every world and local query has
   // succeeded, with the same cancellation/timeout/range/ordering guarantees.
-  const world=await loadRemotePublicMulticampaignRows(options);
-  const localByCampaignId=await withRemoteController(options,async resolved => {
-    const entries=await Promise.all(world.campaigns.map(async campaign => {
-      const entries=await Promise.all(Object.entries(PUBLIC_LOCAL_MAP_TABLE_QUERIES).map(
-        async ([name,query])=>[name,await fetchCompletePublicCatalogTable({
-          projectUrl:resolved.projectUrl,publishableKey:resolved.publishableKey,
-          campaignId:campaign.id,query,signal:resolved.signal,
-          fetchImplementation:resolved.fetchImplementation,
-        })]));
-      const local=Object.fromEntries(entries);
-      // Reuse the same auxiliary table selections as MAP-079; never fork
-      // select/order/filter semantics for browser and deployment.
-      const extra=await Promise.all([
-        'entityAliases','entityTags','dispositions','associations',
-        'entityRelations','characterLocationRelations','notes','noteTags',
-      ].map(async key=>[key,await fetchCompletePublicCatalogTable({
-        projectUrl:resolved.projectUrl,publishableKey:resolved.publishableKey,
-        campaignId:campaign.id,query:PUBLIC_CATALOG_TABLE_QUERIES[key],
-        signal:resolved.signal,fetchImplementation:resolved.fetchImplementation,
-      })]));
-      return [campaign.id,{...local,...Object.fromEntries(extra)}];
-    }));
+  const world = await loadRemotePublicMulticampaignRows(options);
+  const localByCampaignId = await withRemoteController(options, async (resolved) => {
+    const entries = await Promise.all(
+      world.campaigns.map(async (campaign) => {
+        const entries = await Promise.all(
+          Object.entries(PUBLIC_LOCAL_MAP_TABLE_QUERIES).map(async ([name, query]) => [
+            name,
+            await fetchCompletePublicCatalogTable({
+              projectUrl: resolved.projectUrl,
+              publishableKey: resolved.publishableKey,
+              campaignId: campaign.id,
+              query,
+              signal: resolved.signal,
+              fetchImplementation: resolved.fetchImplementation,
+            }),
+          ]),
+        );
+        const local = Object.fromEntries(entries);
+        // Reuse the same auxiliary table selections as MAP-079; never fork
+        // select/order/filter semantics for browser and deployment.
+        const extra = await Promise.all(
+          [
+            'entityAliases',
+            'entityTags',
+            'dispositions',
+            'associations',
+            'entityRelations',
+            'characterLocationRelations',
+            'notes',
+            'noteTags',
+          ].map(async (key) => [
+            key,
+            await fetchCompletePublicCatalogTable({
+              projectUrl: resolved.projectUrl,
+              publishableKey: resolved.publishableKey,
+              campaignId: campaign.id,
+              query: PUBLIC_CATALOG_TABLE_QUERIES[key],
+              signal: resolved.signal,
+              fetchImplementation: resolved.fetchImplementation,
+            }),
+          ]),
+        );
+        return [campaign.id, { ...local, ...Object.fromEntries(extra) }];
+      }),
+    );
     return Object.fromEntries(entries);
   });
-  return {...world,localByCampaignId};
+  return { ...world, localByCampaignId };
 }
 
 export function upgradeLegacySnapshotContentV2(content) {

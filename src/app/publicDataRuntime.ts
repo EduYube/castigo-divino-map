@@ -68,7 +68,7 @@ export interface PublicCatalogState {
   readonly selectedCampaign: PublicCampaignV3 | null;
   /** Never merged across revisions: this local projection belongs to checksum. */
   readonly localMap?: PublicLocalMapData | null;
-  readonly mapLinks?: readonly {geographicNameId:string;context:LocalMapContext}[];
+  readonly mapLinks?: readonly { geographicNameId: string; context: LocalMapContext }[];
 }
 
 export type PublicCatalogStateListener = (state: PublicCatalogState) => void;
@@ -175,29 +175,36 @@ function toCatalogState(
       : projectPublicCatalogSnapshotV3ToV2(result.data.catalog, selectedCampaign.id)
     : null;
   const beta02 = projection ? applyEntityRevocationsToBeta02(projection, revokedEntityIds) : null;
-  const rawLocal = isV4 && selectedCampaign
-    ? result.data.catalog.campaignLocalMaps.find(m=>m.campaignId===selectedCampaign.id)
+  const rawLocal =
+    isV4 && selectedCampaign
+      ? result.data.catalog.campaignLocalMaps.find((m) => m.campaignId === selectedCampaign.id)
+      : null;
+  const localMap: PublicLocalMapData | null = rawLocal
+    ? {
+        ...rawLocal,
+        localOnlyEntities: rawLocal.localOnlyEntities.filter((e) => !revokedEntityIds.has(e.id)),
+        placements: rawLocal.placements.filter((p) => !revokedEntityIds.has(p.entityId)),
+        notes: rawLocal.notes.filter((n) => !revokedEntityIds.has(n.entityId)),
+        dispositions: rawLocal.dispositions.filter((d) => !revokedEntityIds.has(d.entityId)),
+        associations: rawLocal.associations.filter((a) => !revokedEntityIds.has(a.entityId)),
+        entityRelations: rawLocal.entityRelations.filter(
+          (r) => !revokedEntityIds.has(r.leftEntityId) && !revokedEntityIds.has(r.rightEntityId),
+        ),
+        characterLocationRelations: rawLocal.characterLocationRelations.filter(
+          (r) => !revokedEntityIds.has(r.characterId) && !revokedEntityIds.has(r.locationId),
+        ),
+      }
     : null;
-  const localMap: PublicLocalMapData | null = rawLocal ? {
-    ...rawLocal,
-    localOnlyEntities:rawLocal.localOnlyEntities.filter(e=>!revokedEntityIds.has(e.id)),
-    placements:rawLocal.placements.filter(p=>!revokedEntityIds.has(p.entityId)),
-    notes:rawLocal.notes.filter(n=>!revokedEntityIds.has(n.entityId)),
-    dispositions:rawLocal.dispositions.filter(d=>!revokedEntityIds.has(d.entityId)),
-    associations:rawLocal.associations.filter(a=>!revokedEntityIds.has(a.entityId)),
-    entityRelations:rawLocal.entityRelations.filter(r=>
-      !revokedEntityIds.has(r.leftEntityId) && !revokedEntityIds.has(r.rightEntityId)),
-    characterLocationRelations:rawLocal.characterLocationRelations.filter(r=>
-      !revokedEntityIds.has(r.characterId) && !revokedEntityIds.has(r.locationId)),
-  } : null;
   const contextById = isV4
-    ? new Map(result.data.catalog.mapContexts.map(c=>[c.id,c] as const))
-    : new Map<string,never>();
-  const mapLinks: {geographicNameId:string;context:LocalMapContext}[] =
-    isV4 && rawLocal ? rawLocal.geographicMapContextLinks.flatMap(link=>{
-      const context=contextById.get(link.contextId);
-      return context ? [{geographicNameId:link.geographicNameId,context}]:[];
-    }) : [];
+    ? new Map(result.data.catalog.mapContexts.map((c) => [c.id, c] as const))
+    : new Map<string, never>();
+  const mapLinks: { geographicNameId: string; context: LocalMapContext }[] =
+    isV4 && rawLocal
+      ? rawLocal.geographicMapContextLinks.flatMap((link) => {
+          const context = contextById.get(link.contextId);
+          return context ? [{ geographicNameId: link.geographicNameId, context }] : [];
+        })
+      : [];
   return {
     availability: beta02 ? result.availability : 'unavailable',
     checksum: result.metadata?.checksum ?? result.data.catalog.checksum,

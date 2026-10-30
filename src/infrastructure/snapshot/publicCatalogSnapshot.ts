@@ -130,12 +130,17 @@ async function parseBundledSnapshot(
   value: unknown,
   now: () => number,
 ): Promise<PublicCatalogEnvelope> {
-  if (isRecord(value) && (value.schemaVersion === 2 || value.schemaVersion === 3 || value.schemaVersion === 4)) {
+  if (
+    isRecord(value) &&
+    (value.schemaVersion === 2 || value.schemaVersion === 3 || value.schemaVersion === 4)
+  ) {
     try {
       const parsed =
-        value.schemaVersion === 4 ? await parsePublicCatalogSnapshotV4(value, now) :
-        value.schemaVersion === 3 ? await parsePublicCatalogSnapshotV3(value, now) :
-        await parsePublicCatalogSnapshotV2(value, now);
+        value.schemaVersion === 4
+          ? await parsePublicCatalogSnapshotV4(value, now)
+          : value.schemaVersion === 3
+            ? await parsePublicCatalogSnapshotV3(value, now)
+            : await parsePublicCatalogSnapshotV2(value, now);
       return {
         ...parsed,
         source: 'bundled-snapshot',

@@ -54,15 +54,20 @@ export class BrowserPublicCatalogSessionCache implements PublicCatalogSessionCac
   }
 
   async write(envelope: PublicCatalogEnvelope): Promise<void> {
-    if (!['beta02','beta03','beta04'].includes(envelope.data.contract)) return;
-    const key = envelope.data.contract === 'beta04' ? SESSION_CACHE_KEY_V4 :
-      envelope.data.contract === 'beta03' ? SESSION_CACHE_KEY_V3 : SESSION_CACHE_KEY_V2;
+    if (!['beta02', 'beta03', 'beta04'].includes(envelope.data.contract)) return;
+    const key =
+      envelope.data.contract === 'beta04'
+        ? SESSION_CACHE_KEY_V4
+        : envelope.data.contract === 'beta03'
+          ? SESSION_CACHE_KEY_V3
+          : SESSION_CACHE_KEY_V2;
     try {
       this.#storage.setItem(key, JSON.stringify(envelope.data.catalog));
       if (envelope.data.contract === 'beta04') {
         this.#storage.removeItem(SESSION_CACHE_KEY_V3);
         this.#storage.removeItem(SESSION_CACHE_KEY_V2);
-      } else if (envelope.data.contract === 'beta03') this.#storage.removeItem(SESSION_CACHE_KEY_V2);
+      } else if (envelope.data.contract === 'beta03')
+        this.#storage.removeItem(SESSION_CACHE_KEY_V2);
     } catch (error) {
       throw new PublicDataRepositoryError(
         'cache-unavailable',

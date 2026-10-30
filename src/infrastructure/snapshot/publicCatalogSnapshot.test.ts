@@ -4,7 +4,10 @@ import { describe, expect, test } from 'vitest';
 
 import { createSha256Checksum } from '../../data-access/publicCatalog';
 import { INITIAL_PUBLIC_CAMPAIGN_ID } from '../../data-access/publicCatalogQueryContract.js';
-import { parsePublicCatalogSnapshotV4, projectPublicCatalogSnapshotV4ToV2 } from './multimapSnapshotCodec';
+import {
+  parsePublicCatalogSnapshotV4,
+  projectPublicCatalogSnapshotV4ToV2,
+} from './multimapSnapshotCodec';
 import {
   BundledPublicCatalogRepository,
   PUBLIC_SNAPSHOT_MAX_AGE_MS,
@@ -106,69 +109,119 @@ describe('public catalog snapshot', () => {
     expect(loaded.metadata.stale).toBe(true);
   });
 
-
   test('Neverwinter V4 context belongs only to Un aliento menos', async () => {
     const envelope = await parsePublicCatalogSnapshotV4(await readSnapshot());
     if (envelope.data.contract !== 'beta04') throw new Error('V4 expected');
     const snapshot = envelope.data.catalog;
-    expect(snapshot.mapContexts).toEqual([{
-      id:'map-neverwinter',slug:'neverwinter',name:'Neverwinter',
-      parentId:null,width:2048,height:1582,imageUri:null,
-    }]);
-    const castigo = snapshot.campaignLocalMaps.find(m=>m.campaignId===INITIAL_PUBLIC_CAMPAIGN_ID);
-    const second = snapshot.campaignLocalMaps.find(m=>m.campaignId!==INITIAL_PUBLIC_CAMPAIGN_ID);
+    expect(snapshot.mapContexts).toEqual([
+      {
+        id: 'map-neverwinter',
+        slug: 'neverwinter',
+        name: 'Neverwinter',
+        parentId: null,
+        width: 2048,
+        height: 1582,
+        imageUri: null,
+      },
+    ]);
+    const castigo = snapshot.campaignLocalMaps.find(
+      (m) => m.campaignId === INITIAL_PUBLIC_CAMPAIGN_ID,
+    );
+    const second = snapshot.campaignLocalMaps.find(
+      (m) => m.campaignId !== INITIAL_PUBLIC_CAMPAIGN_ID,
+    );
     expect(castigo?.geographicMapContextLinks).toEqual([]);
-    expect(second?.geographicMapContextLinks).toEqual([expect.objectContaining({
-      geographicNameId:'geo-neverwinter',contextId:'map-neverwinter',
-    })]);
+    expect(second?.geographicMapContextLinks).toEqual([
+      expect.objectContaining({
+        geographicNameId: 'geo-neverwinter',
+        contextId: 'map-neverwinter',
+      }),
+    ]);
     expect(second?.placements).toEqual([]);
     expect(second?.localOnlyEntities).toEqual([]);
   });
 
   test('rejects a rehashed cross-campaign local map binding', async () => {
     const snapshot = await readSnapshot();
-    const locals = snapshot.campaignLocalMaps as Array<{campaignId:string;
-      geographicMapContextLinks:Array<{campaignId:string}>}>;
-    const bound = locals.find(m=>m.geographicMapContextLinks.length>0)!;
-    bound.geographicMapContextLinks[0]!.campaignId=INITIAL_PUBLIC_CAMPAIGN_ID;
-    const {checksum: _checksum,sourceRevision:_revision,generatedAt:_at,...content}=snapshot;
-    void _checksum;void _revision;void _at;
+    const locals = snapshot.campaignLocalMaps as Array<{
+      campaignId: string;
+      geographicMapContextLinks: Array<{ campaignId: string }>;
+    }>;
+    const bound = locals.find((m) => m.geographicMapContextLinks.length > 0)!;
+    bound.geographicMapContextLinks[0]!.campaignId = INITIAL_PUBLIC_CAMPAIGN_ID;
+    const {
+      checksum: _checksum,
+      sourceRevision: _revision,
+      generatedAt: _at,
+      ...content
+    } = snapshot;
+    void _checksum;
+    void _revision;
+    void _at;
     const hash = await createSha256Checksum(content);
-    snapshot.checksum=hash;
-    snapshot.sourceRevision=hash;
+    snapshot.checksum = hash;
+    snapshot.sourceRevision = hash;
     await expect(parsePublicCatalogSnapshotV4(snapshot)).rejects.toMatchObject({
-      code:'invalid-snapshot',
+      code: 'invalid-snapshot',
     });
   });
 
   test('invalid local-only content and private relation endpoints never reach cache', async () => {
     const snapshot = await readSnapshot();
     const locals = snapshot.campaignLocalMaps as Array<Record<string, unknown>>;
-    const bound = locals.find(m=>m.campaignId!==INITIAL_PUBLIC_CAMPAIGN_ID)!;
-    const world = (snapshot.campaignCatalogs as Array<Record<string, unknown>>)
-      .find(m=>m.campaignId===bound.campaignId)!;
-    const categoryId = ((world.categories as Array<{id:string}>)[0]!).id;
+    const bound = locals.find((m) => m.campaignId !== INITIAL_PUBLIC_CAMPAIGN_ID)!;
+    const world = (snapshot.campaignCatalogs as Array<Record<string, unknown>>).find(
+      (m) => m.campaignId === bound.campaignId,
+    )!;
+    const categoryId = (world.categories as Array<{ id: string }>)[0]!.id;
     const localId = 'entity-synthetic-local';
-    const placement={contextId:'map-neverwinter',entityId:localId,
-      geometry:{kind:'point',coordinates:{x:100,y:100}},
-      coordinates:{x:100,y:100}};
-    bound.placements=[placement];
-    bound.localOnlyEntities=[{
-      id:localId,slug:'synthetic-local',entityType:'character',lifecycleStatus:null,
-      visibility:'pin',name:'Synthetic Local',nameLanguage:'en',summary:'Public only',
-      description:'Public synthetic local details',portraitPath:null,
-      categoryId,aliases:[],tagIds:[],coordinates:{x:100,y:100},
-    }];
-    bound.entityRelations=[{
-      leftEntityId:localId,rightEntityId:'entity-MASTER-PRIVATE-CANARY',
-      leftLabel:'unsafe',rightLabel:'unsafe',
-    }];
-    const {checksum:_checksum,sourceRevision:_revision,generatedAt:_at,...content}=snapshot;
-    void _checksum;void _revision;void _at;
-    const hash=await createSha256Checksum(content);
-    snapshot.checksum=hash;snapshot.sourceRevision=hash;
+    const placement = {
+      contextId: 'map-neverwinter',
+      entityId: localId,
+      geometry: { kind: 'point', coordinates: { x: 100, y: 100 } },
+      coordinates: { x: 100, y: 100 },
+    };
+    bound.placements = [placement];
+    bound.localOnlyEntities = [
+      {
+        id: localId,
+        slug: 'synthetic-local',
+        entityType: 'character',
+        lifecycleStatus: null,
+        visibility: 'pin',
+        name: 'Synthetic Local',
+        nameLanguage: 'en',
+        summary: 'Public only',
+        description: 'Public synthetic local details',
+        portraitPath: null,
+        categoryId,
+        aliases: [],
+        tagIds: [],
+        coordinates: { x: 100, y: 100 },
+      },
+    ];
+    bound.entityRelations = [
+      {
+        leftEntityId: localId,
+        rightEntityId: 'entity-MASTER-PRIVATE-CANARY',
+        leftLabel: 'unsafe',
+        rightLabel: 'unsafe',
+      },
+    ];
+    const {
+      checksum: _checksum,
+      sourceRevision: _revision,
+      generatedAt: _at,
+      ...content
+    } = snapshot;
+    void _checksum;
+    void _revision;
+    void _at;
+    const hash = await createSha256Checksum(content);
+    snapshot.checksum = hash;
+    snapshot.sourceRevision = hash;
     await expect(parsePublicCatalogSnapshotV4(snapshot)).rejects.toMatchObject({
-      code:'invalid-snapshot',
+      code: 'invalid-snapshot',
     });
   });
 

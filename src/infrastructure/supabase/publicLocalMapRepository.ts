@@ -485,7 +485,8 @@ export class SupabasePublicLocalMapRepository {
     const visibleIds = new Set([...localOnlyIds, ...(options.worldEntityIds ?? [])]);
     if (options.worldEntityIds) {
       for (const placement of placements) {
-        if (!visibleIds.has(placement.entityId)) invalid('Placement with private or missing entity.');
+        if (!visibleIds.has(placement.entityId))
+          invalid('Placement with private or missing entity.');
       }
     }
     const firstPlacement = new Map<string, PublicLocalPlacement>();
@@ -517,14 +518,16 @@ export class SupabasePublicLocalMapRepository {
       .filter(
         ({ leftEntityId, rightEntityId }) =>
           (localOnlyIds.has(leftEntityId) || localOnlyIds.has(rightEntityId)) &&
-          visibleIds.has(leftEntityId) && visibleIds.has(rightEntityId),
+          visibleIds.has(leftEntityId) &&
+          visibleIds.has(rightEntityId),
       );
     const characterLocationRelations = rows.characterLocationRelations
       .map(parseCharacterLocationRelation)
       .filter(
         ({ characterId, locationId }) =>
           (localOnlyIds.has(characterId) || localOnlyIds.has(locationId)) &&
-          visibleIds.has(characterId) && visibleIds.has(locationId),
+          visibleIds.has(characterId) &&
+          visibleIds.has(locationId),
       );
     if (new Set(localOnlyEntities.map(({ id }) => id)).size !== localOnlyEntities.length) {
       invalid('Entidades local-only duplicadas.');

@@ -284,7 +284,7 @@ export function mountLocalMapNavigation(
       // campaign-scoped binding set from the same checksum as the world catalog.
       links = state.mapLinks ?? [];
       loaded = true;
-      const contextById = new Map(links.map(({context})=>[context.id,context] as const));
+      const contextById = new Map(links.map(({ context }) => [context.id, context] as const));
       options.onBindingsChange?.([...contextById.values()]);
       if (campaignChanged && requestedSlug) leave(false);
       redraw();
@@ -301,11 +301,7 @@ export function mountLocalMapNavigation(
       return requestedSlug;
     },
     navigateToMapSlug(slug): boolean {
-      if (
-        !loaded ||
-        !links.some((link) => link.context.slug === slug)
-      )
-        return false;
+      if (!loaded || !links.some((link) => link.context.slug === slug)) return false;
       requestedSlug = slug;
       redraw();
       announcer.textContent = `Mapa local de ${slug} abierto.`;

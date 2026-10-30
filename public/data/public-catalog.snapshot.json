@@ -107,9 +107,7 @@
             "y": 814.17
           },
           "categoryId": "category-npc",
-          "tagIds": [
-            "category-skade"
-          ]
+          "tagIds": ["category-skade"]
         },
         {
           "id": "entity-asentamiento-thar",
@@ -126,9 +124,7 @@
             "y": 804.09
           },
           "categoryId": "category-settlement",
-          "tagIds": [
-            "category-skade"
-          ]
+          "tagIds": ["category-skade"]
         },
         {
           "id": "entity-bring",
@@ -146,9 +142,7 @@
             "y": 1921.5
           },
           "categoryId": "category-npc",
-          "tagIds": [
-            "category-skade"
-          ]
+          "tagIds": ["category-skade"]
         },
         {
           "id": "entity-captitan",
@@ -184,9 +178,7 @@
             "y": 292.28
           },
           "categoryId": "category-npc",
-          "tagIds": [
-            "category-ura"
-          ]
+          "tagIds": ["category-ura"]
         },
         {
           "id": "entity-masred",
@@ -204,9 +196,7 @@
             "y": 1722.1
           },
           "categoryId": "category-npc",
-          "tagIds": [
-            "category-skade"
-          ]
+          "tagIds": ["category-skade"]
         },
         {
           "id": "entity-memnon",
@@ -223,10 +213,7 @@
             "y": 402.69
           },
           "categoryId": "category-settlement",
-          "tagIds": [
-            "category-ura",
-            "coastal"
-          ]
+          "tagIds": ["category-ura", "coastal"]
         },
         {
           "id": "entity-myrath",
@@ -243,10 +230,7 @@
             "y": 428.21
           },
           "categoryId": "category-settlement",
-          "tagIds": [
-            "category-skade",
-            "coastal"
-          ]
+          "tagIds": ["category-skade", "coastal"]
         },
         {
           "id": "entity-ojos-tempestad",
@@ -264,9 +248,7 @@
             "y": 1156.98
           },
           "categoryId": "category-npc",
-          "tagIds": [
-            "category-ura"
-          ]
+          "tagIds": ["category-ura"]
         },
         {
           "id": "entity-skade",
@@ -284,9 +266,7 @@
             "y": 1282.32
           },
           "categoryId": "category-pj",
-          "tagIds": [
-            "category-skade"
-          ]
+          "tagIds": ["category-skade"]
         },
         {
           "id": "entity-thalasis",
@@ -304,9 +284,7 @@
             "y": 1188.15
           },
           "categoryId": "category-npc",
-          "tagIds": [
-            "category-skade"
-          ]
+          "tagIds": ["category-skade"]
         },
         {
           "id": "entity-thar",
@@ -323,9 +301,7 @@
             "y": 1366.13
           },
           "categoryId": "category-landmark",
-          "tagIds": [
-            "category-skade"
-          ]
+          "tagIds": ["category-skade"]
         },
         {
           "id": "entity-tulu",
@@ -343,9 +319,7 @@
             "y": 1074.78
           },
           "categoryId": "category-npc",
-          "tagIds": [
-            "category-ura"
-          ]
+          "tagIds": ["category-ura"]
         },
         {
           "id": "entity-ura",
@@ -363,9 +337,7 @@
             "y": 1287.91
           },
           "categoryId": "category-pj",
-          "tagIds": [
-            "category-ura"
-          ]
+          "tagIds": ["category-ura"]
         }
       ],
       "dispositions": [
@@ -564,9 +536,7 @@
             "y": 1855.21
           },
           "categoryId": "category-pj-un-aliento-menos",
-          "tagIds": [
-            "category-veyra"
-          ]
+          "tagIds": ["category-veyra"]
         }
       ],
       "dispositions": [],
