@@ -225,65 +225,109 @@ describe('public catalog snapshot', () => {
     });
   });
 
-
   test('permits authorized local-only point/polygon but never promotes either to world', async () => {
     const snapshot = await readSnapshot();
-    const local = (snapshot.campaignLocalMaps as Array<Record<string, unknown>>)
-      .find(m=>Array.isArray(m.contexts) && m.contexts.length > 0)!;
-    const world = (snapshot.campaignCatalogs as Array<Record<string,unknown>>)
-      .find(m=>m.campaignId===local.campaignId)!;
-    const cat=(world.categories as Array<{id:string}>)[0]!.id;
-    const point={kind:'point',coordinates:{x:200,y:300}};
-    const poly={kind:'polygon',vertices:[
-      {x:310,y:310},{x:410,y:310},{x:410,y:410},{x:310,y:410},
-    ]};
-    local.placements=[
-      {contextId:'map-neverwinter',entityId:'entity-map080-unit',geometry:point,
-       coordinates:{x:200,y:300}},
-      {contextId:'map-neverwinter',entityId:'place-map080-unit-region',geometry:poly,
-       coordinates:{x:360,y:360}},
-    ];
-    local.localOnlyEntities=[
+    const local = (snapshot.campaignLocalMaps as Array<Record<string, unknown>>).find(
+      (m) => Array.isArray(m.contexts) && m.contexts.length > 0,
+    )!;
+    const world = (snapshot.campaignCatalogs as Array<Record<string, unknown>>).find(
+      (m) => m.campaignId === local.campaignId,
+    )!;
+    const cat = (world.categories as Array<{ id: string }>)[0]!.id;
+    const point = { kind: 'point', coordinates: { x: 200, y: 300 } };
+    const poly = {
+      kind: 'polygon',
+      vertices: [
+        { x: 310, y: 310 },
+        { x: 410, y: 310 },
+        { x: 410, y: 410 },
+        { x: 310, y: 410 },
+      ],
+    };
+    local.placements = [
       {
-        id:'entity-map080-unit',slug:'map080-unit',entityType:'character',
-        lifecycleStatus:null,visibility:'pin',name:'Synthetic private-safe point',
-        nameLanguage:'en',summary:'Public',description:'Public',
-        portraitPath:null,categoryId:cat,aliases:[],tagIds:[],coordinates:{x:200,y:300},
+        contextId: 'map-neverwinter',
+        entityId: 'entity-map080-unit',
+        geometry: point,
+        coordinates: { x: 200, y: 300 },
       },
       {
-        id:'place-map080-unit-region',slug:'map080-unit-region',entityType:'location',
-        lifecycleStatus:null,visibility:'pin',name:'Synthetic public region',
-        nameLanguage:'en',summary:'Public',description:'Public',
-        portraitPath:null,categoryId:cat,aliases:[],tagIds:[],coordinates:{x:360,y:360},
-        geometry:poly,
+        contextId: 'map-neverwinter',
+        entityId: 'place-map080-unit-region',
+        geometry: poly,
+        coordinates: { x: 360, y: 360 },
       },
     ];
-    const seal=async () => {
-      const {generatedAt:_,sourceRevision:__,checksum:___,...content}=snapshot;
-      void _;void __;void ___;
-      const digest=await createSha256Checksum(content);
-      snapshot.checksum=digest;snapshot.sourceRevision=digest;
+    local.localOnlyEntities = [
+      {
+        id: 'entity-map080-unit',
+        slug: 'map080-unit',
+        entityType: 'character',
+        lifecycleStatus: null,
+        visibility: 'pin',
+        name: 'Synthetic private-safe point',
+        nameLanguage: 'en',
+        summary: 'Public',
+        description: 'Public',
+        portraitPath: null,
+        categoryId: cat,
+        aliases: [],
+        tagIds: [],
+        coordinates: { x: 200, y: 300 },
+      },
+      {
+        id: 'place-map080-unit-region',
+        slug: 'map080-unit-region',
+        entityType: 'location',
+        lifecycleStatus: null,
+        visibility: 'pin',
+        name: 'Synthetic public region',
+        nameLanguage: 'en',
+        summary: 'Public',
+        description: 'Public',
+        portraitPath: null,
+        categoryId: cat,
+        aliases: [],
+        tagIds: [],
+        coordinates: { x: 360, y: 360 },
+        geometry: poly,
+      },
+    ];
+    const seal = async () => {
+      const { generatedAt: _, sourceRevision: __, checksum: ___, ...content } = snapshot;
+      void _;
+      void __;
+      void ___;
+      const digest = await createSha256Checksum(content);
+      snapshot.checksum = digest;
+      snapshot.sourceRevision = digest;
     };
     await seal();
-    const parsed=await parsePublicCatalogSnapshotV4(snapshot);
-    if(parsed.data.contract!=='beta04') throw new Error('Expected V4');
-    const selected=parsed.data.catalog.campaignLocalMaps.find(m=>m.campaignId===local.campaignId)!;
+    const parsed = await parsePublicCatalogSnapshotV4(snapshot);
+    if (parsed.data.contract !== 'beta04') throw new Error('Expected V4');
+    const selected = parsed.data.catalog.campaignLocalMaps.find(
+      (m) => m.campaignId === local.campaignId,
+    )!;
     expect(selected.placements).toHaveLength(2);
     expect(selected.localOnlyEntities).toHaveLength(2);
-    const worldProjection=projectPublicCatalogSnapshotV4ToV2(
-      parsed.data.catalog,String(local.campaignId));
-    expect(worldProjection?.entities.some(e=>e.id==='entity-map080-unit')).toBe(false);
-    expect(worldProjection?.entities.some(e=>e.id==='place-map080-unit-region')).toBe(false);
+    const worldProjection = projectPublicCatalogSnapshotV4ToV2(
+      parsed.data.catalog,
+      String(local.campaignId),
+    );
+    expect(worldProjection?.entities.some((e) => e.id === 'entity-map080-unit')).toBe(false);
+    expect(worldProjection?.entities.some((e) => e.id === 'place-map080-unit-region')).toBe(false);
     // Rehash a malicious auxiliary payload: its checksum cannot legalize
     // a Master/admin field in sessionStorage.
-    local.associations=[{
-      entityId:'entity-map080-unit',
-      playerId:(world.players as Array<{id:string}>)[0]!.id,
-      masterOnlyNote:'MAP080_MASTER_CANARY',
-    }];
+    local.associations = [
+      {
+        entityId: 'entity-map080-unit',
+        playerId: (world.players as Array<{ id: string }>)[0]!.id,
+        masterOnlyNote: 'MAP080_MASTER_CANARY',
+      },
+    ];
     await seal();
     await expect(parsePublicCatalogSnapshotV4(snapshot)).rejects.toMatchObject({
-      code:'invalid-snapshot',
+      code: 'invalid-snapshot',
     });
   });
 

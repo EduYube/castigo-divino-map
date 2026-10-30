@@ -269,23 +269,29 @@ function parseLocal(
     // Canonical local-only geometry is exactly the authorized public placement,
     // never a second, unchecked copy of potentially private spatial metadata.
     if (placement.geometry.kind === 'polygon') {
-      if (e.entityType !== 'location' ||
-          JSON.stringify(e.geometry) !== JSON.stringify(placement.geometry))
+      if (
+        e.entityType !== 'location' ||
+        JSON.stringify(e.geometry) !== JSON.stringify(placement.geometry)
+      )
         invalid('non-canonical local-only polygon.');
     } else if (e.geometry !== undefined) {
       invalid('point local-only entity cannot carry a second geometry.');
     }
-    if (((e.entityType === 'character' || e.entityType === 'location') &&
-         e.lifecycleStatus !== null && e.lifecycleStatus !== undefined) ||
-        (e.entityType === 'mission' &&
-         !['active','completed','failed'].includes(String(e.lifecycleStatus))) ||
-        (e.entityType === 'hazard' &&
-         !['active','resolved'].includes(String(e.lifecycleStatus))))
+    if (
+      ((e.entityType === 'character' || e.entityType === 'location') &&
+        e.lifecycleStatus !== null &&
+        e.lifecycleStatus !== undefined) ||
+      (e.entityType === 'mission' &&
+        !['active', 'completed', 'failed'].includes(String(e.lifecycleStatus))) ||
+      (e.entityType === 'hazard' && !['active', 'resolved'].includes(String(e.lifecycleStatus)))
+    )
       invalid('invalid local-only lifecycle.');
-    if (e.portraitPath != null &&
-        (e.entityType !== 'character' ||
-         typeof e.portraitPath !== 'string' ||
-         !/^portraits\/[0-9a-f-]+\.(?:jpg|png|webp)$/.test(e.portraitPath)))
+    if (
+      e.portraitPath != null &&
+      (e.entityType !== 'character' ||
+        typeof e.portraitPath !== 'string' ||
+        !/^portraits\/[0-9a-f-]+\.(?:jpg|png|webp)$/.test(e.portraitPath))
+    )
       invalid('unsafe local-only portrait reference.');
     return e as unknown as PublicCampaignLocalMapV4['localOnlyEntities'][number];
   });
@@ -309,31 +315,53 @@ function parseLocal(
   // All auxiliary rows are part of the public payload and must not be able to
   // smuggle administrative metadata into a valid session cache.
   for (const [i, item] of dispositions.entries()) {
-    const d=obj(item,'local.dispositions['+i+']',['entityId','playerId','disposition']);
-    if (!['ally','enemy','neutral'].includes(String(d.disposition)))
+    const d = obj(item, 'local.dispositions[' + i + ']', ['entityId', 'playerId', 'disposition']);
+    if (!['ally', 'enemy', 'neutral'].includes(String(d.disposition)))
       invalid('invalid local disposition.');
   }
   for (const [i, item] of associations.entries())
-    obj(item,'local.associations['+i+']',['entityId','playerId']);
+    obj(item, 'local.associations[' + i + ']', ['entityId', 'playerId']);
   for (const [i, item] of relations.entries()) {
-    const relation=obj(item,'local.entityRelations['+i+']',
-      ['leftEntityId','rightEntityId','leftLabel','rightLabel']);
-    if (typeof relation.leftLabel!=='string' || !relation.leftLabel.trim() ||
-        typeof relation.rightLabel!=='string' || !relation.rightLabel.trim() ||
-        String(relation.leftEntityId)>=String(relation.rightEntityId))
+    const relation = obj(item, 'local.entityRelations[' + i + ']', [
+      'leftEntityId',
+      'rightEntityId',
+      'leftLabel',
+      'rightLabel',
+    ]);
+    if (
+      typeof relation.leftLabel !== 'string' ||
+      !relation.leftLabel.trim() ||
+      typeof relation.rightLabel !== 'string' ||
+      !relation.rightLabel.trim() ||
+      String(relation.leftEntityId) >= String(relation.rightEntityId)
+    )
       invalid('invalid local relation.');
   }
   for (const [i, item] of characterLocations.entries()) {
-    const relation=obj(item,'local.characterLocationRelations['+i+']',
-      ['characterId','locationId','relationStatus']);
-    if (!['present','associated','last-seen'].includes(String(relation.relationStatus)))
+    const relation = obj(item, 'local.characterLocationRelations[' + i + ']', [
+      'characterId',
+      'locationId',
+      'relationStatus',
+    ]);
+    if (!['present', 'associated', 'last-seen'].includes(String(relation.relationStatus)))
       invalid('invalid local character/location relation.');
   }
-  uniq(relations.map(r=>r.leftEntityId+'\u0000'+r.rightEntityId),'local entity relations');
-  uniq(characterLocations.map(r=>r.characterId+'\u0000'+r.locationId),
-       'local character-location relations');
-  uniq(dispositions.map(d=>d.entityId+'\u0000'+d.playerId),'local dispositions');
-  uniq(associations.map(a=>a.entityId+'\u0000'+a.playerId),'local associations');
+  uniq(
+    relations.map((r) => r.leftEntityId + '\u0000' + r.rightEntityId),
+    'local entity relations',
+  );
+  uniq(
+    characterLocations.map((r) => r.characterId + '\u0000' + r.locationId),
+    'local character-location relations',
+  );
+  uniq(
+    dispositions.map((d) => d.entityId + '\u0000' + d.playerId),
+    'local dispositions',
+  );
+  uniq(
+    associations.map((a) => a.entityId + '\u0000' + a.playerId),
+    'local associations',
+  );
 
   const tagIds = new Set(world.tags.map((t) => t.id));
   const playerIds = new Set(world.players.map((p) => p.id));
