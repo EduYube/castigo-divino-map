@@ -1,7 +1,6 @@
 import type {
   PublicCampaignCatalogV3,
   PublicCampaignV3,
-  PublicCatalogSnapshotV3,
   PublicGlobalGeographicNameV3,
 } from '../../data/beta03-model';
 import {
@@ -20,7 +19,10 @@ import {
   PublicCatalogReadError,
   type PublicCatalogTableQuery,
 } from '../../data-access/publicCatalogQueryContract.js';
-import { parsePublicCatalogSnapshotV3 } from '../snapshot/multicampaignSnapshotCodec';
+import { PUBLIC_LOCAL_MAP_TABLE_QUERIES, projectPublicMapContextLinks } from '../../data-access/publicLocalMapQueryContract.js';
+import type { PublicMapContextV4, PublicCampaignLocalMapV4, PublicCatalogSnapshotV4 } from '../../data/beta04-model';
+import { parsePublicCatalogSnapshotV4 } from '../snapshot/multimapSnapshotCodec';
+import { SupabasePublicLocalMapRepository } from './publicLocalMapRepository';
 import { buildPublicCatalogEnvelopeV2 } from './publicCatalogCodec';
 import type { PublicCatalogTablePayloadsWithCharacterLocations } from './publicCharacterLocationRelations';
 
@@ -301,30 +303,68 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
       const campaignCatalogs = campaigns.map((campaign, index) =>
         toCampaignCatalogV3(campaign, campaignCatalogsV2[index]!),
       );
+      const geographicIds = new Set(geographicNames.map(({ id }) => id));
+      const localRepository = new SupabasePublicLocalMapRepository({
+        projectUrl: this.#projectUrl,
+        publishableKey: this.#publishableKey,
+        fetchImplementation: this.#fetchImplementation,
+        allowLocalProject: LOCAL_PROJECT_URL_PATTERN.test(this.#projectUrl),
+      });
+      // Both world and all local table sets must finish successfully before
+      // any revision becomes visible or can enter sessionStorage.
+      const perCampaign = await Promise.all(campaigns.map(async (campaign,index) => {
+        const rows = await this.#loadTable(
+          PUBLIC_LOCAL_MAP_TABLE_QUERIES.links, controller.signal, campaign.id,
+        );
+        let links: ReturnType<typeof projectPublicMapContextLinks>;
+        try {
+          links = projectPublicMapContextLinks(rows,campaign.id,geographicIds);
+        } catch (cause) {
+          throw new PublicDataRepositoryError(
+            'invalid-response','Public geographic map binding rejected.',{
+              source:'supabase',cause,
+            },
+          );
+        }
+        const local = await localRepository.load({
+          campaignId:campaign.id,signal:controller.signal,
+          authorizedContexts:links.contexts,
+          worldEntityIds:new Set(campaignCatalogsV2[index]!.entities.map(({id})=>id)),
+        });
+        return {links,local};
+      }));
+      const contextsById = new Map<string, PublicMapContextV4>();
+      const campaignLocalMaps:PublicCampaignLocalMapV4[] = perCampaign.map(({links,local}) => {
+        for(const context of links.mapContexts) {
+          const previous = contextsById.get(context.id);
+          if (previous && JSON.stringify(previous)!==JSON.stringify(context)) {
+            throw new PublicDataRepositoryError(
+              'invalid-response','Conflicting public map context metadata.',{
+                source:'supabase',
+              },
+            );
+          }
+          contextsById.set(context.id,context);
+        }
+        return {...local,geographicMapContextLinks:links.geographicMapContextLinks};
+      });
       const content = {
-        schemaVersion: 3 as const,
+        schemaVersion: 4 as const,
         campaigns,
         campaignCatalogs,
         geographicNames,
+        mapContexts:[...contextsById.values()].sort((a,b)=>a.id.localeCompare(b.id)),
+        campaignLocalMaps,
       };
       const checksum = await createSha256Checksum(content);
       const generatedAt = new Date(this.#now()).toISOString();
-      const snapshot: PublicCatalogSnapshotV3 = {
-        ...content,
-        generatedAt,
-        sourceRevision: checksum,
-        checksum,
+      const snapshot:PublicCatalogSnapshotV4 = {
+        ...content,generatedAt,sourceRevision:checksum,checksum,
       };
-      const validated = await parsePublicCatalogSnapshotV3(snapshot, this.#now);
+      const validated = await parsePublicCatalogSnapshotV4(snapshot,this.#now);
       return {
-        ...validated,
-        source: 'supabase',
-        metadata: {
-          ...validated.metadata,
-          contract: 'beta03',
-          schemaVersion: 3,
-          stale: false,
-        },
+        ...validated,source:'supabase',
+        metadata:{...validated.metadata,contract:'beta04',schemaVersion:4,stale:false},
       };
     } catch (error) {
       controller.abort();

@@ -145,12 +145,8 @@ export function mountLocalMapNavigation(
   let selectedGeoId: string | null = null;
   let requestedSlug: string | null = null;
   let loaded = false;
-  // The public catalog is the authority for local navigation, not the binding endpoint.
-  let backendState = options.initialBackendState;
-  // An empty successful response is valid; only failures trigger a retry on refresh.
-  let bindingLoadFailed = false;
-  let generation = 0;
-  let request: AbortController | null = null;
+  // Only already-validated V4 envelope bindings may authorize navigation.
+  void options.initialBackendState;
   let localMap: LeafletMap | null = null;
   let activeContextId: string | null = null;
   let image: L.ImageOverlay | null = null;
@@ -226,7 +222,7 @@ export function mountLocalMapNavigation(
 
   const redraw = (): void => {
     const entrance = links.find((link) => link.geographicNameId === selectedGeoId);
-    entry.hidden = backendState !== 'connected' || requestedSlug !== null || !entrance;
+    entry.hidden = !loaded || requestedSlug !== null || !entrance;
     if (entrance && requestedSlug === null) {
       entryName.textContent = entrance.context.name;
       enter.textContent = `Entrar en ${entrance.context.name}`;
@@ -248,43 +244,6 @@ export function mountLocalMapNavigation(
     showSurface(target.context);
   };
 
-  const load = (): void => {
-    request?.abort();
-    const localGeneration = ++generation;
-    const campaignId = currentCampaignId;
-    links = [];
-    options.onBindingsChange?.([]);
-    bindingLoadFailed = false;
-    if (!campaignId || backendState !== 'connected') {
-      // The initial fallback is provisional: retain the deep-link intent
-      // without displaying local data until the remote authority responds.
-      // Confirmed degraded/offline states must normalize it to the world.
-      loaded = backendState !== 'checking' || !campaignId;
-      redraw();
-      return;
-    }
-    loaded = false;
-    request = new AbortController();
-    void fetchPublicLocalMapLinks(campaignId, request.signal)
-      .then((nextLinks) => {
-        if (localGeneration !== generation || backendState !== 'connected') return;
-        request = null;
-        links = nextLinks;
-        options.onBindingsChange?.(nextLinks.map(({ context }) => context));
-        loaded = true;
-        redraw();
-      })
-      .catch(() => {
-        if (localGeneration !== generation || backendState !== 'connected') return;
-        request = null;
-        links = [];
-        options.onBindingsChange?.([]);
-        loaded = true;
-        bindingLoadFailed = true;
-        redraw();
-      });
-  };
-
   const leave = (push: boolean): void => {
     if (!requestedSlug) return;
     requestedSlug = null;
@@ -294,7 +253,7 @@ export function mountLocalMapNavigation(
   };
 
   enter.addEventListener('click', () => {
-    if (backendState !== 'connected') return;
+    if (!loaded) return;
     const entrance = links.find((link) => link.geographicNameId === selectedGeoId);
     if (!entrance) return;
     requestedSlug = entrance.context.slug;
@@ -303,30 +262,7 @@ export function mountLocalMapNavigation(
     options.onHistoryChange('push');
   });
   returnButton.addEventListener('click', () => leave(true));
-  // A previously loaded local surface must not outlive remote data authority.
-  window.addEventListener('atlas:public-data-status', (event) => {
-    const detail = (event as CustomEvent<{ backendState?: string }>).detail;
-    if (detail?.backendState === 'connected') {
-      const shouldReload = backendState !== 'connected' || bindingLoadFailed;
-      backendState = 'connected';
-      if (shouldReload && currentCampaignId) load();
-      return;
-    }
-    if (detail?.backendState !== 'degraded' && detail?.backendState !== 'offline') return;
-    backendState = detail.backendState;
-    request?.abort();
-    request = null;
-    ++generation;
-    links = [];
-    options.onBindingsChange?.([]);
-    loaded = true;
-    bindingLoadFailed = false;
-    redraw();
-  });
-
   window.addEventListener('atlas:campaign-will-change', () => {
-    request?.abort();
-    ++generation;
     links = [];
     options.onBindingsChange?.([]);
     loaded = false;
@@ -342,12 +278,16 @@ export function mountLocalMapNavigation(
   return {
     updateCatalog(state): void {
       const nextCampaignId = state.selectedCampaign?.id ?? null;
-      if (nextCampaignId === currentCampaignId) return;
+      const campaignChanged = nextCampaignId !== currentCampaignId;
       currentCampaignId = nextCampaignId;
-      links = [];
-      loaded = false;
-      if (requestedSlug) leave(false);
-      load();
+      // V1/V2/V3 history is intentionally world-only. V4 supplies the entire
+      // campaign-scoped binding set from the same checksum as the world catalog.
+      links = state.mapLinks ?? [];
+      loaded = true;
+      const contextById = new Map(links.map(({context})=>[context.id,context] as const));
+      options.onBindingsChange?.([...contextById.values()]);
+      if (campaignChanged && requestedSlug) leave(false);
+      redraw();
     },
     setGeographicSelection(id): void {
       selectedGeoId = id;
@@ -362,7 +302,6 @@ export function mountLocalMapNavigation(
     },
     navigateToMapSlug(slug): boolean {
       if (
-        backendState !== 'connected' ||
         !loaded ||
         !links.some((link) => link.context.slug === slug)
       )

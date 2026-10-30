@@ -3,12 +3,12 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { assertGeographicSearchExtentCoverage } from '../src/data-access/geographicSearchExtentContract.js';
 
 import {
-  buildPublicMulticampaignSnapshotContent,
+  buildPublicMultimapSnapshotContent,
   buildPublicSnapshotContent,
   checksum,
   FIXTURE_PATH,
   loadFixtureRows,
-  loadRemotePublicMulticampaignRows,
+  loadRemotePublicMultimapRows,
   SNAPSHOT_PATH,
   snapshotContent,
   toSnapshot,
@@ -17,8 +17,31 @@ import {
 
 const useFixture = process.argv.includes('--fixture');
 const content = useFixture
-  ? upgradeLegacySnapshotContentV2(buildPublicSnapshotContent(await loadFixtureRows(FIXTURE_PATH)))
-  : buildPublicMulticampaignSnapshotContent(await loadRemotePublicMulticampaignRows());
+  ? await (async () => {
+      const historical = upgradeLegacySnapshotContentV2(
+        buildPublicSnapshotContent(await loadFixtureRows(FIXTURE_PATH)),
+      );
+      const { schemaVersion: _oldVersion, ...world } = historical;
+      void _oldVersion;
+      return {
+        schemaVersion: 4,
+        ...world,
+        mapContexts: [],
+        campaignLocalMaps: world.campaigns.map((campaign) => ({
+          campaignId: campaign.id,
+          contexts: [],
+          geographicMapContextLinks: [],
+          placements: [],
+          localOnlyEntities: [],
+          notes: [],
+          dispositions: [],
+          associations: [],
+          entityRelations: [],
+          characterLocationRelations: [],
+        })),
+      };
+    })()
+  : buildPublicMultimapSnapshotContent(await loadRemotePublicMultimapRows());
 
 assertGeographicSearchExtentCoverage(
   content,
@@ -32,10 +55,7 @@ try {
   const current = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'));
   const currentNativeContent = snapshotContent(current);
   const currentNativeChecksum = checksum(currentNativeContent);
-  const currentComparableContent =
-    current.schemaVersion === 2
-      ? upgradeLegacySnapshotContentV2(currentNativeContent)
-      : currentNativeContent;
+  const currentComparableContent = currentNativeContent;
 
   if (
     current.checksum === currentNativeChecksum &&
@@ -52,7 +72,7 @@ const snapshot = toSnapshot(content, generatedAt);
 await writeFile(SNAPSHOT_PATH, `${JSON.stringify(snapshot, null, 2)}\n`);
 
 console.log(
-  `Generated MAP-053 schema v3 public snapshot from ${
+  `Generated MAP-080 schema v4 public snapshot from ${
     useFixture ? 'the historical MAP-028 fixture' : 'all active Supabase campaigns'
   }: ${snapshot.checksum}.`,
 );
