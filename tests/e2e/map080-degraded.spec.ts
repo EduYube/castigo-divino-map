@@ -137,6 +137,34 @@ test('MAP-080 degraded synthetic V4 searches local-only point and polygon withou
   );
 });
 
+test('MAP-080 repeated local map re-entry preserves Leaflet regions, keyboard activation and focus', async ({
+  page,
+}) => {
+  await offlineV4(page, true);
+  await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  const region = page.locator(
+    '[data-local-map-canvas] [data-region-id="place-map080-polygon"]',
+  );
+  const canvas = page.locator('[data-local-map-canvas]');
+  for (let cycle = 0; cycle < 3; cycle += 1) {
+    await expect(canvas).toBeVisible();
+    await expect(region).toHaveCount(1);
+    await expect(region).toBeVisible();
+    await region.focus();
+    await region.press('Enter');
+    await expect(page.getByTestId('place-details')).toContainText('MAP080 Synthetic Polygon');
+    await page.keyboard.press('Escape');
+    await expect(region).toBeFocused();
+
+    await page.getByRole('button', { name: 'Mapa general' }).click();
+    await expect(canvas).toBeHidden();
+    await expect(region).toHaveCount(0);
+    await page.goBack();
+  }
+  await expect(canvas).toBeVisible();
+  await expect(region).toHaveCount(1);
+});
+
 for (const width of [320, 390, 430, 1280]) {
   test(`MAP-080 offline V4 responsive at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 820 });

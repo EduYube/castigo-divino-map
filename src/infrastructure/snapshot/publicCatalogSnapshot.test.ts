@@ -355,6 +355,39 @@ describe('public catalog snapshot', () => {
     await expect(parsePublicCatalogSnapshotV4(snapshot)).rejects.toMatchObject({
       code: 'invalid-snapshot',
     });
+
+    // MAP080-REV-03: rehashing V4 never legalizes malformed local note metadata.
+    entities[0]!.aliases = [];
+    const validNote = {
+      id: 'note-map080-valid',
+      slug: 'map080-valid',
+      entityId: 'entity-map080-unit',
+      title: 'Public local note',
+      body: 'Safe public body',
+      sortOrder: 0,
+      tagIds: [],
+    };
+    local.notes = [validNote];
+    await seal();
+    await expect(parsePublicCatalogSnapshotV4(snapshot)).resolves.toMatchObject({
+      data: { contract: 'beta04' },
+    });
+    for (const [field, value] of [
+      ['id', ''],
+      ['id', null],
+      ['id', 17],
+      ['id', 'note-INVALID'],
+      ['slug', ''],
+      ['slug', null],
+      ['slug', 17],
+      ['slug', 'unsafe slug'],
+    ] as const) {
+      local.notes = [{ ...validNote, [field]: value }];
+      await seal();
+      await expect(parsePublicCatalogSnapshotV4(snapshot)).rejects.toMatchObject({
+        code: 'invalid-snapshot',
+      });
+    }
   });
 
   test('keeps the Beta 0.1 parser available for a forward rollback deployment', async () => {

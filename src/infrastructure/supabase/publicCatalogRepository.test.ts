@@ -101,7 +101,7 @@ describe('SupabasePublicCatalogRepository', () => {
     expect(result.source).toBe('supabase');
     expect(result.data.contract).toBe('beta04');
     expect(result.metadata.schemaVersion).toBe(4);
-    expect(requests).toHaveLength(18);
+    expect(requests).toHaveLength(36);
     requests.forEach((request) => {
       expect(request.headers.get('apikey')).toBe(PUBLISHABLE_KEY);
       expect(request.headers.get('prefer')).toBe('count=exact');
@@ -178,7 +178,7 @@ describe('SupabasePublicCatalogRepository', () => {
       CAMPAIGN_B_ID,
     ]);
     expect(result.data.catalog.campaignCatalogs).toHaveLength(2);
-    expect(urls).toHaveLength(35);
+    expect(urls).toHaveLength(70);
 
     const scopedUrls = urls.filter((url) => !GLOBAL_TABLES.has(tableName(url)));
     expect(
@@ -448,7 +448,76 @@ describe('SupabasePublicCatalogRepository', () => {
     expect(dispositionRequests.map((request) => request.headers.get('range'))).toEqual([
       '0-999',
       '1000-1999',
+      '0-999',
+      '1000-1999',
     ]);
+  });
+
+  test('detects a concurrent A/B edit between world and local scans and adopts only a stable B', async () => {
+    let scans = 0;
+    const repository = new SupabasePublicCatalogRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      fetchImplementation: async (input) => {
+        const url = new URL(String(input));
+        if (tableName(url) === 'campaigns') {
+          scans += 1;
+          return jsonResponse([INITIAL_CAMPAIGN_ROW]);
+        }
+        if (tableName(url) === 'categories') {
+          return jsonResponse([
+            {
+              id: 'category-synthetic',
+              slug: 'synthetic',
+              name: scans === 1 ? 'Revision A' : 'Revision B',
+              description: '',
+            },
+          ]);
+        }
+        return jsonResponse([]);
+      },
+    });
+
+    const result = await repository.load({ signal: new AbortController().signal });
+    expect(scans).toBe(3);
+    expect(initialCampaignCatalog(result).categories).toEqual([
+      {
+        id: 'category-synthetic',
+        slug: 'synthetic',
+        name: 'Revision B',
+        description: '',
+      },
+    ]);
+  });
+
+  test('refuses to publish a new V4 envelope while revisions alternate on every complete scan', async () => {
+    let scans = 0;
+    const repository = new SupabasePublicCatalogRepository({
+      projectUrl: PROJECT_URL,
+      publishableKey: PUBLISHABLE_KEY,
+      fetchImplementation: async (input) => {
+        const url = new URL(String(input));
+        if (tableName(url) === 'campaigns') {
+          scans += 1;
+          return jsonResponse([INITIAL_CAMPAIGN_ROW]);
+        }
+        if (tableName(url) === 'categories') {
+          return jsonResponse([
+            {
+              id: 'category-synthetic',
+              slug: 'synthetic',
+              name: scans % 2 === 0 ? 'Revision B' : 'Revision A',
+              description: '',
+            },
+          ]);
+        }
+        return jsonResponse([]);
+      },
+    });
+    await expect(
+      repository.load({ signal: new AbortController().signal }),
+    ).rejects.toMatchObject({ code: 'invalid-response' });
+    expect(scans).toBe(4);
   });
 
   test('rejects a successful response when Supabase does not confirm Content-Range', async () => {

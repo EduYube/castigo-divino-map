@@ -183,4 +183,69 @@ describe('MasterModeController campaign race isolation', () => {
 
     controller.destroy();
   });
+  test('local map entry cancels a pending Master load even when its response ignores abort', async () => {
+    const late = deferred<AuthorizedMasterCatalog>();
+    const signals: AbortSignal[] = [];
+    const repository: MasterCatalogRepository = {
+      load: vi.fn(({ signal }) => {
+        signals.push(signal);
+        return late.promise;
+      }),
+    };
+    const controller = createController(repository);
+
+    const enabling = controller.setEnabled(true);
+    await vi.waitFor(() => expect(repository.load).toHaveBeenCalledTimes(1));
+    expect(controller.getState()).toMatchObject({
+      enabled: true,
+      phase: 'loading',
+      catalog: null,
+    });
+
+    controller.setLocalSurfaceActive(true);
+    expect(controller.isLocalSurfaceActive()).toBe(true);
+    expect(signals[0]?.aborted).toBe(true);
+    expect(controller.getState()).toMatchObject({
+      enabled: false,
+      phase: 'off',
+      catalog: null,
+    });
+
+    // A stale response must never be published, even by a repository that
+    // deliberately ignores the request's AbortSignal.
+    late.resolve(catalog('must-not-publish'));
+    await enabling;
+    expect(controller.getState()).toMatchObject({ enabled: false, catalog: null });
+    await controller.setEnabled(true);
+    await controller.reload();
+    expect(repository.load).toHaveBeenCalledTimes(1);
+
+    controller.setLocalSurfaceActive(false);
+    expect(controller.getState()).toMatchObject({ enabled: false, phase: 'off', catalog: null });
+    controller.destroy();
+  });
+
+  test('an empty but enabled Master catalog is revoked on local entry and not restored on return', async () => {
+    const repository: MasterCatalogRepository = {
+      load: vi.fn(async () => EMPTY_CATALOG),
+    };
+    const controller = createController(repository);
+    await controller.setEnabled(true);
+    expect(controller.getState()).toMatchObject({
+      enabled: true,
+      phase: 'on',
+      catalog: EMPTY_CATALOG,
+    });
+
+    controller.setLocalSurfaceActive(true);
+    expect(controller.getState()).toMatchObject({ enabled: false, phase: 'off', catalog: null });
+    controller.setLocalSurfaceActive(false);
+    expect(controller.getState()).toMatchObject({ enabled: false, phase: 'off', catalog: null });
+    expect(repository.load).toHaveBeenCalledTimes(1);
+
+    await controller.setEnabled(true);
+    expect(repository.load).toHaveBeenCalledTimes(2);
+    expect(controller.getState().enabled).toBe(true);
+    controller.destroy();
+  });
 });

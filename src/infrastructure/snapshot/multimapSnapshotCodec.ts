@@ -381,6 +381,8 @@ function parseLocal(
       'sortOrder',
       'tagIds',
     ]);
+    nonempty(n.id, 'local note.id', /^note-[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?$/);
+    nonempty(n.slug, 'local note.slug', SLUG);
     if (
       !localIds.has(n.entityId as never) ||
       typeof n.body !== 'string' ||

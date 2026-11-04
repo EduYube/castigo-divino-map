@@ -9,6 +9,19 @@ campaign-scoped local projections in one checksum/revision. No local-only identi
 injected into world catalogs. All local context bindings and local placements require
 public, active and published endpoints. Missing/invalid references reject the revision.
 
+## Source consistency (MAP080-REV-02)
+The browser and the remote snapshot command read public PostgREST pages/tables
+independently: they **cannot** promise a PostgreSQL point-in-time transaction.
+A complete first pass is accepted only after a consecutive complete verification
+pass produces the exact same content (SHA-256 for browser envelopes, full public
+rows for snapshot tooling). If a concurrent edit changes either pass, the reader
+retries up to two additional comparisons (four passes in total) and fails closed,
+preserving the previous validated envelope. Both passes include world, all
+campaign-local tables, and every pagination page. This is **optimistic drift
+detection**, not an MVCC guarantee: simultaneous in-place edits/ABA can escape
+sampling. Strong single-transaction consistency requires a future atomic SQL
+read endpoint and an explicitly authorized production migration.
+
 ## Recovery
 Connected: one validated V4 remote envelope (world and local together).
 Degraded/offline: last complete V4 from validated session cache or bundled JSON.

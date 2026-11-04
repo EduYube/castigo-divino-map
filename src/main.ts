@@ -456,7 +456,8 @@ function mountPublicExperience(
     // MAP-080: a public map surface is never allowed to retain the prior
     // Master-only DOM, callbacks, portrait or selected entity. Disable Master
     // and synchronously restore the public world marker set before repaint.
-    if (masterEntityIds.size > 0) {
+    const masterController = masterModeRuntime?.controller;
+    if (masterEntityIds.size > 0 || masterController?.getState().enabled === true) {
       masterPurgedOnMapChange = true;
       masterEntityIds = new Set();
       beta02Catalog = publicBeta02Catalog;
@@ -476,8 +477,10 @@ function mountPublicExperience(
         catalog,
         localReader.getSearchCatalog(publicBeta02Catalog),
       );
-      void masterModeRuntime?.controller.setEnabled(false);
     }
+    // A local transition must revoke Master even during a still-empty load;
+    // returning to world never silently reactivates the private projection.
+    masterController?.setLocalSurfaceActive(localNavigation.getMapSlug() !== null);
     if (!localNavigation.getMapSlug()) pendingLocalFocusEntityId = null;
     if (activeLocalEntityId) {
       activeLocalEntityId = null;
@@ -1081,6 +1084,7 @@ function mountPublicExperience(
     });
     masterModeRuntime = bootstrapMasterModeRuntime(app, adminRuntime);
     masterModeRuntime.controller.subscribe(() => applyCatalogState(catalogState, true));
+    masterModeRuntime.controller.setLocalSurfaceActive(localNavigation.getMapSlug() !== null);
 
     mountMasterDetailActions(app, adminRuntime.mapEntityController, {
       getMasterEntityIds: () => masterEntityIds,

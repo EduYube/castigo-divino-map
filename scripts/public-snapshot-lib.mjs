@@ -793,7 +793,7 @@ export function assertPublicMultimapSnapshotContent(content) {
   if (contexts.some((c) => !used.has(c.id))) throw new Error('Unbound global context.');
 }
 
-export async function loadRemotePublicMultimapRows(options = {}) {
+async function loadRemotePublicMultimapRowsOnce(options = {}) {
   // A single generation only publishes after every world and local query has
   // succeeded, with the same cancellation/timeout/range/ordering guarantees.
   const world = await loadRemotePublicMulticampaignRows(options);
@@ -844,6 +844,19 @@ export async function loadRemotePublicMultimapRows(options = {}) {
     return Object.fromEntries(entries);
   });
   return { ...world, localByCampaignId };
+}
+
+export async function loadRemotePublicMultimapRows(options = {}) {
+  // Snapshot tooling must not trust one assembled checksum as a database
+  // transaction. Re-read the COMPLETE public world/local row set, including
+  // paginated results, until two consecutive acquisitions match.
+  let previous = await loadRemotePublicMultimapRowsOnce(options);
+  for (let verification = 0; verification < 3; verification += 1) {
+    const current = await loadRemotePublicMultimapRowsOnce(options);
+    if (JSON.stringify(previous) === JSON.stringify(current)) return current;
+    previous = current;
+  }
+  throw new Error('Remote public multimap rows changed during acquisition; refusing mixed revision.');
 }
 
 export function upgradeLegacySnapshotContentV2(content) {

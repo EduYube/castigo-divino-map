@@ -288,6 +288,24 @@ export class SupabasePublicCatalogRepository implements PublicCatalogRepository 
   }
 
   async load(options: { readonly signal: AbortSignal }): Promise<PublicCatalogEnvelope> {
+    // PostgREST pages and tables do not share one database transaction. Two
+    // consecutive COMPLETE acquisitions must agree before we expose their
+    // envelope; retry on concurrent edits, fail closed if edits keep drifting.
+    // This is optimistic drift detection, not a PostgreSQL snapshot guarantee.
+    let previous = await this.#loadOnce(options);
+    for (let verification = 0; verification < 3; verification += 1) {
+      const current = await this.#loadOnce(options);
+      if (previous.metadata.checksum === current.metadata.checksum) return current;
+      previous = current;
+    }
+    throw new PublicDataRepositoryError(
+      'invalid-response',
+      'El catálogo público cambió durante la lectura; no se publicó una revisión mixta.',
+      { source: 'supabase' },
+    );
+  }
+
+  async #loadOnce(options: { readonly signal: AbortSignal }): Promise<PublicCatalogEnvelope> {
     const controller = new AbortController();
     const handleParentAbort = (): void => controller.abort();
     if (options.signal.aborted) controller.abort();
