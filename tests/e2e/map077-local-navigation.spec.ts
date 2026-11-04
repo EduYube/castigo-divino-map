@@ -700,7 +700,7 @@ test('MAP-077 R3: initial fallback preserves deep link until remote check comple
   backend.releaseCatalog();
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
   await expect(page).toHaveURL(/map=neverwinter/);
-  expect(backend.getBindingRequestCount()).toBeGreaterThanOrEqual(1);
+  await expect.poll(() => backend.getBindingRequestCount()).toBeGreaterThanOrEqual(1);
 
   await page.reload();
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
@@ -789,11 +789,25 @@ test('MAP-080: a failed local query cannot publish a mixed remote revision', asy
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
   // The V4 fallback is complete; the failed remote binding query must not
-  // clear the surface or publish a world-only remote update.
-  await selectNeverwinter(page);
+  // clear the surface or publish a world-only remote update. Wait until the
+  // remote failure actually settles, rather than asserting during startup.
+  await expect.poll(() => backend.getBindingRequestCount()).toBeGreaterThanOrEqual(1);
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'degraded',
+  );
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Mapa general' })).toBeVisible();
+  await expect(page).toHaveURL(/map=neverwinter/);
+
+  // A new complete remote revision may replace the fallback only after the
+  // previously failing local table succeeds. No stale map state is retained.
   backend.setBindingAvailable(true);
   await page.reload();
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'connected',
+  );
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
   await expect(page).toHaveURL(/map=neverwinter/);
 });
@@ -1202,6 +1216,13 @@ test('MAP-079 R3: local region returns focus and mobile Escape returns to map', 
   await configureCampaignBackend(page);
   await configureMap079SyntheticLocalBackend(page);
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
+  // The bundled V4 is deliberately empty of synthetic placements. The region
+  // appears only after the complete remote V4 projection has been validated.
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'connected',
+    { timeout: 30_000 },
+  );
   const region = page.locator(
     '[data-local-map-canvas] [data-region-id="place-map079-synthetic-region"]',
   );
