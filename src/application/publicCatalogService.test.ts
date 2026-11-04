@@ -96,7 +96,6 @@ function v4Envelope(
   };
 }
 
-
 describe('ResilientPublicCatalogService', () => {
   test('promotes a valid remote catalog to the visible source while keeping the snapshot as fallback', async () => {
     const service = new ResilientPublicCatalogService({
@@ -119,16 +118,8 @@ describe('ResilientPublicCatalogService', () => {
   });
 
   test('restores a newer complete V4 session revision during offline startup', async () => {
-    const bundled = v4Envelope(
-      'bundled-snapshot',
-      '2026-10-30T00:00:00.000Z',
-      'sha256:bundled-v4',
-    );
-    const cached = v4Envelope(
-      'session-cache',
-      '2026-11-01T00:00:00.000Z',
-      'sha256:cached-v4',
-    );
+    const bundled = v4Envelope('bundled-snapshot', '2026-10-30T00:00:00.000Z', 'sha256:bundled-v4');
+    const cached = v4Envelope('session-cache', '2026-11-01T00:00:00.000Z', 'sha256:cached-v4');
     const service = new ResilientPublicCatalogService({
       fallbackRepositories: [repository(async () => bundled)],
       remoteRepository: null,
@@ -160,10 +151,7 @@ describe('ResilientPublicCatalogService', () => {
       '2026-10-30T00:00:00.000Z',
       'sha256:old-cached-v4',
     );
-    for (const cached of [
-      cachedV4,
-      { ...REMOTE_ENVELOPE, source: 'session-cache' as const },
-    ]) {
+    for (const cached of [cachedV4, { ...REMOTE_ENVELOPE, source: 'session-cache' as const }]) {
       const service = new ResilientPublicCatalogService({
         fallbackRepositories: [repository(async () => bundled)],
         remoteRepository: null,

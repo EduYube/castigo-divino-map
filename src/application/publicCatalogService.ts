@@ -157,8 +157,7 @@ export class ResilientPublicCatalogService {
             cached.metadata.schemaVersion > bundled.metadata.schemaVersion ||
             (cached.metadata.schemaVersion === 4 &&
               bundled.metadata.schemaVersion === 4 &&
-              Date.parse(cached.metadata.generatedAt) >=
-                Date.parse(bundled.metadata.generatedAt)))
+              Date.parse(cached.metadata.generatedAt) >= Date.parse(bundled.metadata.generatedAt)))
         ) {
           this.#visibleEnvelope = cached;
         }
