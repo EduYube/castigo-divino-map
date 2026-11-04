@@ -329,6 +329,32 @@ describe('public catalog snapshot', () => {
     await expect(parsePublicCatalogSnapshotV4(snapshot)).rejects.toMatchObject({
       code: 'invalid-snapshot',
     });
+
+    // Even a rehashed V4 cache must reject malformed alias payloads, not
+    // silently preserve opaque or Master-only fields in local search metadata.
+    local.associations = [];
+    const entities = local.localOnlyEntities as Array<{
+      aliases: Array<Record<string, unknown>>;
+    }>;
+    entities[0]!.aliases = [
+      {
+        id: 'alias-map080-invalid',
+        entityId: 'entity-map080-unit',
+        language: 'master',
+        value: 'MAP080_MASTER_ALIAS_CANARY',
+      },
+    ];
+    await seal();
+    await expect(parsePublicCatalogSnapshotV4(snapshot)).rejects.toMatchObject({
+      code: 'invalid-snapshot',
+    });
+
+    entities[0]!.aliases[0]!.language = 'en';
+    entities[0]!.aliases[0]!.value = { private: 'MAP080_MASTER_ALIAS_CANARY' };
+    await seal();
+    await expect(parsePublicCatalogSnapshotV4(snapshot)).rejects.toMatchObject({
+      code: 'invalid-snapshot',
+    });
   });
 
   test('keeps the Beta 0.1 parser available for a forward rollback deployment', async () => {

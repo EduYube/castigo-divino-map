@@ -257,7 +257,9 @@ function parseLocal(
     uniq(
       aliases.map((alias, i) => {
         const a = obj(alias, 'local.alias[' + i + ']', ['id', 'entityId', 'language', 'value']);
-        if (a.entityId !== e.id) invalid('cross-entity alias.');
+        if (a.entityId !== e.id || a.language !== 'en')
+          invalid('cross-entity or invalid-language alias.');
+        nonempty(a.value, 'alias value');
         return nonempty(a.id, 'alias id');
       }),
       'entity aliases',

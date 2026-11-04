@@ -66,8 +66,13 @@ export class BrowserPublicCatalogSessionCache implements PublicCatalogSessionCac
       if (envelope.data.contract === 'beta04') {
         this.#storage.removeItem(SESSION_CACHE_KEY_V3);
         this.#storage.removeItem(SESSION_CACHE_KEY_V2);
-      } else if (envelope.data.contract === 'beta03')
+      } else if (envelope.data.contract === 'beta03') {
+        this.#storage.removeItem(SESSION_CACHE_KEY_V4);
         this.#storage.removeItem(SESSION_CACHE_KEY_V2);
+      } else {
+        this.#storage.removeItem(SESSION_CACHE_KEY_V4);
+        this.#storage.removeItem(SESSION_CACHE_KEY_V3);
+      }
     } catch (error) {
       throw new PublicDataRepositoryError(
         'cache-unavailable',
