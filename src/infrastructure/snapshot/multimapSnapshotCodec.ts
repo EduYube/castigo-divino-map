@@ -218,7 +218,7 @@ function parseLocal(
     placements.map((p) => p.contextId + '\u0000' + p.entityId),
     'local placements',
   );
-  const worldIds = new Set(world.entities.map(({ id }) => id));
+  const worldIds = new Set<string>(world.entities.map(({ id }) => id));
   const localEntities = array(row.localOnlyEntities, 'local.localOnlyEntities').map((value, i) => {
     const raw = value as Record<string, unknown>;
     const e = obj(
