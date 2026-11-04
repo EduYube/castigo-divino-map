@@ -621,7 +621,9 @@ async function configureCampaignBackend(
                     },
                   ]
                 : []
-              : rowsFor(table, campaignIdFromUrl(url));
+              : table === 'map_entities' && url.searchParams.get('world_map_enabled') === 'eq.false'
+                ? []
+                : rowsFor(table, campaignIdFromUrl(url));
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
