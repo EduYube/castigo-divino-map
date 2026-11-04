@@ -176,8 +176,43 @@ try {
   fail('the bundled public snapshot does not contain valid JSON');
 }
 
-if (snapshot.schemaVersion !== 3) {
-  fail('the bundled public snapshot does not use the Beta 0.3 multicampaign public contract');
+if (snapshot.schemaVersion !== 4) {
+  fail('the bundled public snapshot does not use the Beta 0.4 multi-map public contract');
+}
+
+// A V4 production artifact must include both projections in the same envelope.
+// Schema and checksum checks complement the canonical snapshot:verify gate;
+// neither a world-only V3 payload nor a partial V4 payload may pass here.
+if (
+  !Array.isArray(snapshot.campaigns) ||
+  !Array.isArray(snapshot.campaignCatalogs) ||
+  !Array.isArray(snapshot.geographicNames) ||
+  !Array.isArray(snapshot.mapContexts) ||
+  !Array.isArray(snapshot.campaignLocalMaps) ||
+  snapshot.campaignLocalMaps.length !== snapshot.campaigns.length
+) {
+  fail('the bundled public snapshot is missing the complete V4 world/local projections');
+}
+const campaignIds = new Set(snapshot.campaigns.map((campaign) => campaign.id));
+const worldCatalogIds = new Set(snapshot.campaignCatalogs.map((catalog) => catalog.campaignId));
+const localCatalogIds = new Set(snapshot.campaignLocalMaps.map((catalog) => catalog.campaignId));
+const contextIds = new Set(snapshot.mapContexts.map((context) => context.id));
+if (
+  campaignIds.size !== snapshot.campaigns.length ||
+  worldCatalogIds.size !== campaignIds.size ||
+  localCatalogIds.size !== campaignIds.size ||
+  [...campaignIds].some((id) => !worldCatalogIds.has(id) || !localCatalogIds.has(id)) ||
+  snapshot.campaignLocalMaps.some(
+    (local) =>
+      !Array.isArray(local.geographicMapContextLinks) ||
+      !Array.isArray(local.placements) ||
+      !Array.isArray(local.localOnlyEntities) ||
+      local.geographicMapContextLinks.some(
+        (link) => link.campaignId !== local.campaignId || !contextIds.has(link.contextId),
+      ),
+  )
+) {
+  fail('the bundled public snapshot has inconsistent V4 campaign/map identities');
 }
 
 if (!snapshot.generatedAt || !Number.isFinite(Date.parse(snapshot.generatedAt))) {
@@ -253,5 +288,5 @@ for (const pattern of SECRET_PATTERNS) {
 }
 
 console.log(
-  `Verified ${publicPaths.length} production files for ${expectedBase}: index, JavaScript, CSS, Beta 0.3 multicampaign public snapshot, remote map reference, no master-only canaries, no raster map copy and no known or privileged Supabase credential patterns.`,
+  `Verified ${publicPaths.length} production files for ${expectedBase}: index, JavaScript, CSS, Beta 0.4 atomic multi-map public snapshot, remote map reference, no master-only canaries, no raster map copy and no known or privileged Supabase credential patterns.`,
 );
