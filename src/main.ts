@@ -166,6 +166,7 @@ function mountPublicExperience(
   let masterEntityIds: ReadonlySet<EntityId> = new Set();
   let masterModeRuntime: MasterModeRuntime | null = null;
   let masterPurgedOnMapChange = false;
+  let isUpdatingMasterLocalSurface = false;
   let deferredSelectionAnnouncementGeneration = 0;
   const invalidateDeferredSelectionAnnouncement = (): void => {
     deferredSelectionAnnouncementGeneration += 1;
@@ -480,7 +481,15 @@ function mountPublicExperience(
     }
     // A local transition must revoke Master even during a still-empty load;
     // returning to world never silently reactivates the private projection.
-    masterController?.setLocalSurfaceActive(localNavigation.getMapSlug() !== null);
+    // setLocalSurfaceActive synchronously notifies subscribers. Do not allow
+    // applyCatalogState -> localNavigation.redraw to re-enter Leaflet.showSurface
+    // before the first map's construction finishes.
+    isUpdatingMasterLocalSurface = true;
+    try {
+      masterController?.setLocalSurfaceActive(localNavigation.getMapSlug() !== null);
+    } finally {
+      isUpdatingMasterLocalSurface = false;
+    }
     if (!localNavigation.getMapSlug()) pendingLocalFocusEntityId = null;
     if (activeLocalEntityId) {
       activeLocalEntityId = null;
@@ -1083,7 +1092,9 @@ function mountPublicExperience(
       if (authState.phase !== 'authorized') portraitResources?.clearPrivate();
     });
     masterModeRuntime = bootstrapMasterModeRuntime(app, adminRuntime);
-    masterModeRuntime.controller.subscribe(() => applyCatalogState(catalogState, true));
+    masterModeRuntime.controller.subscribe(() => {
+      if (!isUpdatingMasterLocalSurface) applyCatalogState(catalogState, true);
+    });
     masterModeRuntime.controller.setLocalSurfaceActive(localNavigation.getMapSlug() !== null);
 
     mountMasterDetailActions(app, adminRuntime.mapEntityController, {

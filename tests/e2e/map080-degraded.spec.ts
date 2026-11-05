@@ -151,7 +151,9 @@ test('MAP-080 repeated local map re-entry preserves Leaflet regions, keyboard ac
     await region.focus();
     await region.press('Enter');
     await expect(page.getByTestId('place-details')).toContainText('MAP080 Synthetic Polygon');
-    await page.keyboard.press('Escape');
+    // Desktop exposes an explicit close action, not a global Escape shortcut.
+    // Closing the compact detail must return focus to the activated region.
+    await page.getByRole('button', { name: 'Cerrar la ficha de MAP080 Synthetic Polygon' }).click();
     await expect(region).toBeFocused();
 
     await page.getByRole('button', { name: 'Mapa general' }).click();

@@ -176,6 +176,18 @@ test('MAP080-REV-01 pending Master response cannot reactivate private state afte
   await page.getByRole('button', { name: 'Iniciar sesión' }).click();
   await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
   await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+  // In this fixture the public REST endpoint deliberately fails to exercise
+  // the complete V4 fallback. Admin RPCs remain reachable: announce this
+  // distinct administrative connectivity explicitly to the test app.
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'degraded',
+  );
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+    ),
+  );
 
   const toggle = page.locator('[data-master-mode-toggle]');
   await expect(toggle).toBeVisible();
