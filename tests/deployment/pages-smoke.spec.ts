@@ -41,9 +41,8 @@ async function revealVeyraPin(page: Page) {
       `[data-testid="coincident-pin-option"][data-entity-id="${VEYRA_ENTITY_ID}"]`,
   );
   const cluster = page.getByTestId('coincident-pin');
-  await expect
-    .poll(async () => (await pin.count()) + (await cluster.count()))
-    .toBeGreaterThan(0);
+  const visibleMarkers = async () => (await pin.count()) + (await cluster.count());
+  await expect.poll(visibleMarkers).toBeGreaterThan(0);
   if ((await pin.count()) === 0) {
     await expect(cluster).toHaveCount(1);
     await cluster.focus();
@@ -279,9 +278,8 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
       break;
     }
   }
-  expect(reachedClear, `Clear search not keyboard-reachable: ${focusTrail.join(' -> ')}`).toBe(
-    true,
-  );
+  const focusMessage = `Clear search not keyboard-reachable: ${focusTrail.join(' -> ')}`;
+  expect(reachedClear, focusMessage).toBe(true);
   await expect(clearSearch).toBeFocused();
 });
 
