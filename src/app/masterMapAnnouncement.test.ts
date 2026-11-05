@@ -6,43 +6,29 @@ describe('Master map announcement revocation', () => {
   const masterNames = new Set(['MAP080 LOCAL MASTER SECRET']);
 
   test('recognizes the synchronous Leaflet marker selection announcement', () => {
-    expect(
-      isMasterOnlyMapAnnouncement(
-        'MAP080 LOCAL MASTER SECRET, personaje, seleccionado en el mapa.',
-        masterNames,
-      ),
-    ).toBe(true);
+    const announcement = 'MAP080 LOCAL MASTER SECRET, personaje, seleccionado en el mapa.';
+    expect(isMasterOnlyMapAnnouncement(announcement, masterNames)).toBe(true);
   });
 
   test('recognizes deferred private detail and search-focus announcements', () => {
-    expect(
-      isMasterOnlyMapAnnouncement(
-        'MAP080 LOCAL MASTER SECRET, personaje, seleccionado en el mapa. Ficha compacta abierta. Contenido del Máster.',
-        masterNames,
-      ),
-    ).toBe(true);
-    expect(
-      isMasterOnlyMapAnnouncement(
-        'Mapa centrado en MAP080 LOCAL MASTER SECRET, personaje, contenido del Máster; posición resaltada.',
-        masterNames,
-      ),
-    ).toBe(true);
+    const privateAnnouncements = [
+      'MAP080 LOCAL MASTER SECRET, personaje, seleccionado en el mapa. Ficha compacta abierta. Contenido del Máster.',
+      'Mapa centrado en MAP080 LOCAL MASTER SECRET, personaje, contenido del Máster; posición resaltada.',
+    ];
+    for (const announcement of privateAnnouncements) {
+      expect(isMasterOnlyMapAnnouncement(announcement, masterNames)).toBe(true);
+    }
   });
 
   test('never clears unrelated public announcements during Master revocation', () => {
-    expect(
-      isMasterOnlyMapAnnouncement(
-        'Mapa centrado en Neverwinter, lugar geográfico; posición resaltada.',
-        masterNames,
-      ),
-    ).toBe(false);
-    expect(
-      isMasterOnlyMapAnnouncement(
-        'Veyra, personaje, seleccionado en el mapa.',
-        masterNames,
-      ),
-    ).toBe(false);
-    expect(isMasterOnlyMapAnnouncement('', masterNames)).toBe(false);
+    const publicAnnouncements = [
+      'Mapa centrado en Neverwinter, lugar geográfico; posición resaltada.',
+      'Veyra, personaje, seleccionado en el mapa.',
+      '',
+    ];
+    for (const announcement of publicAnnouncements) {
+      expect(isMasterOnlyMapAnnouncement(announcement, masterNames)).toBe(false);
+    }
   });
 
   test('does not clear a partial public-name match', () => {
