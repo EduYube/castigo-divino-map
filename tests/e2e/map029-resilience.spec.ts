@@ -68,7 +68,7 @@ function projectFixtureRows(table: string): readonly Record<string, unknown>[] {
   });
 }
 
-async function configureBackend(page: Page, timeoutMs = 75): Promise<TestBackend> {
+async function configureBackend(page: Page, timeoutMs = 1200): Promise<TestBackend> {
   let mode: BackendMode = 'success';
   let requests = 0;
   let entityNameOverride: string | null = null;
@@ -97,7 +97,7 @@ async function configureBackend(page: Page, timeoutMs = 75): Promise<TestBackend
       return;
     }
     if (mode === 'slow') {
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 2200));
     }
     if (mode === 'http-error') {
       await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
@@ -188,8 +188,9 @@ test('performs one initial public request per contract table and does not poll w
   const backend = await configureBackend(page, 1000);
   await openConnected(page);
 
-  // One campaign request and one MAP-077 campaign/geography binding request.
-  const initialRequestCount = Object.keys(PUBLIC_CATALOG_TABLE_QUERIES).length + 2;
+  // MAP-080 REV-02 verifies two complete world/local acquisitions before
+  // publishing; each pass includes one campaign discovery and one map binding.
+  const initialRequestCount = (Object.keys(PUBLIC_CATALOG_TABLE_QUERIES).length + 2) * 2;
   await expect.poll(() => backend.requestCount()).toBe(initialRequestCount);
   const settledCount = backend.requestCount();
   expect(settledCount).toBe(initialRequestCount);

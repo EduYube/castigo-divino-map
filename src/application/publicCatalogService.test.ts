@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
 import type { CampaignCatalog } from '../data/model';
+import type { PublicCatalogSnapshotV4 } from '../data/beta04-model';
 import {
   PublicDataRepositoryError,
   type PublicCatalogEnvelope,
@@ -64,6 +65,37 @@ function repository(load: PublicCatalogRepository['load']): PublicCatalogReposit
   return { load };
 }
 
+function v4Envelope(
+  source: PublicCatalogEnvelope['source'],
+  generatedAt: string,
+  checksum: string,
+): PublicCatalogEnvelope {
+  const catalog: PublicCatalogSnapshotV4 = {
+    schemaVersion: 4,
+    generatedAt,
+    sourceRevision: checksum,
+    checksum,
+    campaigns: [],
+    campaignCatalogs: [],
+    geographicNames: [],
+    mapContexts: [],
+    campaignLocalMaps: [],
+  };
+  return {
+    data: { contract: 'beta04', catalog },
+    source,
+    metadata: {
+      contract: 'beta04',
+      schemaVersion: 4,
+      generatedAt,
+      loadedAt: generatedAt,
+      sourceRevision: checksum,
+      checksum,
+      stale: false,
+    },
+  };
+}
+
 describe('ResilientPublicCatalogService', () => {
   test('promotes a valid remote catalog to the visible source while keeping the snapshot as fallback', async () => {
     const service = new ResilientPublicCatalogService({
@@ -83,6 +115,59 @@ describe('ResilientPublicCatalogService', () => {
     expect(connected.remoteSource).toBe('supabase');
     expect(connected.data?.contract).toBe('beta02');
     expect(connected.degradation.usingFallback).toBe(false);
+  });
+
+  test('restores a newer complete V4 session revision during offline startup', async () => {
+    const bundled = v4Envelope('bundled-snapshot', '2026-10-30T00:00:00.000Z', 'sha256:bundled-v4');
+    const cached = v4Envelope('session-cache', '2026-11-01T00:00:00.000Z', 'sha256:cached-v4');
+    const service = new ResilientPublicCatalogService({
+      fallbackRepositories: [repository(async () => bundled)],
+      remoteRepository: null,
+      sessionCache: {
+        read: async () => cached,
+        write: async () => {},
+        clear: () => {},
+      },
+      isOnline: () => false,
+    });
+
+    const initial = await service.initialize();
+    const offline = await service.refresh();
+    expect(initial.source).toBe('session-cache');
+    expect(initial.metadata?.checksum).toBe(cached.metadata.checksum);
+    expect(offline.source).toBe('session-cache');
+    expect(offline.backend.state).toBe('offline');
+    expect(offline.data?.contract).toBe('beta04');
+  });
+
+  test('does not replace a newer bundled V4 with older or historical session data', async () => {
+    const bundled = v4Envelope(
+      'bundled-snapshot',
+      '2026-11-01T00:00:00.000Z',
+      'sha256:new-bundled-v4',
+    );
+    const cachedV4 = v4Envelope(
+      'session-cache',
+      '2026-10-30T00:00:00.000Z',
+      'sha256:old-cached-v4',
+    );
+    for (const cached of [cachedV4, { ...REMOTE_ENVELOPE, source: 'session-cache' as const }]) {
+      const service = new ResilientPublicCatalogService({
+        fallbackRepositories: [repository(async () => bundled)],
+        remoteRepository: null,
+        sessionCache: {
+          read: async () => cached,
+          write: async () => {},
+          clear: () => {},
+        },
+        isOnline: () => false,
+      });
+      const result = await service.initialize();
+      expect(result.source).toBe('bundled-snapshot');
+      expect(result.metadata?.checksum).toBe(bundled.metadata.checksum);
+      expect(result.data?.contract).toBe('beta04');
+      service.dispose();
+    }
   });
 
   test('classifies an aborted slow request as a recoverable timeout', async () => {

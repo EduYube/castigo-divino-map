@@ -39,6 +39,7 @@ export class MasterModeController {
   #operationId = 0;
   #abortController: AbortController | null = null;
   #destroyed = false;
+  #localSurfaceActive = false;
 
   constructor(
     repository: MasterCatalogRepository,
@@ -58,6 +59,25 @@ export class MasterModeController {
 
   getState(): MasterModeState {
     return this.#state;
+  }
+
+  isLocalSurfaceActive(): boolean {
+    return this.#localSurfaceActive;
+  }
+
+  setLocalSurfaceActive(active: boolean): void {
+    if (this.#destroyed || this.#localSurfaceActive === active) return;
+    this.#localSurfaceActive = active;
+    if (active) {
+      // Revoke even while loading or when the Master catalog is empty. #purge
+      // aborts requests and invalidates generations that ignore AbortSignal.
+      this.#purge(this.#isAuthorized() ? 'off' : 'unavailable', null);
+    } else {
+      this.#synchronizeAvailability();
+      // Preserve OFF on return to world, but repaint the toggle for a new,
+      // explicitly authorized activation.
+      this.#publish(this.#state);
+    }
   }
 
   subscribe(listener: MasterModeStateListener): () => void {
@@ -81,7 +101,7 @@ export class MasterModeController {
 
   async setEnabled(enabled: boolean): Promise<void> {
     if (this.#destroyed) return;
-    if (!enabled) {
+    if (!enabled || this.#localSurfaceActive) {
       this.#purge(this.#isAuthorized() ? 'off' : 'unavailable', null);
       return;
     }
@@ -95,6 +115,10 @@ export class MasterModeController {
   async reload(): Promise<void> {
     if (this.#destroyed || !this.#isAuthorized()) {
       this.#purge('unavailable', null);
+      return;
+    }
+    if (this.#localSurfaceActive) {
+      this.#purge('off', null);
       return;
     }
 

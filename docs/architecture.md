@@ -440,3 +440,9 @@ Los contextos globales no se filtran por campaña; bindings, entidades y placeme
 se recargan/invalidan al cambiar la campaña administrativa. Se emplea CRS.Simple
 con dimensiones variables de cada contexto, sin publicar assets sin licencia ni
 modificar el lector público. Véase [MAP-078](map-078-local-map-admin.md).
+
+## MAP-080 revision authority
+
+The public data boundary is the V4 envelope, not independent world and local REST calls. `SupabasePublicCatalogRepository` retrieves world campaign projections and local table sets under one abortable load. After validating both domains, it computes a **single** public checksum and publishes the envelope atomically. `PublicDataRuntime` selects a campaign and projects world Beta 0.2 while separately exposing that campaign's local projection and map bindings. `LocalMapNavigation` and `PublicLocalMapRuntime` consume only their current V4 state. The local projection never modifies the spatial world catalog; a world-enabled entity may have many independent local placements under the same stable entity ID.
+
+`BundledPublicCatalogRepository` and `BrowserPublicCatalogSessionCache` use the same strict V4 parser. The older V1/V2/V3 parsers remain supported for world-only history. `src/data-access/publicLocalMapQueryContract.js` centralizes local REST selections/filters/ordering and `fetchCompletePublicCatalogTable` enforces full-page ranges and exact total counts in browser and scripts. MAP-080 performs no schema migration.

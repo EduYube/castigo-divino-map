@@ -32,6 +32,27 @@ async function mockOfficialMap(page: Page, status = 200): Promise<void> {
   });
 }
 
+// In V4, a newly published public mission can be within the 52 px clustering
+// radius of Veyra. Verify the public pin through the accessible cluster
+// keyboard contract instead of assuming every pin is a singleton.
+async function revealVeyraPin(page: Page) {
+  const pin = page.locator(
+    `[data-testid="entity-pin"][data-entity-id="${VEYRA_ENTITY_ID}"], ` +
+      `[data-testid="coincident-pin-option"][data-entity-id="${VEYRA_ENTITY_ID}"]`,
+  );
+  const cluster = page.getByTestId('coincident-pin');
+  const visibleMarkers = async () => (await pin.count()) + (await cluster.count());
+  await expect.poll(visibleMarkers).toBeGreaterThan(0);
+  if ((await pin.count()) === 0) {
+    await expect(cluster).toHaveCount(1);
+    await cluster.focus();
+    await cluster.press('Enter');
+  }
+  await expect(pin).toHaveCount(1);
+  await expect(pin).toHaveAttribute('data-entity-id', VEYRA_ENTITY_ID);
+  return pin;
+}
+
 function generatedResourceRequests(requests: readonly Request[]): readonly Request[] {
   return requests.filter((request) => /\.(?:css|js)(?:\?|$)/.test(request.url()));
 }
@@ -104,9 +125,27 @@ test('loads the v1.2 public experience from the repository subdirectory', async 
   await expect(page.getByRole('checkbox', { name: /Personaje/ })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Veyra/ })).toBeChecked();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
-  const veyraPin = page.locator(`[data-testid="entity-pin"][data-entity-id="${VEYRA_ENTITY_ID}"]`);
-  await expect(veyraPin).toHaveCount(1);
-  await expect(veyraPin).toHaveAttribute('data-entity-id', VEYRA_ENTITY_ID);
+  const veyraPin = await revealVeyraPin(page);
+  // A clustered portrait only becomes a DOM image once the member is
+  // expanded. Check the same security/portrait contract before activation
+  // collapses the cluster.
+  await expect.poll(() => veyraPortraitLoaded).toBe(true);
+  const veyraPortrait = veyraPin.locator('img.pin-visual__portrait');
+  await expect(veyraPortrait).toHaveCount(1);
+  await expect
+    .poll(() =>
+      veyraPortrait.evaluate((image) => {
+        const portrait = image as HTMLImageElement;
+        const effectiveUrl = portrait.currentSrc || portrait.src;
+        return (
+          portrait.complete &&
+          portrait.naturalWidth > 0 &&
+          portrait.naturalHeight > 0 &&
+          effectiveUrl.startsWith('blob:')
+        );
+      }),
+    )
+    .toBe(true);
   await veyraPin.click();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-pin-id',
@@ -153,23 +192,6 @@ test('loads the v1.2 public experience from the repository subdirectory', async 
     return url.origin === applicationOrigin && /\.(?:jpg|jpeg|png|webp)$/i.test(url.pathname);
   });
   expect(localRasterRequests).toEqual([]);
-  await expect.poll(() => veyraPortraitLoaded).toBe(true);
-  const veyraPortrait = veyraPin.locator('img.pin-visual__portrait');
-  await expect(veyraPortrait).toHaveCount(1);
-  await expect
-    .poll(() =>
-      veyraPortrait.evaluate((image) => {
-        const portrait = image as HTMLImageElement;
-        const effectiveUrl = portrait.currentSrc || portrait.src;
-        return (
-          portrait.complete &&
-          portrait.naturalWidth > 0 &&
-          portrait.naturalHeight > 0 &&
-          effectiveUrl.startsWith('blob:')
-        );
-      }),
-    )
-    .toBe(true);
   expect(failedResponses).toEqual([]);
 
   await page.reload();
@@ -177,7 +199,7 @@ test('loads the v1.2 public experience from the repository subdirectory', async 
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
   await expect(page.getByTestId('place-details')).toBeHidden();
 
-  await veyraPin.click();
+  await (await revealVeyraPin(page)).click();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-pin-id',
     VEYRA_ENTITY_ID,
@@ -232,8 +254,33 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
   await expect(page.locator(`[data-search-result-id="${VEYRA_ENTITY_ID}"]`)).toBeVisible();
   await searchbox.focus();
   await expect(searchbox).toBeFocused();
-  await searchbox.press('Tab');
-  await expect(page.getByRole('button', { name: 'Limpiar búsqueda' })).toBeFocused();
+  const clearSearch = page.getByRole('button', { name: 'Limpiar búsqueda' });
+  // On a 320 px layout the browser may traverse extra controls. Keep the
+  // accessibility requirement (keyboard-reachable clear action), not a
+  // brittle assumption about exactly one Tab.
+  let reachedClear = false;
+  const focusTrail: string[] = [];
+  for (let step = 0; step < 5; step += 1) {
+    await page.keyboard.press('Tab');
+    focusTrail.push(
+      await page.evaluate(() => {
+        const element = document.activeElement;
+        if (!(element instanceof HTMLElement)) return 'none';
+        return (
+          element.getAttribute('aria-label') ??
+          element.textContent?.trim().slice(0, 50) ??
+          element.tagName
+        );
+      }),
+    );
+    if (await clearSearch.evaluate((button) => document.activeElement === button)) {
+      reachedClear = true;
+      break;
+    }
+  }
+  const focusMessage = `Clear search not keyboard-reachable: ${focusTrail.join(' -> ')}`;
+  expect(reachedClear, focusMessage).toBe(true);
+  await expect(clearSearch).toBeFocused();
 });
 
 test('keeps v1.2 usable from the public snapshot when Supabase returns 503', async ({ page }) => {
@@ -255,8 +302,7 @@ test('keeps v1.2 usable from the public snapshot when Supabase returns 503', asy
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
   await expect(page.getByRole('checkbox', { name: /Personaje/ })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Veyra/ })).toBeChecked();
-  const veyraPin = page.locator(`[data-testid="entity-pin"][data-entity-id="${VEYRA_ENTITY_ID}"]`);
-  await expect(veyraPin).toHaveCount(1);
+  const veyraPin = await revealVeyraPin(page);
   await veyraPin.click();
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-active-pin-id',

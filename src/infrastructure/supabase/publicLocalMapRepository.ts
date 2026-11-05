@@ -6,6 +6,7 @@ import type {
   PublicSpatialMapEntity,
 } from '../../data/beta02-model';
 import type { PublicCatalogTableQuery } from '../../data-access/publicCatalogQueryContract.js';
+import { PUBLIC_LOCAL_MAP_TABLE_QUERIES } from '../../data-access/publicLocalMapQueryContract.js';
 import {
   fetchCompletePublicCatalogTable,
   PUBLIC_CATALOG_TABLE_QUERIES,
@@ -71,32 +72,7 @@ const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const EPSILON = 1e-9;
 const REMOTE_URL = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i;
 const LOCAL_URL = /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\/?$/i;
-const TABLES = {
-  links: {
-    name: 'campaign_geographic_map_context_links',
-    select:
-      'campaign_id,geographic_name_id,map_context_id,map_contexts!inner(id,slug,name,width,height,publication_status)',
-    order: 'geographic_name_id.asc',
-    published: false,
-    campaignScoped: true,
-  },
-  placements: {
-    name: 'entity_map_placements',
-    select: 'campaign_id,map_context_id,entity_id,geometry,x,y,publication_status',
-    order: 'map_context_id.asc,entity_id.asc',
-    published: true,
-    campaignScoped: true,
-  },
-  localEntities: {
-    name: 'map_entities',
-    select:
-      'id,slug,entity_type,lifecycle_status,visibility,name,name_language,summary,description,portrait_path,x,y,geometry,category_id,world_map_enabled,publication_status,audience',
-    order: 'id.asc',
-    published: true,
-    campaignScoped: true,
-    worldMapEnabled: false,
-  },
-} satisfies Record<string, PublicCatalogTableQuery>;
+const TABLES = PUBLIC_LOCAL_MAP_TABLE_QUERIES;
 
 function invalid(message: string): never {
   throw new PublicDataRepositoryError('invalid-response', message, {
@@ -153,6 +129,8 @@ function parseContextLinks(
       'width',
       'height',
       'publication_status',
+      'parent_id',
+      'image_uri',
     ]);
     const id = string(context.id, 'context.id', MAP_ID);
     if (link.map_context_id !== id || context.publication_status !== 'published') {
@@ -436,6 +414,8 @@ export class SupabasePublicLocalMapRepository {
     readonly signal: AbortSignal;
     /** Already validated binding results from MAP-077 navigation (same authority). */
     readonly authorizedContexts?: readonly PublicLocalContext[];
+    /** V4's already-validated world-only entity identities. */
+    readonly worldEntityIds?: ReadonlySet<string>;
   }): Promise<PublicLocalMapData> {
     const { campaignId, signal } = options;
     if (!/^[0-9a-f-]{36}$/.test(campaignId)) invalid('Campaña local inválida.');
@@ -498,6 +478,17 @@ export class SupabasePublicLocalMapRepository {
     const localOnlyIds = new Set(
       rows.entities.map((row) => string(row.id, 'entity.id', IDENTIFIER)),
     );
+    // Do not trust row-level security alone: a spatial identity must resolve
+    // in this campaign's same-revision world catalog or published local-only rows.
+    // Historical standalone readers may omit worldEntityIds; the V4 envelope
+    // always supplies it and therefore validates every placement.
+    const visibleIds = new Set([...localOnlyIds, ...(options.worldEntityIds ?? [])]);
+    if (options.worldEntityIds) {
+      for (const placement of placements) {
+        if (!visibleIds.has(placement.entityId))
+          invalid('Placement with private or missing entity.');
+      }
+    }
     const firstPlacement = new Map<string, PublicLocalPlacement>();
     for (const placement of placements) {
       if (!firstPlacement.has(placement.entityId))
@@ -526,13 +517,17 @@ export class SupabasePublicLocalMapRepository {
       .map(parseEntityRelation)
       .filter(
         ({ leftEntityId, rightEntityId }) =>
-          localOnlyIds.has(leftEntityId) || localOnlyIds.has(rightEntityId),
+          (localOnlyIds.has(leftEntityId) || localOnlyIds.has(rightEntityId)) &&
+          visibleIds.has(leftEntityId) &&
+          visibleIds.has(rightEntityId),
       );
     const characterLocationRelations = rows.characterLocationRelations
       .map(parseCharacterLocationRelation)
       .filter(
         ({ characterId, locationId }) =>
-          localOnlyIds.has(characterId) || localOnlyIds.has(locationId),
+          (localOnlyIds.has(characterId) || localOnlyIds.has(locationId)) &&
+          visibleIds.has(characterId) &&
+          visibleIds.has(locationId),
       );
     if (new Set(localOnlyEntities.map(({ id }) => id)).size !== localOnlyEntities.length) {
       invalid('Entidades local-only duplicadas.');

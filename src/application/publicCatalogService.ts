@@ -146,6 +146,21 @@ export class ResilientPublicCatalogService {
     if (this.#sessionCache) {
       try {
         this.#lastRemoteEnvelope = await this.#sessionCache.read();
+        const cached = this.#lastRemoteEnvelope;
+        const bundled = this.#visibleEnvelope;
+        // The cache is a fully validated revision, never a set of local rows
+        // to merge with the bundled world. Prefer newer complete V4 revisions;
+        // never downgrade a bundled V4 to a historical world-only cache.
+        if (
+          cached &&
+          (!bundled ||
+            cached.metadata.schemaVersion > bundled.metadata.schemaVersion ||
+            (cached.metadata.schemaVersion === 4 &&
+              bundled.metadata.schemaVersion === 4 &&
+              Date.parse(cached.metadata.generatedAt) >= Date.parse(bundled.metadata.generatedAt)))
+        ) {
+          this.#visibleEnvelope = cached;
+        }
       } catch (error) {
         errors.push(toPublicDataIssue(error));
       }

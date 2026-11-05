@@ -83,11 +83,12 @@ export function mountMasterMode(
     ensureMounted();
     const active = state.enabled;
     button.setAttribute('aria-pressed', String(active));
-    button.disabled = state.phase === 'loading';
+    button.disabled = state.phase === 'loading' || controller.isLocalSurfaceActive();
     button.textContent = active ? 'Desactivar Modo Máster' : 'Activar Modo Máster';
     section.dataset.state = state.phase;
-    status.textContent =
-      state.phase === 'loading'
+    status.textContent = controller.isLocalSurfaceActive()
+      ? 'Modo Máster desactivado mientras se consulta un mapa local.'
+      : state.phase === 'loading'
         ? 'Cargando contenido privado autorizado…'
         : (state.message ??
           (state.phase === 'on'

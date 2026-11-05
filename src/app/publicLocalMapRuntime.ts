@@ -17,22 +17,19 @@ import {
 } from '../map/campaignRegions';
 import type { LocalMapContext } from './localMapNavigation';
 import {
-  EMPTY_PUBLIC_LOCAL_DATA,
   mergePublicLocalCatalog,
   projectPublicLocalSurface,
-  SupabasePublicLocalMapRepository,
   type PublicLocalMapData,
 } from '../infrastructure/supabase/publicLocalMapRepository';
 
 const EMPTY_LEGACY: CampaignCatalog = { categories: [], tags: [], places: [], notes: [] };
-const REQUEST_TIMEOUT_MS = 14000;
-const RETRY_DELAY_MS = 700;
 
 export interface PublicLocalMapRuntime {
   update(
     campaignId: string | null,
     world: PublicCatalogSnapshotV2 | null,
     backendState: string,
+    revisionLocal?: PublicLocalMapData | null,
   ): void;
   setAuthorizedContexts(contexts: readonly LocalMapContext[]): void;
   setSurface(context: LocalMapContext | null, map: LeafletMap | null): void;
@@ -60,24 +57,10 @@ export function mountPublicLocalMapRuntime(
   root: ParentNode,
   options: PublicLocalMapRuntimeOptions,
 ): PublicLocalMapRuntime {
-  const test = import.meta.env.DEV ? window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ : undefined;
-  let repository: SupabasePublicLocalMapRepository | null = null;
-  try {
-    repository = new SupabasePublicLocalMapRepository({
-      projectUrl: test?.projectUrl ?? import.meta.env.VITE_SUPABASE_URL ?? '',
-      publishableKey: test?.publishableKey ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
-      allowLocalProject: import.meta.env.DEV,
-    });
-  } catch {
-    // The remote public reader is authoritative. No local results without it.
-  }
   let campaignId: string | null = null;
   let world: PublicCatalogSnapshotV2 | null = null;
-  let backendState = 'checking';
   let localData: PublicLocalMapData | null = null;
   let authorizedContexts: readonly LocalMapContext[] = [];
-  let generation = 0;
-  let controller: AbortController | null = null;
   let surface: { context: LocalMapContext; map: LeafletMap } | null = null;
   let surfaceCatalog: PublicCatalogSnapshotV2 | null = null;
   let layerState: MapLayerState = ALL_MAP_LAYER_STATE;
@@ -112,7 +95,7 @@ export function mountPublicLocalMapRuntime(
       !data ||
       !world ||
       data.campaignId !== campaignId ||
-      backendState !== 'connected'
+      !authorizedContexts.some(({ id }) => id === current.context.id)
     )
       return;
     if (!data.contexts.some(({ id }) => id === current.context.id)) return;
@@ -268,109 +251,49 @@ export function mountPublicLocalMapRuntime(
   };
 
   const purge = (): void => {
-    controller?.abort();
-    controller = null;
-    generation += 1;
     localData = null;
+    activeEntityId = null;
     clearMap();
     options.onDataChange();
   };
-
-  const fetchLocal = (): void => {
-    controller?.abort();
-    controller = null;
-    generation += 1;
-    const currentGeneration = generation;
-    localData = null;
-    clearMap();
-    options.onDataChange();
-    if (!campaignId || !world || backendState !== 'connected' || !repository) return;
-    if (authorizedContexts.length === 0) {
-      localData = EMPTY_PUBLIC_LOCAL_DATA(campaignId);
-      options.onDataChange();
-      return;
-    }
-    const request = new AbortController();
-    controller = request;
-    const timeout = window.setTimeout(() => request.abort(), REQUEST_TIMEOUT_MS);
-    const attempt = async (retry: boolean): Promise<void> => {
-      try {
-        const data = await repository!.load({
-          campaignId: campaignId!,
-          signal: request.signal,
-          authorizedContexts,
-        });
-        if (
-          request.signal.aborted ||
-          currentGeneration !== generation ||
-          data.campaignId !== campaignId ||
-          backendState !== 'connected'
-        )
-          return;
-        localData = data;
-        controller = null;
-        render();
-        options.onDataChange();
-      } catch {
-        if (request.signal.aborted || currentGeneration !== generation) return;
-        if (retry && navigator.onLine) {
-          await new Promise<void>((resolve) => window.setTimeout(resolve, RETRY_DELAY_MS));
-          if (!request.signal.aborted && currentGeneration === generation) await attempt(false);
-          return;
-        }
-        // Fail closed: the world snapshot remains operational, local data does not.
-        controller = null;
-        localData = null;
-        clearMap();
-        options.onDataChange();
-      } finally {
-        if (currentGeneration === generation && (localData !== null || !retry)) {
-          window.clearTimeout(timeout);
-        }
-      }
-    };
-    void attempt(true);
-  };
-
   window.addEventListener('atlas:campaign-will-change', () => {
+    const wasLocalSurface = surface !== null;
     purge();
     surface = null;
-    options.onSurfaceClosed();
-  });
-  window.addEventListener('atlas:public-data-status', (event) => {
-    const next = (event as CustomEvent<{ backendState?: string }>).detail?.backendState;
-    if (next === 'degraded' || next === 'offline') {
-      backendState = next;
-      purge();
-      options.onSurfaceClosed();
-    }
-    if (next === 'connected' && backendState !== 'connected') {
-      backendState = 'connected';
-      fetchLocal();
-    }
+    authorizedContexts = [];
+    // The existing MAP-061/MAP-070 Master campaign handoff owns its purge
+    // while in world view. Do not falsely close a local map and disable Master.
+    if (wasLocalSurface) options.onSurfaceClosed();
   });
 
   return {
     setAuthorizedContexts(contexts): void {
       authorizedContexts = contexts;
-      fetchLocal();
+      render();
     },
-    update(nextCampaign, nextWorld, nextBackend): void {
+    update(nextCampaign, nextWorld, _nextBackend, revisionLocal): void {
+      void _nextBackend;
       const changed =
-        campaignId !== nextCampaign ||
-        world !== nextWorld ||
-        (backendState !== 'connected' && nextBackend === 'connected') ||
-        (backendState === 'connected' && nextBackend !== 'connected');
+        campaignId !== nextCampaign || world !== nextWorld || localData !== revisionLocal;
       campaignId = nextCampaign;
       world = nextWorld;
-      backendState = nextBackend;
-      if (changed) fetchLocal();
+      // Never fetch local data outside the revision envelope.
+      localData = revisionLocal?.campaignId === nextCampaign ? revisionLocal : null;
+      if (changed) {
+        activeEntityId = null;
+        render();
+        options.onDataChange();
+      }
     },
     setSurface(context, map): void {
-      const changing = surface?.context.id !== context?.id || surface?.map !== map;
+      const changing =
+        (surface?.context.id ?? null) !== (context?.id ?? null) || (surface?.map ?? null) !== map;
       clearMap();
       surface = context && map ? { context, map } : null;
-      if (changing && surface === null) options.onSurfaceClosed();
+      if (changing) {
+        activeEntityId = null;
+        options.onSurfaceClosed();
+      }
       render();
     },
     setLayers(next): void {
@@ -379,7 +302,7 @@ export function mountPublicLocalMapRuntime(
     },
     getSearchCatalog(currentWorld): PublicCatalogSnapshotV2 | null {
       if (!currentWorld) return null;
-      return localData && localData.campaignId === campaignId && backendState === 'connected'
+      return localData && localData.campaignId === campaignId
         ? mergePublicLocalCatalog(currentWorld, localData)
         : currentWorld;
     },
@@ -387,7 +310,7 @@ export function mountPublicLocalMapRuntime(
       return new Set(localData?.localOnlyEntities.map(({ id }) => id) ?? []);
     },
     getContextsForEntity(id): readonly { slug: string; name: string; id: string }[] {
-      if (!localData || backendState !== 'connected') return [];
+      if (!localData) return [];
       const ids = new Set(
         localData.placements
           .filter((placement) => placement.entityId === id)
@@ -406,7 +329,7 @@ export function mountPublicLocalMapRuntime(
       );
     },
     isEntityVisibleInActiveContext(id): boolean {
-      if (!surface || !surfaceCatalog || !localData || backendState !== 'connected') {
+      if (!surface || !surfaceCatalog || !localData) {
         return false;
       }
       const entity = surfaceCatalog.entities.find((candidate) => candidate.id === id);
@@ -472,7 +395,6 @@ export function mountPublicLocalMapRuntime(
         !surface ||
         !surfaceCatalog ||
         !localData ||
-        backendState !== 'connected' ||
         !surfaceCatalog.entities.some((entity) => entity.id === id) ||
         !localData.placements.some(
           (placement) => placement.entityId === id && placement.contextId === surface?.context.id,

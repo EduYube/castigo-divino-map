@@ -490,3 +490,7 @@ por `(campaign_id,map_context_id,entity_id)`; únicamente las `location` admiten
 polígonos, y todas las coordenadas se verifican dentro de cada contexto.
 No hay nueva migración ni cambio del snapshot, y el soporte público completo sigue
 diferido a MAP-079/080. Véase [guía MAP-078](map-078-local-map-admin.md).
+
+## V4 world vs local public projections
+
+`PublicCatalogSnapshotV4` is structurally partitioned. `campaignCatalogs[]` contains only world-enabled entities with canonical world geometry and their world notes, dispositions, relations and geography links. `mapContexts[]` contains only published public local context metadata needed for rendering. `campaignLocalMaps[]` contains one campaign-scoped projection with `geographicMapContextLinks`, local `contexts`, `placements`, canonical `localOnlyEntities` (only with at least one authorized placement), local notes, dispositions, associations and permitted relations. Published world entities with local placements retain canonical identity and world metadata in `campaignCatalogs` rather than duplicating it. The V4 checksum covers all these sections; `generatedAt` changes only when semantic content changes. No Master, draft, archived, private, cross-campaign, unbound or administrative rows are part of this public schema.

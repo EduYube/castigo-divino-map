@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "campaigns": [
     {
       "id": "00000000-0000-4000-8000-000000000053",
@@ -521,6 +521,24 @@
       ],
       "entities": [
         {
+          "id": "entity-brezo-gris",
+          "slug": "brezo-gris",
+          "entityType": "mission",
+          "lifecycleStatus": "active",
+          "visibility": "pin",
+          "name": "Blackford Crossing",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "El antiguo capitán de la guardia de Neverwinter, Bram Harth, le ha dicho a Veyra que si quiere saber más de su abuela y de lo que había en el interior del medallón, deberá ir a El Brezo Gris",
+          "description": "Una atalaya en medio de un cruce con acantilados cercanos, en mitad de la nada",
+          "coordinates": {
+            "x": 1418.59643535406,
+            "y": 2024.03767151569
+          },
+          "categoryId": "category-pj-un-aliento-menos",
+          "tagIds": ["category-veyra"]
+        },
+        {
           "id": "entity-request-07d26371bbff42d9b91e076d099891b0",
           "slug": "request-07d26371bbff42d9b91e076d099891b0",
           "entityType": "character",
@@ -539,7 +557,13 @@
           "tagIds": ["category-veyra"]
         }
       ],
-      "dispositions": [],
+      "dispositions": [
+        {
+          "entityId": "entity-brezo-gris",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        }
+      ],
       "entityRelations": [],
       "characterLocationRelations": [],
       "notes": [],
@@ -3480,7 +3504,58 @@
       "recommendedZoom": 0.75
     }
   ],
-  "generatedAt": "2026-10-09T10:41:05.870Z",
-  "sourceRevision": "sha256:ce1d861bbfc12153be799d5bb6f54b34a87c5a03e50830bb27aaef9ef4567de3",
-  "checksum": "sha256:ce1d861bbfc12153be799d5bb6f54b34a87c5a03e50830bb27aaef9ef4567de3"
+  "mapContexts": [
+    {
+      "id": "map-neverwinter",
+      "slug": "neverwinter",
+      "name": "Neverwinter",
+      "parentId": null,
+      "width": 2048,
+      "height": 1582,
+      "imageUri": null
+    }
+  ],
+  "campaignLocalMaps": [
+    {
+      "campaignId": "00000000-0000-4000-8000-000000000053",
+      "contexts": [],
+      "geographicMapContextLinks": [],
+      "placements": [],
+      "localOnlyEntities": [],
+      "notes": [],
+      "dispositions": [],
+      "associations": [],
+      "entityRelations": [],
+      "characterLocationRelations": []
+    },
+    {
+      "campaignId": "00000000-0000-4000-8000-000000000068",
+      "contexts": [
+        {
+          "id": "map-neverwinter",
+          "slug": "neverwinter",
+          "name": "Neverwinter",
+          "width": 2048,
+          "height": 1582
+        }
+      ],
+      "geographicMapContextLinks": [
+        {
+          "campaignId": "00000000-0000-4000-8000-000000000068",
+          "geographicNameId": "geo-neverwinter",
+          "contextId": "map-neverwinter"
+        }
+      ],
+      "placements": [],
+      "localOnlyEntities": [],
+      "notes": [],
+      "dispositions": [],
+      "associations": [],
+      "entityRelations": [],
+      "characterLocationRelations": []
+    }
+  ],
+  "generatedAt": "2026-11-05T14:29:37.361Z",
+  "sourceRevision": "sha256:4ace919dac2936ba7042ea85569d8a6eaf6801b86836e7332fc85afd95d5719b",
+  "checksum": "sha256:4ace919dac2936ba7042ea85569d8a6eaf6801b86836e7332fc85afd95d5719b"
 }

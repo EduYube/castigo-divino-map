@@ -247,7 +247,9 @@ export function mountCampaignRegions(
       destroyed = true;
       clearAnnouncement();
       removeRendered();
-      map.getPane(REGION_PANE)?.remove();
+      // The Leaflet map owns this pane until map.remove(). Removing its node
+      // leaves a cached getPane() reference detached from the document and
+      // makes polygons from a later atomic V4 refresh render invisibly.
       delete map.getContainer().dataset.regionFocusBounds;
     },
   };

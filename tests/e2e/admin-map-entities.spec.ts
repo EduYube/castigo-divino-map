@@ -1243,7 +1243,15 @@ test('MAP-074 generic relation editor persists oriented organization links and a
   // Saving retains the editor when the post-save public-data refresh has not
   // entered degraded mode yet. Close it before checking create-button availability.
   const closeEditor = page.getByRole('button', { name: 'Cerrar editor' });
-  if (await closeEditor.isVisible()) await closeEditor.click();
+  if (await closeEditor.isVisible()) {
+    try {
+      await closeEditor.click({ timeout: 1500 });
+    } catch (error) {
+      // The async post-save refresh can hide the editor between the visibility
+      // check and the click. Only ignore that documented disappearance.
+      if (await closeEditor.isVisible()) throw error;
+    }
+  }
   // The lightweight fixture may re-enter degraded mode after the save. Restore
   // the simulated connection before reopening the other entity editors.
   await page.evaluate(() => {
