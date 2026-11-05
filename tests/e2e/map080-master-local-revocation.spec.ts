@@ -218,3 +218,78 @@ test('MAP080-REV-01 pending Master response cannot reactivate private state afte
   await expect(page.locator(`[data-search-result-id="${MASTER_ID}"]`)).toHaveCount(0);
   await expect(page.getByText(MASTER_NAME, { exact: true })).toHaveCount(0);
 });
+
+// R2 MAP080-REV-04: a completed private pin selection has already written to
+// the live-region DOM before popstate opens a public local map. A controller
+// race test alone cannot detect this stale accessible announcement.
+test('MAP080-REV-04 purges announced Master content on popstate', async ({ page }) => {
+  const backend = await configureBackend(page);
+  await page.goto('/?campaign=un-aliento-menos');
+  await expect(page.getByLabel('Campaña', { exact: true })).toHaveValue('un-aliento-menos');
+
+  await page.getByRole('button', { name: 'Administrar' }).click();
+  await expect(page.getByRole('dialog', { name: 'Acceso administrativo' })).toBeVisible();
+  await page.getByLabel('Correo').fill('admin@example.invalid');
+  await page.getByLabel('Contraseña').fill('correct horse battery staple');
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click();
+  await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'degraded',
+  );
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+    );
+  });
+
+  const toggle = page.locator('[data-master-mode-toggle]');
+  await expect(toggle).toBeEnabled();
+  backend.release();
+  await toggle.click();
+  const masterPin = page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_ID}"]`);
+  await expect(masterPin).toHaveCount(1);
+  await masterPin.focus();
+  await masterPin.press('Enter');
+
+  const status = page.locator('[data-map-search-status]');
+  const privateContentInDom = () =>
+    page.evaluate((secret) => document.documentElement.outerHTML.includes(secret), MASTER_NAME);
+  await expect(page.getByTestId('place-details')).toContainText(MASTER_NAME);
+  await expect(status).toContainText(MASTER_NAME);
+  await expect(status).toContainText('Contenido del Máster');
+
+  await page.evaluate(() => {
+    history.pushState({}, '', '/?campaign=un-aliento-menos&map=neverwinter');
+    dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(toggle).toBeDisabled();
+  await expect(status).not.toContainText(MASTER_NAME);
+  await expect.poll(privateContentInDom).toBe(false);
+
+  await page.getByRole('button', { name: 'Mapa general' }).click();
+  await expect(toggle).toBeEnabled();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator(`[data-entity-id="${MASTER_ID}"]`)).toHaveCount(0);
+  await expect.poll(privateContentInDom).toBe(false);
+
+  // When Master is enabled but a different, public status is the current
+  // announcement, entering local view must preserve that public live message.
+  await toggle.click();
+  await expect(masterPin).toHaveCount(1);
+  const publicAnnouncement = 'Mapa centrado en Neverwinter, lugar geográfico; posición resaltada.';
+  await status.evaluate((element, message) => {
+    element.textContent = message;
+  }, publicAnnouncement);
+  await page.evaluate(() => {
+    history.pushState({}, '', '/?campaign=un-aliento-menos&map=neverwinter');
+    dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await expect(status).toHaveText(publicAnnouncement);
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect.poll(privateContentInDom).toBe(false);
+});

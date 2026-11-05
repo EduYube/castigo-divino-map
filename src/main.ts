@@ -15,6 +15,7 @@ import { mountMasterDetailActions } from './app/masterDetailActions';
 import { mountMasterPinVisuals } from './app/masterPinVisuals';
 import { bootstrapMasterModeRuntime, type MasterModeRuntime } from './app/masterModeRuntime';
 import { mountMasterSearchVisuals } from './app/masterSearchVisuals';
+import { isMasterOnlyMapAnnouncement } from './app/masterMapAnnouncement';
 import { mountPlaceFilters } from './app/placeFilters';
 import {
   bootstrapPublicDataRuntime,
@@ -174,6 +175,20 @@ function mountPublicExperience(
   const portraitResources = createPortraitResources();
   const selection = createPlaceSelectionController();
   const mapSearchStatus = app.querySelector<HTMLElement>('[data-map-search-status]');
+  const clearRevokedMasterAnnouncement = (revokedIds: ReadonlySet<EntityId>): void => {
+    if (!mapSearchStatus) return;
+    // Keep unrelated public navigation announcements intact. Both the
+    // synchronous Leaflet selection message and the deferred detail message
+    // identify the selected Master pin by name.
+    const revokedNames = new Set(
+      authorizedMarkers
+        .filter(({ entityId }) => entityId !== null && revokedIds.has(entityId))
+        .map(({ name }) => name),
+    );
+    if (isMasterOnlyMapAnnouncement(mapSearchStatus.textContent ?? '', revokedNames)) {
+      mapSearchStatus.textContent = '';
+    }
+  };
 
   const focusPinControl = (pin: AtlasPinMarkerModel): void => {
     if (localNavigation.getMapSlug() && pin.entityId) {
@@ -454,11 +469,15 @@ function mountPublicExperience(
     }
   };
   onLocalSurfaceClosed = (): void => {
+    // The local-map callback also runs for History/PopState. Revoke pending
+    // private announcements even if their requestAnimationFrame has not run.
+    invalidateDeferredSelectionAnnouncement();
     // MAP-080: a public map surface is never allowed to retain the prior
     // Master-only DOM, callbacks, portrait or selected entity. Disable Master
     // and synchronously restore the public world marker set before repaint.
     const masterController = masterModeRuntime?.controller;
     if (masterEntityIds.size > 0 || masterController?.getState().enabled === true) {
+      clearRevokedMasterAnnouncement(masterEntityIds);
       masterPurgedOnMapChange = true;
       masterEntityIds = new Set();
       beta02Catalog = publicBeta02Catalog;
@@ -932,6 +951,7 @@ function mountPublicExperience(
       [...previousMasterEntityIds].filter((entityId) => !nextMasterEntityIds.has(entityId)),
     );
     if (removedMasterEntityIds.size > 0) {
+      clearRevokedMasterAnnouncement(removedMasterEntityIds);
       if (
         activeSupplementalPin?.entityId &&
         removedMasterEntityIds.has(activeSupplementalPin.entityId)
