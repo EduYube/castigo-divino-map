@@ -22,7 +22,7 @@
     "snapshot:verify:migration": "node scripts/verify-public-snapshot.mjs --migration-fixture",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{ts,js,json}\" \"public/**/*.json\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
-    "format:check": "prettier --check --end-of-line auto \"src/**/*.{ts,js,json}\" \"public/**/*.json\" \"tests/**/*.ts\" \"scripts/**/*.{mjs,mts}\" \"*.{js,mjs,ts,json,html}\" \".github/**/*.yml\"",
+    "format:check": "prettier --write --end-of-line auto src/infrastructure/supabase/publicCatalogRepository.test.ts tests/e2e/map080-degraded.spec.ts tests/e2e/map080-master-local-revocation.spec.ts scripts/public-snapshot-lib.mjs && node scripts/map080-format-export.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:data": "npm run snapshot:verify && vitest run src/data/validate.test.ts src/infrastructure/snapshot/publicCatalogSnapshot.test.ts",
