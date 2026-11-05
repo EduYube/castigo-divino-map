@@ -39,3 +39,14 @@ Read-only DB audit; production writes: 0. No new migration,
 no MAP-079 timestamp reconciliation, INFRA #210 untouched.
 No version bump, release, Ready, merge or deploy in this PR.
 Independent review + human checkpoint required before promotion.
+
+## Production public revision reconciliation — 2026-11-05
+The remote V4 drift reported by CI on 2026-11-05 was caused by the published
+world-only mission `entity-brezo-gris` (`Blackford Crossing`) added to
+`un-aliento-menos` on 2026-11-04 at 22:49 UTC. Its public tag and neutral
+player disposition are part of the same world projection. The revised snapshot
+includes its `lifecycleStatus: active`; it does **not** add a Neverwinter
+placement, local-only entity, new map context, private content or raster.
+The previous remote checksum (before preserving mission lifecycle) was
+`sha256:ffd018f733d30a7b37925ace0ccbc8692366dad3fec5a4b21eb1966ab1fa4e32`.
+No production write was performed.

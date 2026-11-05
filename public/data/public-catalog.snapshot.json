@@ -107,7 +107,9 @@
             "y": 814.17
           },
           "categoryId": "category-npc",
-          "tagIds": ["category-skade"]
+          "tagIds": [
+            "category-skade"
+          ]
         },
         {
           "id": "entity-asentamiento-thar",
@@ -124,7 +126,9 @@
             "y": 804.09
           },
           "categoryId": "category-settlement",
-          "tagIds": ["category-skade"]
+          "tagIds": [
+            "category-skade"
+          ]
         },
         {
           "id": "entity-bring",
@@ -142,7 +146,9 @@
             "y": 1921.5
           },
           "categoryId": "category-npc",
-          "tagIds": ["category-skade"]
+          "tagIds": [
+            "category-skade"
+          ]
         },
         {
           "id": "entity-captitan",
@@ -178,7 +184,9 @@
             "y": 292.28
           },
           "categoryId": "category-npc",
-          "tagIds": ["category-ura"]
+          "tagIds": [
+            "category-ura"
+          ]
         },
         {
           "id": "entity-masred",
@@ -196,7 +204,9 @@
             "y": 1722.1
           },
           "categoryId": "category-npc",
-          "tagIds": ["category-skade"]
+          "tagIds": [
+            "category-skade"
+          ]
         },
         {
           "id": "entity-memnon",
@@ -213,7 +223,10 @@
             "y": 402.69
           },
           "categoryId": "category-settlement",
-          "tagIds": ["category-ura", "coastal"]
+          "tagIds": [
+            "category-ura",
+            "coastal"
+          ]
         },
         {
           "id": "entity-myrath",
@@ -230,7 +243,10 @@
             "y": 428.21
           },
           "categoryId": "category-settlement",
-          "tagIds": ["category-skade", "coastal"]
+          "tagIds": [
+            "category-skade",
+            "coastal"
+          ]
         },
         {
           "id": "entity-ojos-tempestad",
@@ -248,7 +264,9 @@
             "y": 1156.98
           },
           "categoryId": "category-npc",
-          "tagIds": ["category-ura"]
+          "tagIds": [
+            "category-ura"
+          ]
         },
         {
           "id": "entity-skade",
@@ -266,7 +284,9 @@
             "y": 1282.32
           },
           "categoryId": "category-pj",
-          "tagIds": ["category-skade"]
+          "tagIds": [
+            "category-skade"
+          ]
         },
         {
           "id": "entity-thalasis",
@@ -284,7 +304,9 @@
             "y": 1188.15
           },
           "categoryId": "category-npc",
-          "tagIds": ["category-skade"]
+          "tagIds": [
+            "category-skade"
+          ]
         },
         {
           "id": "entity-thar",
@@ -301,7 +323,9 @@
             "y": 1366.13
           },
           "categoryId": "category-landmark",
-          "tagIds": ["category-skade"]
+          "tagIds": [
+            "category-skade"
+          ]
         },
         {
           "id": "entity-tulu",
@@ -319,7 +343,9 @@
             "y": 1074.78
           },
           "categoryId": "category-npc",
-          "tagIds": ["category-ura"]
+          "tagIds": [
+            "category-ura"
+          ]
         },
         {
           "id": "entity-ura",
@@ -337,7 +363,9 @@
             "y": 1287.91
           },
           "categoryId": "category-pj",
-          "tagIds": ["category-ura"]
+          "tagIds": [
+            "category-ura"
+          ]
         }
       ],
       "dispositions": [
@@ -521,6 +549,26 @@
       ],
       "entities": [
         {
+          "id": "entity-brezo-gris",
+          "slug": "brezo-gris",
+          "entityType": "mission",
+          "lifecycleStatus": "active",
+          "visibility": "pin",
+          "name": "Blackford Crossing",
+          "nameLanguage": "en",
+          "aliases": [],
+          "summary": "El antiguo capitán de la guardia de Neverwinter, Bram Harth, le ha dicho a Veyra que si quiere saber más de su abuela y de lo que había en el interior del medallón, deberá ir a El Brezo Gris",
+          "description": "Una atalaya en medio de un cruce con acantilados cercanos, en mitad de la nada",
+          "coordinates": {
+            "x": 1418.59643535406,
+            "y": 2024.03767151569
+          },
+          "categoryId": "category-pj-un-aliento-menos",
+          "tagIds": [
+            "category-veyra"
+          ]
+        },
+        {
           "id": "entity-request-07d26371bbff42d9b91e076d099891b0",
           "slug": "request-07d26371bbff42d9b91e076d099891b0",
           "entityType": "character",
@@ -536,10 +584,18 @@
             "y": 1855.21
           },
           "categoryId": "category-pj-un-aliento-menos",
-          "tagIds": ["category-veyra"]
+          "tagIds": [
+            "category-veyra"
+          ]
         }
       ],
-      "dispositions": [],
+      "dispositions": [
+        {
+          "entityId": "entity-brezo-gris",
+          "playerId": "player-veyra",
+          "disposition": "neutral"
+        }
+      ],
       "entityRelations": [],
       "characterLocationRelations": [],
       "notes": [],
@@ -3531,7 +3587,7 @@
       "characterLocationRelations": []
     }
   ],
-  "generatedAt": "2026-10-30T17:11:44.369Z",
-  "sourceRevision": "sha256:11669c907d0befaff35d1dabd93260d7882e2ad138d8997a80ca5a01856ba6d8",
-  "checksum": "sha256:11669c907d0befaff35d1dabd93260d7882e2ad138d8997a80ca5a01856ba6d8"
+  "generatedAt": "2026-11-05T14:29:37.361Z",
+  "sourceRevision": "sha256:4ace919dac2936ba7042ea85569d8a6eaf6801b86836e7332fc85afd95d5719b",
+  "checksum": "sha256:4ace919dac2936ba7042ea85569d8a6eaf6801b86836e7332fc85afd95d5719b"
 }

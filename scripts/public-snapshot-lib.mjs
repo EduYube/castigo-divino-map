@@ -150,6 +150,7 @@ export function buildPublicSnapshotContent(raw) {
       id,
       slug,
       entity_type,
+      lifecycle_status,
       visibility,
       name,
       name_language,
@@ -163,6 +164,9 @@ export function buildPublicSnapshotContent(raw) {
       id,
       slug,
       entityType: entity_type,
+      ...(entity_type === 'mission' || entity_type === 'hazard'
+        ? { lifecycleStatus: lifecycle_status }
+        : {}),
       visibility,
       name,
       nameLanguage: name_language,
@@ -856,7 +860,9 @@ export async function loadRemotePublicMultimapRows(options = {}) {
     if (JSON.stringify(previous) === JSON.stringify(current)) return current;
     previous = current;
   }
-  throw new Error('Remote public multimap rows changed during acquisition; refusing mixed revision.');
+  throw new Error(
+    'Remote public multimap rows changed during acquisition; refusing mixed revision.',
+  );
 }
 
 export function upgradeLegacySnapshotContentV2(content) {

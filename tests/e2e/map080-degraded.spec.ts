@@ -142,9 +142,7 @@ test('MAP-080 repeated local map re-entry preserves Leaflet regions, keyboard ac
 }) => {
   await offlineV4(page, true);
   await page.goto('/?campaign=un-aliento-menos&map=neverwinter');
-  const region = page.locator(
-    '[data-local-map-canvas] [data-region-id="place-map080-polygon"]',
-  );
+  const region = page.locator('[data-local-map-canvas] [data-region-id="place-map080-polygon"]');
   const canvas = page.locator('[data-local-map-canvas]');
   for (let cycle = 0; cycle < 3; cycle += 1) {
     await expect(canvas).toBeVisible();

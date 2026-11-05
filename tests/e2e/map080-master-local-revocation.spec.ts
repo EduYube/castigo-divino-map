@@ -25,7 +25,9 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
     campaignCatalogs: Array<{ campaignId: string; categories: Array<{ id: string }> }>;
     campaigns: Array<{ id: string; slug: string }>;
   };
-  const campaignId = snapshot.campaigns.find((campaign) => campaign.slug === 'un-aliento-menos')?.id;
+  const campaignId = snapshot.campaigns.find(
+    (campaign) => campaign.slug === 'un-aliento-menos',
+  )?.id;
   const categoryId = snapshot.campaignCatalogs.find(
     (campaign) => campaign.campaignId === campaignId,
   )?.categories[0]?.id;
@@ -38,31 +40,35 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
     unblock = resolve;
   });
 
-  await page.addInitScript(({ projectUrl }) => {
-    window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
-      projectUrl,
-      publishableKey: 'sb_publishable_map080_local_public_key',
-      timeoutMs: 250,
-      retryDelaysMs: [0],
-    };
-    window.__MAP017_AUTH_TEST_CONFIG__ = {
-      projectUrl,
-      publishableKey: 'sb_publishable_map080_local_auth_key',
-      timeoutMs: 10000,
-    };
-    // Simulate a transport ignoring abort, to test the controller generation
-    // gate independently of fetch cancellation.
-    const nativeFetch = window.fetch.bind(window);
-    window.fetch = (input, init) => {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-      if (url.includes('/rest/v1/rpc/admin_get_master_catalog_v7') && init) {
-        const withoutSignal = { ...init };
-        delete withoutSignal.signal;
-        return nativeFetch(input, withoutSignal);
-      }
-      return nativeFetch(input, init);
-    };
-  }, { projectUrl: PROJECT_URL });
+  await page.addInitScript(
+    ({ projectUrl }) => {
+      window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
+        projectUrl,
+        publishableKey: 'sb_publishable_map080_local_public_key',
+        timeoutMs: 250,
+        retryDelaysMs: [0],
+      };
+      window.__MAP017_AUTH_TEST_CONFIG__ = {
+        projectUrl,
+        publishableKey: 'sb_publishable_map080_local_auth_key',
+        timeoutMs: 10000,
+      };
+      // Simulate a transport ignoring abort, to test the controller generation
+      // gate independently of fetch cancellation.
+      const nativeFetch = window.fetch.bind(window);
+      window.fetch = (input, init) => {
+        const url =
+          typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (url.includes('/rest/v1/rpc/admin_get_master_catalog_v7') && init) {
+          const withoutSignal = { ...init };
+          delete withoutSignal.signal;
+          return nativeFetch(input, withoutSignal);
+        }
+        return nativeFetch(input, init);
+      };
+    },
+    { projectUrl: PROJECT_URL },
+  );
 
   await page.route(MAP_IMAGE_URL, async (route) =>
     route.fulfill({
@@ -107,22 +113,24 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          entities: [{
-            id: MASTER_ID,
-            slug: 'map080-master-canary',
-            entity_type: 'character',
-            visibility: 'pin',
-            audience: 'master',
-            name: MASTER_NAME,
-            summary: 'PRIVATE MAP080 CANARY',
-            description: 'PRIVATE MAP080 CANARY',
-            portrait_path: null,
-            geometry: { kind: 'point', coordinates: { x: 1100, y: 850 } },
-            x: 1100,
-            y: 850,
-            category_id: categoryId,
-            updated_at: '2026-10-30T00:00:00.000Z',
-          }],
+          entities: [
+            {
+              id: MASTER_ID,
+              slug: 'map080-master-canary',
+              entity_type: 'character',
+              visibility: 'pin',
+              audience: 'master',
+              name: MASTER_NAME,
+              summary: 'PRIVATE MAP080 CANARY',
+              description: 'PRIVATE MAP080 CANARY',
+              portrait_path: null,
+              geometry: { kind: 'point', coordinates: { x: 1100, y: 850 } },
+              x: 1100,
+              y: 850,
+              category_id: categoryId,
+              updated_at: '2026-10-30T00:00:00.000Z',
+            },
+          ],
           categories: [{ id: categoryId, name: 'Public category' }],
           aliases: [],
           tags: [],

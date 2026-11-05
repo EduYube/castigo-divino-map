@@ -390,6 +390,19 @@ describe('public catalog snapshot', () => {
     }
   });
 
+  test('retains mission lifecycle in the V4 degraded snapshot', async () => {
+    const parsed = await parsePublicCatalogSnapshotV4(await readSnapshot());
+    if (parsed.data.contract !== 'beta04') throw new Error('Expected a valid V4 snapshot.');
+    const campaign = parsed.data.catalog.campaignCatalogs.find(
+      ({ campaignId }) => campaignId === '00000000-0000-4000-8000-000000000068',
+    );
+    expect(campaign?.entities.find(({ id }) => id === 'entity-brezo-gris')).toMatchObject({
+      id: 'entity-brezo-gris',
+      entityType: 'mission',
+      lifecycleStatus: 'active',
+    });
+  });
+
   test('keeps the Beta 0.1 parser available for a forward rollback deployment', async () => {
     const snapshot = await readSnapshot();
     const catalog = {

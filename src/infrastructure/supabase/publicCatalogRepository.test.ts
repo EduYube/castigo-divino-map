@@ -514,9 +514,9 @@ describe('SupabasePublicCatalogRepository', () => {
         return jsonResponse([]);
       },
     });
-    await expect(
-      repository.load({ signal: new AbortController().signal }),
-    ).rejects.toMatchObject({ code: 'invalid-response' });
+    await expect(repository.load({ signal: new AbortController().signal })).rejects.toMatchObject({
+      code: 'invalid-response',
+    });
     expect(scans).toBe(4);
   });
 
