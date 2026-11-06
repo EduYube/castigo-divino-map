@@ -16,6 +16,17 @@ describe('GitHub Pages deployment contracts', () => {
     expect(workflow).toContain('npm run test:e2e:pages');
   });
 
+
+  it('requires the read-only V4 remote drift check for MAP-081 candidate PRs', async () => {
+    const workflow = await readText('.github/workflows/ci.yml');
+    const remoteGate = workflow.match(
+      /- name: Verify V4 remote projection for MAP-081 \(read-only\)([\s\S]*?)- name: Build application for GitHub Pages/,
+    )?.[1];
+
+    expect(remoteGate).toContain("startsWith(github.head_ref, 'agent/map-081-')");
+    expect(remoteGate).toContain('run: npm run snapshot:verify:remote');
+  });
+
   it('deploys only successful master validation through immutable official Pages actions', async () => {
     const workflow = await readText('.github/workflows/pages.yml');
 
