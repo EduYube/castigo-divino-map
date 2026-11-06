@@ -59,11 +59,11 @@ jobs:
       - name: Run unit tests
         run: npm run test
 
-      # Keep the MAP-080 historical check and require the same read-only V4
-      # drift gate for MAP-081 candidate PRs. It must run on the exact HEAD,
-      # including world and local tables, before declaring the release ready.
+      # Preserve the MAP-080 #218 gate and anchor MAP-081 directly to PR #220;
+      # renaming its branch must never skip the read-only V4 drift check.
+      # Also cover other MAP-081 candidate branches before release approval.
       - name: Verify V4 remote projection for MAP-081 (read-only)
-        if: github.event_name == 'pull_request' && (github.event.pull_request.number == 218 || startsWith(github.head_ref, 'agent/map-081-'))
+        if: github.event_name == 'pull_request' && (github.event.pull_request.number == 218 || github.event.pull_request.number == 220 || startsWith(github.head_ref, 'agent/map-081-'))
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
