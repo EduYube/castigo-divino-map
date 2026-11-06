@@ -1,6 +1,28 @@
 # Estado del proyecto
 
-## Estado actual — candidata v1.2
+## Estado actual — candidata v1.3
+
+- Proyecto: **El Atlas de los Nuevos Dioses**.
+- Issue de release: **MAP-081 / #202**.
+- Semver candidata: **1.3.0**, etiqueta de UI **v1.3**. Estado: **Draft / pendiente de QA, revisión independiente y checkpoint humano**.
+- Baseline de MAP-081: `f673c73a19dc61a972acd4b7ee07cb95a67e3240` (merge de MAP-080 / PR #218).
+- Release: MAP-075…MAP-080, mapas locales opcionales, navegación de Neverwinter, administración, lector multi-map/local-only, snapshot público V4 y resiliencia/degradado.
+- Neverwinter: `map-neverwinter` publicado, `2048×1582`, asociado solo a `un-aliento-menos` vía `geo-neverwinter`. Superficie neutral sin raster. Los derechos del asset seleccionado continúan en `RIGHTS_METADATA_PENDING`.
+- Castigo Divino: ningún binding a Neverwinter. City of Shadows / Shade: `OUT OF SCOPE / DEFERRED`.
+- Snapshot V4 comprometido y checksum de referencia: `sha256:4ace919dac2936ba7042ea85569d8a6eaf6801b86836e7332fc85afd95d5719b`. Verificación remota del HEAD final: **requisito de CI, aún no sustituible por la lectura del baseline**.
+- DB: **sin migración MAP-081** y **cero escrituras en Supabase de producción**. Se preservan INFRA #210, grants explícitos y RLS.
+- Evidencia basal: Pages `42104954892` = success sobre la BASE; no representa una publicación v1.3. La evidencia CI del HEAD de MAP-081 debe contrastarse en la PR antes de revisión.
+- URL pública: https://eduyube.github.io/castigo-divino-map/ (la nueva versión **no** está publicada al crear esta candidata).
+- Documentación, matriz QA, notas preparadas, riesgos y proceso de publicación: [`map-081-release.md`](map-081-release.md).
+- Actualización: **2026-11-06**.
+
+**No Ready, no merge, no tag, no GitHub Release, no deploy manual.** Tras CI exacta verde corresponde revisión independiente, checkpoint humano y únicamente entonces el flujo normal de publicación.
+
+---
+
+## Historial preservado — candidata v1.2 / MAP-074
+
+> La sección siguiente es una transcripción histórica del gate v1.2: sus referencias a «versión actual», release candidata y snapshot v3 describen MAP-074 en 2026-10-15, no el estado operativo de v1.3.
 
 - Proyecto: **El Atlas de los Nuevos Dioses**.
 - Repositorio: `EduYube/castigo-divino-map`.
