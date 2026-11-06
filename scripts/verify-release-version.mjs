@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 
-const expectedVersion = '1.2.0';
-const expectedLabel = 'v1.2';
+const expectedVersion = '1.3.0';
+const expectedLabel = 'v1.3';
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const packageLock = JSON.parse(
   readFileSync(new URL('../package-lock.json', import.meta.url), 'utf8'),
@@ -41,6 +41,15 @@ assert(pagesSmoke.includes(expectedLabel), 'Pages smoke must assert the current 
 assert(
   projectStatus.includes(expectedVersion) && projectStatus.includes(expectedLabel),
   'project status must declare both semantic and UI versions',
+);
+
+assert(
+  projectStatus.startsWith('# Estado del proyecto\n\n## Estado actual — candidata v1.3'),
+  'project status must lead with the current v1.3 release candidate',
+);
+assert(
+  projectStatus.includes('## Historial preservado — candidata v1.2 / MAP-074'),
+  'project status must preserve historical v1.2 release documentation',
 );
 
 console.log(`Release version verification passed: ${expectedVersion} / ${expectedLabel}.`);

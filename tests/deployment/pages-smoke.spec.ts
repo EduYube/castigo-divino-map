@@ -57,7 +57,7 @@ function generatedResourceRequests(requests: readonly Request[]): readonly Reque
   return requests.filter((request) => /\.(?:css|js)(?:\?|$)/.test(request.url()));
 }
 
-test('loads the v1.2 public experience from the repository subdirectory', async ({
+test('loads the v1.3 public experience from the repository subdirectory', async ({
   page,
   baseURL,
 }) => {
@@ -99,7 +99,7 @@ test('loads the v1.2 public experience from the repository subdirectory', async 
   expect(response?.ok()).toBe(true);
   await expect(page).toHaveTitle(/Atlas de los Nuevos Dioses/i);
   await expect(page.getByRole('banner')).toBeVisible();
-  await expect(page.getByText('v1.2', { exact: true })).toBeVisible();
+  await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
 
   const backendStatus = page.locator('[data-backend-status]');
   if (isPublishedPages()) {
@@ -195,7 +195,7 @@ test('loads the v1.2 public experience from the repository subdirectory', async 
   expect(failedResponses).toEqual([]);
 
   await page.reload();
-  await expect(page.getByText('v1.2', { exact: true })).toBeVisible();
+  await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
   await expect(page.getByTestId('place-details')).toBeHidden();
 
@@ -229,7 +229,7 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
     'input[data-place-filter-kind="category"][data-place-filter-id="category-pj-un-aliento-menos"]',
   );
 
-  await expect(page.getByText('v1.2', { exact: true })).toBeVisible();
+  await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'error');
   await expect(searchToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(filtersToggle).toHaveAttribute('aria-expanded', 'false');
@@ -283,7 +283,7 @@ test('keeps the 320 px experience usable when the remote map fails', async ({ pa
   await expect(clearSearch).toBeFocused();
 });
 
-test('keeps v1.2 usable from the public snapshot when Supabase returns 503', async ({ page }) => {
+test('keeps v1.3 usable from the public snapshot when Supabase returns 503', async ({ page }) => {
   await mockOfficialMap(page);
   await page.route('**/rest/v1/**', async (route) => {
     await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
@@ -298,7 +298,7 @@ test('keeps v1.2 usable from the public snapshot when Supabase returns 503', asy
   await expect(backendStatus).toHaveAttribute('data-backend-state', 'degraded');
   await expect(backendStatus).toContainText('Modo de respaldo');
   await expect(backendStatus.getByRole('button', { name: 'Reintentar' })).toBeVisible();
-  await expect(page.getByText('v1.2', { exact: true })).toBeVisible();
+  await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
   await expect(page.getByRole('checkbox', { name: /Personaje/ })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Veyra/ })).toBeChecked();
@@ -309,4 +309,37 @@ test('keeps v1.2 usable from the public snapshot when Supabase returns 503', asy
     VEYRA_ENTITY_ID,
   );
   await expect(page.getByRole('button', { name: 'Proponer un pin' })).toBeVisible();
+});
+
+test('v1.3 Pages V4 keeps neutral Neverwinter available offline without cross-campaign fallback', async ({
+  page,
+}) => {
+  await mockOfficialMap(page);
+  await page.route('**/rest/v1/**', async (route) => {
+    await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+  });
+
+  const response = await page.goto('?campaign=un-aliento-menos&map=neverwinter');
+  expect(response?.ok()).toBe(true);
+  await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
+    'data-backend-state',
+    'degraded',
+  );
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+  await expect(page.locator('[data-local-map-status]')).toContainText(
+    'Cartografía pendiente de publicación',
+  );
+  // The published context has no licensed raster. A network failure must not
+  // introduce an image overlay from another context or another campaign.
+  await expect(page.locator('[data-local-map-canvas] .leaflet-image-layer')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Mapa general' }).click();
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await page.goBack();
+  await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
+
+  await page.goto('?campaign=castigo-divino&map=neverwinter');
+  await expect(page.locator('[data-local-map-canvas]')).toBeHidden();
+  await expect(page).not.toHaveURL(/map=neverwinter/);
 });
