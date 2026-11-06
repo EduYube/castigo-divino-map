@@ -16,7 +16,6 @@ describe('GitHub Pages deployment contracts', () => {
     expect(workflow).toContain('npm run test:e2e:pages');
   });
 
-
   it('requires the read-only V4 remote drift check for MAP-081 candidate PRs', async () => {
     const workflow = await readText('.github/workflows/ci.yml');
     const remoteGate = workflow.match(
