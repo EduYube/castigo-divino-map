@@ -362,6 +362,8 @@ export function mountFaerunMap(
   let matchingPinIds = new Set<string>();
   let matchingSemantics: PinMatchingSemantics = 'search-and-filters';
   let activeSpiderfy: SpiderfyState | null = null;
+  // Invalidates deferred focus work when an intervening interaction collapses spiderfy.
+  let spiderfyRevision = 0;
   let destroyed = false;
 
   const isPinActive = (pin: AtlasPinMarkerModel): boolean =>
@@ -691,6 +693,7 @@ export function mountFaerunMap(
     const state = activeSpiderfy;
     if (!state) return;
     activeSpiderfy = null;
+    spiderfyRevision += 1;
 
     for (const [index, memberMarker] of state.memberMarkers.entries()) {
       const pin = state.group.pins[index];
@@ -1117,8 +1120,13 @@ export function mountFaerunMap(
       const pinId = pinIdByLegacyPlaceId.get(placeId);
       if (!pinId) return;
       revealPin(pinId, true);
+      const scheduledSpiderfyRevision = spiderfyRevision;
       window.requestAnimationFrame(() => {
-        if (!destroyed) revealPin(pinId, true);
+        // A later Escape, pointer interaction or recluster must not reopen a
+        // group that the user has already collapsed while this RAF was pending.
+        if (!destroyed && spiderfyRevision === scheduledSpiderfyRevision) {
+          revealPin(pinId, true);
+        }
       });
     },
     destroy(): void {
