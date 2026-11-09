@@ -1,5 +1,15 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
+declare global {
+  interface Window {
+    __qa213Gate?: {
+      advance(): number;
+      sample(stage: string): void;
+      getTimeline(): readonly Record<string, unknown>[];
+    };
+  }
+}
+
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const LOCAL_SUPABASE_URL = 'http://127.0.0.1:4173';
@@ -285,15 +295,15 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
   await panel.getByRole('button', { name: /Cerrar la ficha de Demonstration Harbor/i }).click();
   await expect(panel).toBeHidden();
-  if ((await page.locator('[data-spiderfied="true"]').count()) > 0) {
-    // Escape belongs to the map keyboard handler, not the details-panel close button.
-    // Restore focus to a spiderfied pin before collapsing the group.
-    await options.first().focus();
-    await page.keyboard.press('Escape');
-  }
+  // Closing the details schedules a focus restore that reopens the coincident
+  // group. Wait for that observable state instead of racing with its RAF.
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toBeFocused();
+  await page.keyboard.press('Escape');
   await expect(options).toHaveCount(0);
   await expect(coincident).toHaveAttribute('aria-expanded', 'false');
   await expect(coincident).toBeVisible();
+  await expect(coincident).toBeFocused();
 
   // A pointer click opens spiderfy and intentionally hides the cluster under
   // Playwright's mouse before the click action can settle. Reopen through the
@@ -378,4 +388,126 @@ test('remains usable at 320 px, keeps touch targets large and honors forced colo
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
   expect(horizontalOverflow).toBe(false);
+});
+
+test('QA-213 sensitivity: pending focus restore must not reopen spiderfy after Escape', async ({
+  page,
+}) => {
+  await openPinVisualMap(page);
+  const cluster = page.getByTestId('coincident-pin');
+  await expect(cluster).toHaveAttribute('data-pin-count', '2');
+  await cluster.focus();
+  await page.keyboard.press('Enter');
+  const options = page.getByTestId('coincident-pin-option');
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toBeFocused();
+  await options.first().click();
+  const panel = page.getByTestId('place-details');
+  await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
+
+  await page.evaluate(() => {
+    const close = document.querySelector<HTMLButtonElement>('[data-place-details-close]');
+    if (!close) throw new Error('QA-213 missing close control');
+    const nativeRequest = window.requestAnimationFrame.bind(window);
+    const nativeCancel = window.cancelAnimationFrame.bind(window);
+    const queued = new Map<number, FrameRequestCallback>();
+    const timeline: Array<Record<string, unknown>> = [];
+    let gateOn = false;
+    let nextId = -1;
+    const record = (stage: string, extra: Record<string, unknown> = {}): void => {
+      const focused = document.activeElement;
+      timeline.push({
+        stage,
+        focus: focused instanceof HTMLElement ? (focused.dataset.testid ?? focused.tagName) : null,
+        focusConnected: focused?.isConnected ?? false,
+        options: document.querySelectorAll('[data-testid="coincident-pin-option"]').length,
+        spiderNodes: document.querySelectorAll('[data-spiderfied="true"]').length,
+        expanded: document
+          .querySelector('[data-testid="coincident-pin"]')
+          ?.getAttribute('aria-expanded'),
+        detailsHidden: document.querySelector<HTMLElement>('[data-place-details]')?.hidden ?? null,
+        queuedFrames: queued.size,
+        ...extra,
+      });
+    };
+    window.requestAnimationFrame = (callback: FrameRequestCallback): number => {
+      if (!gateOn) return nativeRequest(callback);
+      const id = nextId--;
+      queued.set(id, callback);
+      return id;
+    };
+    window.cancelAnimationFrame = (id: number): void => {
+      if (!queued.delete(id)) nativeCancel(id);
+    };
+    document.addEventListener(
+      'keydown',
+      (event) => {
+        if (event.key === 'Escape')
+          record('document-keydown-capture', {
+            target: (event.target as HTMLElement)?.dataset.testid ?? null,
+            defaultPrevented: event.defaultPrevented,
+          });
+      },
+      { capture: true },
+    );
+    document
+      .querySelector<HTMLElement>('[data-map-canvas]')
+      ?.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape')
+          record('canvas-keydown-bubble', {
+            target: (event.target as HTMLElement)?.dataset.testid ?? null,
+            currentTarget: (event.currentTarget as HTMLElement)?.dataset.testid ?? 'map-canvas',
+            defaultPrevented: event.defaultPrevented,
+          });
+      });
+    close.addEventListener(
+      'click',
+      () => {
+        gateOn = true;
+        record('close-click-capture');
+      },
+      { capture: true, once: true },
+    );
+    window.__qa213Gate = {
+      advance: (): number => {
+        const batch = [...queued.values()];
+        queued.clear();
+        for (const callback of batch) callback(performance.now());
+        record('frame-advanced', { executed: batch.length });
+        return batch.length;
+      },
+      sample: record,
+      getTimeline: () => timeline,
+    };
+  });
+  // Block the onClose RAF until after the original test's existence check.
+  await panel.getByRole('button', { name: /Cerrar la ficha de Demonstration Harbor/i }).click();
+  await expect(panel).toBeHidden();
+  await expect(options).toHaveCount(0);
+  const firstFrame = await page.evaluate(() => window.__qa213Gate?.advance() ?? (0 as number));
+  expect(firstFrame).toBeGreaterThan(0);
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(options).toHaveCount(0);
+  await page.evaluate(() => window.__qa213Gate?.sample('after-escape'));
+  const secondFrame = await page.evaluate(() => window.__qa213Gate?.advance() ?? (0 as number));
+  expect(secondFrame).toBeGreaterThan(0);
+  const timeline = await page.evaluate(
+    () => window.__qa213Gate?.getTimeline() ?? ([] as Record<string, unknown>[]),
+  );
+  if (process.env.QA213_TIMELINE === '1') console.log('QA213_TIMELINE', JSON.stringify(timeline));
+  expect(timeline).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        stage: 'canvas-keydown-bubble',
+        target: 'coincident-pin-option',
+        defaultPrevented: true,
+        options: 0,
+      }),
+    ]),
+  );
+  await expect(options).toHaveCount(0);
+  await expect(cluster).toHaveAttribute('aria-expanded', 'false');
+  await expect(cluster).toBeFocused();
 });

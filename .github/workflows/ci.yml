@@ -193,6 +193,23 @@ jobs:
             --project=chromium --workers=1 --retries=0 --repeat-each=3 \
             --trace=retain-on-failure
 
+      # QA-213: force the post-Escape deferred-focus interleaving, then exercise
+      # the original contract without Playwright retries on the exact PR HEAD.
+      - name: QA-213 spiderfy Escape sensitivity 20x no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-213-spiderfy-escape-flake'
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=chromium --grep='QA-213 sensitivity: pending focus restore' \
+            --workers=1 --retries=0 --repeat-each=20 --trace=retain-on-failure
+
+      - name: QA-213 coincident Escape original scenario 30x no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-213-spiderfy-escape-flake'
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=chromium \
+            --grep='opens all coincident pins as keyboard-operable options without changing their canonical coordinate' \
+            --workers=1 --retries=0 --repeat-each=30 --trace=retain-on-failure
+
       - name: Run Chromium and WebKit end-to-end tests
         run: npm run test:e2e -- --project=chromium --project=webkit-map061 --project=mobile-chromium --project=mobile-webkit
 
