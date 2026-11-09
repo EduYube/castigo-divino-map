@@ -87,7 +87,8 @@ jobs:
       - name: Summarize diagnostic step outcomes
         if: always()
         run: |
-          {            echo "catalog_requests=${{ steps.catalog.outcome }}"
+          {
+            echo "catalog_requests=${{ steps.catalog.outcome }}"
             echo "map046_roster=${{ steps.map046.outcome }}"
             echo "map078=${{ steps.map078.outcome }}"
             echo "map061=${{ steps.map061.outcome }}"
@@ -107,7 +108,8 @@ jobs:
 
       - name: Fail if any diagnostic group reproduced the issue
         if: always()
-        run: |          test "${{ steps.catalog.outcome }}" = "success" &&
+        run: |
+          test "${{ steps.catalog.outcome }}" = "success" &&
           test "${{ steps.map046.outcome }}" = "success" &&
           test "${{ steps.map078.outcome }}" = "success" &&
           test "${{ steps.map061.outcome }}" = "success"
