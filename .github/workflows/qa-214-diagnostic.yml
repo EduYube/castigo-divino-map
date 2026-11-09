@@ -45,6 +45,12 @@ jobs:
           git rev-parse HEAD
           git rev-parse 'HEAD^{tree}'
 
+      - name: Reproduce exact CI browser matrix without retries
+        id: fullmatrix
+        continue-on-error: true
+        run: |
+          npm run test:e2e -- --project=chromium --project=webkit-map061 --project=mobile-chromium --project=mobile-webkit --workers=1 --retries=0 --max-failures=1 --trace=retain-on-failure
+
       - name: Reproduce shared admin setup — catalog and requests
         id: catalog
         continue-on-error: true
@@ -73,6 +79,7 @@ jobs:
         if: always()
         run: |
           {
+            echo "full_matrix=${{ steps.fullmatrix.outcome }}"
             echo "catalog_requests=${{ steps.catalog.outcome }}"
             echo "map046_roster=${{ steps.map046.outcome }}"
             echo "map078=${{ steps.map078.outcome }}"
@@ -94,6 +101,7 @@ jobs:
       - name: Fail if any diagnostic group reproduced the issue
         if: always()
         run: |
+          test "${{ steps.fullmatrix.outcome }}" = "success" &&
           test "${{ steps.catalog.outcome }}" = "success" &&
           test "${{ steps.map046.outcome }}" = "success" &&
           test "${{ steps.map078.outcome }}" = "success" &&
