@@ -54,6 +54,10 @@ interface BackendControl {
   expireNextSave(): void;
   staleNextSave(): void;
   invalidateNextRelation(): void;
+  holdPublicRefresh(): void;
+  whenPublicRefreshStarts(): Promise<void>;
+  releasePublicRefresh(): void;
+  setPublicRefreshUnavailable(unavailable: boolean): void;
 }
 
 function rangeResponse(rows: readonly Record<string, unknown>[]): {
@@ -73,6 +77,11 @@ async function configureBackend(page: Page, relationFixture = false): Promise<Ba
   let mode: 'normal' | 'network' | 'expired' | 'stale' | 'invalid-relation' = 'normal';
   let counter = 10;
   let saveCount = 0;
+  let publicRefreshGate: Promise<void> | null = null;
+  let releasePublicRefreshGate: (() => void) | null = null;
+  let notifyPublicRefreshStarted: (() => void) | null = null;
+  let publicRefreshStarted: Promise<void> = Promise.resolve();
+  let publicRefreshUnavailable = false;
   let lastAssociationIds: string[] = [];
   const storedPortraits = new Set<string>();
 
@@ -254,6 +263,17 @@ async function configureBackend(page: Page, relationFixture = false): Promise<Ba
     };
   };
 
+  if (relationFixture) {
+    await page.addInitScript(() => {
+      window.addEventListener('atlas:public-data-status', (event) => {
+        const root = document.documentElement;
+        const detail = (event as CustomEvent<{ backendState?: string }>).detail;
+        root.dataset.qa208StatusCount = String(Number(root.dataset.qa208StatusCount ?? '0') + 1);
+        root.dataset.qa208BackendState = detail?.backendState ?? 'unknown';
+      });
+    });
+  }
+
   await page.addInitScript(
     ({ projectUrl, publishableKey }) => {
       window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
@@ -358,6 +378,14 @@ async function configureBackend(page: Page, relationFixture = false): Promise<Ba
     const url = new URL(request.url());
     const authorization = request.headers()['authorization'] ?? '';
     if (authorization !== `Bearer ${ACCESS_TOKEN}` && request.method() === 'GET') {
+      if (relationFixture && saveCount > 0 && publicRefreshGate) {
+        notifyPublicRefreshStarted?.();
+        await publicRefreshGate;
+      }
+      if (relationFixture && saveCount > 0 && publicRefreshUnavailable) {
+        await route.abort('failed');
+        return;
+      }
       const table = url.pathname.split('/').at(-1) ?? '';
       const publishedEntities = entities.filter(
         (entity) => entity.publication_status === 'published' && entity.audience === 'public',
@@ -666,6 +694,26 @@ async function configureBackend(page: Page, relationFixture = false): Promise<Ba
     invalidateNextRelation(): void {
       mode = 'invalid-relation';
     },
+    holdPublicRefresh(): void {
+      publicRefreshGate = new Promise<void>((resolve) => {
+        releasePublicRefreshGate = resolve;
+      });
+      publicRefreshStarted = new Promise<void>((resolve) => {
+        notifyPublicRefreshStarted = resolve;
+      });
+    },
+    whenPublicRefreshStarts(): Promise<void> {
+      return publicRefreshStarted;
+    },
+    releasePublicRefresh(): void {
+      releasePublicRefreshGate?.();
+      releasePublicRefreshGate = null;
+      publicRefreshGate = null;
+      notifyPublicRefreshStarted = null;
+    },
+    setPublicRefreshUnavailable(unavailable: boolean): void {
+      publicRefreshUnavailable = unavailable;
+    },
   };
 }
 
@@ -681,6 +729,60 @@ async function loginAndConnect(page: Page): Promise<void> {
     );
   });
   await expect(page.getByText(/entidades administrativas/)).toBeVisible();
+}
+
+// The initial bundle status is provisional: wait for the first remote refresh
+// before the simulated administrative connection can be restored.
+async function waitForInitialMap074PublicRefresh(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () => Number(document.documentElement.dataset.qa208StatusCount ?? '0') >= 2,
+  );
+}
+
+async function readMap074PublicStatusCount(page: Page): Promise<number> {
+  return Number(await page.locator('html').getAttribute('data-qa208-status-count'));
+}
+
+// A revision refresh starts when the admin controller publishes the saved
+// revision. Its completion is observable through atlas:public-data-status.
+async function waitForMap074PostSaveRefresh(page: Page, priorCount: number): Promise<void> {
+  await page.waitForFunction(
+    (count) => Number(document.documentElement.dataset.qa208StatusCount ?? '0') > count,
+    priorCount,
+  );
+}
+
+async function closeMap074EditorAfterRefresh(page: Page): Promise<'closed' | 'unmounted'> {
+  const editor = page.locator('.admin-map-entity__editor');
+  await page.waitForFunction(() => {
+    const current = document.querySelector<HTMLElement>('.admin-map-entity__editor');
+    return !current || current.hidden || current.getAttribute('aria-busy') === 'false';
+  });
+  // Read the terminal state and activate the control in ONE browser task.
+  // No public-data event can remove the button between these two operations.
+  const terminal = await page.evaluate(() => {
+    const current = document.querySelector<HTMLElement>('.admin-map-entity__editor');
+    const backendState = document.documentElement.dataset.qa208BackendState;
+    if (!current || current.hidden) {
+      if (backendState === 'connected') {
+        throw new Error('MAP-074 editor disappeared while the backend remained connected');
+      }
+      return 'unmounted' as const;
+    }
+    if (backendState !== 'connected' || current.getAttribute('aria-busy') !== 'false') {
+      throw new Error('MAP-074 editor is not in a stable connected state');
+    }
+    const closeButton = Array.from(current.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Cerrar editor',
+    );
+    if (!closeButton || closeButton.disabled) {
+      throw new Error('MAP-074 editor has no available close control');
+    }
+    closeButton.click();
+    return 'closed' as const;
+  });
+  await expect(editor).toBeHidden();
+  return terminal;
 }
 
 async function fillIdentity(
@@ -1206,6 +1308,7 @@ test('MAP-074 generic relation editor persists oriented organization links and a
   test.setTimeout(90_000);
   const backend = await configureBackend(page, true);
   await page.goto('/');
+  await waitForInitialMap074PublicRefresh(page);
   await loginAndConnect(page);
 
   await page.getByRole('button', { name: 'Editar Guild MAP074' }).click();
@@ -1236,24 +1339,19 @@ test('MAP-074 generic relation editor persists oriented organization links and a
     await current.locator('[data-entity-relation-target-label]').fill(entry.other);
   }
   await expect(rows).toHaveCount(4);
+  backend.holdPublicRefresh();
+  const publicStatusBeforeSave = await readMap074PublicStatusCount(page);
   await page.getByRole('button', { name: 'Publicar' }).click();
   await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
   expect(backend.getRelations('entity-map074-guild')).toHaveLength(4);
 
-  // Saving retains the editor when the post-save public-data refresh has not
-  // entered degraded mode yet. Close it before checking create-button availability.
-  const closeEditor = page.getByRole('button', { name: 'Cerrar editor' });
-  if (await closeEditor.isVisible()) {
-    try {
-      await closeEditor.click({ timeout: 1500 });
-    } catch (error) {
-      // The async post-save refresh can hide the editor between the visibility
-      // check and the click. Only ignore that documented disappearance.
-      if (await closeEditor.isVisible()) throw error;
-    }
-  }
-  // The lightweight fixture may re-enter degraded mode after the save. Restore
-  // the simulated connection before reopening the other entity editors.
+  await backend.whenPublicRefreshStarts();
+  backend.releasePublicRefresh();
+  await waitForMap074PostSaveRefresh(page, publicStatusBeforeSave);
+  await closeMap074EditorAfterRefresh(page);
+
+  // Restore the simulated connection only after the actual revision refresh
+  // published its terminal status; it cannot overwrite this event afterward.
   await page.evaluate(() => {
     window.dispatchEvent(
       new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
@@ -1290,4 +1388,43 @@ test('MAP-074 generic relation editor persists oriented organization links and a
       .getRelations('entity-map074-guild')
       .some((row) => row.targetEntityId === 'place-map074-old'),
   ).toBe(true);
+});
+
+test('QA-208 degraded public refresh unmounts the editor after save before close', async ({
+  page,
+}) => {
+  const backend = await configureBackend(page, true);
+  await page.goto('/');
+  await waitForInitialMap074PublicRefresh(page);
+  await loginAndConnect(page);
+
+  await page.getByRole('button', { name: 'Editar Guild MAP074' }).click();
+  await page.getByLabel('Resumen').fill('QA-208 interleaving reproduction');
+  backend.setPublicRefreshUnavailable(true);
+  backend.holdPublicRefresh();
+  const publicStatusBeforeSave = await readMap074PublicStatusCount(page);
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect(page.getByText('Entidad publicada correctamente.')).toBeVisible();
+  await backend.whenPublicRefreshStarts();
+
+  const closeEditor = page.getByRole('button', { name: 'Cerrar editor' });
+  await expect(closeEditor).toBeVisible();
+  await expect(page.locator('.admin-map-entity__editor')).toHaveAttribute('aria-busy', 'false');
+  // This is the exact old isVisible() observation. The controlled public
+  // refresh then invalidates it before the old code could perform click().
+  expect(await closeEditor.isVisible()).toBe(true);
+  backend.releasePublicRefresh();
+  await waitForMap074PostSaveRefresh(page, publicStatusBeforeSave);
+  await expect(closeEditor).toBeHidden();
+  expect(await closeMap074EditorAfterRefresh(page)).toBe('unmounted');
+  await expect(page.getByRole('button', { name: 'Crear organización' })).toBeDisabled();
+  expect(backend.getRelations('entity-map074-guild')).toHaveLength(1);
+
+  backend.setPublicRefreshUnavailable(false);
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+    );
+  });
+  await expect(page.getByRole('button', { name: 'Crear organización' })).toBeEnabled();
 });

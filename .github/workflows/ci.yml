@@ -177,6 +177,22 @@ jobs:
       - name: Verify preinstalled Playwright browsers
         run: npx playwright --version
 
+      # QA-208: prove the post-save race on its own branch, without Playwright retries.
+      - name: QA-208 MAP-074 post-save 20x no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-208-map074-post-save-flake'
+        run: |
+          npx playwright test tests/e2e/admin-map-entities.spec.ts \
+            --project=chromium \
+            --grep='MAP-074 generic relation editor persists oriented organization links and archived history|QA-208 degraded public refresh unmounts the editor after save before close' \
+            --workers=1 --retries=0 --repeat-each=20 --trace=retain-on-failure
+
+      - name: QA-208 complete admin entity spec 3x no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-208-map074-post-save-flake'
+        run: |
+          npx playwright test tests/e2e/admin-map-entities.spec.ts \
+            --project=chromium --workers=1 --retries=0 --repeat-each=3 \
+            --trace=retain-on-failure
+
       - name: Run Chromium and WebKit end-to-end tests
         run: npm run test:e2e -- --project=chromium --project=webkit-map061 --project=mobile-chromium --project=mobile-webkit
 
