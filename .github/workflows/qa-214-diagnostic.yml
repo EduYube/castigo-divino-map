@@ -45,6 +45,20 @@ jobs:
           git rev-parse HEAD
           git rev-parse 'HEAD^{tree}'
 
+      - name: Reproduce CI prelude before browser matrix
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
+        run: |
+          npm run format:check
+          npm run verify:security
+          npm run verify:accessibility
+          npm run lint
+          npm run test
+          npm run build:pages
+          npm run verify:build
+          npm run report:build
+
       - name: Reproduce exact CI browser matrix without retries
         id: fullmatrix
         continue-on-error: true
