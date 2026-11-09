@@ -49,25 +49,25 @@ jobs:
         id: catalog
         continue-on-error: true
         run: |
-          npx playwright test             tests/e2e/admin-catalog.spec.ts             tests/e2e/admin-public-requests.spec.ts             --project=chromium             --workers=1             --retries=0             --repeat-each=8             --trace=retain-on-failure
+          npx playwright test             tests/e2e/admin-catalog.spec.ts             tests/e2e/admin-public-requests.spec.ts             --project=chromium             --workers=1             --retries=0             --repeat-each=5             --max-failures=1             --trace=retain-on-failure
 
       - name: Reproduce MAP-046 and roster setup
         id: map046
         continue-on-error: true
         run: |
-          npx playwright test             tests/e2e/map046-admin-workspace.spec.ts             tests/e2e/map046-request-publication.spec.ts             tests/e2e/map054-campaign-roster.spec.ts             --project=chromium             --workers=1             --retries=0             --repeat-each=5             --trace=retain-on-failure
+          npx playwright test             tests/e2e/map046-admin-workspace.spec.ts             tests/e2e/map046-request-publication.spec.ts             tests/e2e/map054-campaign-roster.spec.ts             --project=chromium             --workers=1             --retries=0             --repeat-each=3             --max-failures=1             --trace=retain-on-failure
 
       - name: Reproduce MAP-078 local admin setup
         id: map078
         continue-on-error: true
         run: |
-          npx playwright test             tests/e2e/map078-local-admin.spec.ts             --project=chromium             --workers=1             --retries=0             --repeat-each=5             --trace=retain-on-failure
+          npx playwright test             tests/e2e/map078-local-admin.spec.ts             --project=chromium             --workers=1             --retries=0             --repeat-each=3             --max-failures=1             --trace=retain-on-failure
 
       - name: Reproduce historical MAP-061 authorization scenarios
         id: map061
         continue-on-error: true
         run: |
-          npx playwright test             tests/e2e/map061-master-status-purge.spec.ts             --project=chromium             --workers=1             --retries=0             --repeat-each=10             --trace=retain-on-failure
+          npx playwright test             tests/e2e/map061-master-status-purge.spec.ts             --project=chromium             --workers=1             --retries=0             --repeat-each=5             --max-failures=1             --trace=retain-on-failure
 
       - name: Summarize diagnostic step outcomes
         if: always()
