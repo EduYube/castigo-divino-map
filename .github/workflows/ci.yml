@@ -234,6 +234,33 @@ jobs:
             --project=chromium --workers=1 --retries=0 --repeat-each=3 \
             --trace=retain-on-failure
 
+      - name: QA-215 desktop Firefox and WebKit directed no-retry gates
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake'
+        run: |
+          npx playwright test tests/e2e/responsive-accessibility.spec.ts \
+            --project=firefox \
+            --grep='QA-215 sensitivity: a stale Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
+            --workers=1 --retries=0 --trace=retain-on-failure
+          cat > playwright.qa215-webkit.config.ts <<'EOF'
+          import { defineConfig, devices } from '@playwright/test';
+          import baseConfig from './playwright.config';
+
+          export default defineConfig({
+            ...baseConfig,
+            projects: [
+              {
+                name: 'webkit-qa215',
+                testMatch: /responsive-accessibility\.spec\.ts/,
+                use: { ...devices['Desktop Safari'] },
+              },
+            ],
+          });
+          EOF
+          npx playwright test tests/e2e/responsive-accessibility.spec.ts \
+            --config=playwright.qa215-webkit.config.ts --project=webkit-qa215 \
+            --grep='QA-215 sensitivity: a stale Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
+            --workers=1 --retries=0 --trace=retain-on-failure
+
       - name: Run Chromium and WebKit end-to-end tests
         run: npm run test:e2e -- --project=chromium --project=webkit-map061 --project=mobile-chromium --project=mobile-webkit
 
