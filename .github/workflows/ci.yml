@@ -234,13 +234,9 @@ jobs:
             --project=chromium --workers=1 --retries=0 --repeat-each=3 \
             --trace=retain-on-failure
 
-      - name: QA-215 desktop Firefox and WebKit directed no-retry gates
+      - name: QA-215 desktop WebKit directed no-retry gate
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake'
         run: |
-          npx playwright test tests/e2e/responsive-accessibility.spec.ts \
-            --project=firefox \
-            --grep='QA-215 sensitivity: a stale Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
-            --workers=1 --retries=0 --trace=retain-on-failure
           cat > playwright.qa215-webkit.config.ts <<'EOF'
           import { defineConfig, devices } from '@playwright/test';
           import baseConfig from './playwright.config';
@@ -317,6 +313,16 @@ jobs:
 
       - name: Run Firefox end-to-end tests
         run: npm run test:e2e -- --project=firefox --project=firefox-map061
+
+      # Firefox launches under its own runner HOME; avoid the root-owned
+      # container HOME mismatch in the Chromium/WebKit job.
+      - name: QA-215 Firefox directed no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake'
+        run: |
+          npx playwright test tests/e2e/responsive-accessibility.spec.ts \
+            --project=firefox \
+            --grep='QA-215 sensitivity: a stale Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
+            --workers=1 --retries=0 --trace=retain-on-failure
 
       - name: Upload Firefox failure diagnostics
         if: failure()
