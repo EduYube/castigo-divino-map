@@ -1120,11 +1120,17 @@ export function mountFaerunMap(
       const pinId = pinIdByLegacyPlaceId.get(placeId);
       if (!pinId) return;
       revealPin(pinId, true);
+      const focusedElement = document.activeElement;
       const scheduledSpiderfyRevision = spiderfyRevision;
       window.requestAnimationFrame(() => {
         // A later Escape, pointer interaction or recluster must not reopen a
         // group that the user has already collapsed while this RAF was pending.
-        if (!destroyed && spiderfyRevision === scheduledSpiderfyRevision) {
+        // Nor may this deferred restore override a newer focus on another pin.
+        if (
+          !destroyed &&
+          spiderfyRevision === scheduledSpiderfyRevision &&
+          document.activeElement === focusedElement
+        ) {
           revealPin(pinId, true);
         }
       });
