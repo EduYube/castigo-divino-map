@@ -237,24 +237,8 @@ test('activates matching and dimmed markers with Enter and Space and restores fo
   await expect(pass).toHaveAttribute('data-accessible-state', /Lugar activo.*Coincide/);
 });
 
-test('QA-215 sensitivity: a stale Harbor focus restore cannot steal focus from Pass', async ({
-  page,
-}) => {
-  await openReadyMap(page);
-  await ensureControlsExpanded(page);
-  await page.getByRole('checkbox', { name: /Lugar destacado/ }).check();
-
-  const harbor = marker(page, 'place-demo-harbor');
-  const pass = marker(page, 'place-demo-pass');
-  const panel = page.getByTestId('place-details');
-  await expect(harbor).toHaveAttribute('data-filter-match', 'false');
-  await harbor.focus();
-  await page.keyboard.press('Enter');
-  await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
-  await expect(
-    panel.getByRole('heading', { level: 3, name: 'Puerto de demostración' }),
-  ).toBeFocused();
-
+// Control the exact RAF boundary without sleeps or browser retries.
+async function installQa215RafGate(page: Page): Promise<void> {
   await page.evaluate(() => {
     const close = document.querySelector<HTMLButtonElement>('[data-place-details-close]');
     if (!close) throw new Error('QA-215 missing close control');
@@ -358,6 +342,27 @@ test('QA-215 sensitivity: a stale Harbor focus restore cannot steal focus from P
       getTimeline: () => timeline,
     };
   });
+}
+
+test('QA-215 sensitivity: a stale Harbor focus restore cannot steal focus from Pass', async ({
+  page,
+}) => {
+  await openReadyMap(page);
+  await ensureControlsExpanded(page);
+  await page.getByRole('checkbox', { name: /Lugar destacado/ }).check();
+
+  const harbor = marker(page, 'place-demo-harbor');
+  const pass = marker(page, 'place-demo-pass');
+  const panel = page.getByTestId('place-details');
+  await expect(harbor).toHaveAttribute('data-filter-match', 'false');
+  await harbor.focus();
+  await page.keyboard.press('Enter');
+  await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
+  await expect(
+    panel.getByRole('heading', { level: 3, name: 'Puerto de demostración' }),
+  ).toBeFocused();
+
+  await installQa215RafGate(page);
 
   const closeButton = panel.getByRole('button', {
     name: 'Cerrar la ficha de Puerto de demostración',
@@ -402,6 +407,69 @@ test('QA-215 sensitivity: a stale Harbor focus restore cannot steal focus from P
     ]),
   );
   expect(await panel.getAttribute('data-active-place-id')).toBe('place-demo-pass');
+  await expect(pass).toHaveAttribute('aria-pressed', 'true');
+  await expect(pass).toHaveAttribute('data-accessible-state', /Lugar activo.*Coincide/);
+});
+
+test('QA-215 sensitivity: an outer Harbor focus restore cannot steal focus from Pass', async ({
+  page,
+}) => {
+  await openReadyMap(page);
+  await ensureControlsExpanded(page);
+  await page.getByRole('checkbox', { name: /Lugar destacado/ }).check();
+
+  const harbor = marker(page, 'place-demo-harbor');
+  const pass = marker(page, 'place-demo-pass');
+  const panel = page.getByTestId('place-details');
+  await expect(harbor).toHaveAttribute('data-filter-match', 'false');
+  await harbor.focus();
+  await page.keyboard.press('Enter');
+  await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
+  await expect(
+    panel.getByRole('heading', { level: 3, name: 'Puerto de demostración' }),
+  ).toBeFocused();
+
+  await installQa215RafGate(page);
+  const closeButton = panel.getByRole('button', {
+    name: 'Cerrar la ficha de Puerto de demostración',
+  });
+  await closeButton.focus();
+  await page.keyboard.press('Enter');
+  await expect(panel).toBeHidden();
+
+  // Move focus before the first (main.ts) restoration callback is allowed to run.
+  await pass.focus();
+  await expect(pass).toBeFocused();
+  await page.evaluate(() => window.__qa215Gate?.sample('pass-before-outer-raf'));
+  const outerFrame = await page.evaluate(() => {
+    const executed = window.__qa215Gate?.advance() ?? 0;
+    window.__qa215Gate?.sample('after-outer-raf');
+    window.__qa215Gate?.restore();
+    return executed;
+  });
+  expect(outerFrame).toBeGreaterThan(0);
+  await expect(pass).toBeFocused();
+
+  await page.keyboard.press('Space');
+  await page.evaluate(() => window.__qa215Gate?.sample('after-space'));
+  const timeline = await page.evaluate(
+    () => window.__qa215Gate?.getTimeline() ?? ([] as Record<string, unknown>[]),
+  );
+  if (process.env.QA215_TIMELINE === '1') {
+    console.log('QA215_OUTER_TIMELINE', JSON.stringify(timeline));
+  }
+  expect(timeline).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ stage: 'pass-before-outer-raf', focus: 'place-demo-pass' }),
+      expect.objectContaining({ stage: 'after-outer-raf', focus: 'place-demo-pass' }),
+      expect.objectContaining({
+        stage: 'marker-space-handled',
+        target: 'place-demo-pass',
+        defaultPrevented: true,
+      }),
+    ]),
+  );
+  await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-pass');
   await expect(pass).toHaveAttribute('aria-pressed', 'true');
   await expect(pass).toHaveAttribute('data-accessible-state', /Lugar activo.*Coincide/);
 });

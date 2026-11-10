@@ -219,6 +219,13 @@ jobs:
             --project=chromium --grep='QA-215 sensitivity: a stale Harbor focus restore' \
             --workers=1 --retries=0 --repeat-each=20 --trace=retain-on-failure
 
+      - name: QA-215 outer focus restore sensitivity 20x no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake'
+        run: |
+          QA215_TIMELINE=1 npx playwright test tests/e2e/responsive-accessibility.spec.ts \
+            --project=chromium --grep='QA-215 sensitivity: an outer Harbor focus restore' \
+            --workers=1 --retries=0 --repeat-each=20 --trace=retain-on-failure
+
       - name: QA-215 original Enter/Space scenario 30x no-retry gate
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake'
         run: |
@@ -254,7 +261,7 @@ jobs:
           EOF
           npx playwright test tests/e2e/responsive-accessibility.spec.ts \
             --config=playwright.qa215-webkit.config.ts --project=webkit-qa215 \
-            --grep='QA-215 sensitivity: a stale Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
+            --grep='QA-215 sensitivity: a stale Harbor focus restore|QA-215 sensitivity: an outer Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
             --workers=1 --retries=0 --trace=retain-on-failure
 
       - name: Run Chromium and WebKit end-to-end tests
@@ -321,7 +328,7 @@ jobs:
         run: |
           npx playwright test tests/e2e/responsive-accessibility.spec.ts \
             --project=firefox \
-            --grep='QA-215 sensitivity: a stale Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
+            --grep='QA-215 sensitivity: a stale Harbor focus restore|QA-215 sensitivity: an outer Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
             --workers=1 --retries=0 --trace=retain-on-failure
 
       - name: Upload Firefox failure diagnostics
