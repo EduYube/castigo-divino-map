@@ -1,5 +1,16 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
+declare global {
+  interface Window {
+    __qa215Gate?: {
+      advance(): number;
+      restore(): void;
+      sample(stage: string): void;
+      getTimeline(): readonly Record<string, unknown>[];
+    };
+  }
+}
+
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const COMPLETE_STATE_URL =
@@ -222,6 +233,175 @@ test('activates matching and dimmed markers with Enter and Space and restores fo
   await pass.focus();
   await page.keyboard.press('Space');
   await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-pass');
+  await expect(pass).toHaveAttribute('aria-pressed', 'true');
+  await expect(pass).toHaveAttribute('data-accessible-state', /Lugar activo.*Coincide/);
+});
+
+test('QA-215 sensitivity: a stale Harbor focus restore cannot steal focus from Pass', async ({
+  page,
+}) => {
+  await openReadyMap(page);
+  await ensureControlsExpanded(page);
+  await page.getByRole('checkbox', { name: /Lugar destacado/ }).check();
+
+  const harbor = marker(page, 'place-demo-harbor');
+  const pass = marker(page, 'place-demo-pass');
+  const panel = page.getByTestId('place-details');
+  await expect(harbor).toHaveAttribute('data-filter-match', 'false');
+  await harbor.focus();
+  await page.keyboard.press('Enter');
+  await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
+  await expect(
+    panel.getByRole('heading', { level: 3, name: 'Puerto de demostración' }),
+  ).toBeFocused();
+
+  await page.evaluate(() => {
+    const close = document.querySelector<HTMLButtonElement>('[data-place-details-close]');
+    if (!close) throw new Error('QA-215 missing close control');
+
+    const nativeRequest = window.requestAnimationFrame.bind(window);
+    const nativeCancel = window.cancelAnimationFrame.bind(window);
+    const queued = new Map<number, FrameRequestCallback>();
+    const timeline: Array<Record<string, unknown>> = [];
+    const harborNode = document.querySelector<HTMLElement>(
+      '[data-testid="place-marker"][data-place-id="place-demo-harbor"]',
+    );
+    const passNode = document.querySelector<HTMLElement>(
+      '[data-testid="place-marker"][data-place-id="place-demo-pass"]',
+    );
+    let gateOn = false;
+    let nextId = -1;
+
+    const describe = (target: EventTarget | null): string | null => {
+      if (!(target instanceof HTMLElement)) return null;
+      return target.dataset.placeId ?? target.dataset.testid ?? target.tagName;
+    };
+    const record = (stage: string, extra: Record<string, unknown> = {}): void => {
+      const panelNode = document.querySelector<HTMLElement>('[data-testid="place-details"]');
+      timeline.push({
+        stage,
+        focus: describe(document.activeElement),
+        harborConnected: harborNode?.isConnected ?? false,
+        passConnected: passNode?.isConnected ?? false,
+        harborPressed: harborNode?.getAttribute('aria-pressed') ?? null,
+        passPressed: passNode?.getAttribute('aria-pressed') ?? null,
+        panelPlace: panelNode?.dataset.activePlaceId ?? null,
+        panelHidden: panelNode?.hidden ?? null,
+        mapZoom: document.querySelector<HTMLElement>('[data-map-shell]')?.dataset.mapZoom,
+        queuedFrames: queued.size,
+        ...extra,
+      });
+    };
+
+    window.requestAnimationFrame = (callback: FrameRequestCallback): number => {
+      if (!gateOn) return nativeRequest(callback);
+      const id = nextId--;
+      queued.set(id, callback);
+      record('raf-scheduled', { id });
+      return id;
+    };
+    window.cancelAnimationFrame = (id: number): void => {
+      if (!queued.delete(id)) nativeCancel(id);
+    };
+    document.addEventListener(
+      'focusin',
+      (event) => record('focusin', { target: describe(event.target) }),
+      true,
+    );
+    for (const eventName of ['keydown', 'keyup'] as const) {
+      document.addEventListener(
+        eventName,
+        (event) => {
+          if (event.key === ' ' || event.key === 'Enter') {
+            record(eventName, {
+              target: describe(event.target),
+              currentTarget: 'document',
+              key: event.key,
+            });
+          }
+        },
+        true,
+      );
+    }
+    for (const node of [harborNode, passNode]) {
+      node?.addEventListener('keydown', (event) => {
+        if (event.key === ' ') {
+          record('marker-space-handled', {
+            target: describe(event.target),
+            currentTarget: describe(event.currentTarget),
+            defaultPrevented: event.defaultPrevented,
+          });
+        }
+      });
+    }
+    close.addEventListener(
+      'click',
+      () => {
+        gateOn = true;
+        record('close-click');
+      },
+      { capture: true, once: true },
+    );
+    window.__qa215Gate = {
+      advance(): number {
+        const batch = [...queued.values()];
+        queued.clear();
+        for (const callback of batch) callback(performance.now());
+        record('raf-advanced', { executed: batch.length });
+        return batch.length;
+      },
+      restore(): void {
+        window.requestAnimationFrame = nativeRequest;
+        window.cancelAnimationFrame = nativeCancel;
+      },
+      sample: record,
+      getTimeline: () => timeline,
+    };
+  });
+
+  const closeButton = panel.getByRole('button', {
+    name: 'Cerrar la ficha de Puerto de demostración',
+  });
+  await closeButton.focus();
+  await page.keyboard.press('Enter');
+  await expect(panel).toBeHidden();
+
+  // First frame runs the main.ts onClose restore. The second frame, scheduled
+  // by focusMarker(), is kept pending while the user focuses a different pin.
+  const firstFrame = await page.evaluate(() => window.__qa215Gate?.advance() ?? 0);
+  expect(firstFrame).toBeGreaterThan(0);
+  await expect(harbor).toBeFocused();
+  await pass.focus();
+  await expect(pass).toBeFocused();
+  await page.evaluate(() => window.__qa215Gate?.sample('pass-focused'));
+
+  const staleFrame = await page.evaluate(() => {
+    const executed = window.__qa215Gate?.advance() ?? 0;
+    window.__qa215Gate?.sample('after-stale-raf');
+    window.__qa215Gate?.restore();
+    return executed;
+  });
+  expect(staleFrame).toBeGreaterThan(0);
+
+  await page.keyboard.press('Space');
+  await page.evaluate(() => window.__qa215Gate?.sample('after-space'));
+  const timeline = await page.evaluate(
+    () => window.__qa215Gate?.getTimeline() ?? ([] as Record<string, unknown>[]),
+  );
+  if (process.env.QA215_TIMELINE === '1') console.log('QA215_TIMELINE', JSON.stringify(timeline));
+
+  expect(timeline).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ stage: 'pass-focused', focus: 'place-demo-pass' }),
+      expect.objectContaining({ stage: 'after-stale-raf', focus: 'place-demo-pass' }),
+      expect.objectContaining({
+        stage: 'marker-space-handled',
+        target: 'place-demo-pass',
+        defaultPrevented: true,
+      }),
+    ]),
+  );
+  expect(await panel.getAttribute('data-active-place-id')).toBe('place-demo-pass');
   await expect(pass).toHaveAttribute('aria-pressed', 'true');
   await expect(pass).toHaveAttribute('data-accessible-state', /Lugar activo.*Coincide/);
 });
