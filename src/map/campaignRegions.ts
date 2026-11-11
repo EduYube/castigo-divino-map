@@ -25,6 +25,8 @@ export interface CampaignRegionController {
 export interface CampaignRegionOptions {
   readonly regions?: readonly AtlasRegionMarkerModel[];
   readonly onActivate?: (region: AtlasRegionMarkerModel) => void;
+  readonly onAnnouncement?: (region: AtlasRegionMarkerModel, message: string) => void;
+  readonly onClearAnnouncement?: (regionId: string) => void;
 }
 
 interface RenderedRegion {
@@ -35,8 +37,6 @@ interface RenderedRegion {
 
 interface RegionAnnouncement {
   readonly regionId: string;
-  readonly regionName: string | null;
-  readonly message: string;
 }
 
 const REGION_PANE = 'campaignRegionsPane';
@@ -78,14 +78,10 @@ export function mountCampaignRegions(
   let destroyed = false;
 
   const announceRegion = (regionId: string, message: string): void => {
-    const status = root.querySelector<HTMLElement>('[data-map-search-status]');
-    if (!status) return;
-    status.textContent = message;
-    announcedStatus = {
-      regionId,
-      regionName: rendered.get(regionId)?.model.name ?? null,
-      message,
-    };
+    const region = rendered.get(regionId)?.model;
+    if (!region) return;
+    options.onAnnouncement?.(region, message);
+    announcedStatus = { regionId };
   };
 
   const clearAnnouncement = (validRegionIds?: ReadonlySet<string>): void => {
@@ -93,19 +89,7 @@ export function mountCampaignRegions(
     if (!announcement) return;
     if (validRegionIds?.has(announcement.regionId)) return;
 
-    const status = root.querySelector<HTMLElement>('[data-map-search-status]');
-    const currentStatus = status?.textContent ?? '';
-    const selectionMessageForSameRegion = Boolean(
-      announcement.regionName &&
-      currentStatus.startsWith(`${announcement.regionName}, `) &&
-      currentStatus.includes('seleccionado en el mapa. Ficha compacta abierta.'),
-    );
-    // clearSearchFocus can be followed by main.ts' deferred compact-selection message.
-    // When the same region is being purged, that later message is still private region state
-    // and must disappear too. A newer unrelated public/point announcement is preserved.
-    if (status && (currentStatus === announcement.message || selectionMessageForSameRegion)) {
-      status.textContent = '';
-    }
+    options.onClearAnnouncement?.(announcement.regionId);
     announcedStatus = null;
   };
 
