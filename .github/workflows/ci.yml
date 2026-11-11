@@ -44,13 +44,6 @@ jobs:
       - name: Verify MAP-071 PDF matches Markdown
         run: node scripts/generate-admin-qa-pdf.cjs --check
 
-      # Temporary QA-219 formatting diagnostic; removed before R2.
-      - name: QA-219 Prettier exact diff diagnostic
-        if: github.event_name == 'pull_request' && github.event.pull_request.number == 227
-        run: |
-          npx prettier --write tests/e2e/map080-master-local-revocation.spec.ts
-          git diff -- tests/e2e/map080-master-local-revocation.spec.ts
-
       - name: Check formatting
         run: npm run format:check
 

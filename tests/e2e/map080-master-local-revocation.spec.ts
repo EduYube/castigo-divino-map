@@ -660,7 +660,7 @@ test('QA219-R1-01 Master polygon search uses identity and OFF purges completed a
   await expect(master).toHaveAttribute('aria-pressed', 'true');
   await expect(publicRegion).toHaveAttribute('aria-pressed', 'false');
   await expect(status).toContainText(REGION_COLLISION_NAME);
-  await expect(status).toContainText('Contenido del Máster');
+  await expect(status).toContainText('contenido del Máster');
   await expect(page.getByTestId('place-details')).toHaveAttribute(
     'data-entity-id',
     MASTER_REGION_ID,
@@ -706,9 +706,8 @@ test('QA219-R1-01 Master polygon search: OFF before RAF prevents stale announcem
   await expect(publicRegion).toHaveAttribute('aria-pressed', 'false');
   await expect(status).toContainText('contenido del Máster');
   const pending = await page.evaluate(() => {
-    const controls = (
-      window as typeof window & { __QA219_R1_FRAMES__?: { pending: () => number } }
-    ).__QA219_R1_FRAMES__;
+    const controls = (window as typeof window & { __QA219_R1_FRAMES__?: { pending: () => number } })
+      .__QA219_R1_FRAMES__;
     return controls?.pending() ?? 0;
   });
   expect(pending).toBeGreaterThan(0);
@@ -727,4 +726,3 @@ test('QA219-R1-01 Master polygon search: OFF before RAF prevents stale announcem
     )
     .toBe(false);
 });
-
