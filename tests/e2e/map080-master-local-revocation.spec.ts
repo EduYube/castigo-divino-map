@@ -647,7 +647,7 @@ async function releaseQa219RegionFrames(page: Page): Promise<void> {
   });
 }
 
-test('QA219-R1-01 identical polygons: Master search resolves private ID and OFF revokes its completed announcement', async ({
+test('QA219-R1-01 Master polygon search uses identity and OFF purges completed announcement', async ({
   page,
 }) => {
   await openQa219CollisionRegions(page);
@@ -661,7 +661,10 @@ test('QA219-R1-01 identical polygons: Master search resolves private ID and OFF 
   await expect(publicRegion).toHaveAttribute('aria-pressed', 'false');
   await expect(status).toContainText(REGION_COLLISION_NAME);
   await expect(status).toContainText('Contenido del Máster');
-  await expect(page.getByTestId('place-details')).toHaveAttribute('data-entity-id', MASTER_REGION_ID);
+  await expect(page.getByTestId('place-details')).toHaveAttribute(
+    'data-entity-id',
+    MASTER_REGION_ID,
+  );
 
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
@@ -671,10 +674,7 @@ test('QA219-R1-01 identical polygons: Master search resolves private ID and OFF 
   await expect(page.locator('body')).not.toContainText(MASTER_REGION_SECRET);
   await expect
     .poll(() =>
-      page.evaluate(
-        (id) => document.documentElement.outerHTML.includes(id),
-        MASTER_REGION_ID,
-      ),
+      page.evaluate((id) => document.documentElement.outerHTML.includes(id), MASTER_REGION_ID),
     )
     .toBe(false);
 
@@ -689,7 +689,7 @@ test('QA219-R1-01 identical polygons: Master search resolves private ID and OFF 
   await expect(status).not.toContainText('Contenido del Máster');
 });
 
-test('QA219-R1-01 identical polygons: OFF before deferred search RAF cannot resurrect a private announcement', async ({
+test('QA219-R1-01 Master polygon search: OFF before RAF prevents stale announcements', async ({
   page,
 }) => {
   await openQa219CollisionRegions(page);
@@ -705,11 +705,12 @@ test('QA219-R1-01 identical polygons: OFF before deferred search RAF cannot resu
   await expect(master).toHaveAttribute('aria-pressed', 'true');
   await expect(publicRegion).toHaveAttribute('aria-pressed', 'false');
   await expect(status).toContainText('contenido del Máster');
-  const pending = await page.evaluate(
-    () =>
-      (window as typeof window & { __QA219_R1_FRAMES__?: { pending: () => number } })
-        .__QA219_R1_FRAMES__?.pending() ?? 0,
-  );
+  const pending = await page.evaluate(() => {
+    const controls = (
+      window as typeof window & { __QA219_R1_FRAMES__?: { pending: () => number } }
+    ).__QA219_R1_FRAMES__;
+    return controls?.pending() ?? 0;
+  });
   expect(pending).toBeGreaterThan(0);
 
   await toggle.evaluate((button: HTMLElement) => button.click());
@@ -722,10 +723,7 @@ test('QA219-R1-01 identical polygons: OFF before deferred search RAF cannot resu
   await expect(page.locator('body')).not.toContainText(MASTER_REGION_SECRET);
   await expect
     .poll(() =>
-      page.evaluate(
-        (id) => document.documentElement.outerHTML.includes(id),
-        MASTER_REGION_ID,
-      ),
+      page.evaluate((id) => document.documentElement.outerHTML.includes(id), MASTER_REGION_ID),
     )
     .toBe(false);
 });
