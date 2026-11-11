@@ -154,7 +154,7 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
   await page.route('**/rest/v1/**', async (route: Route) => {
     const request = route.request();
     const resource = new URL(request.url()).pathname.split('/rest/v1/')[1] ?? '';
-    const authorized = request.headers()['authorization'] === `***;
+    const authorized = request.headers()['authorization'] === `Bearer ${ADMIN_TOKEN}`;
     if (authorized && resource === 'rpc/current_user_is_admin') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
       return;
