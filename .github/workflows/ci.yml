@@ -196,19 +196,73 @@ jobs:
       # QA-213: force the post-Escape deferred-focus interleaving, then exercise
       # the original contract without Playwright retries on the exact PR HEAD.
       - name: QA-213 spiderfy Escape sensitivity 20x no-retry gate
-        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-213-spiderfy-escape-flake'
+        if: github.event_name == 'pull_request' && (github.head_ref == 'agent/qa-213-spiderfy-escape-flake' || github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake')
         run: |
           npx playwright test tests/e2e/pin-visual-system.spec.ts \
             --project=chromium --grep='QA-213 sensitivity: pending focus restore' \
             --workers=1 --retries=0 --repeat-each=20 --trace=retain-on-failure
 
       - name: QA-213 coincident Escape original scenario 30x no-retry gate
-        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-213-spiderfy-escape-flake'
+        if: github.event_name == 'pull_request' && (github.head_ref == 'agent/qa-213-spiderfy-escape-flake' || github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake')
         run: |
           npx playwright test tests/e2e/pin-visual-system.spec.ts \
             --project=chromium \
             --grep='opens all coincident pins as keyboard-operable options without changing their canonical coordinate' \
             --workers=1 --retries=0 --repeat-each=30 --trace=retain-on-failure
+
+      # QA-215: deterministic stale RAF interleaving and the unchanged original
+      # accessibility contract, each without retries on the exact candidate HEAD.
+      - name: QA-215 stale pin focus sensitivity 20x no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake'
+        run: |
+          QA215_TIMELINE=1 npx playwright test tests/e2e/responsive-accessibility.spec.ts \
+            --project=chromium --grep='QA-215 sensitivity: a stale Harbor focus restore' \
+            --workers=1 --retries=0 --repeat-each=20 --trace=retain-on-failure
+
+      - name: QA-215 outer focus restore sensitivity 20x no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake'
+        run: |
+          QA215_TIMELINE=1 npx playwright test tests/e2e/responsive-accessibility.spec.ts \
+            --project=chromium --grep='QA-215 sensitivity: an outer Harbor focus restore' \
+            --workers=1 --retries=0 --repeat-each=20 --trace=retain-on-failure
+
+      - name: QA-215 original Enter/Space scenario 30x no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake'
+        run: |
+          npx playwright test tests/e2e/responsive-accessibility.spec.ts \
+            --project=chromium \
+            --grep='activates matching and dimmed markers with Enter and Space and restores focus' \
+            --workers=1 --retries=0 --repeat-each=30 --trace=retain-on-failure
+
+      - name: QA-215 full responsive accessibility spec 3x no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake'
+        run: |
+          npx playwright test tests/e2e/responsive-accessibility.spec.ts \
+            --project=chromium --workers=1 --retries=0 --repeat-each=3 \
+            --trace=retain-on-failure
+
+      - name: QA-215 desktop WebKit directed no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake'
+        run: |
+          cat > playwright.qa215-webkit.config.ts <<'EOF'
+          import { defineConfig, devices } from '@playwright/test';
+          import baseConfig from './playwright.config';
+
+          export default defineConfig({
+            ...baseConfig,
+            projects: [
+              {
+                name: 'webkit-qa215',
+                testMatch: /responsive-accessibility\.spec\.ts/,
+                use: { ...devices['Desktop Safari'] },
+              },
+            ],
+          });
+          EOF
+          npx playwright test tests/e2e/responsive-accessibility.spec.ts \
+            --config=playwright.qa215-webkit.config.ts --project=webkit-qa215 \
+            --grep='QA-215 sensitivity: a stale Harbor focus restore|QA-215 sensitivity: an outer Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
+            --workers=1 --retries=0 --trace=retain-on-failure
 
       - name: Run Chromium and WebKit end-to-end tests
         run: npm run test:e2e -- --project=chromium --project=webkit-map061 --project=mobile-chromium --project=mobile-webkit
@@ -266,6 +320,16 @@ jobs:
 
       - name: Run Firefox end-to-end tests
         run: npm run test:e2e -- --project=firefox --project=firefox-map061
+
+      # Firefox launches under its own runner HOME; avoid the root-owned
+      # container HOME mismatch in the Chromium/WebKit job.
+      - name: QA-215 Firefox directed no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-215-pin-keyboard-focus-flake'
+        run: |
+          npx playwright test tests/e2e/responsive-accessibility.spec.ts \
+            --project=firefox \
+            --grep='QA-215 sensitivity: a stale Harbor focus restore|QA-215 sensitivity: an outer Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
+            --workers=1 --retries=0 --trace=retain-on-failure
 
       - name: Upload Firefox failure diagnostics
         if: failure()

@@ -398,7 +398,19 @@ function mountPublicExperience(
 
       if (previouslyActivePlaceId) {
         selection.clear();
-        window.requestAnimationFrame(() => mapController.focusMarker(previouslyActivePlaceId));
+        // A newer focus action must win over the deferred close restoration.
+        // Losing focus when the closed control is hidden is not itself a new target.
+        let focusChanged = false;
+        const onFocusChange = (): void => {
+          focusChanged = true;
+        };
+        document.addEventListener('focusin', onFocusChange, true);
+        window.requestAnimationFrame(() => {
+          document.removeEventListener('focusin', onFocusChange, true);
+          if (!focusChanged) {
+            mapController.focusMarker(previouslyActivePlaceId);
+          }
+        });
         return;
       }
 
