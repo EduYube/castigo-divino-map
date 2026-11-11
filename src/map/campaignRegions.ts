@@ -63,7 +63,7 @@ function polygonElement(polygon: Polygon): HTMLElement | null {
 }
 
 export function mountCampaignRegions(
-  root: ParentNode,
+  _root: ParentNode,
   map: LeafletMap,
   options: CampaignRegionOptions = {},
 ): CampaignRegionController {
