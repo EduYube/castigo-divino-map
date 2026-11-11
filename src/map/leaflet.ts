@@ -62,6 +62,7 @@ export function mountFaerunMap(
   let activeSupplementalPinId: string | null = null;
   let matchingPinIds = new Set(renderedMarkers.map(({ id }) => id));
   let matchingSemantics: RegionMatchingSemantics = 'search-and-filters';
+  let regionAnnouncementGeneration = 0;
   const initial = splitMarkers(renderedMarkers);
 
   const pointController = mountPointFaerunMap(root, {
@@ -83,6 +84,18 @@ export function mountFaerunMap(
 
   const regionController = mountCampaignRegions(root, pointController.map, {
     regions: initial.regions,
+    onAnnouncement(region, message): void {
+      options.onAnnouncement?.(message, {
+        ...(options.getPinAnnouncementOrigin?.(region) ?? {
+          entityId: region.entityId,
+          audience: 'public',
+          source: 'region',
+        }),
+        source: 'region',
+        sourceId: region.id,
+      });
+    },
+    onClearAnnouncement: (regionId) => options.onClearAnnouncementForPin?.(regionId),
     onActivate(region): void {
       pointController.clearSearchFocus();
       synchronizePointSelectionForRegion(region);
@@ -111,13 +124,15 @@ export function mountFaerunMap(
   }
 
   function announceActiveRegion(region: AtlasRegionMarkerModel, message: string): void {
+    const generation = ++regionAnnouncementGeneration;
     window.requestAnimationFrame(() => {
-      if (activeRegionId() !== region.id) return;
+      if (generation !== regionAnnouncementGeneration || activeRegionId() !== region.id) return;
       regionController.announceRegion(region.id, message);
     });
   }
 
   function clearRegionAnnouncement(validRegionIds?: ReadonlySet<string>): void {
+    regionAnnouncementGeneration += 1;
     regionController.clearAnnouncement(validRegionIds);
   }
 
