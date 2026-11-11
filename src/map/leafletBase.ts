@@ -1,6 +1,7 @@
 import L, { type LatLngBounds, type Map as LeafletMap, type Marker, type Polyline } from 'leaflet';
 
 import type { PlaceId } from '../data/model';
+import type { MapAnnouncementOrigin } from '../app/masterMapAnnouncement';
 import type { AtlasPinMarkerModel } from '../data/pinMarkers';
 import {
   createSpiderfyPoints,
@@ -37,6 +38,7 @@ export interface MapSearchTarget {
   } | null;
   readonly recommendedZoom: number | null;
   readonly label: string;
+  readonly announcementOrigin?: MapAnnouncementOrigin;
 }
 
 export interface FaerunMapMarkerUpdateOptions {
@@ -60,6 +62,9 @@ export interface FaerunMapController {
 export interface FaerunMapOptions {
   readonly markers?: readonly AtlasPinMarkerModel[];
   readonly onPinActivate?: (pin: AtlasPinMarkerModel) => void;
+  readonly onAnnouncement?: (message: string, origin: MapAnnouncementOrigin) => void;
+  readonly onClearAnnouncementForPin?: (pinId: string) => void;
+  readonly getPinAnnouncementOrigin?: (pin: AtlasPinMarkerModel) => MapAnnouncementOrigin;
   /** MAP-045 authorized thumbnail loader. Returning null keeps the standard pin. */
   readonly loadPortrait?: (pin: AtlasPinMarkerModel, signal: AbortSignal) => Promise<string | null>;
 }
@@ -485,7 +490,20 @@ export function mountFaerunMap(
           clusterElement.dataset.markerLng = String(pin.coordinate[1]);
         }
       }
-      elements.searchStatus.textContent = `${pin.name}, ${getPinTypeVisual(pin.entityType).label.toLocaleLowerCase('es')}, seleccionado en el mapa.`;
+      const announcement = `${pin.name}, ${getPinTypeVisual(pin.entityType).label.toLocaleLowerCase('es')}, seleccionado en el mapa.`;
+      if (options.onAnnouncement) {
+        options.onAnnouncement(
+          announcement,
+          options.getPinAnnouncementOrigin?.(pin) ?? {
+            entityId: pin.entityId,
+            audience: 'public',
+            source: 'pin-selection',
+            sourceId: pin.id,
+          },
+        );
+      } else {
+        elements.searchStatus.textContent = announcement;
+      }
       renderedGroups.forEach(({ marker, pins }) => updateGroupPresentation(marker, pins));
       refreshPortraitMarkers();
     }
@@ -1099,7 +1117,7 @@ export function mountFaerunMap(
     },
     locateSearchTarget(target: MapSearchTarget): void {
       collapseSpiderfy(false);
-      locateMapSearchTarget(map, root, target);
+      locateMapSearchTarget(map, root, target, options.onAnnouncement);
       synchronizeView();
       reclusterAtCurrentZoom();
 
