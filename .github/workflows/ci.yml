@@ -44,6 +44,12 @@ jobs:
       - name: Verify MAP-071 PDF matches Markdown
         run: node scripts/generate-admin-qa-pdf.cjs --check
 
+      # QA-219 diagnostic only: capture exact Prettier output; removed before final gate.
+      - name: QA219 temporary formatter capture
+        run: |
+          npx prettier --write src/app/masterMapAnnouncement.test.ts src/main.ts src/map/searchFocus.ts tests/e2e/map080-master-local-revocation.spec.ts
+          node -e 'const fs=require("node:fs");for(const path of process.argv.slice(1)){const content=JSON.stringify(fs.readFileSync(path,"utf8"));const size=4000;for(let i=0;i<Math.ceil(content.length/size);i++)console.log("QA219_FMT|"+path+"|"+i+"|"+content.slice(i*size,(i+1)*size));}' src/app/masterMapAnnouncement.test.ts src/main.ts src/map/searchFocus.ts tests/e2e/map080-master-local-revocation.spec.ts
+
       - name: Check formatting
         run: npm run format:check
 
