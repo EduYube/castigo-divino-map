@@ -957,6 +957,12 @@ function mountPublicExperience(
     const previousCampaignId = catalogState.selectedCampaign?.id ?? null;
     const nextCampaignId = nextCatalogState.selectedCampaign?.id ?? null;
     const campaignChanged = previousCampaignId !== nextCampaignId;
+    // Campaign scope changes invalidate private runtime metadata even when
+    // two campaigns happen to re-use the same entity identifier.
+    if (campaignChanged) {
+      mapAnnouncements.clearPrivate();
+      mapController.clearSearchFocus({ preserveRegionAnnouncement: true });
+    }
     catalogState = nextCatalogState;
     const previousActivePlaceId = selection.getActivePlaceId();
     const previousGeographicNameId = geographicNameId;
@@ -993,7 +999,8 @@ function mountPublicExperience(
     if (removedMasterEntityIds.size > 0) {
       clearRevokedMasterAnnouncement(removedMasterEntityIds);
       // Search-focus labels can also contain private names in map-shell metadata.
-      mapController.clearSearchFocus();
+      // Do not erase a newer public region announcement while clearing the overlay.
+      mapController.clearSearchFocus({ preserveRegionAnnouncement: true });
       if (
         activeSupplementalPin?.entityId &&
         removedMasterEntityIds.has(activeSupplementalPin.entityId)

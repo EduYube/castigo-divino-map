@@ -77,6 +77,7 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
     tagIds: [],
   });
   const hashContent: Record<string, unknown> = { ...snapshot };
+  delete hashContent.generatedAt;
   delete hashContent.checksum;
   delete hashContent.sourceRevision;
   const hash = createHash('sha256')

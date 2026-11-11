@@ -262,8 +262,8 @@ export function mountFaerunMap(
       clearRegionFocusMetadata();
       pointController.locateSearchTarget(target);
     },
-    clearSearchFocus(): void {
-      clearRegionAnnouncement();
+    clearSearchFocus(options): void {
+      if (!options?.preserveRegionAnnouncement) clearRegionAnnouncement();
       clearRegionFocusMetadata();
       pointController.clearSearchFocus();
     },

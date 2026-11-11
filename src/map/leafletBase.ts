@@ -54,7 +54,7 @@ export interface FaerunMapController {
   setMatchingPins(pinIds: ReadonlySet<string>, semantics?: PinMatchingSemantics): void;
   locatePlace(placeId: PlaceId): void;
   locateSearchTarget(target: MapSearchTarget): void;
-  clearSearchFocus(): void;
+  clearSearchFocus(options?: { readonly preserveRegionAnnouncement?: boolean }): void;
   focusMarker(placeId: PlaceId): void;
   destroy(): void;
 }
