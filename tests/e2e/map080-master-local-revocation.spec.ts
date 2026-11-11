@@ -232,6 +232,24 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
   return { started: () => started, completed: () => completed, release: () => unblock?.() };
 }
 
+/**
+ * Leaflet may group authorized pins into proximity clusters at the CI viewport.
+ * Reveal the real member and trigger the production writer; never forge status
+ * text in this E2E, since metadata must be tested alongside the announcement.
+ */
+async function revealEntityPin(page: Page, entityId: string) {
+  const pin = page.locator(`.campaign-marker-icon[data-entity-id="${entityId}"]`);
+  if ((await pin.count()) === 0) {
+    const groups = page.locator('[data-proximity-cluster="true"]');
+    const groupCount = await groups.count();
+    for (let index = 0; index < groupCount && (await pin.count()) === 0; index += 1) {
+      await groups.nth(index).click();
+    }
+  }
+  await expect(pin).toHaveCount(1);
+  return pin;
+}
+
 test('MAP080-REV-01 pending Master response cannot reactivate private state after local entry', async ({
   page,
 }) => {
@@ -319,7 +337,8 @@ test('MAP080-REV-04 purges announced Master content on popstate', async ({ page 
   backend.release();
   await toggle.click();
   const masterPin = page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_ID}"]`);
-  await expect(masterPin).toHaveCount(1);
+  await revealEntityPin(page, MASTER_ID);
+  await revealEntityPin(page, MASTER_ID);
   await masterPin.focus();
   await masterPin.press('Enter');
 
@@ -349,9 +368,10 @@ test('MAP080-REV-04 purges announced Master content on popstate', async ({ page 
   // When Master is enabled but a different, public status is the current
   // announcement, entering local view must preserve that public live message.
   await toggle.click();
-  await expect(masterPin).toHaveCount(1);
+  await revealEntityPin(page, MASTER_ID);
   const publicPin = page.locator(`.campaign-marker-icon[data-entity-id="${PUBLIC_COLLISION_ID}"]`);
-  await expect(publicPin).toHaveCount(1);
+  await revealEntityPin(page, PUBLIC_COLLISION_ID);
+  await revealEntityPin(page, PUBLIC_COLLISION_ID);
   await publicPin.focus();
   await publicPin.press('Enter');
   await expect(status).toContainText('Ficha compacta abierta.');
@@ -388,8 +408,9 @@ test('QA219 sensitivity: exact-name public announcement survives revoking a diff
   await toggle.click();
   const publicPin = page.locator(`.campaign-marker-icon[data-entity-id="${PUBLIC_COLLISION_ID}"]`);
   const masterPin = page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_COLLISION_ID}"]`);
-  await expect(publicPin).toHaveCount(1);
-  await expect(masterPin).toHaveCount(1);
+  await revealEntityPin(page, PUBLIC_COLLISION_ID);
+  await revealEntityPin(page, MASTER_COLLISION_ID);
+  await revealEntityPin(page, PUBLIC_COLLISION_ID);
   await publicPin.focus();
   await publicPin.press('Enter');
   const status = page.locator('[data-map-search-status]');
@@ -443,7 +464,8 @@ test('QA219 Master announcement is removed and Master to public replacement stay
   const masterPin = page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_COLLISION_ID}"]`);
   const publicPin = page.locator(`.campaign-marker-icon[data-entity-id="${PUBLIC_COLLISION_ID}"]`);
   await toggle.click();
-  await expect(masterPin).toHaveCount(1);
+  await revealEntityPin(page, MASTER_COLLISION_ID);
+  await revealEntityPin(page, MASTER_COLLISION_ID);
   await masterPin.focus();
   await masterPin.press('Enter');
   await expect(status).toContainText('Contenido del Máster');
@@ -460,10 +482,12 @@ test('QA219 Master announcement is removed and Master to public replacement stay
     .toBe(false);
 
   await toggle.click();
-  await expect(masterPin).toHaveCount(1);
+  await revealEntityPin(page, MASTER_COLLISION_ID);
+  await revealEntityPin(page, MASTER_COLLISION_ID);
   await masterPin.focus();
   await masterPin.press('Enter');
   await expect(status).toContainText('Contenido del Máster');
+  await revealEntityPin(page, PUBLIC_COLLISION_ID);
   await publicPin.focus();
   await publicPin.press('Enter');
   await expect(status).toContainText('Ficha compacta abierta.');
@@ -494,7 +518,7 @@ test('QA219 pending Master selection RAF cannot revive revoked private announcem
   const toggle = page.locator('[data-master-mode-toggle]');
   await toggle.click();
   const masterPin = page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_COLLISION_ID}"]`);
-  await expect(masterPin).toHaveCount(1);
+  await revealEntityPin(page, MASTER_COLLISION_ID);
 
   await page.evaluate(() => {
     const nativeRaf = window.requestAnimationFrame.bind(window);
@@ -509,6 +533,7 @@ test('QA219 pending Master selection RAF cannot revive revoked private announcem
       queued.forEach((callback) => callback(performance.now()));
     };
   });
+  await revealEntityPin(page, MASTER_COLLISION_ID);
   await masterPin.focus();
   await masterPin.press('Enter');
   await toggle.evaluate((button: HTMLElement) => button.click());
