@@ -1,5 +1,6 @@
 import L, { type Map as LeafletMap, type Polygon } from 'leaflet';
 
+import type { MapAnnouncementOrigin } from '../app/masterMapAnnouncement';
 import type { AtlasPinMarkerModel } from '../data/pinMarkers';
 import '../styles/campaign-regions.css';
 
@@ -15,8 +16,8 @@ export interface CampaignRegionController {
   setRegions(regions: readonly AtlasRegionMarkerModel[]): void;
   setActiveRegion(regionId: string | null): void;
   setMatchingRegions(regionIds: ReadonlySet<string>, semantics?: RegionMatchingSemantics): void;
-  locateRegion(regionId: string, label?: string): boolean;
-  announceRegion(regionId: string, message: string): void;
+  locateRegion(regionId: string, label?: string, searchOrigin?: MapAnnouncementOrigin): boolean;
+  announceRegion(regionId: string, message: string, searchOrigin?: MapAnnouncementOrigin): void;
   clearAnnouncement(validRegionIds?: ReadonlySet<string>): void;
   focusRegion(regionId: string): void;
   destroy(): void;
@@ -25,7 +26,11 @@ export interface CampaignRegionController {
 export interface CampaignRegionOptions {
   readonly regions?: readonly AtlasRegionMarkerModel[];
   readonly onActivate?: (region: AtlasRegionMarkerModel) => void;
-  readonly onAnnouncement?: (region: AtlasRegionMarkerModel, message: string) => void;
+  readonly onAnnouncement?: (
+    region: AtlasRegionMarkerModel,
+    message: string,
+    searchOrigin?: MapAnnouncementOrigin,
+  ) => void;
   readonly onClearAnnouncement?: (regionId: string) => void;
 }
 
@@ -77,10 +82,14 @@ export function mountCampaignRegions(
   let announcedStatus: RegionAnnouncement | null = null;
   let destroyed = false;
 
-  const announceRegion = (regionId: string, message: string): void => {
+  const announceRegion = (
+    regionId: string,
+    message: string,
+    searchOrigin?: MapAnnouncementOrigin,
+  ): void => {
     const region = rendered.get(regionId)?.model;
     if (!region) return;
-    options.onAnnouncement?.(region, message);
+    options.onAnnouncement?.(region, message, searchOrigin);
     announcedStatus = { regionId };
   };
 
@@ -197,7 +206,7 @@ export function mountCampaignRegions(
       matchingSemantics = semantics;
       for (const entry of rendered.values()) updatePresentation(entry);
     },
-    locateRegion(regionId, label): boolean {
+    locateRegion(regionId, label, searchOrigin): boolean {
       const entry = rendered.get(regionId);
       if (!entry) return false;
       map.fitBounds(regionBounds(entry.model), {
@@ -216,6 +225,7 @@ export function mountCampaignRegions(
       announceRegion(
         regionId,
         `Mapa encuadrado en ${label ?? entry.model.name}; región de campaña.`,
+        searchOrigin,
       );
       return true;
     },

@@ -1,3 +1,4 @@
+import type { MapAnnouncementOrigin } from '../app/masterMapAnnouncement';
 import type { PlaceId } from '../data/model';
 import type { AtlasPinMarkerModel } from '../data/pinMarkers';
 import {
@@ -84,13 +85,16 @@ export function mountFaerunMap(
 
   const regionController = mountCampaignRegions(root, pointController.map, {
     regions: initial.regions,
-    onAnnouncement(region, message): void {
+    onAnnouncement(region, message, searchOrigin): void {
+      // Search text belongs to the selected search result, never to another
+      // polygon with the same name/representative point.
       options.onAnnouncement?.(message, {
-        ...(options.getPinAnnouncementOrigin?.(region) ?? {
-          entityId: region.entityId,
-          audience: 'public',
-          source: 'region',
-        }),
+        ...(searchOrigin ??
+          options.getPinAnnouncementOrigin?.(region) ?? {
+            entityId: region.entityId,
+            audience: 'public',
+            source: 'region',
+          }),
         source: 'region',
         sourceId: region.id,
       });
@@ -123,11 +127,15 @@ export function mountFaerunMap(
     return active?.id ?? null;
   }
 
-  function announceActiveRegion(region: AtlasRegionMarkerModel, message: string): void {
+  function announceActiveRegion(
+    region: AtlasRegionMarkerModel,
+    message: string,
+    searchOrigin?: MapAnnouncementOrigin,
+  ): void {
     const generation = ++regionAnnouncementGeneration;
     window.requestAnimationFrame(() => {
       if (generation !== regionAnnouncementGeneration || activeRegionId() !== region.id) return;
-      regionController.announceRegion(region.id, message);
+      regionController.announceRegion(region.id, message, searchOrigin);
     });
   }
 
@@ -166,6 +174,15 @@ export function mountFaerunMap(
     // geographic label happens to share a name and representative coordinate with
     // a persistent region, it must keep its own point/extent semantics.
     if (target.label.toLocaleLowerCase('es').includes(', lugar geográfico')) return undefined;
+    const entityId = target.announcementOrigin?.entityId;
+    if (entityId) {
+      // An identified search must never fall back to text/spatial matching:
+      // colliding public regions are not substitutes for a revoked Master ID.
+      return renderedMarkers.find(
+        (marker): marker is AtlasRegionMarkerModel =>
+          isRegion(marker) && marker.entityId === entityId,
+      );
+    }
     return renderedMarkers.find(
       (marker): marker is AtlasRegionMarkerModel =>
         isRegion(marker) && searchTargetMatchesPin(target, marker),
@@ -254,8 +271,12 @@ export function mountFaerunMap(
         options.onPinActivate?.(region);
         synchronizeRegionPresentation();
         pointController.clearSearchFocus();
-        regionController.locateRegion(region.id, target.label);
-        announceActiveRegion(region, `Mapa encuadrado en ${target.label}; región de campaña.`);
+        regionController.locateRegion(region.id, target.label, target.announcementOrigin);
+        announceActiveRegion(
+          region,
+          `Mapa encuadrado en ${target.label}; región de campaña.`,
+          target.announcementOrigin,
+        );
         return;
       }
       clearRegionAnnouncement();
