@@ -79,7 +79,9 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
   const hashContent: Record<string, unknown> = { ...snapshot };
   delete hashContent.checksum;
   delete hashContent.sourceRevision;
-  const hash = createHash('sha256').update(JSON.stringify(canonicalize(hashContent))).digest('hex');
+  const hash = createHash('sha256')
+    .update(JSON.stringify(canonicalize(hashContent)))
+    .digest('hex');
   snapshot.sourceRevision = `sha256:${hash}`;
   snapshot.checksum = `sha256:${hash}`;
   const snapshotJson = JSON.stringify(snapshot);
@@ -152,7 +154,7 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
   await page.route('**/rest/v1/**', async (route: Route) => {
     const request = route.request();
     const resource = new URL(request.url()).pathname.split('/rest/v1/')[1] ?? '';
-    const authorized = request.headers()['authorization'] === `Bearer ${ADMIN_TOKEN}`;
+    const authorized = request.headers()['authorization'] === `***;
     if (authorized && resource === 'rpc/current_user_is_admin') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
       return;
@@ -347,9 +349,7 @@ test('MAP080-REV-04 purges announced Master content on popstate', async ({ page 
   // announcement, entering local view must preserve that public live message.
   await toggle.click();
   await expect(masterPin).toHaveCount(1);
-  const publicPin = page.locator(
-    `.campaign-marker-icon[data-entity-id="${PUBLIC_COLLISION_ID}"]`,
-  );
+  const publicPin = page.locator(`.campaign-marker-icon[data-entity-id="${PUBLIC_COLLISION_ID}"]`);
   await expect(publicPin).toHaveCount(1);
   await publicPin.focus();
   await publicPin.press('Enter');
@@ -361,7 +361,7 @@ test('MAP080-REV-04 purges announced Master content on popstate', async ({ page 
     dispatchEvent(new PopStateEvent('popstate'));
   });
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
-  await expect(status).toHaveText(publicAnnouncement);
+  await expect(status).toHaveText(publicAnnouncement!);
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await expect.poll(privateContentInDom).toBe(false);
 });
@@ -385,12 +385,8 @@ test('QA219 sensitivity: exact-name public announcement survives revoking a diff
   backend.release();
   const toggle = page.locator('[data-master-mode-toggle]');
   await toggle.click();
-  const publicPin = page.locator(
-    `.campaign-marker-icon[data-entity-id="${PUBLIC_COLLISION_ID}"]`,
-  );
-  const masterPin = page.locator(
-    `.campaign-marker-icon[data-entity-id="${MASTER_COLLISION_ID}"]`,
-  );
+  const publicPin = page.locator(`.campaign-marker-icon[data-entity-id="${PUBLIC_COLLISION_ID}"]`);
+  const masterPin = page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_COLLISION_ID}"]`);
   await expect(publicPin).toHaveCount(1);
   await expect(masterPin).toHaveCount(1);
   await publicPin.focus();
@@ -417,7 +413,10 @@ test('QA219 sensitivity: exact-name public announcement survives revoking a diff
     .toBe(false);
   expect(page.url()).not.toContain(MASTER_COLLISION_ID);
   expect(
-    await page.evaluate((id) => Object.values(sessionStorage).join('').includes(id), MASTER_COLLISION_ID),
+    await page.evaluate(
+      (id) => Object.values(sessionStorage).join('').includes(id),
+      MASTER_COLLISION_ID,
+    ),
   ).toBe(false);
 });
 
@@ -440,12 +439,8 @@ test('QA219 Master announcement is removed and Master to public replacement stay
   backend.release();
   const toggle = page.locator('[data-master-mode-toggle]');
   const status = page.locator('[data-map-search-status]');
-  const masterPin = page.locator(
-    `.campaign-marker-icon[data-entity-id="${MASTER_COLLISION_ID}"]`,
-  );
-  const publicPin = page.locator(
-    `.campaign-marker-icon[data-entity-id="${PUBLIC_COLLISION_ID}"]`,
-  );
+  const masterPin = page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_COLLISION_ID}"]`);
+  const publicPin = page.locator(`.campaign-marker-icon[data-entity-id="${PUBLIC_COLLISION_ID}"]`);
   await toggle.click();
   await expect(masterPin).toHaveCount(1);
   await masterPin.focus();
@@ -456,7 +451,10 @@ test('QA219 Master announcement is removed and Master to public replacement stay
   await expect(masterPin).toHaveCount(0);
   await expect
     .poll(() =>
-      page.evaluate((secret) => document.documentElement.outerHTML.includes(secret), MASTER_COLLISION_SECRET),
+      page.evaluate(
+        (secret) => document.documentElement.outerHTML.includes(secret),
+        MASTER_COLLISION_SECRET,
+      ),
     )
     .toBe(false);
 
@@ -494,9 +492,7 @@ test('QA219 pending Master selection RAF cannot revive revoked private announcem
   backend.release();
   const toggle = page.locator('[data-master-mode-toggle]');
   await toggle.click();
-  const masterPin = page.locator(
-    `.campaign-marker-icon[data-entity-id="${MASTER_COLLISION_ID}"]`,
-  );
+  const masterPin = page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_COLLISION_ID}"]`);
   await expect(masterPin).toHaveCount(1);
 
   await page.evaluate(() => {
@@ -514,7 +510,7 @@ test('QA219 pending Master selection RAF cannot revive revoked private announcem
   });
   await masterPin.focus();
   await masterPin.press('Enter');
-  await toggle.click();
+  await toggle.evaluate((button: HTMLElement) => button.click());
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await page.evaluate(() => {
     (window as Window & { __map219Release?: () => void }).__map219Release?.();

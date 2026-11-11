@@ -13,10 +13,16 @@ describe('QA-219: structured Master announcement revocation', () => {
   const otherMasterId: EntityId = 'entity-map219-other-master';
 
   const publicOrigin: MapAnnouncementOrigin = {
-    entityId: publicId, audience: 'public', source: 'pin-selection', sourceId: publicId,
+    entityId: publicId,
+    audience: 'public',
+    source: 'pin-selection',
+    sourceId: publicId,
   };
   const masterOrigin: MapAnnouncementOrigin = {
-    entityId: masterId, audience: 'master', source: 'pin-selection', sourceId: masterId,
+    entityId: masterId,
+    audience: 'master',
+    source: 'pin-selection',
+    sourceId: masterId,
   };
   function setup() {
     const status = { textContent: '' };
@@ -54,7 +60,9 @@ describe('QA-219: structured Master announcement revocation', () => {
   test('public navigation without entity ID survives even same-name revocation', () => {
     const { status, announcements } = setup();
     const navigation: MapAnnouncementOrigin = {
-      entityId: null, audience: 'public', source: 'local-navigation',
+      entityId: null,
+      audience: 'public',
+      source: 'local-navigation',
     };
     announcements.write('Mapa local de Neverwinter abierto.', navigation);
     announcements.clearRevoked(new Set([masterId]));

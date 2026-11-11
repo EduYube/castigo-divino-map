@@ -98,11 +98,14 @@ function announce(
   writer?: AnnouncementWriter,
 ): void {
   if (writer) {
-    writer(message, target.announcementOrigin ?? {
-      entityId: null,
-      audience: 'public',
-      source: 'search-focus',
-    });
+    writer(
+      message,
+      target.announcementOrigin ?? {
+        entityId: null,
+        audience: 'public',
+        source: 'search-focus',
+      },
+    );
     return;
   }
   const status = root.querySelector<HTMLElement>('[data-map-search-status]');
@@ -182,7 +185,12 @@ function showAreaFocus(
     extent.minY,
     extent.maxY,
   ].join(',');
-  announce(root, `Mapa encuadrado en ${target.label}; extensión aproximada de búsqueda resaltada.`, target, writer);
+  announce(
+    root,
+    `Mapa encuadrado en ${target.label}; extensión aproximada de búsqueda resaltada.`,
+    target,
+    writer,
+  );
   scheduleClear(map);
 }
 

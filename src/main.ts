@@ -15,7 +15,10 @@ import { mountMasterDetailActions } from './app/masterDetailActions';
 import { mountMasterPinVisuals } from './app/masterPinVisuals';
 import { bootstrapMasterModeRuntime, type MasterModeRuntime } from './app/masterModeRuntime';
 import { mountMasterSearchVisuals } from './app/masterSearchVisuals';
-import { createMapAnnouncementController, type MapAnnouncementOrigin } from './app/masterMapAnnouncement';
+import {
+  createMapAnnouncementController,
+  type MapAnnouncementOrigin,
+} from './app/masterMapAnnouncement';
 import { mountPlaceFilters } from './app/placeFilters';
 import {
   bootstrapPublicDataRuntime,
