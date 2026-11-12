@@ -680,9 +680,8 @@ for (const key of ['Enter', 'Space'] as const) {
           if (!(event.target instanceof Element)) return;
           if (!event.target.closest('[data-spiderfied="true"]')) return;
           const root = document.documentElement;
-          root.dataset.qa224MemberEvents = String(
-            Number(root.dataset.qa224MemberEvents ?? 0) + 1,
-          );
+          const keydownCount = Number(root.dataset.qa224MemberEvents ?? 0);
+          root.dataset.qa224MemberEvents = String(keydownCount + 1);
           queueMicrotask(() => {
             root.dataset.qa224MemberPrevented = String(event.defaultPrevented);
           });
