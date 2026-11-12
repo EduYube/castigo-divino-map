@@ -216,6 +216,22 @@ jobs:
             --grep='opens all coincident pins as keyboard-operable options without changing their canonical coordinate' \
             --workers=1 --retries=0 --repeat-each=30 --trace=retain-on-failure
 
+      # QA-224 phase 1: unmodified runtime, baseline 30x and two reproducible stale RAF interleavings.
+      - name: QA-224 baseline original spiderfy 30x no-retry
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-224-spiderfy-focus-coverage'
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=chromium \
+            --grep='opens all coincident pins as keyboard-operable options without changing their canonical coordinate' \
+            --workers=1 --retries=0 --repeat-each=30 --trace=retain-on-failure
+
+      - name: QA-224 pre-fix stale RAF reproductions
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-224-spiderfy-focus-coverage'
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=chromium --grep='QA-224 pre-fix:' \
+            --workers=1 --retries=0 --trace=retain-on-failure
+
       # QA-215: deterministic stale RAF interleaving and the unchanged original
       # accessibility contract, each without retries on the exact candidate HEAD.
       - name: QA-215 stale pin focus sensitivity 20x no-retry gate

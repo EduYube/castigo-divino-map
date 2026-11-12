@@ -7,6 +7,11 @@ declare global {
       sample(stage: string): void;
       getTimeline(): readonly Record<string, unknown>[];
     };
+    __qa224Gate?: {
+      pending(): number;
+      advance(): number;
+      restore(): void;
+    };
   }
 }
 
@@ -510,4 +515,73 @@ test('QA-213 sensitivity: pending focus restore must not reopen spiderfy after E
   await expect(options).toHaveCount(0);
   await expect(cluster).toHaveAttribute('aria-expanded', 'false');
   await expect(cluster).toBeFocused();
+});
+
+async function gateQa224Frames(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const request = window.requestAnimationFrame.bind(window);
+    const cancel = window.cancelAnimationFrame.bind(window);
+    const queued = new Map<number, FrameRequestCallback>();
+    let nextId = -1;
+    window.requestAnimationFrame = (callback): number => {
+      const id = nextId--;
+      queued.set(id, callback);
+      return id;
+    };
+    window.cancelAnimationFrame = (id): void => {
+      if (!queued.delete(id)) cancel(id);
+    };
+    window.__qa224Gate = {
+      pending: () => queued.size,
+      advance: () => {
+        const batch = [...queued.values()];
+        queued.clear();
+        for (const callback of batch) callback(performance.now());
+        return batch.length;
+      },
+      restore: () => {
+        window.requestAnimationFrame = request;
+        window.cancelAnimationFrame = cancel;
+      },
+    };
+  });
+}
+
+test('QA-224 pre-fix: collapse RAF steals focus after Escape', async ({ page }) => {
+  await openPinVisualMap(page);
+  const cluster = page.getByTestId('coincident-pin');
+  const options = page.getByTestId('coincident-pin-option');
+  const otherControl = page.locator('[data-map-help-summary]');
+  await cluster.focus();
+  await page.keyboard.press('Enter');
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toBeFocused();
+  await gateQa224Frames(page);
+  await page.keyboard.press('Escape');
+  await expect(options).toHaveCount(0);
+  await expect(cluster).toHaveAttribute('aria-expanded', 'false');
+  expect(await page.evaluate(() => window.__qa224Gate?.pending() ?? 0)).toBeGreaterThan(0);
+  await otherControl.focus();
+  await expect(otherControl).toBeFocused();
+  expect(await page.evaluate(() => window.__qa224Gate?.advance() ?? 0)).toBeGreaterThan(0);
+  await expect(cluster).toBeFocused();
+  await page.evaluate(() => window.__qa224Gate?.restore());
+});
+
+test('QA-224 pre-fix: open RAF steals focus after keyboard activation', async ({ page }) => {
+  await openPinVisualMap(page);
+  const cluster = page.getByTestId('coincident-pin');
+  const options = page.getByTestId('coincident-pin-option');
+  const otherControl = page.locator('[data-map-help-summary]');
+  await cluster.focus();
+  await gateQa224Frames(page);
+  await page.keyboard.press('Enter');
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toBeFocused();
+  expect(await page.evaluate(() => window.__qa224Gate?.pending() ?? 0)).toBeGreaterThan(0);
+  await otherControl.focus();
+  await expect(otherControl).toBeFocused();
+  expect(await page.evaluate(() => window.__qa224Gate?.advance() ?? 0)).toBeGreaterThan(0);
+  await expect(options.first()).toBeFocused();
+  await page.evaluate(() => window.__qa224Gate?.restore());
 });
