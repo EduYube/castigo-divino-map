@@ -12,6 +12,7 @@ declare global {
       advance(): number;
       restore(): void;
     };
+    __qa224MemberKeyEvent?: KeyboardEvent;
   }
 }
 
@@ -661,32 +662,30 @@ for (const key of ['Enter', 'Space'] as const) {
     });
 
     await cluster.focus();
-    const scrollBefore = await page.evaluate(() => [window.scrollX, window.scrollY]);
+    const clusterScrollBefore = await page.evaluate(() => [window.scrollX, window.scrollY]);
     await page.keyboard.press(key);
     await expect(cluster).toHaveAttribute('data-qa224-prevented', 'true');
+    expect(await page.evaluate(() => [window.scrollX, window.scrollY])).toEqual(
+      clusterScrollBefore,
+    );
     await expect(options).toHaveCount(2);
     await expect(options.first()).toBeFocused();
     await expect(options.nth(1)).toHaveAttribute('data-entity-type', 'character');
-    await options.nth(1).focus();
-    await expect(options.nth(1)).toBeFocused();
     await page.evaluate(() => {
-      // The member is removed during activation, so an observer registered
-      // after Leaflet's handler may be skipped by WebKit. Capture the key first,
-      // then inspect cancellation in a microtask after the runtime handler.
+      // Capture the original event before Leaflet handles it. Keep a reference
+      // so cancellation can be asserted after dispatch even when WebKit removes
+      // the member during synchronous activation; do not rely on a later RAF.
       document.addEventListener(
         'keydown',
         (event) => {
           if (!(event instanceof KeyboardEvent)) return;
           if (!(event.target instanceof Element)) return;
           if (!event.target.closest('[data-spiderfied="true"]')) return;
+          if (event.key !== 'Enter' && event.key !== ' ') return;
           const root = document.documentElement;
           const keydownCount = Number(root.dataset.qa224MemberEvents ?? 0);
           root.dataset.qa224MemberEvents = String(keydownCount + 1);
-          // WebKit may checkpoint microtasks between capture and target listeners.
-          // Observe the completed key dispatch on the next frame instead.
-          window.requestAnimationFrame(() => {
-            root.dataset.qa224MemberPrevented = String(event.defaultPrevented);
-          });
+          window.__qa224MemberKeyEvent = event;
         },
         true,
       );
@@ -704,16 +703,21 @@ for (const key of ['Enter', 'Space'] as const) {
       );
     });
     const historyBefore = await page.evaluate(() => window.history.length);
+    // Focus immediately before dispatch: intervening page evaluations must not
+    // give an older WebKit focus callback an opportunity to change the target.
+    await options.nth(1).evaluate((element) => (element as HTMLElement).focus({ preventScroll: true }));
+    await expect(options.nth(1)).toBeFocused();
+    const memberScrollBefore = await page.evaluate(() => [window.scrollX, window.scrollY]);
     await page.keyboard.press(key);
     const documentRoot = page.locator('html');
-    await expect(documentRoot).toHaveAttribute('data-qa224-member-prevented', 'true');
     await expect(documentRoot).toHaveAttribute('data-qa224-member-events', '1');
+    expect(await page.evaluate(() => window.__qa224MemberKeyEvent?.defaultPrevented)).toBe(true);
     // Supplemental character selection is not URL-addressable. Keyboard activation
     // must not synthesize a second pointer click or an unexpected history entry.
     expect(await page.evaluate(() => window.history.length)).toBe(historyBefore);
     const clickCount = await documentRoot.getAttribute('data-qa224-keyboard-member-clicks');
     expect(clickCount).toBeNull();
-    expect(await page.evaluate(() => [window.scrollX, window.scrollY])).toEqual(scrollBefore);
+    expect(await page.evaluate(() => [window.scrollX, window.scrollY])).toEqual(memberScrollBefore);
     await expect(panel).toBeVisible();
     await expect(panel).toHaveAttribute('data-entity-id', 'entity-harbor-guard');
     await expect(panel).toHaveAttribute('data-entity-type', 'character');
