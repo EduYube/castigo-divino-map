@@ -692,7 +692,9 @@ for (const key of ['Enter', 'Space'] as const) {
     // must not synthesize a second pointer click or an unexpected history entry.
     expect(await page.evaluate(() => window.history.length)).toBe(historyBefore);
     expect(
-      await page.evaluate(() => Number(document.documentElement.dataset.qa224KeyboardMemberClicks ?? 0)),
+      await page.evaluate(() =>
+        Number(document.documentElement.dataset.qa224KeyboardMemberClicks ?? 0),
+      ),
     ).toBe(0);
     expect(await page.evaluate(() => [window.scrollX, window.scrollY])).toEqual(scrollBefore);
     await expect(panel).toBeVisible();
