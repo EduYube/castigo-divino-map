@@ -4,6 +4,9 @@ const criticalAccessibilitySuite = /responsive-accessibility\.spec\.ts/;
 const mobileOnlySuite = /(map033-mobile|map037-mobile-details|map061-admin-mobile)\.spec\.ts/;
 const criticalMobileSuite =
   /(responsive-accessibility|map033-mobile|map037-mobile-details|map038-search-autocomplete|map042-geographic-navigation-pins|map043-public-pin-form|map061-admin-mobile)\.spec\.ts/;
+const spiderfyCriticalSuite = /pin-visual-system\\.spec\\.ts/;
+const spiderfyCriticalFlow =
+  /opens all coincident pins as keyboard-operable options without changing their canonical coordinate|QA-224 keyboard:/;
 const criticalMap061Suite = /(map061-campaign-regions|map061-master-status-purge)\.spec\.ts/;
 const criticalMap061Flow =
   /renders translucent overlapping regions|searching the region frames persistent polygon bounds|explicit filters dim non-matching regions|purges Master region search status/;
@@ -35,6 +38,12 @@ export default defineConfig({
       use: { ...devices['Desktop Firefox'] },
     },
     {
+      name: 'firefox-spiderfy',
+      testMatch: spiderfyCriticalSuite,
+      grep: spiderfyCriticalFlow,
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
       name: 'firefox-map061',
       testMatch: criticalMap061Suite,
       grep: criticalMap061Flow,
@@ -44,6 +53,12 @@ export default defineConfig({
       name: 'webkit-map061',
       testMatch: criticalMap061Suite,
       grep: criticalMap061Flow,
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'webkit-spiderfy',
+      testMatch: spiderfyCriticalSuite,
+      grep: spiderfyCriticalFlow,
       use: { ...devices['Desktop Safari'] },
     },
     {

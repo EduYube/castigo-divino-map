@@ -330,6 +330,8 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await expect(options).toHaveCount(0);
   await expect(coincident).toBeVisible();
   await expect(coincident).not.toHaveAttribute('aria-hidden', 'true');
+  await expect(coincident).toHaveAttribute('aria-expanded', 'false');
+  await expect(coincident).toBeFocused();
   await expect(coincident).toHaveAttribute('data-marker-lat', '820');
   await expect(coincident).toHaveAttribute('data-marker-lng', '1080.5');
 });
@@ -547,7 +549,7 @@ async function gateQa224Frames(page: Page): Promise<void> {
   });
 }
 
-test('QA-224 pre-fix: collapse RAF steals focus after Escape', async ({ page }) => {
+test('QA-224 sensitivity: collapse RAF respects newer focus after Escape', async ({ page }) => {
   await openPinVisualMap(page);
   const cluster = page.getByTestId('coincident-pin');
   const options = page.getByTestId('coincident-pin-option');
@@ -564,11 +566,11 @@ test('QA-224 pre-fix: collapse RAF steals focus after Escape', async ({ page }) 
   await otherControl.focus();
   await expect(otherControl).toBeFocused();
   expect(await page.evaluate(() => window.__qa224Gate?.advance() ?? 0)).toBeGreaterThan(0);
-  await expect(cluster).toBeFocused();
+  await expect(otherControl).toBeFocused();
   await page.evaluate(() => window.__qa224Gate?.restore());
 });
 
-test('QA-224 pre-fix: open RAF steals focus after keyboard activation', async ({ page }) => {
+test('QA-224 sensitivity: open RAF respects newer focus after keyboard activation', async ({ page }) => {
   await openPinVisualMap(page);
   const cluster = page.getByTestId('coincident-pin');
   const options = page.getByTestId('coincident-pin-option');
@@ -582,6 +584,115 @@ test('QA-224 pre-fix: open RAF steals focus after keyboard activation', async ({
   await otherControl.focus();
   await expect(otherControl).toBeFocused();
   expect(await page.evaluate(() => window.__qa224Gate?.advance() ?? 0)).toBeGreaterThan(0);
+  await expect(otherControl).toBeFocused();
+  await page.evaluate(() => window.__qa224Gate?.restore());
+});
+
+test('QA-224 normal restore: Escape returns focus to cluster', async ({ page }) => {
+  await openPinVisualMap(page);
+  const cluster = page.getByTestId('coincident-pin');
+  const options = page.getByTestId('coincident-pin-option');
+  await cluster.focus();
+  await page.keyboard.press('Enter');
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toBeFocused();
+  await gateQa224Frames(page);
+  await page.keyboard.press('Escape');
+  await expect(options).toHaveCount(0);
+  await expect(cluster).toHaveAttribute('aria-expanded', 'false');
+  expect(await page.evaluate(() => window.__qa224Gate?.pending() ?? 0)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__qa224Gate?.advance() ?? 0)).toBeGreaterThan(0);
+  await expect(cluster).toBeFocused();
+  await page.evaluate(() => window.__qa224Gate?.restore());
+});
+
+test('QA-224 normal restore: keyboard opening retains member focus', async ({ page }) => {
+  await openPinVisualMap(page);
+  const cluster = page.getByTestId('coincident-pin');
+  const options = page.getByTestId('coincident-pin-option');
+  await cluster.focus();
+  await gateQa224Frames(page);
+  await page.keyboard.press('Space');
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toBeFocused();
+  expect(await page.evaluate(() => window.__qa224Gate?.pending() ?? 0)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__qa224Gate?.advance() ?? 0)).toBeGreaterThan(0);
   await expect(options.first()).toBeFocused();
   await page.evaluate(() => window.__qa224Gate?.restore());
 });
+
+for (const key of ['Enter', 'Space'] as const) {
+  test(`QA-224 keyboard: cluster and member ${key} activate and Escape restores focus`, async ({
+    page,
+  }) => {
+    await openPinVisualMap(page);
+    const cluster = page.getByTestId('coincident-pin');
+    const options = page.getByTestId('coincident-pin-option');
+    const canvas = page.locator('[data-map-canvas]');
+    const panel = page.getByTestId('place-details');
+    await cluster.evaluate((element) => {
+      element.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          (element as HTMLElement).dataset.qa224Prevented = String(event.defaultPrevented);
+        }
+      });
+    });
+    await canvas.evaluate((element) => {
+      element.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          (element as HTMLElement).dataset.qa224EscapePrevented = String(event.defaultPrevented);
+        }
+      });
+    });
+
+    await cluster.focus();
+    const scrollBefore = await page.evaluate(() => [window.scrollX, window.scrollY]);
+    await page.keyboard.press(key);
+    await expect(cluster).toHaveAttribute('data-qa224-prevented', 'true');
+    await expect(options).toHaveCount(2);
+    await expect(options.first()).toBeFocused();
+    await expect(options.nth(1)).toHaveAttribute('data-entity-type', 'character');
+    await options.nth(1).focus();
+    await expect(options.nth(1)).toBeFocused();
+    await options.nth(1).evaluate((element) => {
+      element.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        document.documentElement.dataset.qa224MemberPrevented = String(event.defaultPrevented);
+        document.documentElement.dataset.qa224MemberEvents = String(
+          Number(document.documentElement.dataset.qa224MemberEvents ?? 0) + 1,
+        );
+      });
+    });
+
+    const historyBefore = await page.evaluate(() => window.history.length);
+    await page.keyboard.press(key);
+    await expect(page.locator('html')).toHaveAttribute('data-qa224-member-prevented', 'true');
+    await expect(page.locator('html')).toHaveAttribute('data-qa224-member-events', '1');
+    expect(await page.evaluate(() => window.history.length)).toBe(historyBefore + 1);
+    expect(await page.evaluate(() => [window.scrollX, window.scrollY])).toEqual(scrollBefore);
+    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute('data-entity-id', 'entity-harbor-guard');
+    await expect(panel).toHaveAttribute('data-entity-type', 'character');
+    await expect(panel.getByRole('heading', { level: 3, name: 'Harbor Guard' })).toBeFocused();
+
+    await panel.getByRole('button', { name: /Cerrar la ficha de Harbor Guard/i }).click();
+    await expect(panel).toBeHidden();
+    await expect(options).toHaveCount(0);
+    await expect(cluster).toBeVisible();
+    await expect(cluster).not.toHaveAttribute('aria-hidden', 'true');
+    await expect(cluster).toHaveAttribute('aria-expanded', 'false');
+    await expect(cluster).toBeFocused();
+    await expect(cluster).toHaveAttribute('data-marker-lat', '820');
+    await expect(cluster).toHaveAttribute('data-marker-lng', '1080.5');
+
+    await cluster.focus();
+    await page.keyboard.press('Enter');
+    await expect(options).toHaveCount(2);
+    await expect(options.first()).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(canvas).toHaveAttribute('data-qa224-escape-prevented', 'true');
+    await expect(options).toHaveCount(0);
+    await expect(cluster).toHaveAttribute('aria-expanded', 'false');
+    await expect(cluster).toBeFocused();
+  });
+}
