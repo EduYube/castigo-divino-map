@@ -662,12 +662,11 @@ for (const key of ['Enter', 'Space'] as const) {
     });
 
     await cluster.focus();
-    const clusterScrollBefore = await page.evaluate(() => [window.scrollX, window.scrollY]);
+    const readScroll = () => page.evaluate(() => [window.scrollX, window.scrollY]);
+    const clusterScrollBefore = await readScroll();
     await page.keyboard.press(key);
     await expect(cluster).toHaveAttribute('data-qa224-prevented', 'true');
-    expect(await page.evaluate(() => [window.scrollX, window.scrollY])).toEqual(
-      clusterScrollBefore,
-    );
+    expect(await readScroll()).toEqual(clusterScrollBefore);
     await expect(options).toHaveCount(2);
     await expect(options.first()).toBeFocused();
     await expect(options.nth(1)).toHaveAttribute('data-entity-type', 'character');
@@ -709,22 +708,20 @@ for (const key of ['Enter', 'Space'] as const) {
       (element as HTMLElement).focus({ preventScroll: true });
     });
     await expect(options.nth(1)).toBeFocused();
-    const memberScrollBefore = await page.evaluate(() => [window.scrollX, window.scrollY]);
+    const memberScrollBefore = await readScroll();
     await page.keyboard.press(key);
     const documentRoot = page.locator('html');
     await expect(documentRoot).toHaveAttribute('data-qa224-member-events', '1');
-    const memberKeyWasPrevented = await page.evaluate(
-      () => window.__qa224MemberKeyEvent?.defaultPrevented,
-    );
+    const memberKeyWasPrevented = await page.evaluate(() => {
+      return window.__qa224MemberKeyEvent?.defaultPrevented;
+    });
     expect(memberKeyWasPrevented).toBe(true);
     // Supplemental character selection is not URL-addressable. Keyboard activation
     // must not synthesize a second pointer click or an unexpected history entry.
     expect(await page.evaluate(() => window.history.length)).toBe(historyBefore);
     const clickCount = await documentRoot.getAttribute('data-qa224-keyboard-member-clicks');
     expect(clickCount).toBeNull();
-    expect(await page.evaluate(() => [window.scrollX, window.scrollY])).toEqual(
-      memberScrollBefore,
-    );
+    expect(await readScroll()).toEqual(memberScrollBefore);
     await expect(panel).toBeVisible();
     await expect(panel).toHaveAttribute('data-entity-id', 'entity-harbor-guard');
     await expect(panel).toHaveAttribute('data-entity-type', 'character');
