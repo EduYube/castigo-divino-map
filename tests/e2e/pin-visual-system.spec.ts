@@ -682,7 +682,9 @@ for (const key of ['Enter', 'Space'] as const) {
           const root = document.documentElement;
           const keydownCount = Number(root.dataset.qa224MemberEvents ?? 0);
           root.dataset.qa224MemberEvents = String(keydownCount + 1);
-          queueMicrotask(() => {
+          // WebKit may checkpoint microtasks between capture and target listeners.
+          // Observe the completed key dispatch on the next frame instead.
+          window.requestAnimationFrame(() => {
             root.dataset.qa224MemberPrevented = String(event.defaultPrevented);
           });
         },
