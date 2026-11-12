@@ -634,14 +634,16 @@ for (const key of ['Enter', 'Space'] as const) {
     const panel = page.getByTestId('place-details');
     await cluster.evaluate((element) => {
       element.addEventListener('keydown', (event) => {
-        if (event instanceof KeyboardEvent && (event.key === 'Enter' || event.key === ' ')) {
+        if (!(event instanceof KeyboardEvent)) return;
+        if (event.key === 'Enter' || event.key === ' ') {
           (element as HTMLElement).dataset.qa224Prevented = String(event.defaultPrevented);
         }
       });
     });
     await canvas.evaluate((element) => {
       element.addEventListener('keydown', (event) => {
-        if (event instanceof KeyboardEvent && event.key === 'Escape') {
+        if (!(event instanceof KeyboardEvent)) return;
+        if (event.key === 'Escape') {
           (element as HTMLElement).dataset.qa224EscapePrevented = String(event.defaultPrevented);
         }
       });
@@ -658,9 +660,8 @@ for (const key of ['Enter', 'Space'] as const) {
     await expect(options.nth(1)).toBeFocused();
     await options.nth(1).evaluate((element) => {
       element.addEventListener('keydown', (event) => {
-        if (!(event instanceof KeyboardEvent) || (event.key !== 'Enter' && event.key !== ' ')) {
-          return;
-        }
+        if (!(event instanceof KeyboardEvent)) return;
+        if (event.key !== 'Enter' && event.key !== ' ') return;
         document.documentElement.dataset.qa224MemberPrevented = String(event.defaultPrevented);
         document.documentElement.dataset.qa224MemberEvents = String(
           Number(document.documentElement.dataset.qa224MemberEvents ?? 0) + 1,
@@ -672,10 +673,8 @@ for (const key of ['Enter', 'Space'] as const) {
       document.addEventListener(
         'click',
         (event) => {
-          if (
-            event.target instanceof Element &&
-            event.target.closest('[data-spiderfied="true"]')
-          ) {
+          const target = event.target;
+          if (target instanceof Element && target.closest('[data-spiderfied="true"]')) {
             document.documentElement.dataset.qa224KeyboardMemberClicks = String(
               Number(document.documentElement.dataset.qa224KeyboardMemberClicks ?? 0) + 1,
             );
@@ -692,10 +691,8 @@ for (const key of ['Enter', 'Space'] as const) {
     // must not synthesize a second pointer click or an unexpected history entry.
     expect(await page.evaluate(() => window.history.length)).toBe(historyBefore);
     expect(
-      await page.evaluate(() =>
-        Number(document.documentElement.dataset.qa224KeyboardMemberClicks ?? 0),
-      ),
-    ).toBe(0);
+      await page.locator('html').getAttribute('data-qa224-keyboard-member-clicks'),
+    ).toBeNull();
     expect(await page.evaluate(() => [window.scrollX, window.scrollY])).toEqual(scrollBefore);
     await expect(panel).toBeVisible();
     await expect(panel).toHaveAttribute('data-entity-id', 'entity-harbor-guard');
