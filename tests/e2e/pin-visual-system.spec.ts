@@ -685,14 +685,14 @@ for (const key of ['Enter', 'Space'] as const) {
     });
     const historyBefore = await page.evaluate(() => window.history.length);
     await page.keyboard.press(key);
-    await expect(page.locator('html')).toHaveAttribute('data-qa224-member-prevented', 'true');
-    await expect(page.locator('html')).toHaveAttribute('data-qa224-member-events', '1');
+    const documentRoot = page.locator('html');
+    await expect(documentRoot).toHaveAttribute('data-qa224-member-prevented', 'true');
+    await expect(documentRoot).toHaveAttribute('data-qa224-member-events', '1');
     // Supplemental character selection is not URL-addressable. Keyboard activation
     // must not synthesize a second pointer click or an unexpected history entry.
     expect(await page.evaluate(() => window.history.length)).toBe(historyBefore);
-    expect(
-      await page.locator('html').getAttribute('data-qa224-keyboard-member-clicks'),
-    ).toBeNull();
+    const clickCount = await documentRoot.getAttribute('data-qa224-keyboard-member-clicks');
+    expect(clickCount).toBeNull();
     expect(await page.evaluate(() => [window.scrollX, window.scrollY])).toEqual(scrollBefore);
     await expect(panel).toBeVisible();
     await expect(panel).toHaveAttribute('data-entity-id', 'entity-harbor-guard');
