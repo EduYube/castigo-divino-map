@@ -705,19 +705,26 @@ for (const key of ['Enter', 'Space'] as const) {
     const historyBefore = await page.evaluate(() => window.history.length);
     // Focus immediately before dispatch: intervening page evaluations must not
     // give an older WebKit focus callback an opportunity to change the target.
-    await options.nth(1).evaluate((element) => (element as HTMLElement).focus({ preventScroll: true }));
+    await options.nth(1).evaluate((element) => {
+      (element as HTMLElement).focus({ preventScroll: true });
+    });
     await expect(options.nth(1)).toBeFocused();
     const memberScrollBefore = await page.evaluate(() => [window.scrollX, window.scrollY]);
     await page.keyboard.press(key);
     const documentRoot = page.locator('html');
     await expect(documentRoot).toHaveAttribute('data-qa224-member-events', '1');
-    expect(await page.evaluate(() => window.__qa224MemberKeyEvent?.defaultPrevented)).toBe(true);
+    const memberKeyWasPrevented = await page.evaluate(
+      () => window.__qa224MemberKeyEvent?.defaultPrevented,
+    );
+    expect(memberKeyWasPrevented).toBe(true);
     // Supplemental character selection is not URL-addressable. Keyboard activation
     // must not synthesize a second pointer click or an unexpected history entry.
     expect(await page.evaluate(() => window.history.length)).toBe(historyBefore);
     const clickCount = await documentRoot.getAttribute('data-qa224-keyboard-member-clicks');
     expect(clickCount).toBeNull();
-    expect(await page.evaluate(() => [window.scrollX, window.scrollY])).toEqual(memberScrollBefore);
+    expect(await page.evaluate(() => [window.scrollX, window.scrollY])).toEqual(
+      memberScrollBefore,
+    );
     await expect(panel).toBeVisible();
     await expect(panel).toHaveAttribute('data-entity-id', 'entity-harbor-guard');
     await expect(panel).toHaveAttribute('data-entity-type', 'character');
