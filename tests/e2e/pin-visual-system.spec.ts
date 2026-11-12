@@ -570,7 +570,9 @@ test('QA-224 sensitivity: collapse RAF respects newer focus after Escape', async
   await page.evaluate(() => window.__qa224Gate?.restore());
 });
 
-test('QA-224 sensitivity: open RAF respects newer focus after keyboard activation', async ({ page }) => {
+test('QA-224 sensitivity: open RAF respects newer focus after keyboard activation', async ({
+  page,
+}) => {
   await openPinVisualMap(page);
   const cluster = page.getByTestId('coincident-pin');
   const options = page.getByTestId('coincident-pin-option');

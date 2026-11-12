@@ -4,7 +4,7 @@ const criticalAccessibilitySuite = /responsive-accessibility\.spec\.ts/;
 const mobileOnlySuite = /(map033-mobile|map037-mobile-details|map061-admin-mobile)\.spec\.ts/;
 const criticalMobileSuite =
   /(responsive-accessibility|map033-mobile|map037-mobile-details|map038-search-autocomplete|map042-geographic-navigation-pins|map043-public-pin-form|map061-admin-mobile)\.spec\.ts/;
-const spiderfyCriticalSuite = /pin-visual-system\\.spec\\.ts/;
+const spiderfyCriticalSuite = /pin-visual-system\.spec\.ts/;
 const spiderfyCriticalFlow =
   /opens all coincident pins as keyboard-operable options without changing their canonical coordinate|QA-224 keyboard:/;
 const criticalMap061Suite = /(map061-campaign-regions|map061-master-status-purge)\.spec\.ts/;
