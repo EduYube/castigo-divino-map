@@ -1,6 +1,7 @@
 import L, { type Layer, type Map as LeafletMap } from 'leaflet';
 
 import type { PublicCoordinate, PublicSearchExtent } from '../data/beta02-model';
+import type { MapAnnouncementOrigin } from '../app/masterMapAnnouncement';
 import { FAERUN_COORDINATE_BOUNDS } from '../domain/mapCoordinates';
 
 export interface MapSearchTarget {
@@ -8,6 +9,7 @@ export interface MapSearchTarget {
   readonly searchExtent: PublicSearchExtent | null;
   readonly recommendedZoom: number | null;
   readonly label: string;
+  readonly announcementOrigin?: MapAnnouncementOrigin;
 }
 
 interface SearchFocusState {
@@ -87,7 +89,25 @@ function scheduleClear(map: LeafletMap): void {
   state.timeoutId = window.setTimeout(() => clearSearchFocus(map), SEARCH_HIGHLIGHT_DURATION_MS);
 }
 
-function announce(root: ParentNode, message: string): void {
+type AnnouncementWriter = (message: string, origin: MapAnnouncementOrigin) => void;
+
+function announce(
+  root: ParentNode,
+  message: string,
+  target: MapSearchTarget,
+  writer?: AnnouncementWriter,
+): void {
+  if (writer) {
+    writer(
+      message,
+      target.announcementOrigin ?? {
+        entityId: null,
+        audience: 'public',
+        source: 'search-focus',
+      },
+    );
+    return;
+  }
   const status = root.querySelector<HTMLElement>('[data-map-search-status]');
   if (status) status.textContent = message;
 }
@@ -96,7 +116,12 @@ function metadataElement(map: LeafletMap, root: ParentNode): HTMLElement {
   return root.querySelector<HTMLElement>('[data-map-shell]') ?? map.getContainer();
 }
 
-function showPointFocus(map: LeafletMap, root: ParentNode, target: MapSearchTarget): void {
+function showPointFocus(
+  map: LeafletMap,
+  root: ParentNode,
+  target: MapSearchTarget,
+  writer?: AnnouncementWriter,
+): void {
   ensureSearchFocusPane(map);
   const coordinate = L.latLng(target.coordinates.y, target.coordinates.x);
   const ring = L.circleMarker(coordinate, {
@@ -119,11 +144,16 @@ function showPointFocus(map: LeafletMap, root: ParentNode, target: MapSearchTarg
   state.metadataElement.dataset.searchHighlight = 'true';
   state.metadataElement.dataset.searchHighlightKind = 'point';
   state.metadataElement.dataset.searchHighlightLabel = target.label;
-  announce(root, `Mapa centrado en ${target.label}; posición resaltada.`);
+  announce(root, `Mapa centrado en ${target.label}; posición resaltada.`, target, writer);
   scheduleClear(map);
 }
 
-function showAreaFocus(map: LeafletMap, root: ParentNode, target: MapSearchTarget): void {
+function showAreaFocus(
+  map: LeafletMap,
+  root: ParentNode,
+  target: MapSearchTarget,
+  writer?: AnnouncementWriter,
+): void {
   const extent = target.searchExtent;
   if (!extent) return;
 
@@ -155,7 +185,12 @@ function showAreaFocus(map: LeafletMap, root: ParentNode, target: MapSearchTarge
     extent.minY,
     extent.maxY,
   ].join(',');
-  announce(root, `Mapa encuadrado en ${target.label}; extensión aproximada de búsqueda resaltada.`);
+  announce(
+    root,
+    `Mapa encuadrado en ${target.label}; extensión aproximada de búsqueda resaltada.`,
+    target,
+    writer,
+  );
   scheduleClear(map);
 }
 
@@ -163,6 +198,7 @@ export function locateMapSearchTarget(
   map: LeafletMap,
   root: ParentNode,
   target: MapSearchTarget,
+  writer?: AnnouncementWriter,
 ): void {
   clearSearchFocus(map);
 
@@ -173,7 +209,7 @@ export function locateMapSearchTarget(
       maxZoom: map.getMaxZoom(),
     });
     map.panInsideBounds(rasterBounds(), { animate: false });
-    showAreaFocus(map, root, target);
+    showAreaFocus(map, root, target, writer);
     return;
   }
 
@@ -186,7 +222,7 @@ export function locateMapSearchTarget(
 
   map.setView(coordinate, targetZoom, { animate: false });
   map.panInsideBounds(rasterBounds(), { animate: false });
-  showPointFocus(map, root, target);
+  showPointFocus(map, root, target, writer);
 }
 
 export function clearMapSearchFocus(map: LeafletMap): void {

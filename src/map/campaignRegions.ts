@@ -1,5 +1,6 @@
 import L, { type Map as LeafletMap, type Polygon } from 'leaflet';
 
+import type { MapAnnouncementOrigin } from '../app/masterMapAnnouncement';
 import type { AtlasPinMarkerModel } from '../data/pinMarkers';
 import '../styles/campaign-regions.css';
 
@@ -15,8 +16,8 @@ export interface CampaignRegionController {
   setRegions(regions: readonly AtlasRegionMarkerModel[]): void;
   setActiveRegion(regionId: string | null): void;
   setMatchingRegions(regionIds: ReadonlySet<string>, semantics?: RegionMatchingSemantics): void;
-  locateRegion(regionId: string, label?: string): boolean;
-  announceRegion(regionId: string, message: string): void;
+  locateRegion(regionId: string, label?: string, searchOrigin?: MapAnnouncementOrigin): boolean;
+  announceRegion(regionId: string, message: string, searchOrigin?: MapAnnouncementOrigin): void;
   clearAnnouncement(validRegionIds?: ReadonlySet<string>): void;
   focusRegion(regionId: string): void;
   destroy(): void;
@@ -25,6 +26,12 @@ export interface CampaignRegionController {
 export interface CampaignRegionOptions {
   readonly regions?: readonly AtlasRegionMarkerModel[];
   readonly onActivate?: (region: AtlasRegionMarkerModel) => void;
+  readonly onAnnouncement?: (
+    region: AtlasRegionMarkerModel,
+    message: string,
+    searchOrigin?: MapAnnouncementOrigin,
+  ) => void;
+  readonly onClearAnnouncement?: (regionId: string) => void;
 }
 
 interface RenderedRegion {
@@ -35,8 +42,6 @@ interface RenderedRegion {
 
 interface RegionAnnouncement {
   readonly regionId: string;
-  readonly regionName: string | null;
-  readonly message: string;
 }
 
 const REGION_PANE = 'campaignRegionsPane';
@@ -63,7 +68,7 @@ function polygonElement(polygon: Polygon): HTMLElement | null {
 }
 
 export function mountCampaignRegions(
-  root: ParentNode,
+  _root: ParentNode,
   map: LeafletMap,
   options: CampaignRegionOptions = {},
 ): CampaignRegionController {
@@ -77,15 +82,15 @@ export function mountCampaignRegions(
   let announcedStatus: RegionAnnouncement | null = null;
   let destroyed = false;
 
-  const announceRegion = (regionId: string, message: string): void => {
-    const status = root.querySelector<HTMLElement>('[data-map-search-status]');
-    if (!status) return;
-    status.textContent = message;
-    announcedStatus = {
-      regionId,
-      regionName: rendered.get(regionId)?.model.name ?? null,
-      message,
-    };
+  const announceRegion = (
+    regionId: string,
+    message: string,
+    searchOrigin?: MapAnnouncementOrigin,
+  ): void => {
+    const region = rendered.get(regionId)?.model;
+    if (!region) return;
+    options.onAnnouncement?.(region, message, searchOrigin);
+    announcedStatus = { regionId };
   };
 
   const clearAnnouncement = (validRegionIds?: ReadonlySet<string>): void => {
@@ -93,19 +98,7 @@ export function mountCampaignRegions(
     if (!announcement) return;
     if (validRegionIds?.has(announcement.regionId)) return;
 
-    const status = root.querySelector<HTMLElement>('[data-map-search-status]');
-    const currentStatus = status?.textContent ?? '';
-    const selectionMessageForSameRegion = Boolean(
-      announcement.regionName &&
-      currentStatus.startsWith(`${announcement.regionName}, `) &&
-      currentStatus.includes('seleccionado en el mapa. Ficha compacta abierta.'),
-    );
-    // clearSearchFocus can be followed by main.ts' deferred compact-selection message.
-    // When the same region is being purged, that later message is still private region state
-    // and must disappear too. A newer unrelated public/point announcement is preserved.
-    if (status && (currentStatus === announcement.message || selectionMessageForSameRegion)) {
-      status.textContent = '';
-    }
+    options.onClearAnnouncement?.(announcement.regionId);
     announcedStatus = null;
   };
 
@@ -213,7 +206,7 @@ export function mountCampaignRegions(
       matchingSemantics = semantics;
       for (const entry of rendered.values()) updatePresentation(entry);
     },
-    locateRegion(regionId, label): boolean {
+    locateRegion(regionId, label, searchOrigin): boolean {
       const entry = rendered.get(regionId);
       if (!entry) return false;
       map.fitBounds(regionBounds(entry.model), {
@@ -232,6 +225,7 @@ export function mountCampaignRegions(
       announceRegion(
         regionId,
         `Mapa encuadrado en ${label ?? entry.model.name}; región de campaña.`,
+        searchOrigin,
       );
       return true;
     },

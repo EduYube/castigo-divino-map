@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
 import { expect, test, type Page, type Route } from '@playwright/test';
@@ -11,6 +12,21 @@ const ADMIN_TOKEN = 'map080-local-revoke-admin-token';
 const ADMIN_ID = '00000000-0000-4000-8000-000000000001';
 const MASTER_ID = 'entity-map080-master-canary';
 const MASTER_NAME = 'MAP080 LOCAL MASTER SECRET';
+const COLLISION_NAME = 'Nombre compartido MAP219';
+const PUBLIC_COLLISION_ID = 'entity-map219-public-collision';
+const MASTER_COLLISION_ID = 'entity-map219-master-collision';
+const MASTER_COLLISION_SECRET = 'MAP219 PRIVATE ONLY DETAIL';
+const REGION_COLLISION_NAME = 'Región compartida MAP219 R1';
+const PUBLIC_REGION_ID = 'entity-map219-public-region';
+const MASTER_REGION_ID = 'entity-map219-master-region';
+const MASTER_REGION_SECRET = 'MAP219 R1 PRIVATE REGION ONLY DETAIL';
+const REGION_REPRESENTATIVE = { x: 2500, y: 1500 };
+const REGION_VERTICES = [
+  { x: 2400, y: 1400 },
+  { x: 2600, y: 1400 },
+  { x: 2600, y: 1600 },
+  { x: 2400, y: 1600 },
+];
 const MAP_IMAGE_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 
@@ -20,10 +36,28 @@ interface MasterBackend {
   readonly release: () => void;
 }
 
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, canonicalize(entry)]),
+    );
+  }
+  return value;
+}
+
 async function configureBackend(page: Page): Promise<MasterBackend> {
   const snapshot = JSON.parse(SNAPSHOT) as {
-    campaignCatalogs: Array<{ campaignId: string; categories: Array<{ id: string }> }>;
+    campaignCatalogs: Array<{
+      campaignId: string;
+      categories: Array<{ id: string }>;
+      entities: Array<Record<string, unknown>>;
+    }>;
     campaigns: Array<{ id: string; slug: string }>;
+    checksum: string;
+    sourceRevision: string;
   };
   const campaignId = snapshot.campaigns.find(
     (campaign) => campaign.slug === 'un-aliento-menos',
@@ -32,6 +66,54 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
     (campaign) => campaign.campaignId === campaignId,
   )?.categories[0]?.id;
   if (!categoryId) throw new Error('Missing public category in MAP-080 V4 snapshot.');
+
+  // Real public and Master identities with byte-identical display names. Build
+  // a valid in-memory V4 fixture; neither the checked-in snapshot nor its schema changes.
+  const publicCatalog = snapshot.campaignCatalogs.find(
+    (campaign) => campaign.campaignId === campaignId,
+  );
+  if (!publicCatalog) throw new Error('Missing public campaign for QA-219.');
+  publicCatalog.entities.push({
+    id: PUBLIC_COLLISION_ID,
+    slug: 'map219-public-collision',
+    entityType: 'character',
+    visibility: 'pin',
+    name: COLLISION_NAME,
+    nameLanguage: 'en',
+    aliases: [],
+    summary: 'Public MAP219 fixture',
+    description: '',
+    coordinates: { x: 300, y: 320 },
+    categoryId,
+    tagIds: [],
+  });
+  // QA219-R1-01: the two polygons deliberately collide in *every* textual
+  // and representative-coordinate field, while preserving separate identities.
+  publicCatalog.entities.push({
+    id: PUBLIC_REGION_ID,
+    slug: 'map219-public-region',
+    entityType: 'location',
+    visibility: 'pin',
+    name: REGION_COLLISION_NAME,
+    nameLanguage: 'en',
+    aliases: [],
+    summary: 'Public MAP219 polygon fixture',
+    description: '',
+    geometry: { kind: 'polygon', vertices: REGION_VERTICES },
+    coordinates: REGION_REPRESENTATIVE,
+    categoryId,
+    tagIds: [],
+  });
+  const hashContent: Record<string, unknown> = { ...snapshot };
+  delete hashContent.generatedAt;
+  delete hashContent.checksum;
+  delete hashContent.sourceRevision;
+  const hash = createHash('sha256')
+    .update(JSON.stringify(canonicalize(hashContent)))
+    .digest('hex');
+  snapshot.sourceRevision = `sha256:${hash}`;
+  snapshot.checksum = `sha256:${hash}`;
+  const snapshotJson = JSON.stringify(snapshot);
 
   let unblock: (() => void) | null = null;
   let started = 0;
@@ -78,7 +160,7 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
     }),
   );
   await page.route('**/data/public-catalog.snapshot.json', async (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: SNAPSHOT }),
+    route.fulfill({ status: 200, contentType: 'application/json', body: snapshotJson }),
   );
   await page.route('**/auth/v1/**', async (route: Route) => {
     if (route.request().url().includes('/auth/v1/token')) {
@@ -127,6 +209,38 @@ async function configureBackend(page: Page): Promise<MasterBackend> {
               geometry: { kind: 'point', coordinates: { x: 1100, y: 850 } },
               x: 1100,
               y: 850,
+              category_id: categoryId,
+              updated_at: '2026-10-30T00:00:00.000Z',
+            },
+            {
+              id: MASTER_COLLISION_ID,
+              slug: 'map219-master-collision',
+              entity_type: 'character',
+              visibility: 'pin',
+              audience: 'master',
+              name: COLLISION_NAME,
+              summary: MASTER_COLLISION_SECRET,
+              description: MASTER_COLLISION_SECRET,
+              portrait_path: null,
+              geometry: { kind: 'point', coordinates: { x: 3100, y: 1880 } },
+              x: 3100,
+              y: 1880,
+              category_id: categoryId,
+              updated_at: '2026-10-30T00:00:00.000Z',
+            },
+            {
+              id: MASTER_REGION_ID,
+              slug: 'map219-master-region',
+              entity_type: 'location',
+              visibility: 'pin',
+              audience: 'master',
+              name: REGION_COLLISION_NAME,
+              summary: MASTER_REGION_SECRET,
+              description: MASTER_REGION_SECRET,
+              portrait_path: null,
+              geometry: { kind: 'polygon', vertices: REGION_VERTICES },
+              x: REGION_REPRESENTATIVE.x,
+              y: REGION_REPRESENTATIVE.y,
               category_id: categoryId,
               updated_at: '2026-10-30T00:00:00.000Z',
             },
@@ -280,16 +394,335 @@ test('MAP080-REV-04 purges announced Master content on popstate', async ({ page 
   // announcement, entering local view must preserve that public live message.
   await toggle.click();
   await expect(masterPin).toHaveCount(1);
-  const publicAnnouncement = 'Mapa centrado en Neverwinter, lugar geográfico; posición resaltada.';
-  await status.evaluate((element, message) => {
-    element.textContent = message;
-  }, publicAnnouncement);
+  const publicPin = page.locator(`.campaign-marker-icon[data-entity-id="${PUBLIC_COLLISION_ID}"]`);
+  await expect(publicPin).toHaveCount(1);
+  await publicPin.focus();
+  await publicPin.press('Enter');
+  await expect(status).toContainText('Ficha compacta abierta.');
+  const publicAnnouncement = await status.textContent();
+  expect(publicAnnouncement).toContain(COLLISION_NAME);
   await page.evaluate(() => {
     history.pushState({}, '', '/?campaign=un-aliento-menos&map=neverwinter');
     dispatchEvent(new PopStateEvent('popstate'));
   });
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
-  await expect(status).toHaveText(publicAnnouncement);
+  await expect(status).toHaveText(publicAnnouncement!);
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await expect.poll(privateContentInDom).toBe(false);
+});
+
+test('QA219 sensitivity: exact-name public announcement survives revoking a different Master ID', async ({
+  page,
+}) => {
+  const backend = await configureBackend(page);
+  await page.goto('/?campaign=un-aliento-menos');
+  await page.getByRole('button', { name: 'Administrar' }).click();
+  await page.getByLabel('Correo').fill('admin@example.invalid');
+  await page.getByLabel('Contraseña').fill('correct horse battery staple');
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click();
+  await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+  await page.evaluate(() => {
+    dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+    );
+  });
+  backend.release();
+  const toggle = page.locator('[data-master-mode-toggle]');
+  await toggle.click();
+  const publicPin = page.locator(`.campaign-marker-icon[data-entity-id="${PUBLIC_COLLISION_ID}"]`);
+  const masterPin = page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_COLLISION_ID}"]`);
+  await expect(publicPin).toHaveCount(1);
+  await expect(masterPin).toHaveCount(1);
+  await expect(publicPin).toHaveCount(1);
+  await publicPin.focus();
+  await publicPin.press('Enter');
+  const status = page.locator('[data-map-search-status]');
+  await expect(status).toContainText('Ficha compacta abierta.');
+  const actualPublicMessage = await status.textContent();
+  expect(actualPublicMessage).toContain(COLLISION_NAME);
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(status).toHaveText(actualPublicMessage!);
+  await expect(masterPin).toHaveCount(0);
+  await expect(page.locator(`[data-search-result-id="${MASTER_COLLISION_ID}"]`)).toHaveCount(0);
+  await expect(page.getByTestId('place-details')).not.toContainText(MASTER_COLLISION_SECRET);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        ({ id, secret }) =>
+          document.documentElement.outerHTML.includes(id) ||
+          document.documentElement.outerHTML.includes(secret),
+        { id: MASTER_COLLISION_ID, secret: MASTER_COLLISION_SECRET },
+      ),
+    )
+    .toBe(false);
+  expect(page.url()).not.toContain(MASTER_COLLISION_ID);
+  expect(
+    await page.evaluate(
+      (id) => Object.values(sessionStorage).join('').includes(id),
+      MASTER_COLLISION_ID,
+    ),
+  ).toBe(false);
+});
+
+test('QA219 Master announcement is removed and Master to public replacement stays public', async ({
+  page,
+}) => {
+  const backend = await configureBackend(page);
+  await page.goto('/?campaign=un-aliento-menos');
+  await page.getByRole('button', { name: 'Administrar' }).click();
+  await page.getByLabel('Correo').fill('admin@example.invalid');
+  await page.getByLabel('Contraseña').fill('correct horse battery staple');
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click();
+  await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+  await page.evaluate(() => {
+    dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+    );
+  });
+  backend.release();
+  const toggle = page.locator('[data-master-mode-toggle]');
+  const status = page.locator('[data-map-search-status]');
+  const masterPin = page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_COLLISION_ID}"]`);
+  const publicPin = page.locator(`.campaign-marker-icon[data-entity-id="${PUBLIC_COLLISION_ID}"]`);
+  await toggle.click();
+  await expect(masterPin).toHaveCount(1);
+  await masterPin.focus();
+  await masterPin.press('Enter');
+  await expect(status).toContainText('Contenido del Máster');
+  await toggle.click();
+  await expect(status).toBeEmpty();
+  await expect(masterPin).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (secret) => document.documentElement.outerHTML.includes(secret),
+        MASTER_COLLISION_SECRET,
+      ),
+    )
+    .toBe(false);
+
+  await toggle.click();
+  await expect(masterPin).toHaveCount(1);
+  await masterPin.focus();
+  await masterPin.press('Enter');
+  await expect(status).toContainText('Contenido del Máster');
+  await expect(publicPin).toHaveCount(1);
+  await publicPin.focus();
+  await publicPin.press('Enter');
+  await expect(status).toContainText('Ficha compacta abierta.');
+  const publicMessage = await status.textContent();
+  expect(publicMessage).toContain(COLLISION_NAME);
+  expect(publicMessage).not.toContain('Contenido del Máster');
+  await toggle.click();
+  await expect(status).toHaveText(publicMessage!);
+});
+
+test('QA219 pending Master selection RAF cannot revive revoked private announcement', async ({
+  page,
+}) => {
+  const backend = await configureBackend(page);
+  await page.goto('/?campaign=un-aliento-menos');
+  await page.getByRole('button', { name: 'Administrar' }).click();
+  await page.getByLabel('Correo').fill('admin@example.invalid');
+  await page.getByLabel('Contraseña').fill('correct horse battery staple');
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click();
+  await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+  await page.evaluate(() => {
+    dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+    );
+  });
+  backend.release();
+  const toggle = page.locator('[data-master-mode-toggle]');
+  await toggle.click();
+  const masterPin = page.locator(`.campaign-marker-icon[data-entity-id="${MASTER_COLLISION_ID}"]`);
+  await expect(masterPin).toHaveCount(1);
+
+  await page.evaluate(() => {
+    const nativeRaf = window.requestAnimationFrame.bind(window);
+    const queued: FrameRequestCallback[] = [];
+    const testWindow = window as Window & { __map219Release?: () => void };
+    window.requestAnimationFrame = (callback) => {
+      queued.push(callback);
+      return queued.length + 1_000_000;
+    };
+    testWindow.__map219Release = () => {
+      window.requestAnimationFrame = nativeRaf;
+      queued.forEach((callback) => callback(performance.now()));
+    };
+  });
+  await expect(masterPin).toHaveCount(1);
+  await masterPin.focus();
+  await masterPin.press('Enter');
+  await toggle.evaluate((button: HTMLElement) => button.click());
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await page.evaluate(() => {
+    (window as Window & { __map219Release?: () => void }).__map219Release?.();
+  });
+  const status = page.locator('[data-map-search-status]');
+  await expect(status).not.toContainText('Contenido del Máster');
+  await expect
+    .poll(() =>
+      page.evaluate((id) => document.documentElement.outerHTML.includes(id), MASTER_COLLISION_ID),
+    )
+    .toBe(false);
+});
+
+// QA219-R1-01: use actual search-result identity, not a region with an
+// identical name, coordinate or polygon. The injected snapshot remains local.
+async function openQa219CollisionRegions(page: Page): Promise<void> {
+  const backend = await configureBackend(page);
+  await page.goto('/?campaign=un-aliento-menos');
+  await page.getByRole('button', { name: 'Administrar' }).click();
+  await page.getByLabel('Correo').fill('admin@example.invalid');
+  await page.getByLabel('Contraseña').fill('correct horse battery staple');
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click();
+  await expect(page.getByText('Modo administrativo activo.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar acceso administrativo' }).click();
+  await page.evaluate(() => {
+    dispatchEvent(
+      new CustomEvent('atlas:public-data-status', { detail: { backendState: 'connected' } }),
+    );
+  });
+  backend.release();
+  const toggle = page.locator('[data-master-mode-toggle]');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator(`[data-region-entity-id="${PUBLIC_REGION_ID}"]`)).toHaveCount(1);
+  await expect(page.locator(`[data-region-entity-id="${MASTER_REGION_ID}"]`)).toHaveCount(1);
+}
+
+async function findQa219RegionResult(page: Page, entityId: string) {
+  const searchToggle = page.locator('[data-place-search-toggle]');
+  if ((await searchToggle.getAttribute('aria-expanded')) === 'false') await searchToggle.click();
+  const search = page.getByRole('searchbox', { name: 'Buscar lugares' });
+  await search.fill(REGION_COLLISION_NAME);
+  await search.press('Escape');
+  const result = page.locator(`[data-search-result-id="${entityId}"]`);
+  await expect(result).toBeVisible();
+  return result;
+}
+
+async function holdQa219RegionFrames(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const testWindow = window as typeof window & {
+      __QA219_R1_FRAMES__?: { release: () => void; pending: () => number };
+    };
+    const original = window.requestAnimationFrame.bind(window);
+    const originalCancel = window.cancelAnimationFrame.bind(window);
+    const queued = new Map<number, FrameRequestCallback>();
+    let nextId = 1_000_000;
+    testWindow.__QA219_R1_FRAMES__ = {
+      pending: () => queued.size,
+      release: () => {
+        window.requestAnimationFrame = original;
+        window.cancelAnimationFrame = originalCancel;
+        const callbacks = [...queued.values()];
+        queued.clear();
+        callbacks.forEach((callback) => callback(performance.now()));
+      },
+    };
+    window.requestAnimationFrame = (callback) => {
+      const id = nextId++;
+      queued.set(id, callback);
+      return id;
+    };
+    window.cancelAnimationFrame = (id) => {
+      if (!queued.delete(id)) originalCancel(id);
+    };
+  });
+}
+
+async function releaseQa219RegionFrames(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const testWindow = window as typeof window & {
+      __QA219_R1_FRAMES__?: { release: () => void };
+    };
+    testWindow.__QA219_R1_FRAMES__?.release();
+    delete testWindow.__QA219_R1_FRAMES__;
+  });
+}
+
+test('QA219-R1-01 Master polygon search uses identity and OFF purges completed announcement', async ({
+  page,
+}) => {
+  await openQa219CollisionRegions(page);
+  const master = page.locator(`[data-region-entity-id="${MASTER_REGION_ID}"]`);
+  const publicRegion = page.locator(`[data-region-entity-id="${PUBLIC_REGION_ID}"]`);
+  const status = page.locator('[data-map-search-status]');
+  const toggle = page.locator('[data-master-mode-toggle]');
+
+  await (await findQa219RegionResult(page, MASTER_REGION_ID)).click();
+  await expect(master).toHaveAttribute('aria-pressed', 'true');
+  await expect(publicRegion).toHaveAttribute('aria-pressed', 'false');
+  await expect(status).toContainText(REGION_COLLISION_NAME);
+  await expect(status).toContainText('contenido del Máster');
+  await expect(page.getByTestId('place-details')).toHaveAttribute(
+    'data-entity-id',
+    MASTER_REGION_ID,
+  );
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(master).toHaveCount(0);
+  await expect(publicRegion).toHaveCount(1);
+  await expect(status).toBeEmpty();
+  await expect(page.locator('body')).not.toContainText(MASTER_REGION_SECRET);
+  await expect
+    .poll(() =>
+      page.evaluate((id) => document.documentElement.outerHTML.includes(id), MASTER_REGION_ID),
+    )
+    .toBe(false);
+
+  await toggle.click();
+  await expect(master).toHaveCount(1);
+  await (await findQa219RegionResult(page, PUBLIC_REGION_ID)).click();
+  await expect(publicRegion).toHaveAttribute('aria-pressed', 'true');
+  await expect(master).toHaveAttribute('aria-pressed', 'false');
+  await expect(status).toContainText(REGION_COLLISION_NAME);
+  await toggle.click();
+  await expect(status).toContainText(REGION_COLLISION_NAME);
+  await expect(status).not.toContainText('Contenido del Máster');
+});
+
+test('QA219-R1-01 Master polygon search: OFF before RAF prevents stale announcements', async ({
+  page,
+}) => {
+  await openQa219CollisionRegions(page);
+  const master = page.locator(`[data-region-entity-id="${MASTER_REGION_ID}"]`);
+  const publicRegion = page.locator(`[data-region-entity-id="${PUBLIC_REGION_ID}"]`);
+  const toggle = page.locator('[data-master-mode-toggle]');
+  const status = page.locator('[data-map-search-status]');
+  const result = await findQa219RegionResult(page, MASTER_REGION_ID);
+
+  await holdQa219RegionFrames(page);
+  // Direct DOM click avoids Playwright waiting on the deliberately held RAFs.
+  await result.evaluate((element: HTMLElement) => element.click());
+  await expect(master).toHaveAttribute('aria-pressed', 'true');
+  await expect(publicRegion).toHaveAttribute('aria-pressed', 'false');
+  await expect(status).toContainText('contenido del Máster');
+  const pending = await page.evaluate(() => {
+    const controls = (window as typeof window & { __QA219_R1_FRAMES__?: { pending: () => number } })
+      .__QA219_R1_FRAMES__;
+    return controls?.pending() ?? 0;
+  });
+  expect(pending).toBeGreaterThan(0);
+
+  await toggle.evaluate((button: HTMLElement) => button.click());
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(status).toBeEmpty();
+  await releaseQa219RegionFrames(page);
+  await expect(status).toBeEmpty();
+  await expect(master).toHaveCount(0);
+  await expect(publicRegion).toHaveCount(1);
+  await expect(page.locator('body')).not.toContainText(MASTER_REGION_SECRET);
+  await expect
+    .poll(() =>
+      page.evaluate((id) => document.documentElement.outerHTML.includes(id), MASTER_REGION_ID),
+    )
+    .toBe(false);
 });

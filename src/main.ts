@@ -15,7 +15,10 @@ import { mountMasterDetailActions } from './app/masterDetailActions';
 import { mountMasterPinVisuals } from './app/masterPinVisuals';
 import { bootstrapMasterModeRuntime, type MasterModeRuntime } from './app/masterModeRuntime';
 import { mountMasterSearchVisuals } from './app/masterSearchVisuals';
-import { isMasterOnlyMapAnnouncement } from './app/masterMapAnnouncement';
+import {
+  createMapAnnouncementController,
+  type MapAnnouncementOrigin,
+} from './app/masterMapAnnouncement';
 import { mountPlaceFilters } from './app/placeFilters';
 import {
   bootstrapPublicDataRuntime,
@@ -175,19 +178,21 @@ function mountPublicExperience(
   const portraitResources = createPortraitResources();
   const selection = createPlaceSelectionController();
   const mapSearchStatus = app.querySelector<HTMLElement>('[data-map-search-status]');
+  const mapAnnouncements = createMapAnnouncementController(mapSearchStatus);
+  const pinAnnouncementOrigin = (pin: AtlasPinMarkerModel): MapAnnouncementOrigin => ({
+    entityId: pin.entityId,
+    audience: pin.entityId && masterEntityIds.has(pin.entityId) ? 'master' : 'public',
+    source: 'pin-selection',
+    sourceId: pin.id,
+  });
+  const resultAnnouncementOrigin = (result: AtlasSearchResult): MapAnnouncementOrigin => ({
+    entityId: result.linkedEntityId ?? null,
+    audience:
+      result.linkedEntityId && masterEntityIds.has(result.linkedEntityId) ? 'master' : 'public',
+    source: 'search-focus',
+  });
   const clearRevokedMasterAnnouncement = (revokedIds: ReadonlySet<EntityId>): void => {
-    if (!mapSearchStatus) return;
-    // Keep unrelated public navigation announcements intact. Both the
-    // synchronous Leaflet selection message and the deferred detail message
-    // identify the selected Master pin by name.
-    const revokedNames = new Set(
-      authorizedMarkers
-        .filter(({ entityId }) => entityId !== null && revokedIds.has(entityId))
-        .map(({ name }) => name),
-    );
-    if (isMasterOnlyMapAnnouncement(mapSearchStatus.textContent ?? '', revokedNames)) {
-      mapSearchStatus.textContent = '';
-    }
+    mapAnnouncements.clearRevoked(revokedIds);
   };
 
   const focusPinControl = (pin: AtlasPinMarkerModel): void => {
@@ -221,6 +226,9 @@ function mountPublicExperience(
 
   const mapController = mountFaerunMap(app, {
     markers: renderedMarkers,
+    onAnnouncement: (message, origin) => mapAnnouncements.write(message, origin),
+    getPinAnnouncementOrigin: pinAnnouncementOrigin,
+    onClearAnnouncementForPin: (pinId) => mapAnnouncements.clearSource(pinId),
     loadPortrait(pin, signal) {
       if (!portraitResources || !pin.portraitPath) return Promise.resolve(null);
       return portraitResources.load(pin.portraitPath, {
@@ -260,11 +268,13 @@ function mountPublicExperience(
         ) {
           return;
         }
-        if (!mapSearchStatus) return;
         const type = getPinTypeVisual(pin.entityType).label.toLocaleLowerCase('es');
         const audience =
           pin.entityId && masterEntityIds.has(pin.entityId) ? ' Contenido del Máster.' : '';
-        mapSearchStatus.textContent = `${pin.name}, ${type}, seleccionado en el mapa. Ficha compacta abierta.${audience}`;
+        mapAnnouncements.write(
+          `${pin.name}, ${type}, seleccionado en el mapa. Ficha compacta abierta.${audience}`,
+          pinAnnouncementOrigin(pin),
+        );
       });
     },
   });
@@ -291,6 +301,12 @@ function mountPublicExperience(
   const localNavigation = mountLocalMapNavigation(app, {
     initialBackendState: publicDataRuntime?.getBackendState() ?? 'degraded',
     onHistoryChange: (mode) => writePublicStateToHistory(mode),
+    onAnnouncement: (message) =>
+      mapAnnouncements.write(message, {
+        entityId: null,
+        audience: 'public',
+        source: 'local-navigation',
+      }),
     onBindingsChange(contexts): void {
       localReader.setAuthorizedContexts(contexts);
     },
@@ -475,9 +491,11 @@ function mountPublicExperience(
       activeSupplementalPin = null;
       activeLocalEntityId = null;
       localReader.setActiveEntity(null);
-    } else if (mapSearchStatus) {
-      mapSearchStatus.textContent =
-        pin.name + ', seleccionado en el mapa local. Ficha compacta abierta.';
+    } else {
+      mapAnnouncements.write(
+        pin.name + ', seleccionado en el mapa local. Ficha compacta abierta.',
+        { entityId: pin.entityId, audience: 'public', source: 'pin-selection', sourceId: pin.id },
+      );
     }
   };
   onLocalSurfaceClosed = (): void => {
@@ -490,6 +508,7 @@ function mountPublicExperience(
     const masterController = masterModeRuntime?.controller;
     if (masterEntityIds.size > 0 || masterController?.getState().enabled === true) {
       clearRevokedMasterAnnouncement(masterEntityIds);
+      mapAnnouncements.clearPrivate();
       masterPurgedOnMapChange = true;
       masterEntityIds = new Set();
       beta02Catalog = publicBeta02Catalog;
@@ -567,6 +586,7 @@ function mountPublicExperience(
       searchExtent: geographicName.searchExtent ?? null,
       recommendedZoom: geographicName.recommendedZoom,
       label: describeGeographicNameTarget(geographicName),
+      announcementOrigin: { entityId: null, audience: 'public', source: 'search-focus' },
     });
   };
 
@@ -608,9 +628,14 @@ function mountPublicExperience(
     pendingLocalFocusEntityId = entityId;
     if (!localNavigation.navigateToMapSlug(slug)) {
       pendingLocalFocusEntityId = null;
-      if (mapSearchStatus)
-        mapSearchStatus.textContent =
-          'El contexto local aún no está disponible. Reintenta cuando termine la carga.';
+      mapAnnouncements.write(
+        'El contexto local aún no está disponible. Reintenta cuando termine la carga.',
+        {
+          entityId,
+          audience: masterEntityIds.has(entityId) ? 'master' : 'public',
+          source: 'navigation',
+        },
+      );
       return false;
     }
     if (localReader.focusEntity(entityId)) pendingLocalFocusEntityId = null;
@@ -660,9 +685,11 @@ function mountPublicExperience(
         const contexts = result.localContexts ?? [];
         if (contexts.length === 1) {
           navigateToLocalEntity(result.linkedEntityId, contexts[0]!.slug);
-        } else if (mapSearchStatus) {
-          mapSearchStatus.textContent =
-            'Elige uno de los mapas locales indicados para ' + result.name + '.';
+        } else {
+          mapAnnouncements.write(
+            'Elige uno de los mapas locales indicados para ' + result.name + '.',
+            resultAnnouncementOrigin(result),
+          );
         }
         return;
       }
@@ -703,6 +730,7 @@ function mountPublicExperience(
           result.linkedEntityId && masterEntityIds.has(result.linkedEntityId)
             ? `${describeSearchTarget(result)}, contenido del Máster`
             : describeSearchTarget(result),
+        announcementOrigin: resultAnnouncementOrigin(result),
       });
 
       if (result.linkedEntityId && masterEntityIds.has(result.linkedEntityId)) {
@@ -929,6 +957,12 @@ function mountPublicExperience(
     const previousCampaignId = catalogState.selectedCampaign?.id ?? null;
     const nextCampaignId = nextCatalogState.selectedCampaign?.id ?? null;
     const campaignChanged = previousCampaignId !== nextCampaignId;
+    // Campaign scope changes invalidate private runtime metadata even when
+    // two campaigns happen to re-use the same entity identifier.
+    if (campaignChanged) {
+      mapAnnouncements.clearPrivate();
+      mapController.clearSearchFocus({ preserveRegionAnnouncement: true });
+    }
     catalogState = nextCatalogState;
     const previousActivePlaceId = selection.getActivePlaceId();
     const previousGeographicNameId = geographicNameId;
@@ -964,6 +998,9 @@ function mountPublicExperience(
     );
     if (removedMasterEntityIds.size > 0) {
       clearRevokedMasterAnnouncement(removedMasterEntityIds);
+      // Search-focus labels can also contain private names in map-shell metadata.
+      // Do not erase a newer public region announcement while clearing the overlay.
+      mapController.clearSearchFocus({ preserveRegionAnnouncement: true });
       if (
         activeSupplementalPin?.entityId &&
         removedMasterEntityIds.has(activeSupplementalPin.entityId)

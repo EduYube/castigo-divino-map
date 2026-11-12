@@ -177,6 +177,12 @@ jobs:
       - name: Verify preinstalled Playwright browsers
         run: npx playwright --version
 
+      # QA-219: repeat collision and revocation scenarios with zero retries.
+      - name: QA-219 identity collision and Master revocation no-retry gate
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-219-master-announcement-identity'
+        run: |
+          npx playwright test tests/e2e/map080-master-local-revocation.spec.ts tests/e2e/map059-master-isolation.spec.ts --project=chromium --grep='QA219|MAP080-REV-01|MAP080-REV-04|campaign A to B' --workers=1 --retries=0 --repeat-each=3 --trace=retain-on-failure
+
       # QA-208: prove the post-save race on its own branch, without Playwright retries.
       - name: QA-208 MAP-074 post-save 20x no-retry gate
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-208-map074-post-save-flake'

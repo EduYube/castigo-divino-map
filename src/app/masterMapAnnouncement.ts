@@ -1,24 +1,40 @@
-/**
- * Public map announcements survive Master revocation. Only announcements
- * authored from a private pin or an explicitly private search target are
- * discarded. All callers must invalidate pending animation-frame writers too.
- */
-export function isMasterOnlyMapAnnouncement(
-  announcement: string,
-  revokedMasterNames: ReadonlySet<string>,
-): boolean {
-  if (
-    announcement.includes('Contenido del Máster') ||
-    announcement.includes('contenido del Máster')
-  ) {
-    return true;
-  }
+import type { EntityId } from '../data/beta02-model';
 
-  for (const name of revokedMasterNames) {
-    if (!name) continue;
-    if (announcement.startsWith(`${name}, `) || announcement.includes(`en ${name}, `)) {
-      return true;
-    }
-  }
-  return false;
+/** Ephemeral runtime metadata; never serialized to the DOM, URL or cache. */
+export interface MapAnnouncementOrigin {
+  readonly entityId: EntityId | null;
+  readonly audience: 'public' | 'master';
+  readonly source: 'pin-selection' | 'region' | 'search-focus' | 'local-navigation' | 'navigation';
+  readonly sourceId?: string;
+}
+
+export function createMapAnnouncementController(status: Pick<HTMLElement, 'textContent'> | null) {
+  let current: MapAnnouncementOrigin | null = null;
+
+  const clear = (): void => {
+    current = null;
+    if (status) status.textContent = '';
+  };
+
+  return {
+    write(message: string, origin: MapAnnouncementOrigin): void {
+      current = message ? { ...origin } : null;
+      if (status) status.textContent = message;
+    },
+    clear,
+    clearRevoked(revokedIds: ReadonlySet<EntityId>): void {
+      if (current?.audience === 'master' && current.entityId && revokedIds.has(current.entityId)) {
+        clear();
+      }
+    },
+    clearPrivate(): void {
+      if (current?.audience === 'master') clear();
+    },
+    clearSource(sourceId: string): void {
+      if (current?.sourceId === sourceId) clear();
+    },
+    getOrigin(): MapAnnouncementOrigin | null {
+      return current;
+    },
+  };
 }

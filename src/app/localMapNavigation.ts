@@ -29,6 +29,7 @@ export interface LocalMapNavigation {
 interface LocalMapNavigationOptions {
   readonly initialBackendState: 'checking' | 'connected' | 'degraded' | 'offline';
   readonly onHistoryChange: (mode: 'push' | 'replace') => void;
+  readonly onAnnouncement?: (message: string) => void;
   readonly onSurfaceChange?: (context: LocalMapContext | null, map: LeafletMap | null) => void;
   readonly onBindingsChange?: (contexts: readonly LocalMapContext[]) => void;
 }
@@ -55,6 +56,10 @@ export function mountLocalMapNavigation(
   const worldCanvas = requireElement<HTMLElement>(root, '[data-map-canvas]');
   const mapStatus = requireElement<HTMLElement>(root, '[data-local-map-status]');
   const announcer = requireElement<HTMLElement>(root, '[data-map-search-status]');
+  const announce = (message: string): void => {
+    if (options.onAnnouncement) options.onAnnouncement(message);
+    else announcer.textContent = message;
+  };
   let links: readonly LocalMapLink[] = [];
   let currentCampaignId: string | null = null;
   let selectedGeoId: string | null = null;
@@ -151,8 +156,7 @@ export function mountLocalMapNavigation(
     if (!target) {
       requestedSlug = null;
       closeSurface();
-      announcer.textContent =
-        'El mapa local no está disponible para esta campaña. Mostrando mapa general.';
+      announce('El mapa local no está disponible para esta campaña. Mostrando mapa general.');
       options.onHistoryChange('replace');
       return;
     }
@@ -163,7 +167,7 @@ export function mountLocalMapNavigation(
     if (!requestedSlug) return;
     requestedSlug = null;
     redraw();
-    announcer.textContent = 'Mapa general. Contexto local cerrado.';
+    announce('Mapa general. Contexto local cerrado.');
     if (push) options.onHistoryChange('push');
   };
 
@@ -173,7 +177,7 @@ export function mountLocalMapNavigation(
     if (!entrance) return;
     requestedSlug = entrance.context.slug;
     redraw();
-    announcer.textContent = `Mapa local de ${entrance.context.name} abierto.`;
+    announce(`Mapa local de ${entrance.context.name} abierto.`);
     options.onHistoryChange('push');
   });
   returnButton.addEventListener('click', () => leave(true));
@@ -219,7 +223,7 @@ export function mountLocalMapNavigation(
       if (!loaded || !links.some((link) => link.context.slug === slug)) return false;
       requestedSlug = slug;
       redraw();
-      announcer.textContent = `Mapa local de ${slug} abierto.`;
+      announce(`Mapa local de ${slug} abierto.`);
       options.onHistoryChange('push');
       return true;
     },
