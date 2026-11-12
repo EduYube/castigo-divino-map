@@ -191,6 +191,17 @@ async function configurePinVisualBackend(page: Page): Promise<void> {
   });
 }
 
+// Use a real pointer action without retrying a successful click when Leaflet
+// synchronously removes the activated spiderfied member.
+async function clickSpiderfiedMember(page: Page, index: number): Promise<void> {
+  const member = page.getByTestId('coincident-pin-option').nth(index);
+  await expect(member).toBeVisible();
+  const rect = await member.boundingBox();
+  expect(rect).not.toBeNull();
+  if (!rect) throw new Error('QA-224 spiderfied member has no pointer target');
+  await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
+}
+
 async function openPinVisualMap(page: Page): Promise<void> {
   await configurePinVisualBackend(page);
   await page.goto('/');
@@ -295,7 +306,7 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await expect(options.nth(1)).not.toHaveAttribute('aria-label', /Borin|neutral|sin configurar/i);
   await expect(options.nth(1).locator('.pin-disposition')).toHaveCount(1);
 
-  await options.first().click();
+  await clickSpiderfiedMember(page, 0);
   const panel = page.getByTestId('place-details');
   await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
   await panel.getByRole('button', { name: /Cerrar la ficha de Demonstration Harbor/i }).click();
@@ -316,7 +327,7 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await coincident.focus();
   await page.keyboard.press('Enter');
   await expect(options).toHaveCount(2);
-  await options.nth(1).click();
+  await clickSpiderfiedMember(page, 1);
   await expect(panel).toBeVisible();
   await expect(panel).toHaveAttribute('data-entity-id', 'entity-harbor-guard');
   await expect(panel).toHaveAttribute('data-entity-type', 'character');
@@ -658,18 +669,26 @@ for (const key of ['Enter', 'Space'] as const) {
     await expect(options.nth(1)).toHaveAttribute('data-entity-type', 'character');
     await options.nth(1).focus();
     await expect(options.nth(1)).toBeFocused();
-    await options.nth(1).evaluate((element) => {
-      element.addEventListener('keydown', (event) => {
-        if (!(event instanceof KeyboardEvent)) return;
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        document.documentElement.dataset.qa224MemberPrevented = String(event.defaultPrevented);
-        document.documentElement.dataset.qa224MemberEvents = String(
-          Number(document.documentElement.dataset.qa224MemberEvents ?? 0) + 1,
-        );
-      });
-    });
-
     await page.evaluate(() => {
+      // The member is removed during activation, so an observer registered
+      // after Leaflet's handler may be skipped by WebKit. Capture the key first,
+      // then inspect cancellation in a microtask after the runtime handler.
+      document.addEventListener(
+        'keydown',
+        (event) => {
+          if (!(event instanceof KeyboardEvent)) return;
+          if (!(event.target instanceof Element)) return;
+          if (!event.target.closest('[data-spiderfied="true"]')) return;
+          const root = document.documentElement;
+          root.dataset.qa224MemberEvents = String(
+            Number(root.dataset.qa224MemberEvents ?? 0) + 1,
+          );
+          queueMicrotask(() => {
+            root.dataset.qa224MemberPrevented = String(event.defaultPrevented);
+          });
+        },
+        true,
+      );
       document.addEventListener(
         'click',
         (event) => {
