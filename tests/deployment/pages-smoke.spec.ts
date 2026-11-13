@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Request } from '@playwright/test';
 
-import { expectPublishedRemoteConnected } from './remote-health';
+import { expectPublishedRemoteConnected, waitForFirstRemoteCheck } from './remote-health';
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
@@ -106,22 +106,14 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
   await expect(page.getByRole('banner')).toBeVisible();
   await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
 
-  const backendStatus = page.locator('[data-backend-status]');
   if (!isPublishedPages()) {
-    await expect
-      .poll(async () => {
-        const state = await backendStatus.getAttribute('data-backend-state');
-        const reason = await backendStatus.getAttribute('data-backend-reason');
-        if (state === 'connected') return 'accepted';
-        if (
-          state === 'degraded' &&
-          (reason === 'configuration-missing' || reason === 'network-unavailable')
-        ) {
-          return 'accepted';
-        }
-        return `${state}:${reason}`;
-      })
-      .toBe('accepted');
+    const result = await waitForFirstRemoteCheck(page);
+    expect(
+      result.state === 'connected' ||
+        (result.state === 'degraded' &&
+          (result.reason === 'configuration-missing' || result.reason === 'network-unavailable')),
+      `Local Pages expected a settled backend outcome: ${JSON.stringify(result)}`,
+    ).toBe(true);
   }
 
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
@@ -302,7 +294,8 @@ test('keeps v1.3 usable from the public snapshot when Supabase returns 503', asy
   expect(response?.ok()).toBe(true);
 
   const backendStatus = page.locator('[data-backend-status]');
-  await expect(backendStatus).toHaveAttribute('data-backend-state', 'degraded');
+  const fallback = await waitForFirstRemoteCheck(page);
+  expect(fallback).toMatchObject({ state: 'degraded', reason: 'http-error', attempt: 3 });
   await expect(backendStatus).toContainText('Modo de respaldo');
   await expect(backendStatus.getByRole('button', { name: 'Reintentar' })).toBeVisible();
   await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
@@ -329,10 +322,8 @@ test('v1.3 Pages V4 keeps neutral Neverwinter available offline without cross-ca
   const response = await page.goto('?campaign=un-aliento-menos&map=neverwinter');
   expect(response?.ok()).toBe(true);
   await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
-  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
-    'data-backend-state',
-    'degraded',
-  );
+  const fallback = await waitForFirstRemoteCheck(page);
+  expect(fallback).toMatchObject({ state: 'degraded', reason: 'http-error', attempt: 3 });
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
   await expect(page.locator('[data-local-map-status]')).toContainText(
     'Cartografía pendiente de publicación',
