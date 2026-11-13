@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Request } from '@playwright/test';
 
-import { expectPublishedRemoteConnected } from './remote-health';
+import { expectPublishedRemoteConnected, waitForFirstRemoteCheck } from './remote-health';
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
@@ -157,21 +157,6 @@ test('publishes the MAP-021 Waterdeep geographic search contract', async ({ page
   const response = await page.goto('?q=Waterdeep');
   expect(response?.ok()).toBe(true);
 
-  const backendStatus = page.locator('[data-backend-status]');
-  if (!isPublishedPages()) {
-    await expect
-      .poll(async () => {
-        const state = await backendStatus.getAttribute('data-backend-state');
-        const reason = await backendStatus.getAttribute('data-backend-reason');
-        return (
-          state === 'connected' ||
-          (state === 'degraded' &&
-            (reason === 'configuration-missing' || reason === 'network-unavailable'))
-        );
-      })
-      .toBe(true);
-  }
-
   const result = page.getByRole('button', {
     name: /Waterdeep.*Lugar geográfico.*Coincidencia por nombre principal/i,
   });
@@ -186,5 +171,15 @@ test('publishes the MAP-021 Waterdeep geographic search contract', async ({ page
   // FUNCTIONAL AVAILABILITY above is independent of the remote backend.
   // HEALTH below waits for refresh(), not the provisional attempt=0 fallback.
   // A terminal degraded/configuration failure still FAILS the published smoke.
-  if (isPublishedPages()) await expectPublishedRemoteConnected(page);
+  if (isPublishedPages()) {
+    await expectPublishedRemoteConnected(page);
+  } else {
+    const result = await waitForFirstRemoteCheck(page);
+    expect(
+      result.state === 'connected' ||
+        (result.state === 'degraded' &&
+          (result.reason === 'configuration-missing' || result.reason === 'network-unavailable')),
+      `Local Pages expected a usable, explicitly settled fallback: ${JSON.stringify(result)}`,
+    ).toBe(true);
+  }
 });
