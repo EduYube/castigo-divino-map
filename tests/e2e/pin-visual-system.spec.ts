@@ -7,6 +7,12 @@ declare global {
       sample(stage: string): void;
       getTimeline(): readonly Record<string, unknown>[];
     };
+    __qa224Gate?: {
+      pending(): number;
+      advance(): number;
+      restore(): void;
+    };
+    __qa224MemberKeyEvent?: KeyboardEvent;
   }
 }
 
@@ -186,6 +192,17 @@ async function configurePinVisualBackend(page: Page): Promise<void> {
   });
 }
 
+// Use a real pointer action without retrying a successful click when Leaflet
+// synchronously removes the activated spiderfied member.
+async function clickSpiderfiedMember(page: Page, index: number): Promise<void> {
+  const member = page.getByTestId('coincident-pin-option').nth(index);
+  await expect(member).toBeVisible();
+  const rect = await member.boundingBox();
+  expect(rect).not.toBeNull();
+  if (!rect) throw new Error('QA-224 spiderfied member has no pointer target');
+  await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
+}
+
 async function openPinVisualMap(page: Page): Promise<void> {
   await configurePinVisualBackend(page);
   await page.goto('/');
@@ -290,7 +307,7 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await expect(options.nth(1)).not.toHaveAttribute('aria-label', /Borin|neutral|sin configurar/i);
   await expect(options.nth(1).locator('.pin-disposition')).toHaveCount(1);
 
-  await options.first().click();
+  await clickSpiderfiedMember(page, 0);
   const panel = page.getByTestId('place-details');
   await expect(panel).toHaveAttribute('data-active-place-id', 'place-demo-harbor');
   await panel.getByRole('button', { name: /Cerrar la ficha de Demonstration Harbor/i }).click();
@@ -311,7 +328,7 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await coincident.focus();
   await page.keyboard.press('Enter');
   await expect(options).toHaveCount(2);
-  await options.nth(1).click();
+  await clickSpiderfiedMember(page, 1);
   await expect(panel).toBeVisible();
   await expect(panel).toHaveAttribute('data-entity-id', 'entity-harbor-guard');
   await expect(panel).toHaveAttribute('data-entity-type', 'character');
@@ -325,6 +342,8 @@ test('opens all coincident pins as keyboard-operable options without changing th
   await expect(options).toHaveCount(0);
   await expect(coincident).toBeVisible();
   await expect(coincident).not.toHaveAttribute('aria-hidden', 'true');
+  await expect(coincident).toHaveAttribute('aria-expanded', 'false');
+  await expect(coincident).toBeFocused();
   await expect(coincident).toHaveAttribute('data-marker-lat', '820');
   await expect(coincident).toHaveAttribute('data-marker-lng', '1080.5');
 });
@@ -511,3 +530,221 @@ test('QA-213 sensitivity: pending focus restore must not reopen spiderfy after E
   await expect(cluster).toHaveAttribute('aria-expanded', 'false');
   await expect(cluster).toBeFocused();
 });
+
+async function gateQa224Frames(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const request = window.requestAnimationFrame.bind(window);
+    const cancel = window.cancelAnimationFrame.bind(window);
+    const queued = new Map<number, FrameRequestCallback>();
+    let nextId = -1;
+    window.requestAnimationFrame = (callback): number => {
+      const id = nextId--;
+      queued.set(id, callback);
+      return id;
+    };
+    window.cancelAnimationFrame = (id): void => {
+      if (!queued.delete(id)) cancel(id);
+    };
+    window.__qa224Gate = {
+      pending: () => queued.size,
+      advance: () => {
+        const batch = [...queued.values()];
+        queued.clear();
+        for (const callback of batch) callback(performance.now());
+        return batch.length;
+      },
+      restore: () => {
+        window.requestAnimationFrame = request;
+        window.cancelAnimationFrame = cancel;
+      },
+    };
+  });
+}
+
+test('QA-224 sensitivity: collapse RAF respects newer focus after Escape', async ({ page }) => {
+  await openPinVisualMap(page);
+  const cluster = page.getByTestId('coincident-pin');
+  const options = page.getByTestId('coincident-pin-option');
+  const otherControl = page.locator('[data-map-help-summary]');
+  await cluster.focus();
+  await page.keyboard.press('Enter');
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toBeFocused();
+  await gateQa224Frames(page);
+  await page.keyboard.press('Escape');
+  await expect(options).toHaveCount(0);
+  await expect(cluster).toHaveAttribute('aria-expanded', 'false');
+  expect(await page.evaluate(() => window.__qa224Gate?.pending() ?? 0)).toBeGreaterThan(0);
+  await otherControl.focus();
+  await expect(otherControl).toBeFocused();
+  expect(await page.evaluate(() => window.__qa224Gate?.advance() ?? 0)).toBeGreaterThan(0);
+  await expect(otherControl).toBeFocused();
+  await page.evaluate(() => window.__qa224Gate?.restore());
+});
+
+test('QA-224 sensitivity: open RAF respects newer focus after keyboard activation', async ({
+  page,
+}) => {
+  await openPinVisualMap(page);
+  const cluster = page.getByTestId('coincident-pin');
+  const options = page.getByTestId('coincident-pin-option');
+  const otherControl = page.locator('[data-map-help-summary]');
+  await cluster.focus();
+  await gateQa224Frames(page);
+  await page.keyboard.press('Enter');
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toBeFocused();
+  expect(await page.evaluate(() => window.__qa224Gate?.pending() ?? 0)).toBeGreaterThan(0);
+  await otherControl.focus();
+  await expect(otherControl).toBeFocused();
+  expect(await page.evaluate(() => window.__qa224Gate?.advance() ?? 0)).toBeGreaterThan(0);
+  await expect(otherControl).toBeFocused();
+  await page.evaluate(() => window.__qa224Gate?.restore());
+});
+
+test('QA-224 normal restore: Escape returns focus to cluster', async ({ page }) => {
+  await openPinVisualMap(page);
+  const cluster = page.getByTestId('coincident-pin');
+  const options = page.getByTestId('coincident-pin-option');
+  await cluster.focus();
+  await page.keyboard.press('Enter');
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toBeFocused();
+  await gateQa224Frames(page);
+  await page.keyboard.press('Escape');
+  await expect(options).toHaveCount(0);
+  await expect(cluster).toHaveAttribute('aria-expanded', 'false');
+  expect(await page.evaluate(() => window.__qa224Gate?.pending() ?? 0)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__qa224Gate?.advance() ?? 0)).toBeGreaterThan(0);
+  await expect(cluster).toBeFocused();
+  await page.evaluate(() => window.__qa224Gate?.restore());
+});
+
+test('QA-224 normal restore: keyboard opening retains member focus', async ({ page }) => {
+  await openPinVisualMap(page);
+  const cluster = page.getByTestId('coincident-pin');
+  const options = page.getByTestId('coincident-pin-option');
+  await cluster.focus();
+  await gateQa224Frames(page);
+  await page.keyboard.press('Space');
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toBeFocused();
+  expect(await page.evaluate(() => window.__qa224Gate?.pending() ?? 0)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__qa224Gate?.advance() ?? 0)).toBeGreaterThan(0);
+  await expect(options.first()).toBeFocused();
+  await page.evaluate(() => window.__qa224Gate?.restore());
+});
+
+for (const key of ['Enter', 'Space'] as const) {
+  test(`QA-224 keyboard: cluster and member ${key} activate and Escape restores focus`, async ({
+    page,
+  }) => {
+    await openPinVisualMap(page);
+    const cluster = page.getByTestId('coincident-pin');
+    const options = page.getByTestId('coincident-pin-option');
+    const canvas = page.locator('[data-map-canvas]');
+    const panel = page.getByTestId('place-details');
+    await cluster.evaluate((element) => {
+      element.addEventListener('keydown', (event) => {
+        if (!(event instanceof KeyboardEvent)) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          (element as HTMLElement).dataset.qa224Prevented = String(event.defaultPrevented);
+        }
+      });
+    });
+    await canvas.evaluate((element) => {
+      element.addEventListener('keydown', (event) => {
+        if (!(event instanceof KeyboardEvent)) return;
+        if (event.key === 'Escape') {
+          (element as HTMLElement).dataset.qa224EscapePrevented = String(event.defaultPrevented);
+        }
+      });
+    });
+
+    await cluster.focus();
+    const readScroll = () => page.evaluate(() => [window.scrollX, window.scrollY]);
+    const clusterScrollBefore = await readScroll();
+    await page.keyboard.press(key);
+    await expect(cluster).toHaveAttribute('data-qa224-prevented', 'true');
+    expect(await readScroll()).toEqual(clusterScrollBefore);
+    await expect(options).toHaveCount(2);
+    await expect(options.first()).toBeFocused();
+    await expect(options.nth(1)).toHaveAttribute('data-entity-type', 'character');
+    await page.evaluate(() => {
+      // Capture the original event before Leaflet handles it. Keep a reference
+      // so cancellation can be asserted after dispatch even when WebKit removes
+      // the member during synchronous activation; do not rely on a later RAF.
+      document.addEventListener(
+        'keydown',
+        (event) => {
+          if (!(event instanceof KeyboardEvent)) return;
+          if (!(event.target instanceof Element)) return;
+          if (!event.target.closest('[data-spiderfied="true"]')) return;
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          const root = document.documentElement;
+          const keydownCount = Number(root.dataset.qa224MemberEvents ?? 0);
+          root.dataset.qa224MemberEvents = String(keydownCount + 1);
+          window.__qa224MemberKeyEvent = event;
+        },
+        true,
+      );
+      document.addEventListener(
+        'click',
+        (event) => {
+          const target = event.target;
+          if (target instanceof Element && target.closest('[data-spiderfied="true"]')) {
+            document.documentElement.dataset.qa224KeyboardMemberClicks = String(
+              Number(document.documentElement.dataset.qa224KeyboardMemberClicks ?? 0) + 1,
+            );
+          }
+        },
+        true,
+      );
+    });
+    const historyBefore = await page.evaluate(() => window.history.length);
+    // Focus immediately before dispatch: intervening page evaluations must not
+    // give an older WebKit focus callback an opportunity to change the target.
+    await options.nth(1).evaluate((element) => {
+      (element as HTMLElement).focus({ preventScroll: true });
+    });
+    await expect(options.nth(1)).toBeFocused();
+    const memberScrollBefore = await readScroll();
+    await page.keyboard.press(key);
+    const documentRoot = page.locator('html');
+    await expect(documentRoot).toHaveAttribute('data-qa224-member-events', '1');
+    const memberKeyWasPrevented = await page.evaluate(() => {
+      return window.__qa224MemberKeyEvent?.defaultPrevented;
+    });
+    expect(memberKeyWasPrevented).toBe(true);
+    // Supplemental character selection is not URL-addressable. Keyboard activation
+    // must not synthesize a second pointer click or an unexpected history entry.
+    expect(await page.evaluate(() => window.history.length)).toBe(historyBefore);
+    const clickCount = await documentRoot.getAttribute('data-qa224-keyboard-member-clicks');
+    expect(clickCount).toBeNull();
+    expect(await readScroll()).toEqual(memberScrollBefore);
+    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute('data-entity-id', 'entity-harbor-guard');
+    await expect(panel).toHaveAttribute('data-entity-type', 'character');
+    await expect(panel.getByRole('heading', { level: 3, name: 'Harbor Guard' })).toBeFocused();
+
+    await panel.getByRole('button', { name: /Cerrar la ficha de Harbor Guard/i }).click();
+    await expect(panel).toBeHidden();
+    await expect(options).toHaveCount(0);
+    await expect(cluster).toBeVisible();
+    await expect(cluster).not.toHaveAttribute('aria-hidden', 'true');
+    await expect(cluster).toHaveAttribute('aria-expanded', 'false');
+    await expect(cluster).toBeFocused();
+    await expect(cluster).toHaveAttribute('data-marker-lat', '820');
+    await expect(cluster).toHaveAttribute('data-marker-lng', '1080.5');
+
+    await cluster.focus();
+    await page.keyboard.press('Enter');
+    await expect(options).toHaveCount(2);
+    await expect(options.first()).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(canvas).toHaveAttribute('data-qa224-escape-prevented', 'true');
+    await expect(options).toHaveCount(0);
+    await expect(cluster).toHaveAttribute('aria-expanded', 'false');
+    await expect(cluster).toBeFocused();
+  });
+}

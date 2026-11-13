@@ -216,6 +216,58 @@ jobs:
             --grep='opens all coincident pins as keyboard-operable options without changing their canonical coordinate' \
             --workers=1 --retries=0 --repeat-each=30 --trace=retain-on-failure
 
+      # QA-224: test the candidate HEAD itself, not just GitHub's synthetic merge.
+      - name: QA-224 check out exact PR HEAD
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-224-spiderfy-focus-coverage'
+        run: |
+          git fetch --no-tags origin "${{ github.event.pull_request.head.sha }}"
+          git checkout --detach "${{ github.event.pull_request.head.sha }}"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+
+      - name: QA-224 collapse stale RAF sensitivity 20x no-retry
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-224-spiderfy-focus-coverage'
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=chromium --grep='QA-224 sensitivity: collapse RAF' \
+            --workers=1 --retries=0 --repeat-each=20 --trace=retain-on-failure
+
+      - name: QA-224 open stale RAF sensitivity 20x no-retry
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-224-spiderfy-focus-coverage'
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=chromium --grep='QA-224 sensitivity: open RAF' \
+            --workers=1 --retries=0 --repeat-each=20 --trace=retain-on-failure
+
+      - name: QA-224 normal focus restores without newer intent
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-224-spiderfy-focus-coverage'
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=chromium --grep='QA-224 normal restore:' \
+            --workers=1 --retries=0 --trace=retain-on-failure
+
+      - name: QA-224 original coincident spiderfy scenario 30x no-retry
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-224-spiderfy-focus-coverage'
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=chromium \
+            --grep='opens all coincident pins as keyboard-operable options without changing their canonical coordinate' \
+            --workers=1 --retries=0 --repeat-each=30 --trace=retain-on-failure
+
+      - name: QA-224 QA-213 pending focus restore sensitivity 20x no-retry
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-224-spiderfy-focus-coverage'
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=chromium --grep='QA-213 sensitivity: pending focus restore' \
+            --workers=1 --retries=0 --repeat-each=20 --trace=retain-on-failure
+
+      - name: QA-224 QA-215 inner outer and Enter Space regression no-retry
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-224-spiderfy-focus-coverage'
+        run: |
+          npx playwright test tests/e2e/responsive-accessibility.spec.ts \
+            --project=chromium \
+            --grep='QA-215 sensitivity: a stale Harbor focus restore|QA-215 sensitivity: an outer Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
+            --workers=1 --retries=0 --trace=retain-on-failure
+
       # QA-215: deterministic stale RAF interleaving and the unchanged original
       # accessibility contract, each without retries on the exact candidate HEAD.
       - name: QA-215 stale pin focus sensitivity 20x no-retry gate
@@ -269,6 +321,12 @@ jobs:
             --config=playwright.qa215-webkit.config.ts --project=webkit-qa215 \
             --grep='QA-215 sensitivity: a stale Harbor focus restore|QA-215 sensitivity: an outer Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
             --workers=1 --retries=0 --trace=retain-on-failure
+
+      # Permanent, small desktop-WebKit gate also runs after merge on master.
+      - name: QA-224 desktop WebKit spiderfy regression no-retry
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=webkit-spiderfy --workers=1 --retries=0 --trace=retain-on-failure
 
       - name: Run Chromium and WebKit end-to-end tests
         run: npm run test:e2e -- --project=chromium --project=webkit-map061 --project=mobile-chromium --project=mobile-webkit
@@ -326,6 +384,12 @@ jobs:
 
       - name: Run Firefox end-to-end tests
         run: npm run test:e2e -- --project=firefox --project=firefox-map061
+
+      # Permanent Firefox desktop spiderfy coverage, also active on master.
+      - name: QA-224 Firefox spiderfy regression no-retry
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=firefox-spiderfy --workers=1 --retries=0 --trace=retain-on-failure
 
       # Firefox launches under its own runner HOME; avoid the root-owned
       # container HOME mismatch in the Chromium/WebKit job.

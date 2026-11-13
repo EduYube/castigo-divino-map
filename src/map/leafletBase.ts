@@ -369,7 +369,16 @@ export function mountFaerunMap(
   let activeSpiderfy: SpiderfyState | null = null;
   // Invalidates deferred focus work when an intervening interaction collapses spiderfy.
   let spiderfyRevision = 0;
+  let spiderfyFocusIntentRevision = 0;
   let destroyed = false;
+
+  // Only deferred spiderfy focus is guarded: a later focus or input intent wins.
+  const invalidateSpiderfyFocusIntent = (): void => {
+    spiderfyFocusIntentRevision += 1;
+  };
+  document.addEventListener('focusin', invalidateSpiderfyFocusIntent, true);
+  document.addEventListener('pointerdown', invalidateSpiderfyFocusIntent, true);
+  document.addEventListener('keydown', invalidateSpiderfyFocusIntent, true);
 
   const isPinActive = (pin: AtlasPinMarkerModel): boolean =>
     pin.legacyPlaceId !== null
@@ -736,8 +745,18 @@ export function mountFaerunMap(
     updateGroupPresentation(state.group.marker, state.group.pins);
 
     if (restoreFocus && clusterElement?.isConnected) {
+      const scheduledSpiderfyRevision = spiderfyRevision;
+      const scheduledFocusIntentRevision = spiderfyFocusIntentRevision;
+      const focusedAfterCollapse = document.activeElement;
       window.requestAnimationFrame(() => {
-        if (clusterElement.isConnected) {
+        if (
+          !destroyed &&
+          activeSpiderfy === null &&
+          spiderfyRevision === scheduledSpiderfyRevision &&
+          spiderfyFocusIntentRevision === scheduledFocusIntentRevision &&
+          document.activeElement === focusedAfterCollapse &&
+          clusterElement.isConnected
+        ) {
           clusterElement.focus({ preventScroll: true });
         }
       });
@@ -822,9 +841,23 @@ export function mountFaerunMap(
         ? 0
         : -1;
     if (focusIndex >= 0) {
-      memberMarkers[focusIndex]?.getElement()?.focus({ preventScroll: true });
+      const focusedMemberMarker = memberMarkers[focusIndex];
+      const focusedMemberElement = focusedMemberMarker?.getElement();
+      focusedMemberElement?.focus({ preventScroll: true });
+      const scheduledSpiderfyRevision = spiderfyRevision;
+      const scheduledFocusIntentRevision = spiderfyFocusIntentRevision;
       window.requestAnimationFrame(() => {
-        memberMarkers[focusIndex]?.getElement()?.focus({ preventScroll: true });
+        if (
+          !destroyed &&
+          spiderfyRevision === scheduledSpiderfyRevision &&
+          spiderfyFocusIntentRevision === scheduledFocusIntentRevision &&
+          activeSpiderfy?.group === group &&
+          activeSpiderfy.memberMarkers[focusIndex] === focusedMemberMarker &&
+          focusedMemberElement?.isConnected &&
+          document.activeElement === focusedMemberElement
+        ) {
+          focusedMemberElement.focus({ preventScroll: true });
+        }
       });
     }
   };
@@ -1167,6 +1200,9 @@ export function mountFaerunMap(
       map.off('click', handleMapClick);
       elements.canvas.removeEventListener('keydown', handleMapKeyDown);
       interactionRoot?.removeEventListener('pointerdown', handleRootPointerDown);
+      document.removeEventListener('focusin', invalidateSpiderfyFocusIntent, true);
+      document.removeEventListener('pointerdown', invalidateSpiderfyFocusIntent, true);
+      document.removeEventListener('keydown', invalidateSpiderfyFocusIntent, true);
       resizeObserver?.disconnect();
       window.removeEventListener('resize', handleResize);
       if (resizeFrame !== undefined) window.cancelAnimationFrame(resizeFrame);
