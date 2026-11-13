@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 
 import { PUBLIC_CATALOG_TABLE_QUERIES } from '../../src/data-access/publicCatalogQueryContract.js';
+import { waitForFirstRemoteCheck } from '../deployment/remote-health';
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
@@ -34,6 +35,14 @@ const FIXTURE_KEYS_BY_TABLE: Readonly<Record<string, string>> = {
 };
 
 type BackendMode = 'success' | 'failure';
+
+interface Qa226BackendOptions {
+  readonly timeoutMs?: number;
+  readonly retryDelaysMs?: readonly number[];
+  readonly initialRequestDelayMs?: number;
+  readonly transientFailures?: number;
+  readonly simulateOffline?: boolean;
+}
 
 interface PublicDataTestBackend {
   setMode(mode: BackendMode): void;
@@ -73,27 +82,52 @@ function projectFixtureRows(table: string): readonly Record<string, unknown>[] {
   });
 }
 
-async function configurePublicDataTest(page: Page): Promise<PublicDataTestBackend> {
+async function configurePublicDataTest(
+  page: Page,
+  options: Qa226BackendOptions = {},
+): Promise<PublicDataTestBackend> {
   let mode: BackendMode = 'success';
   let requestCount = 0;
+  let transientFailures = options.transientFailures ?? 0;
 
-  await page.addInitScript((projectUrl) => {
-    window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
-      projectUrl,
-      publishableKey: 'sb_publishable_map016_test_key',
-      timeoutMs: 2000,
-      retryDelaysMs: [0, 0, 0],
-    };
-  }, LOCAL_SUPABASE_URL);
+  if (options.simulateOffline) {
+    // Keep the local fixture routable while testing the app's navigator signal.
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
+    });
+  }
+  await page.addInitScript(
+    ({ projectUrl, timeoutMs, retryDelaysMs }) => {
+      window.__MAP016_PUBLIC_DATA_TEST_CONFIG__ = {
+        projectUrl,
+        publishableKey: 'sb_publishable_map016_test_key',
+        timeoutMs,
+        retryDelaysMs,
+      };
+    },
+    {
+      projectUrl: LOCAL_SUPABASE_URL,
+      timeoutMs: options.timeoutMs ?? 2000,
+      retryDelaysMs: options.retryDelaysMs ?? [0, 0, 0],
+    },
+  );
   await page.route(OFFICIAL_MAP_URL, async (route) => {
     await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: TEST_MAP });
   });
   await page.route(SUPABASE_PATTERN, async (route: Route) => {
     requestCount += 1;
 
-    if (mode === 'failure') {
+    if (mode === 'failure' || transientFailures > 0) {
+      if (transientFailures > 0) transientFailures -= 1;
       await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
       return;
+    }
+
+    if (requestCount === 1 && (options.initialRequestDelayMs ?? 0) > 0) {
+      // Deterministic network simulation, not a smoke synchronization sleep.
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, options.initialRequestDelayMs);
+      });
     }
 
     const match = /\/rest\/v1\/([^?]+)/.exec(route.request().url());
@@ -196,4 +230,81 @@ test('announces offline mode textually and keeps the snapshot usable', async ({
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(status).toHaveAttribute('data-backend-state', 'connected');
   await expect(status).toHaveAttribute('data-backend-reason', 'none');
+});
+
+test('QA-226 slow success keeps the snapshot usable beyond the old five-second assertion', async ({
+  page,
+}) => {
+  const backend = await configurePublicDataTest(page, {
+    initialRequestDelayMs: 5750,
+    timeoutMs: 8000,
+  });
+  await page.goto('/?q=paso');
+
+  const status = page.locator('[data-backend-status]');
+  await expect(status).toHaveAttribute('data-backend-state', 'checking');
+  await expect(status).toHaveAttribute('aria-busy', 'true');
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
+  await expect(page.getByTestId('place-marker')).toHaveCount(2);
+
+  // Sensitivity: the legacy published assertion must fail while a legitimate
+  // remote acquisition is still pending, even though the snapshot is usable.
+  await expect(
+    expect(status).toHaveAttribute('data-backend-state', 'connected', { timeout: 5000 }),
+  ).rejects.toThrow();
+
+  const final = await waitForFirstRemoteCheck(page);
+  expect(final).toMatchObject({ state: 'connected', reason: 'none', ariaBusy: 'false' });
+  expect(final.attempt).toBe(1);
+  expect(backend.getRequestCount()).toBeGreaterThanOrEqual(13);
+});
+
+test('QA-226 transient 503 recovers with a completed second remote attempt', async ({ page }) => {
+  const backend = await configurePublicDataTest(page, { transientFailures: 1 });
+  await page.goto('/?q=paso');
+
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
+  await expect(page.getByTestId('place-marker')).toHaveCount(2);
+  const final = await waitForFirstRemoteCheck(page);
+  expect(final).toMatchObject({ state: 'connected', reason: 'none', attempt: 2 });
+  expect(backend.getRequestCount()).toBeGreaterThanOrEqual(14);
+});
+
+test('QA-226 persistent 503 remains functionally available but fails remote health', async ({
+  page,
+}) => {
+  const backend = await configurePublicDataTest(page);
+  backend.setMode('failure');
+  await page.goto('/?q=paso');
+
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
+  await expect(page.getByTestId('place-marker')).toHaveCount(2);
+  const final = await waitForFirstRemoteCheck(page);
+  expect(final).toMatchObject({
+    state: 'degraded',
+    reason: 'http-error',
+    source: 'bundled-snapshot',
+    attempt: 3,
+  });
+  await expect(page.locator('[data-backend-status]')).toContainText('Modo de respaldo');
+  await expect(page.getByRole('button', { name: 'Reintentar' })).toBeVisible();
+  await expect(page.getByText('Contenido del Máster', { exact: true })).toHaveCount(0);
+});
+
+test('QA-226 offline reports offline and retains the public snapshot without REST calls', async ({
+  page,
+}) => {
+  const backend = await configurePublicDataTest(page, { simulateOffline: true });
+  await page.goto('/?q=paso');
+
+  const final = await waitForFirstRemoteCheck(page);
+  expect(final).toMatchObject({
+    state: 'offline',
+    reason: 'network-unavailable',
+    source: 'bundled-snapshot',
+    attempt: 0,
+  });
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
+  await expect(page.getByTestId('place-marker')).toHaveCount(2);
+  expect(backend.getRequestCount()).toBe(0);
 });
