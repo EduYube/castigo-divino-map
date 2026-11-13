@@ -1,0 +1,101 @@
+name: QA-226 Pages connectivity without deployment
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'src/app/publicDataRuntime.ts'
+      - 'src/app/backendStatus.ts'
+      - 'tests/deployment/**'
+      - 'tests/e2e/backend-status.spec.ts'
+      - '.github/workflows/qa226-pages-connectivity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  published-no-retries:
+    name: Published MAP-032 (20x, retries=0, no deploy)
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/qa-226-pages-connectivity-smoke'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout test candidate (not the published artifact)
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Check already published MAP-032 20 times without retries
+        env:
+          PAGES_URL: https://eduyube.github.io/castigo-divino-map/
+          QA226_DIAGNOSTICS: '1'
+        run: |
+          set -euo pipefail
+          mkdir -p qa226-diagnostics
+          for index in $(seq 1 20); do
+            echo "::group::Published MAP-032 attempt ${index}/20"
+            if ! npm run test:e2e:pages -- --grep="publishes the MAP-021 Waterdeep geographic search contract" --retries=0 --trace=retain-on-failure --reporter=line > "qa226-diagnostics/published-${index}.log" 2>&1; then
+              cat "qa226-diagnostics/published-${index}.log"
+              cp -r test-results "qa226-diagnostics/failed-${index}" || true
+              echo "::endgroup::"
+              exit 1
+            fi
+            cat "qa226-diagnostics/published-${index}.log"
+            echo "::endgroup::"
+          done
+          echo "Published URL (pre-existing): 20/20 PASS, retries=0, no deployment." >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Preserve network/status evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: qa226-published-network-timeline
+          path: qa226-diagnostics/
+          retention-days: 7
+
+  controlled-no-retries:
+    name: Deterministic first-refresh fixtures (20x transient, retries=0)
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/qa-226-pages-connectivity-smoke'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Slow success, transient failure, persistent failure, offline
+        run: npm run test:e2e -- --project=chromium --grep="QA-226" --retries=0 --workers=1 --trace=retain-on-failure
+
+      - name: Transient 503 sensitivity 20x without retries
+        run: npm run test:e2e -- --project=chromium --grep="QA-226 transient 503" --repeat-each=20 --retries=0 --workers=1 --trace=retain-on-failure
+
+      - name: Preserve controlled fixture failures
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: qa226-controlled-failure-traces
+          path: test-results/
+          retention-days: 7
