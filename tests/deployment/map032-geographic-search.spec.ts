@@ -19,6 +19,7 @@ type Qa226NetworkEvent = {
   readonly phase: 'request' | 'response' | 'failure';
   readonly url: string;
   readonly status?: number;
+  readonly durationMs?: number;
   readonly error?: string;
 };
 
@@ -57,7 +58,7 @@ test.beforeEach(async ({ page }) => {
       url,
       status: response.status(),
       ...(startedAt === undefined ? {} : { durationMs: Date.now() - startedAt }),
-    } as Qa226NetworkEvent);
+    });
   });
   page.on('requestfailed', (request) => {
     const url = safePublicRestPath(request.url());
