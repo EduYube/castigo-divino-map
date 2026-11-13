@@ -1,5 +1,7 @@
 import { expect, test, type Page, type Request } from '@playwright/test';
 
+import { expectPublishedRemoteConnected } from './remote-health';
+
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const NEUTRAL_TEST_MAP = `
@@ -84,7 +86,10 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
     if (
       response.status() >= 400 &&
       response.url() !== OFFICIAL_MAP_URL &&
-      !isExpectedTransformFallback
+      !isExpectedTransformFallback &&
+      // Remote health is checked separately after the first refresh. A
+      // transient failed attempt must not masquerade as a broken asset.
+      !url.pathname.startsWith('/rest/v1/')
     ) {
       failedResponses.push(`${response.status()} ${response.url()}`);
     }
@@ -102,9 +107,7 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
   await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
 
   const backendStatus = page.locator('[data-backend-status]');
-  if (isPublishedPages()) {
-    await expect(backendStatus).toHaveAttribute('data-backend-state', 'connected');
-  } else {
+  if (!isPublishedPages()) {
     await expect
       .poll(async () => {
         const state = await backendStatus.getAttribute('data-backend-state');
@@ -209,6 +212,10 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
     .getByRole('button', { name: 'Cerrar la ficha de Veyra' })
     .click();
   await expect(page.getByTestId('place-details')).toBeHidden();
+
+  // A usable published snapshot is not proof of a healthy remote backend.
+  // Check the completed first remote acquisition, including after reload.
+  if (isPublishedPages()) await expectPublishedRemoteConnected(page);
 });
 
 test('keeps the 320 px experience usable when the remote map fails', async ({ page }) => {
