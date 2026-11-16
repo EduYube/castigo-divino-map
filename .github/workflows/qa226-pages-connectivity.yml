@@ -69,7 +69,7 @@ jobs:
         env:
           PAGES_URL: https://eduyube.github.io/castigo-divino-map/
         run: |
-          npm run test:e2e:pages -- --grep="loads the v1.3 public experience from the repository subdirectory" --retries=0 --trace=retain-on-failure
+          npm run test:e2e:pages -- --grep="QA-226 published Veyra first acquisition and reload require connected" --retries=0 --trace=retain-on-failure
           echo "Published Veyra: first navigation and reload healthy, retries=0." >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Preserve network/status evidence
