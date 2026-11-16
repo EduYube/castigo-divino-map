@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 
 import { PUBLIC_CATALOG_TABLE_QUERIES } from '../../src/data-access/publicCatalogQueryContract.js';
-import { waitForFirstRemoteCheck } from '../deployment/remote-health';
+import { expectPublishedRemoteConnected, waitForFirstRemoteCheck } from '../deployment/remote-health';
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
@@ -307,4 +307,33 @@ test('QA-226 offline reports offline and retains the public snapshot without RES
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
   await expect(page.getByTestId('place-marker')).toHaveCount(2);
   expect(backend.getRequestCount()).toBe(0);
+});
+
+test('QA-226 first-navigation remote failure cannot be concealed by a successful reload', async ({
+  page,
+}) => {
+  const backend = await configurePublicDataTest(page);
+  backend.setMode('failure');
+
+  await page.goto('/?q=paso');
+
+  // All first-navigation REST attempts fail, but the public snapshot still
+  // renders search and pins. That is NOT a passing published health gate.
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
+  await expect(page.getByTestId('place-marker')).toHaveCount(2);
+  const first = await waitForFirstRemoteCheck(page);
+  expect(first).toMatchObject({ state: 'degraded', reason: 'http-error', attempt: 3 });
+  await expect(expectPublishedRemoteConnected(page)).rejects.toThrow(
+    /Published remote check finished without connected/,
+  );
+
+  // The second navigation is healthy. The first must have FAILED independently;
+  // a later connected result cannot retroactively validate the first check.
+  const requestsAfterFirstNavigation = backend.getRequestCount();
+  backend.setMode('success');
+  await page.reload();
+  await expectPublishedRemoteConnected(page);
+  expect(backend.getRequestCount()).toBeGreaterThan(requestsAfterFirstNavigation);
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('paso');
+  await expect(page.getByTestId('place-marker')).toHaveCount(2);
 });
