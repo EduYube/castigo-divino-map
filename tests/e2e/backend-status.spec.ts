@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 
 import { PUBLIC_CATALOG_TABLE_QUERIES } from '../../src/data-access/publicCatalogQueryContract.js';
-import { expectPublishedRemoteConnected, waitForFirstRemoteCheck } from '../deployment/remote-health';
+import {
+  expectPublishedRemoteConnected,
+  waitForFirstRemoteCheck,
+} from '../deployment/remote-health';
 
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
