@@ -65,12 +65,21 @@ jobs:
           done
           echo "Published URL (pre-existing): 20/20 PASS, retries=0, no deployment." >> "${GITHUB_STEP_SUMMARY}"
 
+      - name: Verify published Veyra initial health and post-reload health without retries
+        env:
+          PAGES_URL: https://eduyube.github.io/castigo-divino-map/
+        run: |
+          npm run test:e2e:pages -- --grep="loads the v1.3 public experience from the repository subdirectory" --retries=0 --trace=retain-on-failure
+          echo "Published Veyra: first navigation and reload healthy, retries=0." >> "${GITHUB_STEP_SUMMARY}"
+
       - name: Preserve network/status evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: qa226-published-network-timeline
-          path: qa226-diagnostics/
+          path: |
+            qa226-diagnostics/
+            test-results/
           retention-days: 7
 
   controlled-no-retries:
