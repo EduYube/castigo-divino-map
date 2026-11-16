@@ -189,6 +189,11 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
   expect(localRasterRequests).toEqual([]);
   expect(failedResponses).toEqual([]);
 
+  // QA226-REV-01: the FIRST published acquisition must be healthy before
+  // reload. A degraded first navigation must not be hidden by a later
+  // successful acquisition on the second navigation.
+  if (isPublishedPages()) await expectPublishedRemoteConnected(page);
+
   await page.reload();
   await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
@@ -205,8 +210,8 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
     .click();
   await expect(page.getByTestId('place-details')).toBeHidden();
 
-  // A usable published snapshot is not proof of a healthy remote backend.
-  // Check the completed first remote acquisition, including after reload.
+  // Reload starts a NEW acquisition: verify that one independently too.
+  // A usable published snapshot is never proof of remote backend health.
   if (isPublishedPages()) await expectPublishedRemoteConnected(page);
 });
 
