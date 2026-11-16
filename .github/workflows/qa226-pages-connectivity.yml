@@ -10,7 +10,6 @@ on:
       - 'tests/deployment/**'
       - 'tests/e2e/backend-status.spec.ts'
       - '.github/workflows/qa226-pages-connectivity.yml'
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,7 +17,7 @@ permissions:
 jobs:
   published-no-retries:
     name: Published MAP-032 (20x, retries=0, no deploy)
-    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/qa-226-pages-connectivity-smoke'
+    if: github.head_ref == 'agent/qa-226-pages-connectivity-smoke'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -76,7 +75,7 @@ jobs:
 
   controlled-no-retries:
     name: Deterministic first-refresh fixtures (20x transient, retries=0)
-    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/qa-226-pages-connectivity-smoke'
+    if: github.head_ref == 'agent/qa-226-pages-connectivity-smoke'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
