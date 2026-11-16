@@ -215,6 +215,26 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
   if (isPublishedPages()) await expectPublishedRemoteConnected(page);
 });
 
+test('QA-226 published Veyra first acquisition and reload require connected', async ({
+  page,
+}) => {
+  test.skip(!isPublishedPages(), 'Remote health is validated against the already published Pages URL');
+
+  await mockOfficialMap(page);
+  const response = await page.goto(
+    '?campaign=un-aliento-menos&q=veyra&category=personaje-un-aliento-menos&tag=category-veyra',
+  );
+  expect(response?.ok()).toBe(true);
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
+
+  // A failed terminal first check must fail NOW: reload cannot conceal it.
+  await expectPublishedRemoteConnected(page);
+
+  await page.reload();
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
+  await expectPublishedRemoteConnected(page);
+});
+
 test('keeps the 320 px experience usable when the remote map fails', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await mockOfficialMap(page, 503);
