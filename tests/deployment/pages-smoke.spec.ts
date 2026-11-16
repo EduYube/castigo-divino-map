@@ -218,7 +218,10 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
 test('QA-226 published Veyra first acquisition and reload require connected', async ({
   page,
 }) => {
-  test.skip(!isPublishedPages(), 'Remote health is validated against the already published Pages URL');
+  test.skip(
+    !isPublishedPages(),
+    'Remote health is validated against the already published Pages URL',
+  );
 
   await mockOfficialMap(page);
   const response = await page.goto(
