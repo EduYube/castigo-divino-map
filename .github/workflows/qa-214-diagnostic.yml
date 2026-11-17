@@ -1,0 +1,115 @@
+name: QA #214 diagnostic
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/qa-214-diagnostic.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-214-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-diagnostic:
+    name: QA #214 Chromium first-attempt diagnostics
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+    timeout-minutes: 35
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Trust container checkout for Git-aware diagnostics
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Record runtime
+        run: |
+          node --version
+          npm --version
+          npx playwright --version
+          git rev-parse HEAD
+          git rev-parse 'HEAD^{tree}'
+
+      - name: Reproduce CI prelude before browser matrix
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
+        run: |
+          npm run format:check
+          npm run verify:security
+          npm run verify:accessibility
+          npm run lint
+          npm run test
+          npm run build:pages
+          npm run verify:build
+          npm run report:build
+
+
+      - name: Reproduce shared admin setup — catalog and requests
+        id: catalog
+        continue-on-error: true
+        run: |
+          npx playwright test tests/e2e/admin-catalog.spec.ts tests/e2e/admin-public-requests.spec.ts --project=chromium --workers=1 --retries=0 --repeat-each=5 --max-failures=1 --trace=retain-on-failure --grep "authorized admin can list|admin CRUD remains keyboard-usable|network, stale and expired-session failures"
+
+      - name: Reproduce MAP-046 and roster setup
+        id: map046
+        continue-on-error: true
+        run: |
+          npx playwright test tests/e2e/map046-admin-workspace.spec.ts tests/e2e/map046-request-publication.spec.ts tests/e2e/map054-campaign-roster.spec.ts --project=chromium --workers=1 --retries=0 --repeat-each=3 --max-failures=1 --trace=retain-on-failure --grep "clean admin session opens|opening and closing character creation|request converts, rejects invalid publication|admin campaign roster meets|public and admin campaign selectors remain independent|dirty roster edits cannot silently cross campaigns|entity referents and organizations stay scoped|a failed campaign switch restores|MAP-074 responsive administrative relations"
+
+      - name: Reproduce MAP-078 local admin setup
+        id: map078
+        continue-on-error: true
+        run: |
+          npx playwright test tests/e2e/map078-local-admin.spec.ts --project=chromium --workers=1 --retries=0 --repeat-each=3 --max-failures=1 --trace=retain-on-failure --grep "MAP-078 keeps bindings campaign-scoped|MAP-078 mobile forms do not overflow|MAP-078 can associate and disassociate|MAP-078 keyboard polygon|MAP078-REV-01|MAP078-REV-02|MAP078-REV-03|MAP078-REV-04|MAP078-REV-05|MAP-078 refuses out-of-bounds"
+
+      - name: Reproduce historical MAP-061 authorization scenarios
+        id: map061
+        continue-on-error: true
+        run: |
+          npx playwright test tests/e2e/map061-master-status-purge.spec.ts --project=chromium --workers=1 --retries=0 --repeat-each=5 --max-failures=1 --trace=retain-on-failure --grep "deferred selection frame runs after OFF|403 revokes administrative authorization"
+
+      - name: Summarize diagnostic step outcomes
+        if: always()
+        run: |
+          {
+            echo "catalog_requests=${{ steps.catalog.outcome }}"
+            echo "map046_roster=${{ steps.map046.outcome }}"
+            echo "map078=${{ steps.map078.outcome }}"
+            echo "map061=${{ steps.map061.outcome }}"
+          } | tee qa-214-step-outcomes.txt
+
+      - name: Upload QA #214 diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: qa-214-diagnostics-${{ github.run_id }}
+          path: |
+            test-results/**
+            playwright-report/**
+            qa-214-step-outcomes.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Fail if any diagnostic group reproduced the issue
+        if: always()
+        run: |
+          test "${{ steps.catalog.outcome }}" = "success" &&
+          test "${{ steps.map046.outcome }}" = "success" &&
+          test "${{ steps.map078.outcome }}" = "success" &&
+          test "${{ steps.map061.outcome }}" = "success"
