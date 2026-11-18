@@ -37,6 +37,8 @@ jobs:
         run: npm run snapshot:verify
 
       - name: Verify remote snapshot against Supabase (read-only)
+        id: remote_verify
+        continue-on-error: true
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://ehpouvbzmvwbkkoypgfa.supabase.co' }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_b5Kx8EpNWtRvUHSvHPrQIA_pdOZT7p0' }}
@@ -46,6 +48,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Check already published MAP-032 20 times without retries
+        id: published_map032
+        continue-on-error: true
         env:
           PAGES_URL: https://eduyube.github.io/castigo-divino-map/
           QA226_DIAGNOSTICS: '1'
@@ -66,11 +70,20 @@ jobs:
           echo "Published URL (pre-existing): 20/20 PASS, retries=0, no deployment." >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Verify published Veyra initial health and post-reload health without retries
+        id: published_veyra_health
+        continue-on-error: true
         env:
           PAGES_URL: https://eduyube.github.io/castigo-divino-map/
         run: |
           npm run test:e2e:pages -- --grep="QA-226 published Veyra first acquisition and reload require connected" --retries=0 --trace=retain-on-failure
           echo "Published Veyra: first navigation and reload healthy, retries=0." >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Verify full published Veyra functional/portrait and remote health smoke
+        id: published_veyra_full
+        continue-on-error: true
+        env:
+          PAGES_URL: https://eduyube.github.io/castigo-divino-map/
+        run: npm run test:e2e:pages -- --grep="loads the v1.3 public experience from the repository subdirectory" --retries=0 --trace=retain-on-failure
 
       - name: Preserve network/status evidence
         if: always()
@@ -81,6 +94,26 @@ jobs:
             qa226-diagnostics/
             test-results/
           retention-days: 7
+
+      # Each check runs even if an earlier remote read fails, preserving
+      # independent evidence. This final step makes any failure blocking.
+      - name: Enforce all remote and published checks (no false green)
+        if: always()
+        env:
+          REMOTE_VERIFY: ${{ steps.remote_verify.outcome }}
+          PUBLISHED_MAP032: ${{ steps.published_map032.outcome }}
+          VEYRA_HEALTH: ${{ steps.published_veyra_health.outcome }}
+          VEYRA_FULL: ${{ steps.published_veyra_full.outcome }}
+        run: |
+          set -euo pipefail
+          printf 'QA-226 remote=%s MAP-032=%s Veyra-health=%s Veyra-full=%s\n' \
+            "$REMOTE_VERIFY" "$PUBLISHED_MAP032" "$VEYRA_HEALTH" "$VEYRA_FULL"
+          for result in "$REMOTE_VERIFY" "$PUBLISHED_MAP032" "$VEYRA_HEALTH" "$VEYRA_FULL"; do
+            if [ "$result" != success ]; then
+              echo "::error::At least one required published/remote check failed or was skipped."
+              exit 1
+            fi
+          done
 
   controlled-no-retries:
     name: Deterministic first-refresh fixtures (20x transient, retries=0)
