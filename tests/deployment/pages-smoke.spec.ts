@@ -120,6 +120,10 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
   await expect(page.getByRole('checkbox', { name: /Personaje/ })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Veyra/ })).toBeChecked();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+  // A catalog refresh can recluster markers and collapse an expanded pin.
+  // Settle initial REMOTE health before opening Veyra's cluster/portrait;
+  // a terminal degraded check still fails the published smoke.
+  if (isPublishedPages()) await expectPublishedRemoteConnected(page);
   const veyraPin = await revealVeyraPin(page);
   // A clustered portrait only becomes a DOM image once the member is
   // expanded. Check the same security/portrait contract before activation
@@ -189,11 +193,8 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
   expect(localRasterRequests).toEqual([]);
   expect(failedResponses).toEqual([]);
 
-  // QA226-REV-01: the FIRST published acquisition must be healthy before
-  // reload. A degraded first navigation must not be hidden by a later
-  // successful acquisition on the second navigation.
-  if (isPublishedPages()) await expectPublishedRemoteConnected(page);
-
+  // QA226-REV-01: first acquisition was checked before pin interaction.
+  // The second navigation must separately pass its own health check.
   await page.reload();
   await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
