@@ -462,11 +462,15 @@ export async function bootstrapPublicDataRuntime(
   const clearEntityRevocation = (entityId: EntityId): void => setEntityRevoked(entityId, false);
 
   const unsubscribe = service.subscribe((result) => {
-    if (result !== initialResult) initialBackendCheckPending = false;
+    const initialFallback = result === initialResult;
+    if (!initialFallback) initialBackendCheckPending = false;
     dispatchSafeStatusEvent(result);
     publishCatalogState(result);
     selector.update(catalogState);
-    status.update(result);
+    // The snapshot already makes the app usable, but it does not establish
+    // remote health. Keep the badge checking until the first refresh settles.
+    if (initialFallback) status.setChecking();
+    else status.update(result);
   });
 
   const refresh = async (showChecking: boolean): Promise<void> => {

@@ -1,5 +1,7 @@
 import { expect, test, type Page, type Request } from '@playwright/test';
 
+import { expectPublishedRemoteConnected, waitForFirstRemoteCheck } from './remote-health';
+
 const OFFICIAL_MAP_URL =
   'https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_LowRes.jpg';
 const NEUTRAL_TEST_MAP = `
@@ -84,7 +86,10 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
     if (
       response.status() >= 400 &&
       response.url() !== OFFICIAL_MAP_URL &&
-      !isExpectedTransformFallback
+      !isExpectedTransformFallback &&
+      // Remote health is checked separately after the first refresh. A
+      // transient failed attempt must not masquerade as a broken asset.
+      !url.pathname.startsWith('/rest/v1/')
     ) {
       failedResponses.push(`${response.status()} ${response.url()}`);
     }
@@ -101,30 +106,24 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
   await expect(page.getByRole('banner')).toBeVisible();
   await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
 
-  const backendStatus = page.locator('[data-backend-status]');
-  if (isPublishedPages()) {
-    await expect(backendStatus).toHaveAttribute('data-backend-state', 'connected');
-  } else {
-    await expect
-      .poll(async () => {
-        const state = await backendStatus.getAttribute('data-backend-state');
-        const reason = await backendStatus.getAttribute('data-backend-reason');
-        if (state === 'connected') return 'accepted';
-        if (
-          state === 'degraded' &&
-          (reason === 'configuration-missing' || reason === 'network-unavailable')
-        ) {
-          return 'accepted';
-        }
-        return `${state}:${reason}`;
-      })
-      .toBe('accepted');
+  if (!isPublishedPages()) {
+    const result = await waitForFirstRemoteCheck(page);
+    expect(
+      result.state === 'connected' ||
+        (result.state === 'degraded' &&
+          (result.reason === 'configuration-missing' || result.reason === 'network-unavailable')),
+      `Local Pages expected a settled backend outcome: ${JSON.stringify(result)}`,
+    ).toBe(true);
   }
 
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
   await expect(page.getByRole('checkbox', { name: /Personaje/ })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Veyra/ })).toBeChecked();
   await expect(page.getByTestId('map-shell')).toHaveAttribute('data-map-state', 'ready');
+  // A catalog refresh can recluster markers and collapse an expanded pin.
+  // Settle initial REMOTE health before opening Veyra's cluster/portrait;
+  // a terminal degraded check still fails the published smoke.
+  if (isPublishedPages()) await expectPublishedRemoteConnected(page);
   const veyraPin = await revealVeyraPin(page);
   // A clustered portrait only becomes a DOM image once the member is
   // expanded. Check the same security/portrait contract before activation
@@ -194,6 +193,8 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
   expect(localRasterRequests).toEqual([]);
   expect(failedResponses).toEqual([]);
 
+  // QA226-REV-01: first acquisition was checked before pin interaction.
+  // The second navigation must separately pass its own health check.
   await page.reload();
   await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
   await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
@@ -209,6 +210,31 @@ test('loads the v1.3 public experience from the repository subdirectory', async 
     .getByRole('button', { name: 'Cerrar la ficha de Veyra' })
     .click();
   await expect(page.getByTestId('place-details')).toBeHidden();
+
+  // Reload starts a NEW acquisition: verify that one independently too.
+  // A usable published snapshot is never proof of remote backend health.
+  if (isPublishedPages()) await expectPublishedRemoteConnected(page);
+});
+
+test('QA-226 published Veyra first acquisition and reload require connected', async ({ page }) => {
+  test.skip(
+    !isPublishedPages(),
+    'Remote health is validated against the already published Pages URL',
+  );
+
+  await mockOfficialMap(page);
+  const response = await page.goto(
+    '?campaign=un-aliento-menos&q=veyra&category=personaje-un-aliento-menos&tag=category-veyra',
+  );
+  expect(response?.ok()).toBe(true);
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
+
+  // A failed terminal first check must fail NOW: reload cannot conceal it.
+  await expectPublishedRemoteConnected(page);
+
+  await page.reload();
+  await expect(page.getByRole('searchbox', { name: 'Buscar lugares' })).toHaveValue('veyra');
+  await expectPublishedRemoteConnected(page);
 });
 
 test('keeps the 320 px experience usable when the remote map fails', async ({ page }) => {
@@ -295,7 +321,8 @@ test('keeps v1.3 usable from the public snapshot when Supabase returns 503', asy
   expect(response?.ok()).toBe(true);
 
   const backendStatus = page.locator('[data-backend-status]');
-  await expect(backendStatus).toHaveAttribute('data-backend-state', 'degraded');
+  const fallback = await waitForFirstRemoteCheck(page);
+  expect(fallback).toMatchObject({ state: 'degraded', reason: 'http-error', attempt: 3 });
   await expect(backendStatus).toContainText('Modo de respaldo');
   await expect(backendStatus.getByRole('button', { name: 'Reintentar' })).toBeVisible();
   await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
@@ -322,10 +349,8 @@ test('v1.3 Pages V4 keeps neutral Neverwinter available offline without cross-ca
   const response = await page.goto('?campaign=un-aliento-menos&map=neverwinter');
   expect(response?.ok()).toBe(true);
   await expect(page.getByText('v1.3', { exact: true })).toBeVisible();
-  await expect(page.locator('[data-backend-status]')).toHaveAttribute(
-    'data-backend-state',
-    'degraded',
-  );
+  const fallback = await waitForFirstRemoteCheck(page);
+  expect(fallback).toMatchObject({ state: 'degraded', reason: 'http-error', attempt: 3 });
   await expect(page.locator('[data-local-map-canvas]')).toBeVisible();
   await expect(page.locator('[data-local-map-status]')).toContainText(
     'Cartografía pendiente de publicación',

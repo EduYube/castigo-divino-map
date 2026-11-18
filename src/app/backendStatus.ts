@@ -88,6 +88,7 @@ export function mountBackendStatus(root: ParentNode = document): BackendStatusCo
 
   return {
     setChecking(): void {
+      container.dataset.backendStatus = 'checking';
       container.dataset.backendState = 'checking';
       container.dataset.backendReason = 'none';
       container.dataset.backendAttempt = '0';
@@ -99,6 +100,7 @@ export function mountBackendStatus(root: ParentNode = document): BackendStatusCo
     },
     update(result: PublicCatalogLoadResult): void {
       const isUnavailable = result.availability === 'unavailable';
+      container.dataset.backendStatus = 'settled';
       container.dataset.backendState = result.backend.state;
       container.dataset.backendReason = result.backend.reason ?? 'none';
       container.dataset.backendAttempt = String(result.backend.attempt);
