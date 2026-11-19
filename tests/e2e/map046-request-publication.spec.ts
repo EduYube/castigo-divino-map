@@ -674,8 +674,7 @@ async function holdCatalogEditorFocus(page: Page): Promise<void> {
 async function releaseCatalogEditorFocus(page: Page): Promise<void> {
   await page.evaluate(() => {
     const callback = Reflect.get(window, '__qa233PendingCatalogRaf') as
-      | FrameRequestCallback
-      | undefined;
+      FrameRequestCallback | undefined;
     if (!callback) throw new Error('QA-233: missing captured focus RAF');
     Reflect.set(window, '__qa233PendingCatalogRaf', undefined);
     const active = document.activeElement;
@@ -724,9 +723,7 @@ test('QA-233 sensitivity: stale editor RAF cannot redirect a later editor Name i
   expect(observed.timeline).toContain('input:name:MAP-046 Tag');
 });
 
-test('QA-233 sensitivity: pending autofocus cannot override newer Name focus', async ({
-  page,
-}) => {
+test('QA-233 sensitivity: pending autofocus cannot override newer Name focus', async ({ page }) => {
   await configureBackend(page);
   await page.goto('/');
   await login(page);
