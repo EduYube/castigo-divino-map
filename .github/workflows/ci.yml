@@ -328,10 +328,22 @@ jobs:
           npx playwright test tests/e2e/pin-visual-system.spec.ts \
             --project=webkit-spiderfy --workers=1 --retries=0 --trace=retain-on-failure
 
-      # QA-233: the captured editor-focus RAF must never overwrite newer focus.
-      # QA-233 baseline before any product fix: reproduce the original Chromium
-      # request-conversion scenario repeatedly with its natural timings.
-      - name: QA-233 pre-fix original MAP-046 30x zero-retry baseline
+      # QA-233: a deferred editor RAF must not override newer focus.
+      - name: QA-233 stale editor RAF sensitivity 20x no-retry
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-233-map046-admin-focus-values'
+        run: |
+          npx playwright test tests/e2e/map046-request-publication.spec.ts \
+            --project=chromium --grep='QA-233 sensitivity:' \
+            --workers=1 --retries=0 --repeat-each=20 --trace=retain-on-failure
+
+      - name: QA-233 normal autofocus regression no-retry
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-233-map046-admin-focus-values'
+        run: |
+          npx playwright test tests/e2e/map046-request-publication.spec.ts \
+            --project=chromium --grep='QA-233 normal autofocus:' \
+            --workers=1 --retries=0 --trace=retain-on-failure
+
+      - name: QA-233 original MAP-046 without warm-up 30x no-retry
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-233-map046-admin-focus-values'
         run: |
           npx playwright test tests/e2e/map046-request-publication.spec.ts \
@@ -339,11 +351,38 @@ jobs:
             --grep='request converts, rejects invalid publication and later publishes without portrait or entity warm-up' \
             --workers=1 --retries=0 --repeat-each=30 --trace=retain-on-failure
 
-      - name: QA-233 catalog focus sensitivity no-retry
+      - name: QA-233 MAP-046 with portrait 10x no-retry
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-233-map046-admin-focus-values'
         run: |
           npx playwright test tests/e2e/map046-request-publication.spec.ts \
-            --project=chromium --grep='QA-233 sensitivity:|QA-233 normal autofocus:' \
+            --project=chromium --grep='with portrait after repeated navigation' \
+            --workers=1 --retries=0 --repeat-each=10 --trace=retain-on-failure
+
+      - name: QA-233 admin-catalog CRUD 5x no-retry
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-233-map046-admin-focus-values'
+        run: |
+          npx playwright test tests/e2e/admin-catalog.spec.ts \
+            --project=chromium --grep='authorized admin can list, search, sort, create, edit, archive and delete never-published content' \
+            --workers=1 --retries=0 --repeat-each=5 --trace=retain-on-failure
+
+      - name: QA-233 MAP-046 browser cross-check WebKit
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-233-map046-admin-focus-values'
+        run: |
+          cat > playwright.qa233-webkit.config.ts <<'EOF'
+          import { defineConfig, devices } from '@playwright/test';
+          import baseConfig from './playwright.config';
+          export default defineConfig({
+            ...baseConfig,
+            projects: [{
+              name: 'webkit-qa233',
+              testMatch: /map046-request-publication\.spec\.ts/,
+              use: { ...devices['Desktop Safari'] },
+            }],
+          });
+          EOF
+          npx playwright test tests/e2e/map046-request-publication.spec.ts \
+            --config=playwright.qa233-webkit.config.ts --project=webkit-qa233 \
+            --grep='without portrait or entity warm-up|QA-233 sensitivity:' \
             --workers=1 --retries=0 --trace=retain-on-failure
 
       - name: Run Chromium and WebKit end-to-end tests

@@ -705,9 +705,33 @@ test('QA-233 sensitivity: stale editor RAF cannot redirect a later editor Name i
   await page.goto('/');
   await login(page);
   await holdCatalogEditorFocus(page); // editor A (Categories)
+  await page.evaluate(() => {
+    Reflect.set(window, '__qa233OldId', document.querySelector('#admin-catalog-field-id'));
+  });
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
   await page.getByRole('button', { name: 'Etiquetas' }).click();
   await page.getByRole('button', { name: 'Crear', exact: true }).click(); // editor B
+  // Drain B's legitimate autofocus: only the retained A callback may now interfere.
+  await expect(page.getByRole('textbox', { name: 'ID estable' })).toBeFocused();
+  const nodes = await page.evaluate(() => {
+    const oldId = Reflect.get(window, '__qa233OldId') as HTMLInputElement;
+    const currentId = document.querySelector<HTMLInputElement>('#admin-catalog-field-id');
+    const currentName = document.querySelector<HTMLInputElement>('#admin-catalog-field-name');
+    return {
+      oldDisconnected: !oldId.isConnected,
+      distinct: oldId !== currentId && currentId !== currentName,
+      currentConnected: Boolean(currentId?.isConnected && currentName?.isConnected),
+      oneId: document.querySelectorAll('#admin-catalog-field-id').length,
+      oneName: document.querySelectorAll('#admin-catalog-field-name').length,
+    };
+  });
+  expect(nodes).toEqual({
+    oldDisconnected: true,
+    distinct: true,
+    currentConnected: true,
+    oneId: 1,
+    oneName: 1,
+  });
   await page.getByRole('textbox', { name: 'ID estable' }).fill('tag-map046');
   await page.getByLabel('Nombre', { exact: true }).focus();
   await releaseCatalogEditorFocus(page); // replay RAF from editor A

@@ -478,12 +478,18 @@ test('authorized admin can list, search, sort, create, edit, archive and delete 
   await page.getByLabel('ID estable').fill('category-hamlets');
   await page.getByRole('textbox', { name: 'Slug', exact: true }).fill('hamlets');
   await page.getByLabel('Nombre', { exact: true }).fill('Hamlets');
+  await expect(page.getByLabel('ID estable')).toHaveValue('category-hamlets');
+  await expect(page.getByRole('textbox', { name: 'Slug', exact: true })).toHaveValue('hamlets');
+  await expect(page.getByLabel('Nombre', { exact: true })).toHaveValue('Hamlets');
   await expect(page.getByText(/Hamlets · category-hamlets · draft/)).toBeVisible();
   await page.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByText('Hamlets', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Editar Hamlets' }).click();
   await page.getByLabel('Nombre', { exact: true }).fill('Small Hamlets');
+  await expect(page.getByLabel('ID estable')).toHaveValue('category-hamlets');
+  await expect(page.getByRole('textbox', { name: 'Slug', exact: true })).toHaveValue('hamlets');
+  await expect(page.getByLabel('Nombre', { exact: true })).toHaveValue('Small Hamlets');
   await page.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByText('Small Hamlets', { exact: true })).toBeVisible();
 
