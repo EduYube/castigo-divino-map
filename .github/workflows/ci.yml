@@ -329,6 +329,16 @@ jobs:
             --project=webkit-spiderfy --workers=1 --retries=0 --trace=retain-on-failure
 
       # QA-233: the captured editor-focus RAF must never overwrite newer focus.
+      # QA-233 baseline before any product fix: reproduce the original Chromium
+      # request-conversion scenario repeatedly with its natural timings.
+      - name: QA-233 pre-fix original MAP-046 30x zero-retry baseline
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-233-map046-admin-focus-values'
+        run: |
+          npx playwright test tests/e2e/map046-request-publication.spec.ts \
+            --project=chromium \
+            --grep='request converts, rejects invalid publication and later publishes without portrait or entity warm-up' \
+            --workers=1 --retries=0 --repeat-each=30 --trace=retain-on-failure
+
       - name: QA-233 catalog focus sensitivity no-retry
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-233-map046-admin-focus-values'
         run: |
