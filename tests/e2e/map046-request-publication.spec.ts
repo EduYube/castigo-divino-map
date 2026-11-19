@@ -628,6 +628,9 @@ for (const withPortrait of [false, true]) {
  * A real browser replays the callback after the controlled focus interleaving.
  */
 async function holdCatalogEditorFocus(page: Page): Promise<void> {
+  // Resource selection reloads asynchronously: a disabled Create button ignores
+  // element.click(), so no editor RAF exists yet. Wait for the real UI ready state.
+  await expect(page.getByRole('button', { name: 'Crear', exact: true })).toBeEnabled();
   await page.evaluate(() => {
     const timeline: string[] = [];
     Reflect.set(window, '__qa233Timeline', timeline);
