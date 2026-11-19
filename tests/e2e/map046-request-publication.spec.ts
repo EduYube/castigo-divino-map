@@ -514,6 +514,11 @@ async function createPublishedCatalog(
   await page.getByRole('textbox', { name: 'Slug', exact: true }).fill('category-map046');
   await page.getByLabel('Nombre', { exact: true }).fill('MAP-046 Category');
   await page.getByLabel('Estado editorial').selectOption('published');
+  await expect(page.getByRole('textbox', { name: 'ID estable' })).toHaveValue('category-map046');
+  await expect(page.getByRole('textbox', { name: 'Slug', exact: true })).toHaveValue(
+    'category-map046',
+  );
+  await expect(page.getByLabel('Nombre', { exact: true })).toHaveValue('MAP-046 Category');
   await page.getByRole('button', { name: 'Guardar', exact: true }).click();
   await expect(page.getByText('MAP-046 Category', { exact: true })).toBeVisible();
 
@@ -522,6 +527,8 @@ async function createPublishedCatalog(
   await page.getByRole('textbox', { name: 'ID estable' }).fill('tag-map046');
   await page.getByLabel('Nombre', { exact: true }).fill('MAP-046 Tag');
   await page.getByLabel('Estado editorial').selectOption('published');
+  await expect(page.getByRole('textbox', { name: 'ID estable' })).toHaveValue('tag-map046');
+  await expect(page.getByLabel('Nombre', { exact: true })).toHaveValue('MAP-046 Tag');
   await page.getByRole('button', { name: 'Guardar', exact: true }).click();
   await expect(page.getByText('MAP-046 Tag', { exact: true })).toBeVisible();
 }
@@ -614,3 +621,161 @@ for (const withPortrait of [false, true]) {
     expect(consoleErrors).toEqual([]);
   });
 }
+
+/**
+ * QA-233: hold only the catalog editor's synchronous focus RAF while opening
+ * through its real click handler. No timeout, retry or production instrumentation.
+ * A real browser replays the callback after the controlled focus interleaving.
+ */
+async function holdCatalogEditorFocus(page: Page): Promise<void> {
+  // Resource selection reloads asynchronously: a disabled Create button ignores
+  // element.click(), so no editor RAF exists yet. Wait for the real UI ready state.
+  await expect(page.getByRole('button', { name: 'Crear', exact: true })).toBeEnabled();
+  await page.evaluate(() => {
+    const timeline: string[] = [];
+    Reflect.set(window, '__qa233Timeline', timeline);
+    for (const eventName of ['focusin', 'focusout', 'beforeinput', 'input', 'change']) {
+      document.addEventListener(
+        eventName,
+        (event) => {
+          const target = event.target;
+          if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) {
+            timeline.push(`${eventName}:${target.name}:${target.value}`);
+          }
+        },
+        true,
+      );
+    }
+
+    const create = document.querySelector<HTMLButtonElement>(
+      '.admin-catalog__toolbar .admin-catalog__primary',
+    );
+    if (!create) throw new Error('QA-233: catalog Create button missing');
+    const originalRaf = window.requestAnimationFrame;
+    let captured = 0;
+    window.requestAnimationFrame = (callback: FrameRequestCallback): number => {
+      if (callback.toString().includes('focus()')) {
+        captured += 1;
+        timeline.push('catalog editor focus RAF scheduled');
+        Reflect.set(window, '__qa233PendingCatalogRaf', callback);
+        return -captured;
+      }
+      return originalRaf.call(window, callback);
+    };
+    try {
+      create.click();
+    } finally {
+      window.requestAnimationFrame = originalRaf;
+    }
+    if (captured !== 1) {
+      throw new Error(`QA-233: expected one editor focus RAF, captured ${captured}`);
+    }
+  });
+  await expect(page.getByRole('heading', { name: 'Crear registro' })).toBeVisible();
+}
+
+async function releaseCatalogEditorFocus(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const callback = Reflect.get(window, '__qa233PendingCatalogRaf') as
+      FrameRequestCallback | undefined;
+    if (!callback) throw new Error('QA-233: missing captured focus RAF');
+    Reflect.set(window, '__qa233PendingCatalogRaf', undefined);
+    const active = document.activeElement;
+    const name = active instanceof HTMLInputElement ? active.name : active?.tagName;
+    (Reflect.get(window, '__qa233Timeline') as string[]).push(`release RAF after:${name}`);
+    callback(performance.now());
+  });
+}
+
+async function reportCatalogFocus(page: Page): Promise<{
+  id: string;
+  name: string;
+  active: string;
+  timeline: string[];
+}> {
+  return page.evaluate(() => ({
+    id: document.querySelector<HTMLInputElement>('#admin-catalog-field-id')?.value ?? '',
+    name: document.querySelector<HTMLInputElement>('#admin-catalog-field-name')?.value ?? '',
+    active: (document.activeElement as HTMLInputElement | null)?.name ?? '',
+    timeline: Reflect.get(window, '__qa233Timeline') as string[],
+  }));
+}
+
+test('QA-233 sensitivity: stale editor RAF cannot redirect a later editor Name input', async ({
+  page,
+}) => {
+  await configureBackend(page);
+  await page.goto('/');
+  await login(page);
+  await holdCatalogEditorFocus(page); // editor A (Categories)
+  await page.evaluate(() => {
+    Reflect.set(window, '__qa233OldId', document.querySelector('#admin-catalog-field-id'));
+  });
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await page.getByRole('button', { name: 'Etiquetas' }).click();
+  await page.getByRole('button', { name: 'Crear', exact: true }).click(); // editor B
+  // Drain B's legitimate autofocus: only the retained A callback may now interfere.
+  await expect(page.getByRole('textbox', { name: 'ID estable' })).toBeFocused();
+  const nodes = await page.evaluate(() => {
+    const oldId = Reflect.get(window, '__qa233OldId') as HTMLInputElement;
+    const currentId = document.querySelector<HTMLInputElement>('#admin-catalog-field-id');
+    const currentName = document.querySelector<HTMLInputElement>('#admin-catalog-field-name');
+    return {
+      oldDisconnected: !oldId.isConnected,
+      distinct: oldId !== currentId && currentId !== currentName,
+      currentConnected: Boolean(currentId?.isConnected && currentName?.isConnected),
+      oneId: document.querySelectorAll('#admin-catalog-field-id').length,
+      oneName: document.querySelectorAll('#admin-catalog-field-name').length,
+    };
+  });
+  expect(nodes).toEqual({
+    oldDisconnected: true,
+    distinct: true,
+    currentConnected: true,
+    oneId: 1,
+    oneName: 1,
+  });
+  await page.getByRole('textbox', { name: 'ID estable' }).fill('tag-map046');
+  await page.getByLabel('Nombre', { exact: true }).focus();
+  await releaseCatalogEditorFocus(page); // replay RAF from editor A
+  await page.keyboard.insertText('MAP-046 Tag');
+  const observed = await reportCatalogFocus(page);
+  console.log('QA-233 stale-editor focus timeline:', JSON.stringify(observed));
+  expect({ id: observed.id, name: observed.name, active: observed.active }).toEqual({
+    id: 'tag-map046',
+    name: 'MAP-046 Tag',
+    active: 'name',
+  });
+  expect(observed.timeline).toContain('beforeinput:name:');
+  expect(observed.timeline).toContain('input:name:MAP-046 Tag');
+});
+
+test('QA-233 sensitivity: pending autofocus cannot override newer Name focus', async ({ page }) => {
+  await configureBackend(page);
+  await page.goto('/');
+  await login(page);
+  await page.getByRole('button', { name: 'Etiquetas' }).click();
+  await holdCatalogEditorFocus(page);
+  await page.getByRole('textbox', { name: 'ID estable' }).fill('tag-map046');
+  await page.getByLabel('Nombre', { exact: true }).focus();
+  await releaseCatalogEditorFocus(page);
+  await page.keyboard.insertText('MAP-046 Tag');
+  const observed = await reportCatalogFocus(page);
+  console.log('QA-233 newer-focus timeline:', JSON.stringify(observed));
+  expect({ id: observed.id, name: observed.name, active: observed.active }).toEqual({
+    id: 'tag-map046',
+    name: 'MAP-046 Tag',
+    active: 'name',
+  });
+});
+
+test('QA-233 normal autofocus: current editor receives focus without newer intent', async ({
+  page,
+}) => {
+  await configureBackend(page);
+  await page.goto('/');
+  await login(page);
+  await holdCatalogEditorFocus(page);
+  await releaseCatalogEditorFocus(page);
+  await expect(page.getByRole('textbox', { name: 'ID estable' })).toBeFocused();
+});

@@ -366,6 +366,12 @@ export function mountAdminCatalog(
   let original: AdminCatalogRecord | null = null;
   let editorCampaignId: string | null = null;
   let restoreFocus: HTMLElement | null = null;
+  // Deferred autofocus is valid only for the editor and focus state that scheduled it.
+  let editorFocusGeneration = 0;
+  let focusIntentGeneration = 0;
+  const handleFocusIntent = (): void => {
+    focusIntentGeneration += 1;
+  };
   let pendingConfirmation: {
     readonly action: 'archive' | 'delete';
     readonly record: AdminCatalogRecord;
@@ -458,6 +464,7 @@ export function mountAdminCatalog(
   shell.insertBefore(section, shell.querySelector('.admin-auth__logout'));
 
   function closeEditor(): void {
+    editorFocusGeneration += 1;
     editor.hidden = true;
     list.hidden = false;
     if (state.visibleRecords.length === 0 && state.phase === 'ready') {
@@ -496,6 +503,7 @@ export function mountAdminCatalog(
 
   function renderEditor(record: AdminCatalogRecord | null, trigger: HTMLElement): void {
     if (state.phase !== 'ready' || adminCampaignContext.isTransitioning()) return;
+    const generation = ++editorFocusGeneration;
     editorCampaignId = adminCampaignContext.getCampaignId();
     original = record;
     restoreFocus = trigger;
@@ -668,13 +676,23 @@ export function mountAdminCatalog(
       control.input.addEventListener('change', renderFieldErrors);
     }
     renderFieldErrors();
+    const first = Array.from(controls.values()).find(
+      (control) =>
+        !control.input.disabled &&
+        (control.input instanceof HTMLSelectElement || !control.input.readOnly),
+    )?.input;
+    const focusGeneration = focusIntentGeneration;
     window.requestAnimationFrame(() => {
-      const first = Array.from(controls.values()).find(
-        (control) =>
-          !control.input.disabled &&
-          (control.input instanceof HTMLSelectElement || !control.input.readOnly),
-      );
-      first?.input.focus();
+      if (
+        editorFocusGeneration !== generation ||
+        focusIntentGeneration !== focusGeneration ||
+        editor.hidden ||
+        !first?.isConnected ||
+        !editor.contains(first)
+      ) {
+        return;
+      }
+      first.focus();
     });
   }
 
@@ -883,6 +901,7 @@ export function mountAdminCatalog(
     }
   };
 
+  document.addEventListener('focusin', handleFocusIntent, true);
   search.addEventListener('input', handleSearch);
   sort.addEventListener('change', handleSort);
   newButton.addEventListener('click', handleNew);
@@ -908,6 +927,8 @@ export function mountAdminCatalog(
 
   return {
     destroy(): void {
+      editorFocusGeneration += 1;
+      document.removeEventListener('focusin', handleFocusIntent, true);
       unsubscribeCatalog();
       unsubscribeAuth();
       search.removeEventListener('input', handleSearch);
