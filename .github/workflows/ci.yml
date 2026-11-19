@@ -44,14 +44,6 @@ jobs:
       - name: Verify MAP-071 PDF matches Markdown
         run: node scripts/generate-admin-qa-pdf.cjs --check
 
-      # QA-233 diagnostic-only: show Prettier's exact diff while running the
-      # pre-fix sensitivity on the unchanged product runtime.
-      - name: QA-233 diagnostic Prettier diff (pre-fix)
-        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-233-map046-admin-focus-values'
-        run: |
-          npx prettier --write tests/e2e/map046-request-publication.spec.ts
-          git diff -- tests/e2e/map046-request-publication.spec.ts
-
       - name: Check formatting
         run: npm run format:check
 
@@ -340,8 +332,8 @@ jobs:
       - name: QA-233 catalog focus sensitivity no-retry
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-233-map046-admin-focus-values'
         run: |
-          npx playwright test tests/e2e/map046-request-publication.spec.ts \\
-            --project=chromium --grep='QA-233 sensitivity:|QA-233 normal autofocus:' \\
+          npx playwright test tests/e2e/map046-request-publication.spec.ts \
+            --project=chromium --grep='QA-233 sensitivity:|QA-233 normal autofocus:' \
             --workers=1 --retries=0 --trace=retain-on-failure
 
       - name: Run Chromium and WebKit end-to-end tests
