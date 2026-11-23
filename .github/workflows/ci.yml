@@ -322,6 +322,16 @@ jobs:
             --grep='QA-215 sensitivity: a stale Harbor focus restore|QA-215 sensitivity: an outer Harbor focus restore|activates matching and dimmed markers with Enter and Space and restores focus' \
             --workers=1 --retries=0 --trace=retain-on-failure
 
+      # QA-232 pre-fix reproduction, confined to the dedicated Draft PR branch.
+      # An occasional green master gate is not a stability sample.
+      - name: QA-232 pre-fix WebKit Space 50x no-retry
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-232-webkit-spiderfy-lifecycle'
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=webkit-spiderfy \
+            --grep='QA-224 keyboard: cluster and member Space activate and Escape restores focus' \
+            --workers=1 --retries=0 --repeat-each=50 --trace=retain-on-failure
+
       # Permanent, small desktop-WebKit gate also runs after merge on master.
       - name: QA-224 desktop WebKit spiderfy regression no-retry
         run: |
