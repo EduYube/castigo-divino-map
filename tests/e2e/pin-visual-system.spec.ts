@@ -610,6 +610,28 @@ test('QA-232 sensitivity: initial ResizeObserver notification does not collapse 
   await page.evaluate(() => window.__qa232ResizeGate?.restore());
 });
 
+test('QA-232 regression: a genuine canvas resize still collapses spiderfy', async ({ page }) => {
+  await openPinVisualMap(page);
+  const cluster = page.getByTestId('coincident-pin');
+  const options = page.getByTestId('coincident-pin-option');
+
+  await cluster.focus();
+  await page.keyboard.press('Space');
+  await expect(options).toHaveCount(2);
+
+  const viewport = page.viewportSize();
+  expect(viewport).not.toBeNull();
+  if (!viewport) throw new Error('QA-232 requires a viewport to exercise ResizeObserver');
+  await page.setViewportSize({
+    width: viewport.width - 96,
+    height: viewport.height - 48,
+  });
+
+  await expect(options).toHaveCount(0);
+  await expect(cluster).toBeVisible();
+  await expect(cluster).toHaveAttribute('aria-expanded', 'false');
+});
+
 async function gateQa224Frames(page: Page): Promise<void> {
   await page.evaluate(() => {
     const request = window.requestAnimationFrame.bind(window);
