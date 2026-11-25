@@ -617,9 +617,7 @@ test('QA-232 sensitivity: initial ResizeObserver notification does not collapse 
   await page.evaluate(() => window.__qa232ResizeGate?.restore());
 });
 
-test('QA-232 regression: a genuine canvas resize still collapses spiderfy', async ({
-  page,
-}) => {
+test('QA-232 regression: a genuine canvas resize still collapses spiderfy', async ({ page }) => {
   await openPinVisualMap(page);
   const cluster = page.getByTestId('coincident-pin');
   const options = page.getByTestId('coincident-pin-option');
@@ -630,8 +628,7 @@ test('QA-232 regression: a genuine canvas resize still collapses spiderfy', asyn
 
   const viewport = page.viewportSize();
   expect(viewport).not.toBeNull();
-  if (!viewport)
-    throw new Error('QA-232 requires a viewport to exercise ResizeObserver');
+  if (!viewport) throw new Error('QA-232 requires a viewport to exercise ResizeObserver');
   await page.setViewportSize({
     width: viewport.width - 96,
     height: viewport.height - 48,
