@@ -736,26 +736,6 @@ test('QA-224 normal restore: keyboard opening retains member focus', async ({ pa
   await page.evaluate(() => window.__qa224Gate?.restore());
 });
 
-test.afterEach(async ({ page }, testInfo) => {
-  if (
-    !testInfo.title.includes(
-      'QA-224 keyboard: cluster and member Space activate and Escape restores focus',
-    ) ||
-    testInfo.status === testInfo.expectedStatus
-  ) {
-    return;
-  }
-
-  const canvas = page.locator('[data-map-canvas]');
-  console.log(
-    'QA232_COLLAPSE',
-    JSON.stringify({
-      reason: await canvas.getAttribute('data-qa232-last-collapse-reason'),
-      snapshot: await canvas.getAttribute('data-qa232-last-collapse-snapshot'),
-    }),
-  );
-});
-
 for (const key of ['Enter', 'Space'] as const) {
   test(`QA-224 keyboard: cluster and member ${key} activate and Escape restores focus`, async ({
     page,
