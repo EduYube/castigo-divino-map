@@ -378,10 +378,10 @@ jobs:
             --grep='QA-215|activates matching and dimmed markers with Enter and Space and restores focus' \
             --workers=1 --retries=0 --trace=retain-on-failure
 
-      - name: QA-232 full spiderfy spec WebKit and Firefox no-retry
+      - name: QA-232 full spiderfy spec WebKit no-retry
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-232-webkit-spiderfy-lifecycle'
         run: |
-          cat > playwright.qa232-full.config.ts <<'EOF'
+          cat > playwright.qa232-webkit-full.config.ts <<'EOF'
           import { defineConfig, devices } from '@playwright/test';
           import baseConfig from './playwright.config';
 
@@ -393,16 +393,11 @@ jobs:
                 testMatch: /pin-visual-system\.spec\.ts/,
                 use: { ...devices['Desktop Safari'] },
               },
-              {
-                name: 'firefox-qa232-full',
-                testMatch: /pin-visual-system\.spec\.ts/,
-                use: { ...devices['Desktop Firefox'] },
-              },
             ],
           });
           EOF
           npx playwright test tests/e2e/pin-visual-system.spec.ts \
-            --config=playwright.qa232-full.config.ts \
+            --config=playwright.qa232-webkit-full.config.ts --project=webkit-qa232-full \
             --workers=1 --retries=0 --trace=retain-on-failure
 
       # Permanent, small desktop-WebKit gate also runs after merge on master.
@@ -530,6 +525,28 @@ jobs:
         run: |
           npx playwright test tests/e2e/pin-visual-system.spec.ts \
             --project=firefox-spiderfy --workers=1 --retries=0 --trace=retain-on-failure
+
+      - name: QA-232 full spiderfy spec Firefox no-retry
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-232-webkit-spiderfy-lifecycle'
+        run: |
+          cat > playwright.qa232-firefox-full.config.ts <<'EOF'
+          import { defineConfig, devices } from '@playwright/test';
+          import baseConfig from './playwright.config';
+
+          export default defineConfig({
+            ...baseConfig,
+            projects: [
+              {
+                name: 'firefox-qa232-full',
+                testMatch: /pin-visual-system\.spec\.ts/,
+                use: { ...devices['Desktop Firefox'] },
+              },
+            ],
+          });
+          EOF
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --config=playwright.qa232-firefox-full.config.ts --project=firefox-qa232-full \
+            --workers=1 --retries=0 --trace=retain-on-failure
 
       # Firefox launches under its own runner HOME; avoid the root-owned
       # container HOME mismatch in the Chromium/WebKit job.
