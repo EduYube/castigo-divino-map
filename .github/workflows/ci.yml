@@ -333,8 +333,23 @@ jobs:
       - name: QA-232 initial ResizeObserver sensitivity no-retry
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-232-webkit-spiderfy-lifecycle'
         run: |
+          cat > playwright.qa232-webkit.config.ts <<'EOF'
+          import { defineConfig, devices } from '@playwright/test';
+          import baseConfig from './playwright.config';
+
+          export default defineConfig({
+            ...baseConfig,
+            projects: [
+              {
+                name: 'webkit-qa232',
+                testMatch: /pin-visual-system\.spec\.ts/,
+                use: { ...devices['Desktop Safari'] },
+              },
+            ],
+          });
+          EOF
           npx playwright test tests/e2e/pin-visual-system.spec.ts \
-            --project=webkit-spiderfy \
+            --config=playwright.qa232-webkit.config.ts --project=webkit-qa232 \
             --grep='QA-232 sensitivity: initial ResizeObserver notification does not collapse spiderfy' \
             --workers=1 --retries=0 --trace=retain-on-failure
 
