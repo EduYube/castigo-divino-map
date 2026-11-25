@@ -93,6 +93,22 @@ interface SpiderfyState {
   readonly legs: readonly Polyline[];
 }
 
+type SpiderfyCollapseReason =
+  | 'open-other-group'
+  | 'locate-pin'
+  | 'zoomstart'
+  | 'movestart'
+  | 'map-click'
+  | 'pointer-outside'
+  | 'escape'
+  | 'resize'
+  | 'render-markers'
+  | 'active-place'
+  | 'clear-supplemental'
+  | 'locate-search-target'
+  | 'destroy'
+  | 'unknown';
+
 type FilterMatchState = 'true' | 'false' | 'mixed';
 
 const stateMessages: Record<Exclude<MapLoadState, 'ready'>, string> = {
@@ -716,9 +732,30 @@ export function mountFaerunMap(
     return next;
   };
 
-  collapseSpiderfy = (restoreFocus = false): void => {
+  collapseSpiderfy = (
+    restoreFocus = false,
+    reason: SpiderfyCollapseReason = 'unknown',
+  ): void => {
     const state = activeSpiderfy;
     if (!state) return;
+    elements.canvas.dataset.qa232LastCollapseReason = reason;
+    elements.canvas.dataset.qa232LastCollapseSnapshot = JSON.stringify({
+      reason,
+      spiderfyRevision,
+      spiderfyFocusIntentRevision,
+      zoom: map.getZoom(),
+      center: [map.getCenter().lat, map.getCenter().lng],
+      activeElement:
+        document.activeElement instanceof HTMLElement
+          ? {
+              tag: document.activeElement.tagName,
+              testId: document.activeElement.dataset.testid ?? null,
+              pinId: document.activeElement.dataset.pinId ?? null,
+            }
+          : null,
+      members: state.group.pins.map(({ id }) => id),
+      timestamp: performance.now(),
+    });
     activeSpiderfy = null;
     spiderfyRevision += 1;
 
@@ -777,7 +814,7 @@ export function mountFaerunMap(
       return;
     }
 
-    collapseSpiderfy(false);
+    collapseSpiderfy(false, 'open-other-group');
     clearMapSearchFocus(map);
 
     const originLatLng = group.marker.getLatLng();
@@ -863,7 +900,7 @@ export function mountFaerunMap(
   };
 
   const clearRenderedMarkers = (): void => {
-    collapseSpiderfy(false);
+    collapseSpiderfy(false, 'render-markers');
     portraitGeneration += 1;
     portraitQueue.splice(0);
     scheduledPortraitPinIds.clear();
@@ -1009,7 +1046,7 @@ export function mountFaerunMap(
     const pin = renderedMarkers.find(({ id }) => id === pinId);
     if (!pin) return;
 
-    collapseSpiderfy(false);
+    collapseSpiderfy(false, 'locate-pin');
     clearMapSearchFocus(map);
     const targetZoom = Math.min(
       FAERUN_MAP_CONFIG.maxZoom,
@@ -1048,8 +1085,8 @@ export function mountFaerunMap(
   imageOverlay.addTo(map);
 
   const synchronizeView = (): void => synchronizeViewDataset(map, elements.shell);
-  const handleZoomStart = (): void => collapseSpiderfy(false);
-  const handleMoveStart = (): void => collapseSpiderfy(false);
+  const handleZoomStart = (): void => collapseSpiderfy(false, 'zoomstart');
+  const handleMoveStart = (): void => collapseSpiderfy(false, 'movestart');
   const handleZoomEnd = (): void => {
     synchronizeView();
     reclusterAtCurrentZoom();
@@ -1058,12 +1095,12 @@ export function mountFaerunMap(
     synchronizeView();
     refreshPortraitMarkers();
   };
-  const handleMapClick = (): void => collapseSpiderfy(false);
+  const handleMapClick = (): void => collapseSpiderfy(false, 'map-click');
   const interactionRoot = root instanceof HTMLElement ? root : null;
   const handleRootPointerDown = (event: PointerEvent): void => {
     if (!activeSpiderfy || !(event.target instanceof Element)) return;
     if (event.target.closest('[data-spiderfied="true"]')) return;
-    collapseSpiderfy(false);
+    collapseSpiderfy(false, 'pointer-outside');
   };
   interactionRoot?.addEventListener('pointerdown', handleRootPointerDown);
 
@@ -1078,7 +1115,7 @@ export function mountFaerunMap(
     if (event.key !== 'Escape' || !activeSpiderfy || targetIsEditable(event.target)) return;
     event.preventDefault();
     event.stopPropagation();
-    collapseSpiderfy(true);
+    collapseSpiderfy(true, 'escape');
   };
   elements.canvas.addEventListener('keydown', handleMapKeyDown);
 
@@ -1089,7 +1126,7 @@ export function mountFaerunMap(
     resizeFrame = window.requestAnimationFrame(() => {
       resizeFrame = undefined;
       if (destroyed) return;
-      collapseSpiderfy(false);
+      collapseSpiderfy(false, 'resize');
       const wasAtMinimumZoom = Math.abs(map.getZoom() - map.getMinZoom()) < 0.01;
       map.invalidateSize({ animate: false, pan: false });
       constrainViewport(map, bounds, wasAtMinimumZoom);
@@ -1121,7 +1158,7 @@ export function mountFaerunMap(
         activeSpiderfy &&
         (!selectedPinId || !activeSpiderfy.group.pins.some(({ id }) => id === selectedPinId))
       ) {
-        collapseSpiderfy(false);
+        collapseSpiderfy(false, 'active-place');
       }
       activePlaceId = placeId;
       if (placeId !== null) activeSupplementalPinId = null;
@@ -1134,7 +1171,7 @@ export function mountFaerunMap(
         activeSupplementalPinId &&
         activeSpiderfy.group.pins.some(({ id }) => id === activeSupplementalPinId)
       ) {
-        collapseSpiderfy(false);
+        collapseSpiderfy(false, 'clear-supplemental');
       }
       activeSupplementalPinId = null;
       refreshMarkerPresentation();
@@ -1149,7 +1186,7 @@ export function mountFaerunMap(
       if (pinId) locatePin(pinId);
     },
     locateSearchTarget(target: MapSearchTarget): void {
-      collapseSpiderfy(false);
+      collapseSpiderfy(false, 'locate-search-target');
       locateMapSearchTarget(map, root, target, options.onAnnouncement);
       synchronizeView();
       reclusterAtCurrentZoom();
@@ -1190,6 +1227,7 @@ export function mountFaerunMap(
       if (destroyed) return;
       destroyed = true;
       clearMapSearchFocus(map);
+      collapseSpiderfy(false, 'destroy');
       clearRenderedMarkers();
       imageOverlay.off('load', handleImageLoad);
       imageOverlay.off('error', handleImageError);
