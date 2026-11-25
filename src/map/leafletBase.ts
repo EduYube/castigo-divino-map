@@ -94,6 +94,7 @@ interface SpiderfyState {
 }
 
 type SpiderfyCollapseReason =
+  | 'activate-pin'
   | 'open-other-group'
   | 'locate-pin'
   | 'zoomstart'
@@ -491,7 +492,10 @@ export function mountFaerunMap(
     focusPinId?: string,
     focusFirst?: boolean,
   ) => void = () => undefined;
-  let collapseSpiderfy: (restoreFocus?: boolean) => void = () => undefined;
+  let collapseSpiderfy: (
+    restoreFocus?: boolean,
+    reason?: SpiderfyCollapseReason,
+  ) => void = () => undefined;
   let renderMarkers: (
     markers: readonly AtlasPinMarkerModel[],
     eagerPortraitPinIds?: ReadonlySet<string>,
@@ -500,7 +504,7 @@ export function mountFaerunMap(
 
   const activatePin = (pin: AtlasPinMarkerModel): void => {
     const originGroup = renderedGroupByPinId.get(pin.id);
-    collapseSpiderfy(false);
+    collapseSpiderfy(false, 'activate-pin');
     map.closePopup();
     options.onPinActivate?.(pin);
 
@@ -732,10 +736,7 @@ export function mountFaerunMap(
     return next;
   };
 
-  collapseSpiderfy = (
-    restoreFocus = false,
-    reason: SpiderfyCollapseReason = 'unknown',
-  ): void => {
+  collapseSpiderfy = (restoreFocus = false, reason: SpiderfyCollapseReason = 'unknown'): void => {
     const state = activeSpiderfy;
     if (!state) return;
     elements.canvas.dataset.qa232LastCollapseReason = reason;
