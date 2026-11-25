@@ -1121,8 +1121,18 @@ export function mountFaerunMap(
   elements.canvas.addEventListener('keydown', handleMapKeyDown);
 
   let resizeFrame: number | undefined;
+  const initialCanvasRect = elements.canvas.getBoundingClientRect();
+  let observedCanvasWidth = initialCanvasRect.width;
+  let observedCanvasHeight = initialCanvasRect.height;
   const handleResize = (): void => {
     if (expandedMapLayout.isResizeSynchronizationPending()) return;
+    const currentCanvasRect = elements.canvas.getBoundingClientRect();
+    const sizeChanged =
+      Math.abs(currentCanvasRect.width - observedCanvasWidth) >= 0.5 ||
+      Math.abs(currentCanvasRect.height - observedCanvasHeight) >= 0.5;
+    if (!sizeChanged) return;
+    observedCanvasWidth = currentCanvasRect.width;
+    observedCanvasHeight = currentCanvasRect.height;
     if (resizeFrame !== undefined) window.cancelAnimationFrame(resizeFrame);
     resizeFrame = window.requestAnimationFrame(() => {
       resizeFrame = undefined;
