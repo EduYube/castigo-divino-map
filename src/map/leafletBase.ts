@@ -1083,8 +1083,21 @@ export function mountFaerunMap(
   elements.canvas.addEventListener('keydown', handleMapKeyDown);
 
   let resizeFrame: number | undefined;
+  const initialCanvasRect = elements.canvas.getBoundingClientRect();
+  let observedCanvasWidth = initialCanvasRect.width;
+  let observedCanvasHeight = initialCanvasRect.height;
   const handleResize = (): void => {
     if (expandedMapLayout.isResizeSynchronizationPending()) return;
+    const currentCanvasRect = elements.canvas.getBoundingClientRect();
+    const sizeChanged =
+      Math.abs(currentCanvasRect.width - observedCanvasWidth) >= 0.5 ||
+      Math.abs(currentCanvasRect.height - observedCanvasHeight) >= 0.5;
+    // ResizeObserver reports an initial observation even when the canvas size
+    // did not change. Treating that notification as a resize can collapse a
+    // spiderfy group that the user has just opened.
+    if (!sizeChanged) return;
+    observedCanvasWidth = currentCanvasRect.width;
+    observedCanvasHeight = currentCanvasRect.height;
     if (resizeFrame !== undefined) window.cancelAnimationFrame(resizeFrame);
     resizeFrame = window.requestAnimationFrame(() => {
       resizeFrame = undefined;

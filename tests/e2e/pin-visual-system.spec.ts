@@ -13,6 +13,11 @@ declare global {
       restore(): void;
     };
     __qa224MemberKeyEvent?: KeyboardEvent;
+    __qa232ResizeGate?: {
+      pending(): number;
+      advance(): number;
+      restore(): void;
+    };
   }
 }
 
@@ -529,6 +534,109 @@ test('QA-213 sensitivity: pending focus restore must not reopen spiderfy after E
   await expect(options).toHaveCount(0);
   await expect(cluster).toHaveAttribute('aria-expanded', 'false');
   await expect(cluster).toBeFocused();
+});
+
+async function gateQa232InitialResize(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const NativeResizeObserver = window.ResizeObserver;
+    if (!NativeResizeObserver) return;
+    const queued: Array<() => void> = [];
+
+    class GatedResizeObserver implements ResizeObserver {
+      readonly inner: ResizeObserver;
+
+      constructor(callback: ResizeObserverCallback) {
+        this.inner = new NativeResizeObserver((entries) => {
+          const observesMapCanvas = entries.some(
+            ({ target }) => target instanceof Element && target.matches('[data-map-canvas]'),
+          );
+          if (observesMapCanvas) {
+            queued.push(() => callback(entries, this));
+            return;
+          }
+          callback(entries, this);
+        });
+      }
+
+      observe(target: Element, options?: ResizeObserverOptions): void {
+        this.inner.observe(target, options);
+      }
+
+      unobserve(target: Element): void {
+        this.inner.unobserve(target);
+      }
+
+      disconnect(): void {
+        this.inner.disconnect();
+      }
+    }
+
+    window.ResizeObserver = GatedResizeObserver as typeof ResizeObserver;
+    window.__qa232ResizeGate = {
+      pending: () => queued.length,
+      advance: () => {
+        const callback = queued.shift();
+        if (!callback) return 0;
+        callback();
+        return 1;
+      },
+      restore: () => {
+        window.ResizeObserver = NativeResizeObserver;
+      },
+    };
+  });
+}
+
+test('QA-232 sensitivity: initial ResizeObserver notification does not collapse spiderfy', async ({
+  page,
+}) => {
+  await gateQa232InitialResize(page);
+  await openPinVisualMap(page);
+  const cluster = page.getByTestId('coincident-pin');
+  const options = page.getByTestId('coincident-pin-option');
+
+  await cluster.focus();
+  await page.keyboard.press('Space');
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toBeFocused();
+
+  await expect
+    .poll(() => page.evaluate(() => window.__qa232ResizeGate?.pending() ?? 0))
+    .toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__qa232ResizeGate?.advance() ?? 0)).toBe(1);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        window.requestAnimationFrame(() => resolve());
+      }),
+  );
+
+  await expect(options).toHaveCount(2);
+  await expect(cluster).toHaveAttribute('aria-expanded', 'true');
+  await expect(options.first()).toBeFocused();
+  await page.evaluate(() => window.__qa232ResizeGate?.restore());
+});
+
+test('QA-232 regression: a genuine canvas resize still collapses spiderfy', async ({ page }) => {
+  await openPinVisualMap(page);
+  const cluster = page.getByTestId('coincident-pin');
+  const options = page.getByTestId('coincident-pin-option');
+
+  await cluster.focus();
+  await page.keyboard.press('Space');
+  await expect(options).toHaveCount(2);
+
+  const viewport = page.viewportSize();
+  expect(viewport).not.toBeNull();
+  if (!viewport) throw new Error('QA-232 requires a viewport to exercise ResizeObserver');
+  await page.setViewportSize({
+    width: viewport.width - 96,
+    height: viewport.height - 48,
+  });
+
+  await expect(options).toHaveCount(0);
+  await expect(cluster).toBeVisible();
+  await expect(cluster).toHaveAttribute('aria-expanded', 'false');
 });
 
 async function gateQa224Frames(page: Page): Promise<void> {
