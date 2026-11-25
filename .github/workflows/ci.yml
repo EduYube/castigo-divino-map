@@ -350,7 +350,7 @@ jobs:
           EOF
           npx playwright test tests/e2e/pin-visual-system.spec.ts \
             --config=playwright.qa232-webkit.config.ts --project=webkit-qa232 \
-            --grep='QA-232 sensitivity: initial ResizeObserver notification does not collapse spiderfy' \
+            --grep='QA-232 sensitivity: initial ResizeObserver notification does not collapse spiderfy|QA-232 regression: a genuine canvas resize still collapses spiderfy' \
             --workers=1 --retries=0 --trace=retain-on-failure
 
       - name: QA-232 diagnostic WebKit Space 10x no-retry
