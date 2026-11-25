@@ -547,7 +547,15 @@ async function gateQa232InitialResize(page: Page): Promise<void> {
 
       constructor(callback: ResizeObserverCallback) {
         this.inner = new NativeResizeObserver((entries) => {
-          queued.push(() => callback(entries, this));
+          const observesMapCanvas = entries.some(
+            ({ target }) =>
+              target instanceof Element && target.matches('[data-map-canvas]'),
+          );
+          if (observesMapCanvas) {
+            queued.push(() => callback(entries, this));
+            return;
+          }
+          callback(entries, this);
         });
       }
 
