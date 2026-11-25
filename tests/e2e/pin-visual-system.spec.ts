@@ -593,7 +593,9 @@ test('QA-232 sensitivity: initial ResizeObserver notification does not collapse 
   await expect(options).toHaveCount(2);
   await expect(options.first()).toBeFocused();
 
-  expect(await page.evaluate(() => window.__qa232ResizeGate?.pending() ?? 0)).toBeGreaterThan(0);
+  await expect
+    .poll(() => page.evaluate(() => window.__qa232ResizeGate?.pending() ?? 0))
+    .toBeGreaterThan(0);
   expect(await page.evaluate(() => window.__qa232ResizeGate?.advance() ?? 0)).toBe(1);
   await page.evaluate(
     () =>
