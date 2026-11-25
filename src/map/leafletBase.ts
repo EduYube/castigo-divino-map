@@ -93,23 +93,6 @@ interface SpiderfyState {
   readonly legs: readonly Polyline[];
 }
 
-type SpiderfyCollapseReason =
-  | 'activate-pin'
-  | 'open-other-group'
-  | 'locate-pin'
-  | 'zoomstart'
-  | 'movestart'
-  | 'map-click'
-  | 'pointer-outside'
-  | 'escape'
-  | 'resize'
-  | 'render-markers'
-  | 'active-place'
-  | 'clear-supplemental'
-  | 'locate-search-target'
-  | 'destroy'
-  | 'unknown';
-
 type FilterMatchState = 'true' | 'false' | 'mixed';
 
 const stateMessages: Record<Exclude<MapLoadState, 'ready'>, string> = {
@@ -492,10 +475,7 @@ export function mountFaerunMap(
     focusPinId?: string,
     focusFirst?: boolean,
   ) => void = () => undefined;
-  let collapseSpiderfy: (
-    restoreFocus?: boolean,
-    reason?: SpiderfyCollapseReason,
-  ) => void = () => undefined;
+  let collapseSpiderfy: (restoreFocus?: boolean) => void = () => undefined;
   let renderMarkers: (
     markers: readonly AtlasPinMarkerModel[],
     eagerPortraitPinIds?: ReadonlySet<string>,
@@ -504,7 +484,7 @@ export function mountFaerunMap(
 
   const activatePin = (pin: AtlasPinMarkerModel): void => {
     const originGroup = renderedGroupByPinId.get(pin.id);
-    collapseSpiderfy(false, 'activate-pin');
+    collapseSpiderfy(false);
     map.closePopup();
     options.onPinActivate?.(pin);
 
@@ -736,27 +716,9 @@ export function mountFaerunMap(
     return next;
   };
 
-  collapseSpiderfy = (restoreFocus = false, reason: SpiderfyCollapseReason = 'unknown'): void => {
+  collapseSpiderfy = (restoreFocus = false): void => {
     const state = activeSpiderfy;
     if (!state) return;
-    elements.canvas.dataset.qa232LastCollapseReason = reason;
-    elements.canvas.dataset.qa232LastCollapseSnapshot = JSON.stringify({
-      reason,
-      spiderfyRevision,
-      spiderfyFocusIntentRevision,
-      zoom: map.getZoom(),
-      center: [map.getCenter().lat, map.getCenter().lng],
-      activeElement:
-        document.activeElement instanceof HTMLElement
-          ? {
-              tag: document.activeElement.tagName,
-              testId: document.activeElement.dataset.testid ?? null,
-              pinId: document.activeElement.dataset.pinId ?? null,
-            }
-          : null,
-      members: state.group.pins.map(({ id }) => id),
-      timestamp: performance.now(),
-    });
     activeSpiderfy = null;
     spiderfyRevision += 1;
 
@@ -815,7 +777,7 @@ export function mountFaerunMap(
       return;
     }
 
-    collapseSpiderfy(false, 'open-other-group');
+    collapseSpiderfy(false);
     clearMapSearchFocus(map);
 
     const originLatLng = group.marker.getLatLng();
@@ -901,7 +863,7 @@ export function mountFaerunMap(
   };
 
   const clearRenderedMarkers = (): void => {
-    collapseSpiderfy(false, 'render-markers');
+    collapseSpiderfy(false);
     portraitGeneration += 1;
     portraitQueue.splice(0);
     scheduledPortraitPinIds.clear();
@@ -1047,7 +1009,7 @@ export function mountFaerunMap(
     const pin = renderedMarkers.find(({ id }) => id === pinId);
     if (!pin) return;
 
-    collapseSpiderfy(false, 'locate-pin');
+    collapseSpiderfy(false);
     clearMapSearchFocus(map);
     const targetZoom = Math.min(
       FAERUN_MAP_CONFIG.maxZoom,
@@ -1086,8 +1048,8 @@ export function mountFaerunMap(
   imageOverlay.addTo(map);
 
   const synchronizeView = (): void => synchronizeViewDataset(map, elements.shell);
-  const handleZoomStart = (): void => collapseSpiderfy(false, 'zoomstart');
-  const handleMoveStart = (): void => collapseSpiderfy(false, 'movestart');
+  const handleZoomStart = (): void => collapseSpiderfy(false);
+  const handleMoveStart = (): void => collapseSpiderfy(false);
   const handleZoomEnd = (): void => {
     synchronizeView();
     reclusterAtCurrentZoom();
@@ -1096,12 +1058,12 @@ export function mountFaerunMap(
     synchronizeView();
     refreshPortraitMarkers();
   };
-  const handleMapClick = (): void => collapseSpiderfy(false, 'map-click');
+  const handleMapClick = (): void => collapseSpiderfy(false);
   const interactionRoot = root instanceof HTMLElement ? root : null;
   const handleRootPointerDown = (event: PointerEvent): void => {
     if (!activeSpiderfy || !(event.target instanceof Element)) return;
     if (event.target.closest('[data-spiderfied="true"]')) return;
-    collapseSpiderfy(false, 'pointer-outside');
+    collapseSpiderfy(false);
   };
   interactionRoot?.addEventListener('pointerdown', handleRootPointerDown);
 
@@ -1116,7 +1078,7 @@ export function mountFaerunMap(
     if (event.key !== 'Escape' || !activeSpiderfy || targetIsEditable(event.target)) return;
     event.preventDefault();
     event.stopPropagation();
-    collapseSpiderfy(true, 'escape');
+    collapseSpiderfy(true);
   };
   elements.canvas.addEventListener('keydown', handleMapKeyDown);
 
@@ -1137,7 +1099,7 @@ export function mountFaerunMap(
     resizeFrame = window.requestAnimationFrame(() => {
       resizeFrame = undefined;
       if (destroyed) return;
-      collapseSpiderfy(false, 'resize');
+      collapseSpiderfy(false);
       const wasAtMinimumZoom = Math.abs(map.getZoom() - map.getMinZoom()) < 0.01;
       map.invalidateSize({ animate: false, pan: false });
       constrainViewport(map, bounds, wasAtMinimumZoom);
@@ -1169,7 +1131,7 @@ export function mountFaerunMap(
         activeSpiderfy &&
         (!selectedPinId || !activeSpiderfy.group.pins.some(({ id }) => id === selectedPinId))
       ) {
-        collapseSpiderfy(false, 'active-place');
+        collapseSpiderfy(false);
       }
       activePlaceId = placeId;
       if (placeId !== null) activeSupplementalPinId = null;
@@ -1182,7 +1144,7 @@ export function mountFaerunMap(
         activeSupplementalPinId &&
         activeSpiderfy.group.pins.some(({ id }) => id === activeSupplementalPinId)
       ) {
-        collapseSpiderfy(false, 'clear-supplemental');
+        collapseSpiderfy(false);
       }
       activeSupplementalPinId = null;
       refreshMarkerPresentation();
@@ -1197,7 +1159,7 @@ export function mountFaerunMap(
       if (pinId) locatePin(pinId);
     },
     locateSearchTarget(target: MapSearchTarget): void {
-      collapseSpiderfy(false, 'locate-search-target');
+      collapseSpiderfy(false);
       locateMapSearchTarget(map, root, target, options.onAnnouncement);
       synchronizeView();
       reclusterAtCurrentZoom();
@@ -1238,7 +1200,6 @@ export function mountFaerunMap(
       if (destroyed) return;
       destroyed = true;
       clearMapSearchFocus(map);
-      collapseSpiderfy(false, 'destroy');
       clearRenderedMarkers();
       imageOverlay.off('load', handleImageLoad);
       imageOverlay.off('error', handleImageError);
