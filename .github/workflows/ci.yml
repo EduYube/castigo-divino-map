@@ -44,6 +44,12 @@ jobs:
       - name: Verify MAP-071 PDF matches Markdown
         run: node scripts/generate-admin-qa-pdf.cjs --check
 
+      - name: QA-232 diagnostic format instrumentation in runner
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-232-webkit-spiderfy-lifecycle'
+        run: |
+          npx prettier --write src/map/leafletBase.ts tests/e2e/pin-visual-system.spec.ts
+          git diff -- src/map/leafletBase.ts tests/e2e/pin-visual-system.spec.ts
+
       - name: Check formatting
         run: npm run format:check
 
