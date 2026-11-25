@@ -330,6 +330,14 @@ jobs:
 
       # QA-232 pre-fix reproduction, confined to the dedicated Draft PR branch.
       # An occasional green master gate is not a stability sample.
+      - name: QA-232 initial ResizeObserver sensitivity no-retry
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-232-webkit-spiderfy-lifecycle'
+        run: |
+          npx playwright test tests/e2e/pin-visual-system.spec.ts \
+            --project=webkit-spiderfy \
+            --grep='QA-232 sensitivity: initial ResizeObserver notification does not collapse spiderfy' \
+            --workers=1 --retries=0 --trace=retain-on-failure
+
       - name: QA-232 diagnostic WebKit Space 10x no-retry
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/qa-232-webkit-spiderfy-lifecycle'
         run: |
